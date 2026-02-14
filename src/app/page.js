@@ -266,7 +266,7 @@ export default function HomePage() {
                 </h2>
                 <p className="text-base md:text-lg text-gray-700 mb-4 md:mb-6 leading-relaxed">
                   Every WorkOnTap pro is licensed, background-checked, and well-rated. 
-                  If your experience isn't perfect, we'll make it right — <span className="font-semibold text-green-700">100% guaranteed.</span>
+                  If your experience isn&apos;t perfect, we&apos;ll make it right — <span className="font-semibold text-green-700">100% guaranteed.</span>
                 </p>
                 <Link href="/guarantee" className="inline-flex items-center bg-green-700 text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-semibold shadow-md hover:bg-green-800 transition text-sm md:text-base">
                   Learn more about our promise

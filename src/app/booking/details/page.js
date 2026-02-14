@@ -888,7 +888,7 @@ export default function BookingDetailsPage() {
                   ) : (
                     <div className="bg-green-50 rounded-xl p-4 text-center border border-green-200">
                       <span className="text-green-700 font-semibold">✓ Maximum photos uploaded</span>
-                      <p className="text-xs text-gray-600 mt-1">You've added {maxPhotos} photos</p>
+                      <p className="text-xs text-gray-600 mt-1">You&apos;ve added {maxPhotos} photos</p>
                     </div>
                   )}
 

@@ -62,7 +62,7 @@
 // // export async function POST(request) {
 // //   try {
 // //     const body = await request.json()
-    
+
 // //     const {
 // //       service_id,
 // //       service_name,
@@ -259,7 +259,7 @@
 // export async function POST(request) {
 //   try {
 //     const body = await request.json()
-    
+
 //     const {
 //       service_id,
 //       service_name,
@@ -417,7 +417,7 @@ export async function GET(request) {
     sql += ' ORDER BY b.created_at DESC LIMIT ?'
     params.push(parseInt(limit))
 
-    const bookings = await execute(sql, params)
+    const bookings = await query(sql, params)
 
     // Get photos for each booking
     for (let booking of bookings) {
@@ -441,10 +441,10 @@ export async function GET(request) {
 // POST create new booking
 export async function POST(request) {
   let connection;
-  
+
   try {
     const body = await request.json()
-    
+
     const {
       service_id,
       service_name,
@@ -482,7 +482,7 @@ export async function POST(request) {
 
     // Get connection for transaction
     connection = await getConnection();
-    
+
     // Start transaction - using query() instead of execute()
     await connection.query('START TRANSACTION');
 
@@ -543,8 +543,8 @@ export async function POST(request) {
       // Commit transaction - using query()
       await connection.query('COMMIT');
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: 'Booking created successfully',
         booking_id: bookingId,
         booking_number: bookingNumber
@@ -575,7 +575,7 @@ export async function POST(request) {
 // PUT update booking status
 export async function PUT(request) {
   let connection;
-  
+
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -602,9 +602,9 @@ export async function PUT(request) {
 
       await connection.query('COMMIT');
 
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Booking updated successfully' 
+      return NextResponse.json({
+        success: true,
+        message: 'Booking updated successfully'
       })
 
     } catch (error) {

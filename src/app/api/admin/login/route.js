@@ -1,23 +1,37 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { query } from "@/lib/db";
 
 export async function POST(request) {
   try {
     const { username, password } = await request.json();
 
-    const adminUsername = process.env.ADMIN_USERNAME || "admin";
-    const adminPasswordHash =
-      process.env.ADMIN_PASSWORD_HASH ||
-      "$2b$10$mpfMPuCBTTR2Y5JcxakM1eXJOe56vkp071ripzzGosjs7c8r2SRIC";
+    if (!username || !password) {
+      return NextResponse.json(
+        { success: false, message: "Username and password are required" },
+        { status: 400 }
+      );
+    }
 
-    if (username !== adminUsername) {
+    // Query the database for the admin user
+    const [users] = await query(
+      "SELECT * FROM admin_users WHERE username = ? AND is_active = TRUE",
+      [username]
+    );
+
+    const user = users; // query returns the first element directly in some mysql2 wrappers or as the first element of an array
+
+    // Fallback if query returns an array (depends on lib/db.js implementation)
+    const adminUser = Array.isArray(users) ? users[0] : users;
+
+    if (!adminUser) {
       return NextResponse.json(
         { success: false, message: "Invalid credentials" },
         { status: 401 }
       );
     }
 
-    const isMatch = await bcrypt.compare(password, adminPasswordHash);
+    const isMatch = await bcrypt.compare(password, adminUser.password_hash);
 
     if (!isMatch) {
       return NextResponse.json(
@@ -29,9 +43,14 @@ export async function POST(request) {
     const response = NextResponse.json({
       success: true,
       message: "Login successful",
+      user: {
+        id: adminUser.id,
+        username: adminUser.username,
+        role: adminUser.role
+      }
     });
 
-    // ✅ SIMPLE FIX: Cookie set karo
+    // Set cookie for authentication
     response.cookies.set("adminAuth", "true", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

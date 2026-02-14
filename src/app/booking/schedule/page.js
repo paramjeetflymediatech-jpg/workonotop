@@ -615,11 +615,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 
-export default function BookingSchedulePage() {
+function BookingScheduleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const serviceId = searchParams.get('service');
@@ -908,7 +908,7 @@ export default function BookingSchedulePage() {
                       Select your preferred times
                     </h4>
                     <p className="text-sm text-gray-600 mb-4">
-                      Choose all time slots that work for you — we'll match you with available pros
+                      Choose all time slots that work for you — we&apos;ll match you with available pros
                     </p>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1089,7 +1089,7 @@ export default function BookingSchedulePage() {
                         <svg className="w-4 h-4 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
-                        <span>You won't be charged until the job is complete</span>
+                        <span>You won&apos;t be charged until the job is complete</span>
                       </div>
                       <div className="flex items-start">
                         <svg className="w-4 h-4 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -1117,11 +1117,19 @@ export default function BookingSchedulePage() {
               <Link href="/terms" className="hover:text-green-700 transition">Terms</Link>
               <Link href="/privacy" className="hover:text-green-700 transition">Privacy</Link>
               <Link href="/guarantee" className="hover:text-green-700 transition">Guarantee</Link>
-              <Link href="/help" className="hover:text-green-700 transition">Help</Link>
             </div>
           </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+// Suspense wrapper for the schedule page
+export default function BookingSchedulePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BookingScheduleContent />
+    </Suspense>
   );
 }

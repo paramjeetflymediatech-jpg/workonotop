@@ -72,7 +72,7 @@ export default function BookingSuccessPage({ params }) {
             </h1>
             
             <p className="text-lg text-gray-600 mb-6">
-              Your job request has been submitted. We're matching you with trusted pros now.
+              Your job request has been submitted. We&apos;re matching you with trusted pros now.
             </p>
             
             <div className="bg-green-50 rounded-xl p-6 mb-8 border border-green-200">

@@ -217,7 +217,7 @@ export default function ServiceDetailPage({ params }) {
                   <div className="bg-green-700 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-md">3</div>
                   <div className="pt-1">
                     <h3 className="font-bold text-xl text-gray-800 mb-2">Chat & confirm</h3>
-                    <p className="text-gray-600">Discuss details with your pro before the job begins. Pay securely after you're 100% satisfied.</p>
+                    <p className="text-gray-600">Discuss details with your pro before the job begins. Pay securely after you&apos;re 100% satisfied.</p>
                   </div>
                 </div>
               </div>
@@ -231,7 +231,7 @@ export default function ServiceDetailPage({ params }) {
                   <h3 className="text-2xl font-bold mb-2">Homeowner Protection Promise</h3>
                   <p className="text-green-100 mb-4">
                     Every WorkOnTap pro is licensed, background-checked, and well-rated. 
-                    If your experience isn't perfect, we'll make it right — 100% guaranteed.
+                    If your experience isn&apos;t perfect, we&apos;ll make it right — 100% guaranteed.
                   </p>
                   <Link href="/guarantee" className="inline-flex items-center bg-white text-green-800 px-6 py-3 rounded-full font-semibold hover:bg-green-50 transition shadow-lg">
                     Learn more
@@ -337,7 +337,7 @@ export default function ServiceDetailPage({ params }) {
                     <svg className="w-4 h-4 text-green-600 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
-                    You won't be charged until the job is complete
+                    You won&apos;t be charged until the job is complete
                   </p>
                 </div>
               </div>

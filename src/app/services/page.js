@@ -47,14 +47,14 @@ export default function ServicesPage() {
         fetch('/api/services'),
         fetch('/api/categories')
       ]);
-      
+
       const servicesData = await servicesRes.json();
       const categoriesData = await categoriesRes.json();
-      
+
       if (servicesData.success) {
         setServices(servicesData.data || []);
       }
-      
+
       if (categoriesData.success) {
         setCategories(categoriesData.data || []);
       }
@@ -68,7 +68,7 @@ export default function ServicesPage() {
   // Typing effect
   useEffect(() => {
     let timer;
-    
+
     const handleTyping = () => {
       const i = loopNum % searchExamples.length;
       const fullText = searchExamples[i];
@@ -97,15 +97,15 @@ export default function ServicesPage() {
   // Filter services based on active category and search
   const filteredServices = services.filter(service => {
     // Category filter
-    const matchesCategory = activeCategory === 'all' || 
-                           service.category_id === parseInt(activeCategory);
-    
+    const matchesCategory = activeCategory === 'all' ||
+      service.category_id === parseInt(activeCategory);
+
     // Search filter
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (service.short_description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (service.description || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     return matchesCategory && matchesSearch;
   });
 
@@ -138,35 +138,35 @@ export default function ServicesPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
-    <Header/>
+      <Header />
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white py-12 md:py-16 lg:py-20 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ 
-          backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.3\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' 
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.3\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
         }}></div>
-        
+
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4 md:mb-6 drop-shadow-md">
               WorkOnTap keeps your home in great shape, <br className="hidden sm:block" />
               <span className="bg-green-500/30 px-3 py-1 inline-block rounded-lg">inside and out.</span>
             </h1>
-            
+
             <form onSubmit={handleSearch} className="mt-8 md:mt-10">
               <div className="bg-white rounded-2xl shadow-2xl p-1 flex items-center max-w-2xl mx-auto hover:shadow-3xl transition-all duration-300 hover:scale-[1.02] border-2 border-transparent hover:border-green-300">
                 <div className="flex items-center flex-1 bg-white rounded-xl px-4 sm:px-6 py-2 sm:py-3">
                   <svg className="w-8 h-8 sm:w-10 sm:h-10 text-green-600 flex-shrink-0 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder={placeholder || 'mount tv on wall'}
                     className="flex-1 px-2 py-4 sm:py-5 text-gray-800 outline-none bg-transparent placeholder:text-gray-700 placeholder:font-medium placeholder:text-lg sm:placeholder:text-xl md:placeholder:text-2xl placeholder:tracking-wide text-base sm:text-lg md:text-xl"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <button 
+                <button
                   type="submit"
                   className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 sm:px-8 py-4 sm:py-5 rounded-xl transition duration-200 shadow-lg whitespace-nowrap text-base sm:text-lg"
                 >
@@ -174,20 +174,20 @@ export default function ServicesPage() {
                 </button>
               </div>
             </form>
-            
+
             <p className="text-white/90 text-base sm:text-lg mt-6 flex items-center gap-2 justify-center">
               <span className="text-xl">📌</span>
-              Need help finding the right service? 
+              Need help finding the right service?
               <Link href="/chat" className="font-bold underline ml-1 hover:text-green-200 transition decoration-2 underline-offset-4">
                 Chat with us.
               </Link>
             </p>
           </div>
         </div>
-        
+
         <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
           <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
-            <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white"/>
+            <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white" />
           </svg>
         </div>
       </section>
@@ -203,8 +203,8 @@ export default function ServicesPage() {
                 className={`
                   px-4 md:px-6 py-2 md:py-2.5 rounded-full text-sm md:text-base font-medium transition-all duration-200
                   flex items-center space-x-1 md:space-x-2
-                  ${activeCategory === category.id 
-                    ? 'bg-green-700 text-white shadow-md shadow-green-200 scale-105' 
+                  ${activeCategory === category.id
+                    ? 'bg-green-700 text-white shadow-md shadow-green-200 scale-105'
                     : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-green-500 hover:text-green-700 hover:bg-green-50'
                   }
                 `}
@@ -214,7 +214,7 @@ export default function ServicesPage() {
               </button>
             ))}
           </div>
-          
+
           <div className="text-center mt-6 text-gray-600 text-sm md:text-base">
             Showing <span className="font-bold text-green-700">{filteredServices.length}</span> services
             {activeCategory !== 'all' && ` in ${categories.find(c => c.id === parseInt(activeCategory))?.name}`}
@@ -231,9 +231,9 @@ export default function ServicesPage() {
               {filteredServices.map((service) => {
                 // Find category for this service
                 const category = categories.find(c => c.id === service.category_id);
-                
+
                 return (
-                  <Link 
+                  <Link
                     key={service.id}
                     href={`/services/${service.slug}`}
                     className="group transform hover:-translate-y-2 transition-all duration-300"
@@ -242,8 +242,8 @@ export default function ServicesPage() {
                       {/* Image/Icon area */}
                       <div className="h-36 sm:h-40 md:h-44 flex items-center justify-center relative bg-gradient-to-br from-green-50 to-emerald-50">
                         {service.image_url ? (
-                          <img 
-                            src={service.image_url} 
+                          <img
+                            src={service.image_url}
                             alt={service.name}
                             className="w-full h-full object-cover"
                           />
@@ -256,17 +256,17 @@ export default function ServicesPage() {
                           {category?.name || 'General'}
                         </span>
                       </div>
-                      
+
                       {/* Content */}
                       <div className="p-5 md:p-6 flex-1 flex flex-col">
                         <h3 className="text-lg md:text-xl font-bold text-gray-800 group-hover:text-green-700 transition line-clamp-2 min-h-[3.5rem]">
                           {service.name}
                         </h3>
-                        
+
                         <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                           {service.short_description || service.description?.substring(0, 60) + '...' || 'No description'}
                         </p>
-                        
+
                         <div className="mt-3 flex items-end justify-between">
                           <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Starting at</p>
@@ -274,14 +274,14 @@ export default function ServicesPage() {
                               ${parseFloat(service.base_price).toFixed(0)}
                             </p>
                           </div>
-                          
+
                           <div className="bg-green-100 rounded-full p-2 group-hover:bg-green-600 transition-colors duration-300">
                             <svg className="w-5 h-5 text-green-700 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </div>
                         </div>
-                        
+
                         {service.additional_price > 0 && (
                           <p className="text-xs text-gray-500 mt-2">
                             +${parseFloat(service.additional_price).toFixed(0)} additional
@@ -298,7 +298,7 @@ export default function ServicesPage() {
               <div className="text-6xl mb-4">🔍</div>
               <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">No services found</h3>
               <p className="text-gray-600 text-lg mb-6">Try adjusting your filters or search term</p>
-              <button 
+              <button
                 onClick={() => { setActiveCategory('all'); setSearchTerm(''); }}
                 className="bg-green-700 text-white px-8 py-3 rounded-full font-semibold hover:bg-green-800 transition shadow-md"
               >
@@ -363,7 +363,7 @@ export default function ServicesPage() {
                 <a href="#" className="text-gray-400 hover:text-white text-xl md:text-2xl transition"><i className="fab fa-linkedin"></i></a>
               </div>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold text-base md:text-lg mb-3 md:mb-4">For homeowners</h4>
               <ul className="space-y-2 md:space-y-3 text-sm md:text-base">
@@ -374,7 +374,7 @@ export default function ServicesPage() {
                 <li><Link href="/help" className="hover:text-white transition">Help Center</Link></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold text-base md:text-lg mb-3 md:mb-4">For pros</h4>
               <ul className="space-y-2 md:space-y-3 text-sm md:text-base">
@@ -384,7 +384,7 @@ export default function ServicesPage() {
                 <li><Link href="/insurance" className="hover:text-white transition">Insurance</Link></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold text-base md:text-lg mb-3 md:mb-4">Company</h4>
               <ul className="space-y-2 md:space-y-3 text-sm md:text-base">
@@ -396,7 +396,7 @@ export default function ServicesPage() {
               </ul>
             </div>
           </div>
-          
+
           <div className="border-t border-gray-800 mt-10 md:mt-14 pt-6 md:pt-8 flex flex-col md:flex-row justify-between items-center text-xs md:text-sm text-gray-500">
             <p>© 2026 WorkOnTap Inc. All rights reserved.</p>
             <div className="flex space-x-4 md:space-x-6 mt-3 md:mt-0">
@@ -409,21 +409,6 @@ export default function ServicesPage() {
         </div>
       </footer>
 
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-      `}</style>
     </div>
   );
 }

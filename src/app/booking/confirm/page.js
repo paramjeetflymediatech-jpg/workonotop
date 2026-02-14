@@ -657,7 +657,7 @@ export default function BookingConfirmPage() {
                     Create your account to get started!
                   </h2>
                   <p className="text-green-100 text-sm mt-1 ml-1">
-                    You're one step away from connecting with trusted pros
+                    You&apos;re one step away from connecting with trusted pros
                   </p>
                 </div>
                 
@@ -798,7 +798,7 @@ export default function BookingConfirmPage() {
                         </div>
                         <div className="ml-3 text-sm">
                           <label htmlFor="terms" className="text-gray-600">
-                            I agree to WorkOnTap's{' '}
+                            I agree to WorkOnTap&apos;s{' '}
                             <Link href="/terms" className="text-green-700 hover:text-green-800 font-medium underline">
                               Terms of Service
                             </Link>{' '}
@@ -915,11 +915,11 @@ export default function BookingConfirmPage() {
                   <div className="flex items-start space-x-4">
                     <div className="text-4xl">🛡️</div>
                     <div>
-                      <h4 className="font-bold text-xl mb-2">You're Protected with WorkOnTap</h4>
+                      <h4 className="font-bold text-xl mb-2">You&apos;re Protected with WorkOnTap</h4>
                       <p className="text-green-100 text-sm mb-4 leading-relaxed">
                         We back every job with our Homeowner Protection Promise. 
                         All pros are licensed, background-checked, and well-rated. 
-                        If your experience isn't perfect, we'll make it right.
+                        If your experience isn&apos;t perfect, we&apos;ll make it right.
                       </p>
                       <Link href="/guarantee" className="inline-flex items-center bg-white text-green-800 px-4 py-2 rounded-full text-sm font-semibold hover:bg-green-50 transition shadow-md">
                         Learn more

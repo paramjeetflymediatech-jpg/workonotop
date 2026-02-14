@@ -75,7 +75,7 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
             <span className="text-3xl">🛠️</span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">
-            It's free to join the WorkOnTap platform
+            It&apos;s free to join the WorkOnTap platform
           </h2>
           <p className="text-green-100 text-sm">
             Become a WorkOnTap Professional and grow your business
@@ -209,7 +209,7 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
                 className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-0.5"
               />
               <label htmlFor="agreeTerms" className="ml-2 text-xs text-gray-600">
-                By signing up, you agree to WorkOnTap's{' '}
+                By signing up, you agree to WorkOnTap&apos;s{' '}
                 <Link href="/terms" className="text-green-700 hover:underline font-medium">
                   Terms and Conditions
                 </Link>
