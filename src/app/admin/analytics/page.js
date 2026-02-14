@@ -21,7 +21,7 @@ export default function AnalyticsPage() {
                 </div>
                 <h2 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Analytics Dashboard Coming Soon</h2>
                 <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-500'} text-center max-w-md`}>
-                    We're working on a comprehensive analytics dashboard to help you track business performance, revenue trends, and service popularity.
+                    We&apos;re working on a comprehensive analytics dashboard to help you track business performance, revenue trends, and service popularity.
                 </p>
             </div>
         </div>

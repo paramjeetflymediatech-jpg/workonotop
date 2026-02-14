@@ -29,10 +29,10 @@ export default function SettingsPage() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${activeTab === tab.id
-                                        ? 'bg-teal-500 text-white'
-                                        : isDarkMode
-                                            ? 'text-slate-300 hover:bg-slate-700'
-                                            : 'text-slate-600 hover:bg-slate-50'
+                                    ? 'bg-teal-500 text-white'
+                                    : isDarkMode
+                                        ? 'text-slate-300 hover:bg-slate-700'
+                                        : 'text-slate-600 hover:bg-slate-50'
                                     }`}
                             >
                                 <span>{tab.icon}</span>
@@ -51,7 +51,7 @@ export default function SettingsPage() {
                         </div>
                         <h2 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Settings Management Coming Soon</h2>
                         <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-500'} text-center max-w-md`}>
-                            We're building a centralized settings panel where you can manage system configurations, notification preferences, and admin user profiles.
+                            We&apos;re building a centralized settings panel where you can manage system configurations, notification preferences, and admin user profiles.
                         </p>
                     </div>
                 </div>
