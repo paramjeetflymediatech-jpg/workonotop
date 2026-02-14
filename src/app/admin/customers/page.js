@@ -9,7 +9,6 @@ export default function Customers() {
   const { isDarkMode } = useAdminTheme()
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -44,13 +43,17 @@ export default function Customers() {
     }
   }
 
-  const loadCustomerBookings = async (customerId) => {
+  const loadCustomerBookings = async (userId) => {
     setLoadingBookings(true)
     try {
-      const res = await fetch(`/api/bookings?customer_id=${customerId}`)
-      const data = await res.json()
-      if (data.success) {
-        setCustomerBookings(data.data || [])
+      // Get bookings by user_id using the bookings API with email filter
+      const customer = customers.find(c => c.id === userId)
+      if (customer) {
+        const res = await fetch(`/api/bookings?email=${encodeURIComponent(customer.email)}`)
+        const data = await res.json()
+        if (data.success) {
+          setCustomerBookings(data.data || [])
+        }
       }
     } catch (error) {
       console.error('Error loading customer bookings:', error)
@@ -59,34 +62,8 @@ export default function Customers() {
     }
   }
 
-  const updateCustomerStatus = async (customerId, isVerified) => {
-    try {
-      const customer = customers.find(c => c.id === customerId)
-      const res = await fetch('/api/customers', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: customerId,
-          first_name: customer.first_name,
-          last_name: customer.last_name,
-          phone: customer.phone,
-          address: customer.address,
-          city: customer.city,
-          postal_code: customer.postal_code,
-          is_verified: isVerified
-        })
-      })
-      const data = await res.json()
-      if (data.success) {
-        loadCustomers()
-      }
-    } catch (error) {
-      console.error('Error updating customer status:', error)
-    }
-  }
-
   const deleteCustomer = async (customerId) => {
-    if (!confirm('Are you sure you want to delete this customer? This will also delete all their bookings and reviews.')) return
+    if (!confirm('Are you sure you want to delete this customer? This action cannot be undone.')) return
     
     try {
       const res = await fetch(`/api/customers?id=${customerId}`, {
@@ -96,33 +73,45 @@ export default function Customers() {
       if (data.success) {
         loadCustomers()
         setIsModalOpen(false)
+        alert('Customer deleted successfully!')
+      } else {
+        alert(data.message || 'Failed to delete customer')
       }
     } catch (error) {
       console.error('Error deleting customer:', error)
+      alert('Failed to delete customer')
     }
   }
 
   const updateCustomer = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch('/api/customers', {
+      const res = await fetch(`/api/customers?id=${selectedCustomer.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(selectedCustomer)
+        body: JSON.stringify({
+          first_name: selectedCustomer.first_name,
+          last_name: selectedCustomer.last_name,
+          phone: selectedCustomer.phone,
+          receive_offers: selectedCustomer.receive_offers
+        })
       })
       const data = await res.json()
       if (data.success) {
         setIsEditModalOpen(false)
         setSelectedCustomer(null)
         loadCustomers()
+        alert('Customer updated successfully!')
+      } else {
+        alert(data.message || 'Failed to update customer')
       }
     } catch (error) {
       console.error('Error updating customer:', error)
+      alert('Failed to update customer')
     }
   }
 
   const filteredCustomers = customers.filter(customer => {
-    // Search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase()
       const fullName = `${customer.first_name} ${customer.last_name}`.toLowerCase()
@@ -135,11 +124,6 @@ export default function Customers() {
         return false
       }
     }
-
-    // Status filter
-    if (filter === 'all') return true
-    if (filter === 'verified') return customer.is_verified === 1
-    if (filter === 'unverified') return customer.is_verified === 0
     return true
   })
 
@@ -156,10 +140,22 @@ export default function Customers() {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase()
   }
 
-  const getStatusColor = (isVerified) => {
-    return isVerified
-      ? 'bg-green-500/20 text-green-600 dark:text-green-400'
-      : 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
+  const calculateTotal = (booking) => {
+    const servicePrice = parseFloat(booking.service_price) || 0
+    const additionalPrice = parseFloat(booking.additional_price) || 0
+    return (servicePrice + additionalPrice).toFixed(2)
+  }
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'pending': return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
+      case 'matching': return 'bg-orange-500/20 text-orange-600 dark:text-orange-400'
+      case 'confirmed': return 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+      case 'in_progress': return 'bg-purple-500/20 text-purple-600 dark:text-purple-400'
+      case 'completed': return 'bg-green-500/20 text-green-600 dark:text-green-400'
+      case 'cancelled': return 'bg-red-500/20 text-red-600 dark:text-red-400'
+      default: return 'bg-gray-500/20 text-gray-600 dark:text-gray-400'
+    }
   }
 
   if (loading) {
@@ -189,83 +185,88 @@ export default function Customers() {
         <div className={`rounded-xl p-6 shadow-lg border ${
           isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
         }`}>
-          <p className={`text-sm mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-            Total Customers
-          </p>
-          <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {customers.length}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                Total Customers
+              </p>
+              <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {customers.length}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-teal-500/20">
+              <svg className="w-8 h-8 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+          </div>
         </div>
         
         <div className={`rounded-xl p-6 shadow-lg border ${
           isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
         }`}>
-          <p className={`text-sm mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-            Verified Customers
-          </p>
-          <p className={`text-3xl font-bold text-green-600 dark:text-green-400`}>
-            {customers.filter(c => c.is_verified).length}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                Active Customers
+              </p>
+              <p className={`text-3xl font-bold text-green-600 dark:text-green-400`}>
+                {customers.filter(c => c.booking_count > 0).length}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-green-500/20">
+              <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
         </div>
         
         <div className={`rounded-xl p-6 shadow-lg border ${
           isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
         }`}>
-          <p className={`text-sm mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-            Unverified Customers
-          </p>
-          <p className={`text-3xl font-bold text-yellow-600 dark:text-yellow-400`}>
-            {customers.filter(c => !c.is_verified).length}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                Newsletter Subscribers
+              </p>
+              <p className={`text-3xl font-bold text-purple-600 dark:text-purple-400`}>
+                {customers.filter(c => c.receive_offers).length}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-purple-500/20">
+              <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        {/* Search Bar */}
-        <div className="flex-1">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search by name, email, or phone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg border ${
-                isDarkMode 
-                  ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              } focus:outline-none focus:ring-2 focus:ring-teal-500`}
-            />
-            <svg 
-              className={`absolute left-3 top-2.5 w-5 h-5 ${
-                isDarkMode ? 'text-slate-500' : 'text-gray-400'
-              }`}
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Status Filters */}
-        <div className="flex gap-2">
-          {['all', 'verified', 'unverified'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
-                filter === status
-                  ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white'
-                  : isDarkMode
-                    ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+      {/* Search */}
+      <div className="mb-6">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search by name, email, or phone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+              isDarkMode 
+                ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' 
+                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+            } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+          />
+          <svg 
+            className={`absolute left-3 top-4 w-5 h-5 ${
+              isDarkMode ? 'text-slate-500' : 'text-gray-400'
+            }`}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
       </div>
 
@@ -279,9 +280,10 @@ export default function Customers() {
               <tr className={isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Customer</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Contact</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Location</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">Source</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">Bookings</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">Newsletter</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Joined</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
                 <th className="px-6 py-4 text-right text-sm font-semibold">Actions</th>
               </tr>
             </thead>
@@ -327,22 +329,34 @@ export default function Customers() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {customer.city || 'N/A'}
-                      </p>
-                      <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                        {customer.postal_code || ''}
+                      <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                        {customer.hear_about || 'Not specified'}
                       </p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                        customer.booking_count > 0
+                          ? 'bg-green-500/20 text-green-600 dark:text-green-400'
+                          : 'bg-gray-500/20 text-gray-600 dark:text-gray-400'
+                      }`}>
+                        {customer.booking_count} booking{customer.booking_count !== 1 ? 's' : ''}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {customer.receive_offers ? (
+                        <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                         {formatDate(customer.created_at)}
                       </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(customer.is_verified)}`}>
-                        {customer.is_verified ? 'Verified' : 'Unverified'}
-                      </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
@@ -351,35 +365,15 @@ export default function Customers() {
                             setSelectedCustomer(customer)
                             setIsEditModalOpen(true)
                           }}
-                          className="p-2 rounded-lg transition-colors"
-                          style={{
-                            color: isDarkMode ? '#94a3b8' : '#475569'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = isDarkMode ? '#1e293b' : '#f1f5f9'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent'
-                          }}
+                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
                         <button
                           onClick={() => deleteCustomer(customer.id)}
-                          className="p-2 rounded-lg transition-colors"
-                          style={{
-                            color: isDarkMode ? '#94a3b8' : '#475569'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = isDarkMode ? '#1e293b' : '#f1f5f9'
-                            e.currentTarget.style.color = '#ef4444'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent'
-                            e.currentTarget.style.color = isDarkMode ? '#94a3b8' : '#475569'
-                          }}
+                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-red-600 transition-colors"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -391,7 +385,7 @@ export default function Customers() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center">
+                  <td colSpan="7" className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center">
                       <svg className="w-16 h-16 mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -452,9 +446,11 @@ export default function Customers() {
                         Customer ID: #{selectedCustomer.id}
                       </p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedCustomer.is_verified)}`}>
-                      {selectedCustomer.is_verified ? 'Verified' : 'Unverified'}
-                    </span>
+                    {selectedCustomer.receive_offers && (
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-600 dark:text-purple-400">
+                        Newsletter Subscriber
+                      </span>
+                    )}
                   </div>
                   
                   <div className="mt-4 grid grid-cols-2 gap-6">
@@ -471,21 +467,9 @@ export default function Customers() {
                       </p>
                     </div>
                     <div>
-                      <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>Address</p>
+                      <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>How they found us</p>
                       <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {selectedCustomer.address || 'Not provided'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>City</p>
-                      <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {selectedCustomer.city || 'Not provided'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>Postal Code</p>
-                      <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {selectedCustomer.postal_code || 'Not provided'}
+                        {selectedCustomer.hear_about || 'Not specified'}
                       </p>
                     </div>
                     <div>
@@ -505,7 +489,7 @@ export default function Customers() {
                     Booking History
                   </h4>
                   <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                    Total: {customerBookings.length} bookings
+                    Total: {customerBookings.length} booking{customerBookings.length !== 1 ? 's' : ''}
                   </span>
                 </div>
 
@@ -518,51 +502,44 @@ export default function Customers() {
                     <table className="w-full">
                       <thead>
                         <tr className={isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}>
-                          <th className="px-4 py-2 text-left text-xs font-medium">Booking ID</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium">Service</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium">Provider</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium">Date</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium">Status</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium">Amount</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium">Booking #</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium">Service</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium">Status</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium">Amount</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {customerBookings.map((booking) => (
                           <tr key={booking.id}>
-                            <td className="px-4 py-2 text-sm">
+                            <td className="px-4 py-3 text-sm">
                               <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                #{booking.id}
+                                {booking.booking_number}
                               </span>
                             </td>
-                            <td className="px-4 py-2 text-sm">
-                              <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>
-                                {booking.service_name}
-                              </span>
+                            <td className="px-4 py-3 text-sm">
+                              <div>
+                                <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>
+                                  {booking.service_name}
+                                </span>
+                                <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                                  {booking.category_name}
+                                </p>
+                              </div>
                             </td>
-                            <td className="px-4 py-2 text-sm">
-                              <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>
-                                {booking.provider_name || 'Unassigned'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2 text-sm">
+                            <td className="px-4 py-3 text-sm">
                               <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>
-                                {formatDate(booking.booking_date)}
+                                {formatDate(booking.job_date)}
                               </span>
                             </td>
-                            <td className="px-4 py-2 text-sm">
-                              <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
-                                booking.status === 'pending' ? 'bg-yellow-500/20 text-yellow-600' :
-                                booking.status === 'confirmed' ? 'bg-blue-500/20 text-blue-600' :
-                                booking.status === 'in_progress' ? 'bg-purple-500/20 text-purple-600' :
-                                booking.status === 'completed' ? 'bg-green-500/20 text-green-600' :
-                                'bg-red-500/20 text-red-600'
-                              }`}>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
                                 {booking.status?.replace('_', ' ')}
                               </span>
                             </td>
-                            <td className="px-4 py-2 text-sm">
+                            <td className="px-4 py-3 text-sm text-right">
                               <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                ${booking.total_price}
+                                ${calculateTotal(booking)}
                               </span>
                             </td>
                           </tr>
@@ -582,7 +559,6 @@ export default function Customers() {
               <button
                 onClick={() => {
                   setIsModalOpen(false)
-                  setSelectedCustomer(selectedCustomer)
                   setIsEditModalOpen(true)
                 }}
                 className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-medium hover:opacity-90 transition-opacity"
@@ -711,74 +687,17 @@ export default function Customers() {
                   />
                 </div>
 
-                {/* Address */}
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
-                    Address
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedCustomer.address || ''}
-                    onChange={(e) => setSelectedCustomer({...selectedCustomer, address: e.target.value})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
-                        : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                  />
-                </div>
-
-                {/* City */}
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedCustomer.city || ''}
-                    onChange={(e) => setSelectedCustomer({...selectedCustomer, city: e.target.value})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
-                        : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                  />
-                </div>
-
-                {/* Postal Code */}
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
-                    Postal Code
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedCustomer.postal_code || ''}
-                    onChange={(e) => setSelectedCustomer({...selectedCustomer, postal_code: e.target.value})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
-                        : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                  />
-                </div>
-
-                {/* Verification Status */}
+                {/* Newsletter Subscription */}
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    id="is_verified"
-                    checked={selectedCustomer.is_verified === 1}
-                    onChange={(e) => setSelectedCustomer({...selectedCustomer, is_verified: e.target.checked ? 1 : 0})}
+                    id="receive_offers"
+                    checked={selectedCustomer.receive_offers === 1 || selectedCustomer.receive_offers === true}
+                    onChange={(e) => setSelectedCustomer({...selectedCustomer, receive_offers: e.target.checked})}
                     className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500"
                   />
-                  <label htmlFor="is_verified" className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                    Verified Customer
+                  <label htmlFor="receive_offers" className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                    Subscribed to newsletter and offers
                   </label>
                 </div>
               </div>
