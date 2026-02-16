@@ -31,7 +31,7 @@
 //             <Link href="/" className="text-2xl lg:text-3xl font-extrabold tracking-tight drop-shadow-sm">
 //               WorkOnTap
 //             </Link>
-            
+
 //             {/* Desktop Navigation */}
 //             <div className="hidden md:flex items-center space-x-5 lg:space-x-7 text-sm lg:text-base font-medium">
 //               <Link href="/services" className="hover:text-green-100 transition duration-200 border-b-2 border-transparent hover:border-white pb-1">
@@ -41,7 +41,7 @@
 //                 Help Center
 //               </Link>
 //             </div>
-            
+
 //             {/* Desktop Auth Buttons */}
 //             <div className="hidden md:flex items-center space-x-3 lg:space-x-5">
 //               {user ? (
@@ -81,7 +81,7 @@
 //                 </>
 //               )}
 //             </div>
-            
+
 //             {/* Mobile Menu Button */}
 //             <button 
 //               className="block md:hidden text-2xl focus:outline-none p-2 hover:bg-green-700 rounded-lg transition"
@@ -91,7 +91,7 @@
 //               {mobileMenuOpen ? '✕' : '☰'}
 //             </button>
 //           </div>
-          
+
 //           {/* Mobile Menu */}
 //           {mobileMenuOpen && (
 //             <div className="md:hidden mt-4 pt-4 border-t border-green-600/30 animate-fadeIn">
@@ -111,7 +111,7 @@
 //                   Help Center
 //                 </Link>
 //                 <div className="border-t border-green-600/30 my-2"></div>
-                
+
 //                 {user ? (
 //                   // Mobile - Logged in
 //                   <>
@@ -251,7 +251,7 @@ export default function Header() {
             <Link href="/" className="text-2xl lg:text-3xl font-extrabold tracking-tight drop-shadow-sm">
               WorkOnTap
             </Link>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-5 lg:space-x-7 text-sm lg:text-base font-medium">
               <Link href="/services" className="hover:text-green-100 transition duration-200 border-b-2 border-transparent hover:border-white pb-1">
@@ -266,7 +266,7 @@ export default function Header() {
                 Help Center
               </Link>
             </div>
-            
+
             {/* Desktop Auth Buttons */}
             <div className="hidden md:flex items-center space-x-3 lg:space-x-5">
               {user ? (
@@ -291,7 +291,7 @@ export default function Header() {
               ) : (
                 // Not logged in - Show login/signup buttons
                 <>
-                  <button 
+                  <button
                     onClick={() => setIsLoginModalOpen(true)}
                     className="text-sm lg:text-base font-medium hover:text-green-100 px-3 py-2 rounded-lg hover:bg-green-700/50 transition"
                   >
@@ -306,9 +306,9 @@ export default function Header() {
                 </>
               )}
             </div>
-            
+
             {/* Mobile Menu Button */}
-            <button 
+            <button
               className="block md:hidden text-2xl focus:outline-none p-2 hover:bg-green-700 rounded-lg transition"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
@@ -316,36 +316,36 @@ export default function Header() {
               {mobileMenuOpen ? '✕' : '☰'}
             </button>
           </div>
-          
+
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 pt-4 border-t border-green-600/30 animate-fadeIn">
               <div className="flex flex-col space-y-3 pb-3">
-                <Link 
-                  href="/services" 
+                <Link
+                  href="/services"
                   className="text-white hover:bg-green-700 px-4 py-3 rounded-lg transition font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Explore Services
                 </Link>
                 {user && (
-                  <Link 
-                    href="/my-bookings" 
+                  <Link
+                    href="/my-bookings"
                     className="text-white hover:bg-green-700 px-4 py-3 rounded-lg transition font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     My Bookings
                   </Link>
                 )}
-                <Link 
-                  href="/help" 
+                <Link
+                  href="/help"
                   className="text-white hover:bg-green-700 px-4 py-3 rounded-lg transition font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Help Center
                 </Link>
                 <div className="border-t border-green-600/30 my-2"></div>
-                
+
                 {user ? (
                   // Mobile - Logged in
                   <>
@@ -412,7 +412,7 @@ export default function Header() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Logout Confirmation</h3>
               <p className="text-gray-600">
-                Are you sure you want to logout? You'll need to login again to access your account.
+                Are you sure you want to logout? You&apos;ll need to login again to access your account.
               </p>
             </div>
             <div className="flex gap-3">
@@ -434,7 +434,7 @@ export default function Header() {
       )}
 
       {/* Modals */}
-      <ProLoginModal 
+      <ProLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onSwitchToSignup={() => {
@@ -442,7 +442,7 @@ export default function Header() {
           setIsSignupModalOpen(true);
         }}
       />
-      <ProSignupModal 
+      <ProSignupModal
         isOpen={isSignupModalOpen}
         onClose={() => setIsSignupModalOpen(false)}
         onSwitchToLogin={() => {

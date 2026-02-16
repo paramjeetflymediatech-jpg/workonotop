@@ -11,13 +11,13 @@ export default function BookingConfirmPage() {
   const [scheduleData, setScheduleData] = useState(null);
   const [detailsData, setDetailsData] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Auth state
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('signup'); // 'signup' or 'login'
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  
+
   // Form state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -30,7 +30,7 @@ export default function BookingConfirmPage() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [address, setAddress] = useState('123 8 Avenue Southwest, Suite 504, Calgary AB');
-  
+
   // UI state
   const [submitting, setSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -40,14 +40,14 @@ export default function BookingConfirmPage() {
     const savedSchedule = sessionStorage.getItem('bookingSchedule');
     const savedDetails = sessionStorage.getItem('bookingDetails');
     const savedUser = localStorage.getItem('workontap_user');
-    
+
     if (savedSchedule && savedDetails) {
       setScheduleData(JSON.parse(savedSchedule));
       setDetailsData(JSON.parse(savedDetails));
     } else {
       router.push('/services');
     }
-    
+
     // Check if user is already logged in
     if (savedUser) {
       const user = JSON.parse(savedUser);
@@ -58,7 +58,7 @@ export default function BookingConfirmPage() {
       setEmail(user.email);
       setPhone(user.phone || '');
     }
-    
+
     setLoading(false);
   }, []);
 
@@ -95,7 +95,7 @@ export default function BookingConfirmPage() {
       });
 
       const data = await res.json();
-      
+
       if (data.success) {
         // Save user to localStorage
         localStorage.setItem('workontap_user', JSON.stringify(data.user));
@@ -128,7 +128,7 @@ export default function BookingConfirmPage() {
       });
 
       const data = await res.json();
-      
+
       if (data.success) {
         // Save user to localStorage
         localStorage.setItem('workontap_user', JSON.stringify(data.user));
@@ -162,7 +162,7 @@ export default function BookingConfirmPage() {
 
   const handleSubmitBooking = async (e) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated) {
       setShowAuthModal(true);
       return;
@@ -231,7 +231,7 @@ export default function BookingConfirmPage() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 font-sans antialiased">
-      <Header/>
+      <Header />
 
       {/* Breadcrumbs */}
       <div className="bg-white border-b border-gray-200 py-3">
@@ -254,7 +254,7 @@ export default function BookingConfirmPage() {
 
       <div className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-6xl mx-auto">
-          
+
           {/* Progress Tracker */}
           <div className="mb-10 md:mb-12">
             <div className="flex items-center justify-between mb-3">
@@ -263,7 +263,7 @@ export default function BookingConfirmPage() {
             </div>
             <div className="relative">
               <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-green-600 to-green-500 rounded-full" style={{width: '100%'}}></div>
+                <div className="h-full bg-gradient-to-r from-green-600 to-green-500 rounded-full" style={{ width: '100%' }}></div>
               </div>
               <div className="flex justify-between mt-2">
                 <div className="flex flex-col items-start">
@@ -289,7 +289,7 @@ export default function BookingConfirmPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-            
+
             {/* Left Column - Account Info */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -299,12 +299,12 @@ export default function BookingConfirmPage() {
                     {isAuthenticated ? 'Confirm Your Booking' : 'Create an account to continue'}
                   </h2>
                   <p className="text-green-100 text-sm mt-1 ml-1">
-                    {isAuthenticated 
-                      ? `You're logged in as ${currentUser?.email}` 
-                      : 'You\'re one step away from connecting with trusted pros'}
+                    {isAuthenticated
+                      ? `You're logged in as ${currentUser?.email}`
+                      : 'You&apos;re one step away from connecting with trusted pros'}
                   </p>
                 </div>
-                
+
                 <div className="p-6 md:p-8">
                   {isAuthenticated ? (
                     // Logged in view
@@ -360,7 +360,7 @@ export default function BookingConfirmPage() {
                           </div>
                           <div className="ml-3 text-sm">
                             <label htmlFor="terms" className="text-gray-600">
-                              I agree to workontap's{' '}
+                              I agree to workontap&apos;s{' '}
                               <Link href="/terms" className="text-green-700 hover:text-green-800 font-medium underline">
                                 Terms of Service
                               </Link>{' '}
@@ -410,7 +410,7 @@ export default function BookingConfirmPage() {
                         >
                           Sign Up
                         </button>
-                        
+
                         <button
                           onClick={() => {
                             setAuthMode('login');
@@ -422,7 +422,7 @@ export default function BookingConfirmPage() {
                         </button>
 
                         <p className="text-xs text-gray-500 mt-4">
-                          By continuing, you agree to Jiffy's{' '}
+                          By continuing, you agree to Jiffy&apos;s{' '}
                           <Link href="/terms" className="text-green-700 hover:underline">
                             Terms
                           </Link>{' '}
@@ -437,10 +437,10 @@ export default function BookingConfirmPage() {
                       <div className="mt-8 pt-6 border-t border-gray-200">
                         <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                           <span className="text-green-700">🛡️</span>
-                          You're Protected with Jiffy
+                          You&apos;re Protected with Jiffy
                         </div>
                         <p className="text-xs text-gray-500 mt-2 max-w-md mx-auto">
-                          We're proud to back every job with our Homeowner Protection Promise so you can be confident you're getting a high level of service every time.
+                          We&apos;re proud to back every job with our Homeowner Protection Promise so you can be confident you&apos;re getting a high level of service every time.
                           <Link href="/guarantee" className="text-green-700 ml-1 hover:underline">
                             Learn More
                           </Link>
@@ -455,7 +455,7 @@ export default function BookingConfirmPage() {
             {/* Right Column - Booking Summary (same as before) */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
-                
+
                 <div className="bg-white rounded-2xl border-2 border-green-100 overflow-hidden shadow-xl">
                   <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-5">
                     <h3 className="text-xl font-bold text-white flex items-center">
@@ -463,7 +463,7 @@ export default function BookingConfirmPage() {
                       Your booking
                     </h3>
                   </div>
-                  
+
                   <div className="p-6">
                     <div className="flex items-start space-x-3 mb-4 pb-4 border-b border-gray-200">
                       <div className="bg-green-100 rounded-xl p-3">
@@ -527,7 +527,7 @@ export default function BookingConfirmPage() {
                   <div className="flex items-start space-x-4">
                     <div className="text-4xl">🛡️</div>
                     <div>
-                      <h4 className="font-bold text-xl mb-2">You're Protected with Jiffy</h4>
+                      <h4 className="font-bold text-xl mb-2">You&apos;re Protected with Jiffy</h4>
                       <p className="text-green-100 text-sm mb-4 leading-relaxed">
                         We back every job with our Homeowner Protection Promise. All pros are licensed, background-checked, and well-rated.
                       </p>
@@ -550,14 +550,14 @@ export default function BookingConfirmPage() {
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            
+
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-5 sticky top-0">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white">
                   {authMode === 'signup' ? 'Sign Up' : 'Log In'}
                 </h2>
-                <button 
+                <button
                   onClick={() => setShowAuthModal(false)}
                   className="text-white/80 hover:text-white transition"
                 >
@@ -567,8 +567,8 @@ export default function BookingConfirmPage() {
                 </button>
               </div>
               <p className="text-green-100 text-sm mt-1">
-                {authMode === 'signup' 
-                  ? 'Create a free account with Jiffy' 
+                {authMode === 'signup'
+                  ? 'Create a free account with Jiffy'
                   : 'Welcome back to Jiffy'}
               </p>
             </div>
@@ -699,7 +699,7 @@ export default function BookingConfirmPage() {
                       className="mt-1 w-4 h-4 text-green-600 border-2 border-gray-300 rounded"
                     />
                     <label htmlFor="offers" className="ml-2 text-sm text-gray-600">
-                      Yes! I'd like to receive news and special offers from Jiffy.
+                      Yes! I&apos;d like to receive news and special offers from Jiffy.
                     </label>
                   </div>
 
@@ -712,7 +712,7 @@ export default function BookingConfirmPage() {
                   </button>
 
                   <p className="text-xs text-center text-gray-500 mt-4">
-                    By signing up you're agreeing to Jiffy's{' '}
+                    By signing up you&apos;re agreeing to Jiffy&apos;s{' '}
                     <Link href="/terms" className="text-green-700 hover:underline">
                       Terms and Conditions
                     </Link>
@@ -770,7 +770,7 @@ export default function BookingConfirmPage() {
                   </button>
 
                   <div className="text-center mt-4">
-                    <span className="text-sm text-gray-600">Don't have an account? </span>
+                    <span className="text-sm text-gray-600">Don&apos;t have an account? </span>
                     <button
                       type="button"
                       onClick={() => {
