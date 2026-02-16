@@ -75,36 +75,36 @@ export default function AdminDashboard() {
         inProgressJobs: bookings.filter(b => b.status === 'in_progress').length,
         completedJobs: bookings.filter(b => b.status === 'completed').length,
         cancelledJobs: bookings.filter(b => b.status === 'cancelled').length,
-        
+
         // Customer stats
         totalCustomers: customers.length,
-        newCustomers: customers.filter(c => 
+        newCustomers: customers.filter(c =>
           new Date(c.created_at) > weekAgo
         ).length,
-        
+
         // Services stats
         totalServices: servicesArray.length,
         totalCategories: categoriesArray.length,
         activeServices: servicesArray.filter(s => s.is_active === 1).length,
-        
+
         // Revenue stats
         totalRevenue: bookings.reduce((sum, b) => {
           const servicePrice = parseFloat(b.service_price || 0)
           const additionalPrice = parseFloat(b.additional_price || 0)
           return sum + servicePrice + additionalPrice
         }, 0),
-        
+
         // Additional metrics
-        jobsThisWeek: bookings.filter(b => 
+        jobsThisWeek: bookings.filter(b =>
           new Date(b.created_at) > weekAgo
         ).length,
-        
-        averageJobValue: bookings.length > 0 
+
+        averageJobValue: bookings.length > 0
           ? bookings.reduce((sum, b) => {
-              const servicePrice = parseFloat(b.service_price || 0)
-              const additionalPrice = parseFloat(b.additional_price || 0)
-              return sum + servicePrice + additionalPrice
-            }, 0) / bookings.length
+            const servicePrice = parseFloat(b.service_price || 0)
+            const additionalPrice = parseFloat(b.additional_price || 0)
+            return sum + servicePrice + additionalPrice
+          }, 0) / bookings.length
           : 0
       }
 
@@ -135,10 +135,10 @@ export default function AdminDashboard() {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     })
   }
 
@@ -171,22 +171,20 @@ export default function AdminDashboard() {
     <div className="p-4 sm:p-6 lg:p-8">
       {/* Welcome Header */}
       <div className="mb-8">
-        <h1 className={`text-3xl sm:text-4xl font-bold mb-2 ${
-          isDarkMode ? 'text-white' : 'text-gray-900'
-        }`}>
+        <h1 className={`text-3xl sm:text-4xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
           Dashboard Overview
         </h1>
         <p className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>
-          Welcome back! Here's what's happening with your business today.
+          Welcome back! Here&apos;s what&apos;s happening with your business today.
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Total Jobs Card */}
-        <div className={`rounded-xl shadow-lg p-6 border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+          }`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
               Total Jobs
@@ -206,9 +204,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Total Customers Card */}
-        <div className={`rounded-xl shadow-lg p-6 border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+          }`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
               Total Customers
@@ -226,9 +223,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Total Services Card */}
-        <div className={`rounded-xl shadow-lg p-6 border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+          }`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
               Services
@@ -248,9 +244,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Revenue Card */}
-        <div className={`rounded-xl shadow-lg p-6 border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+          }`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
               Total Revenue
@@ -272,9 +267,8 @@ export default function AdminDashboard() {
 
       {/* Job Status Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className={`rounded-xl shadow-lg p-6 border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+          }`}>
           <h2 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             Job Status Distribution
           </h2>
@@ -284,7 +278,7 @@ export default function AdminDashboard() {
               <span className="font-semibold text-yellow-600">{stats.pendingJobs}</span>
             </div>
             <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-              <div 
+              <div
                 className="bg-yellow-600 h-2 rounded-full transition-all"
                 style={{ width: `${stats.totalJobs > 0 ? (stats.pendingJobs / stats.totalJobs) * 100 : 0}%` }}
               ></div>
@@ -295,7 +289,7 @@ export default function AdminDashboard() {
               <span className="font-semibold text-blue-600">{stats.confirmedJobs}</span>
             </div>
             <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all"
                 style={{ width: `${stats.totalJobs > 0 ? (stats.confirmedJobs / stats.totalJobs) * 100 : 0}%` }}
               ></div>
@@ -306,7 +300,7 @@ export default function AdminDashboard() {
               <span className="font-semibold text-purple-600">{stats.inProgressJobs}</span>
             </div>
             <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-              <div 
+              <div
                 className="bg-purple-600 h-2 rounded-full transition-all"
                 style={{ width: `${stats.totalJobs > 0 ? (stats.inProgressJobs / stats.totalJobs) * 100 : 0}%` }}
               ></div>
@@ -317,7 +311,7 @@ export default function AdminDashboard() {
               <span className="font-semibold text-green-600">{stats.completedJobs}</span>
             </div>
             <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-              <div 
+              <div
                 className="bg-green-600 h-2 rounded-full transition-all"
                 style={{ width: `${stats.totalJobs > 0 ? (stats.completedJobs / stats.totalJobs) * 100 : 0}%` }}
               ></div>
@@ -326,17 +320,15 @@ export default function AdminDashboard() {
         </div>
 
         {/* Categories Overview */}
-        <div className={`rounded-xl shadow-lg p-6 border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+          }`}>
           <h2 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             Service Categories
           </h2>
           <div className="space-y-3">
             {categories.slice(0, 4).map((category) => (
-              <div key={category.id} className={`flex items-center justify-between p-3 rounded-lg ${
-                isDarkMode ? 'bg-slate-800' : 'bg-gray-50'
-              }`}>
+              <div key={category.id} className={`flex items-center justify-between p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'
+                }`}>
                 <div className="flex items-center gap-3">
                   <div className="text-2xl">{category.icon || '📦'}</div>
                   <div>
@@ -348,11 +340,10 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  category.is_active 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                <span className={`px-2 py-1 rounded text-xs font-medium ${category.is_active
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                }`}>
+                  }`}>
                   {category.is_active ? 'Active' : 'Inactive'}
                 </span>
               </div>
@@ -362,9 +353,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Bookings */}
-      <div className={`rounded-xl shadow-lg border overflow-hidden ${
-        isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-      }`}>
+      <div className={`rounded-xl shadow-lg border overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+        }`}>
         <div className={`p-6 border-b ${isDarkMode ? 'border-slate-800' : 'border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -378,40 +368,34 @@ export default function AdminDashboard() {
             </button>
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           {recentBookings.length > 0 ? (
             <table className="w-full">
               <thead className={isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}>
                 <tr>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${
-                    isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                  }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                    }`}>
                     ID
                   </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${
-                    isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                  }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                    }`}>
                     Customer
                   </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${
-                    isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                  }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                    }`}>
                     Service
                   </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${
-                    isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                  }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                    }`}>
                     Date
                   </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${
-                    isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                  }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                    }`}>
                     Status
                   </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${
-                    isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                  }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                    }`}>
                     Amount
                   </th>
                 </tr>
@@ -419,9 +403,8 @@ export default function AdminDashboard() {
               <tbody className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-200'}`}>
                 {recentBookings.map((booking) => (
                   <tr key={booking.id} className={isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-50'}>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>
                       #{booking.id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -432,14 +415,12 @@ export default function AdminDashboard() {
                         {booking.customer_email}
                       </div>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>
                       {booking.service_name}
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${
-                      isDarkMode ? 'text-slate-400' : 'text-gray-500'
-                    }`}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'
+                      }`}>
                       {formatDate(booking.job_date)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -447,9 +428,8 @@ export default function AdminDashboard() {
                         {booking.status?.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>
                       {formatCurrency(parseFloat(booking.service_price || 0) + parseFloat(booking.additional_price || 0))}
                     </td>
                   </tr>
