@@ -441,6 +441,7 @@ const schemaSql = [
     user_id INT NULL,
     booking_number VARCHAR(50) UNIQUE NOT NULL,
     service_id INT NOT NULL,
+    provider_id INT NULL,
     service_name VARCHAR(200),
     service_price DECIMAL(10,2) NOT NULL,
     additional_price DECIMAL(10,2) DEFAULT 0.00,
@@ -465,6 +466,7 @@ const schemaSql = [
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE SET NULL,
     INDEX idx_status (status),
     INDEX idx_email (customer_email),
     INDEX idx_date (job_date)
@@ -510,7 +512,7 @@ async function initializeSchema() {
     const dbName = process.env.DB_NAME || 'workontap_db';
     await connection.query(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
     console.log(`✓ Database ${dbName} created/verified`);
-    
+
     // Use the database
     await connection.query(`USE ${dbName}`);
     await connection.end();
@@ -522,14 +524,14 @@ async function initializeSchema() {
     // Step 3: Create tables
     console.log('🏗️  Step 2: Creating tables...');
     let tableCount = 0;
-    
+
     for (const sql of schemaSql) {
       try {
         // Skip USE statement for execution
         if (sql.startsWith('USE')) continue;
-        
+
         await pool.execute(sql);
-        
+
         // Extract table name for better logging
         if (sql.includes('CREATE TABLE')) {
           const tableName = sql.match(/CREATE TABLE.*?(\w+)/)?.[1] || 'table';
@@ -560,6 +562,42 @@ async function initializeSchema() {
     });
 
     // Final success message
+    // Step 5: Verify and Update Schema (Add missing columns if needed)
+    console.log('🔄 Step 4: Checking for schema updates...');
+
+    // Check bookings table for missing columns
+    try {
+      const [bookingColumns] = await pool.query("SHOW COLUMNS FROM bookings");
+      const hasUserId = bookingColumns.some(col => col.Field === 'user_id');
+      const hasProviderId = bookingColumns.some(col => col.Field === 'provider_id');
+
+      if (!hasUserId) {
+        console.log('  ⚠ user_id column missing in bookings. Adding it...');
+        await pool.query(`
+          ALTER TABLE bookings 
+          ADD COLUMN user_id INT NULL AFTER id,
+          ADD CONSTRAINT fk_bookings_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        `);
+        console.log('  ✓ user_id column added');
+      }
+
+      if (!hasProviderId) {
+        console.log('  ⚠ provider_id column missing in bookings. Adding it...');
+        await pool.query(`
+          ALTER TABLE bookings 
+          ADD COLUMN provider_id INT NULL AFTER service_id,
+          ADD CONSTRAINT fk_bookings_provider_id FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE SET NULL
+        `);
+        console.log('  ✓ provider_id column added');
+      }
+
+      if (hasUserId && hasProviderId) {
+        console.log('  ✓ Schema is up to date');
+      }
+
+    } catch (error) {
+      console.error('  ⚠ Error checking schema updates:', error.message);
+    }
     console.log('\n✅ Database schema initialization completed successfully!');
     console.log(`📊 Database: ${dbName}`);
     console.log(`📍 Host: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 3306}`);
