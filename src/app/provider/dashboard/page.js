@@ -27,7 +27,7 @@ export default function ProviderDashboard() {
       router.push('/')
       return
     }
-    
+
     // Check if user is provider (has token)
     const token = localStorage.getItem('providerToken')
     if (!token) {
@@ -58,7 +58,7 @@ export default function ProviderDashboard() {
           'Authorization': `Bearer ${token}`
         }
       })
-      
+
       if (!res.ok) {
         if (res.status === 401) {
           logout()
@@ -67,12 +67,12 @@ export default function ProviderDashboard() {
         }
         throw new Error('Failed to load jobs')
       }
-      
+
       const data = await res.json()
-      
+
       if (data.success) {
         setJobs(data.data || [])
-        
+
         // Calculate stats
         const newStats = {
           pending: 0,
@@ -81,7 +81,7 @@ export default function ProviderDashboard() {
           completed: 0,
           totalEarnings: 0
         }
-        
+
         data.data.forEach(job => {
           if (job.status === 'pending' || job.status === 'matching') newStats.pending++
           if (job.status === 'confirmed') newStats.confirmed++
@@ -91,7 +91,7 @@ export default function ProviderDashboard() {
             newStats.totalEarnings += parseFloat(job.service_price) + parseFloat(job.additional_price || 0)
           }
         })
-        
+
         setStats(newStats)
       }
     } catch (error) {
@@ -113,7 +113,7 @@ export default function ProviderDashboard() {
         },
         body: JSON.stringify({ status: newStatus })
       })
-      
+
       const data = await res.json()
       if (data.success) {
         showMessage('success', `Job status updated to ${newStatus.replace('_', ' ')}`)
@@ -197,7 +197,7 @@ export default function ProviderDashboard() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Welcome back, {user?.name || user?.first_name || 'Provider'}!
             </h1>
-            <p className="text-gray-600">Here's what's happening with your jobs today.</p>
+            <p className="text-gray-600">Here&apos;s what&apos;s happening with your jobs today.</p>
           </div>
 
           {/* Stats Cards */}
@@ -236,7 +236,7 @@ export default function ProviderDashboard() {
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">My Assigned Jobs</h2>
-              <Link 
+              <Link
                 href="/provider/jobs"
                 className="text-sm text-green-600 hover:text-green-700 font-medium"
               >
@@ -256,9 +256,9 @@ export default function ProviderDashboard() {
                             {job.status?.replace('_', ' ')}
                           </span>
                         </div>
-                        
+
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">{job.service_name}</h3>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                           <div>
                             <p className="text-xs text-gray-500">Customer</p>
@@ -320,8 +320,8 @@ export default function ProviderDashboard() {
 
                 {jobs.length > 5 && (
                   <div className="p-4 text-center border-t border-gray-200">
-                    <Link 
-                      href="/provider/jobs" 
+                    <Link
+                      href="/provider/jobs"
                       className="text-green-600 hover:text-green-700 font-medium"
                     >
                       View all {jobs.length} jobs →
@@ -333,7 +333,7 @@ export default function ProviderDashboard() {
               <div className="p-12 text-center">
                 <div className="text-6xl mb-4">📋</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No jobs assigned yet</h3>
-                <p className="text-gray-600 mb-6">When you get assigned jobs, they'll appear here</p>
+                <p className="text-gray-600 mb-6">When you get assigned jobs, they&apos;ll appear here</p>
                 <Link
                   href="/provider/profile"
                   className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
@@ -357,7 +357,7 @@ export default function ProviderDashboard() {
                 </div>
               </div>
             </Link>
-            
+
             <Link href="/provider/schedule" className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition border border-gray-200">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl">
@@ -369,7 +369,7 @@ export default function ProviderDashboard() {
                 </div>
               </div>
             </Link>
-            
+
             <Link href="/provider/earnings" className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition border border-gray-200">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-2xl">
