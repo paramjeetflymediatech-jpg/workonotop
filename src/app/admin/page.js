@@ -44,7 +44,6 @@ export default function AdminDashboard() {
     if (typeof window === 'undefined') return
     setLoading(true)
     try {
-      // Fetch all data in parallel
       const [bookingsRes, customersRes, servicesRes, categoriesRes] = await Promise.all([
         fetch('/api/bookings'),
         fetch('/api/customers'),
@@ -57,18 +56,15 @@ export default function AdminDashboard() {
       const servicesData = await servicesRes.json()
       const categoriesData = await categoriesRes.json()
 
-      // Extract data arrays
       const bookings = bookingsData.data || []
       const customers = customersData.data || []
       const servicesArray = servicesData.data || []
       const categoriesArray = categoriesData.data || []
 
-      // Calculate statistics
       const now = new Date()
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
       const calculatedStats = {
-        // Bookings/Jobs stats
         totalJobs: bookings.length,
         pendingJobs: bookings.filter(b => b.status === 'pending').length,
         confirmedJobs: bookings.filter(b => b.status === 'confirmed').length,
@@ -76,25 +72,21 @@ export default function AdminDashboard() {
         completedJobs: bookings.filter(b => b.status === 'completed').length,
         cancelledJobs: bookings.filter(b => b.status === 'cancelled').length,
 
-        // Customer stats
         totalCustomers: customers.length,
         newCustomers: customers.filter(c =>
           new Date(c.created_at) > weekAgo
         ).length,
 
-        // Services stats
         totalServices: servicesArray.length,
         totalCategories: categoriesArray.length,
         activeServices: servicesArray.filter(s => s.is_active === 1).length,
 
-        // Revenue stats
         totalRevenue: bookings.reduce((sum, b) => {
           const servicePrice = parseFloat(b.service_price || 0)
           const additionalPrice = parseFloat(b.additional_price || 0)
           return sum + servicePrice + additionalPrice
         }, 0),
 
-        // Additional metrics
         jobsThisWeek: bookings.filter(b =>
           new Date(b.created_at) > weekAgo
         ).length,
@@ -151,7 +143,6 @@ export default function AdminDashboard() {
     }).format(amount || 0)
   }
 
-  // Prevent hydration mismatch by not rendering until mounted
   if (!mounted) {
     return null
   }

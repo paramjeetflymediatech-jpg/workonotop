@@ -1,17 +1,17 @@
-// app/booking/success/[id]/page.js
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, use } from 'react'; // 👈 use import karo
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
+import { useAuth } from 'src/context/AuthContext';
 
 export default function BookingSuccessPage({ params }) {
-  // 👇 Params ko unwrap karo using React.use()
   const unwrappedParams = use(params);
   const bookingId = unwrappedParams.id;
   
   const router = useRouter();
+  const { user, login } = useAuth();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,14 +19,22 @@ export default function BookingSuccessPage({ params }) {
     if (bookingId) {
       fetchBooking();
     }
-  }, [bookingId]); // 👈 ab bookingId use karo
+  }, [bookingId]);
 
   const fetchBooking = async () => {
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`); // 👈 bookingId use karo
+      const res = await fetch(`/api/bookings/${bookingId}`);
       const data = await res.json();
       if (data.success) {
         setBooking(data.data);
+        
+        // Update auth context if user exists in localStorage
+        if (!user) {
+          const savedUser = localStorage.getItem('workontap_user');
+          if (savedUser) {
+            login(JSON.parse(savedUser), 'customer');
+          }
+        }
       }
     } catch (error) {
       console.error('Error:', error);
@@ -97,19 +105,31 @@ export default function BookingSuccessPage({ params }) {
               </div>
               <div className="flex justify-between py-3 border-b border-gray-200">
                 <span className="text-gray-600">Time</span>
-                <span className="font-semibold text-gray-900 capitalize">{booking.job_time_slot}</span>
+                <span className="font-semibold text-gray-900 capitalize">
+                  {Array.isArray(booking.job_time_slot) 
+                    ? booking.job_time_slot.join(', ') 
+                    : booking.job_time_slot}
+                </span>
               </div>
               <div className="flex justify-between py-3 border-b border-gray-200">
                 <span className="text-gray-600">Total</span>
-                <span className="font-bold text-green-700">${parseFloat(booking.service_price).toFixed(2)}</span>
+                <span className="font-bold text-green-700">
+                  ${(parseFloat(booking.service_price) + parseFloat(booking.additional_price || 0)).toFixed(2)}
+                </span>
               </div>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/" className="px-8 py-3 bg-green-700 text-white rounded-xl font-semibold hover:bg-green-800 transition shadow-lg">
+              <Link 
+                href="/" 
+                className="px-8 py-3 bg-green-700 text-white rounded-xl font-semibold hover:bg-green-800 transition shadow-lg"
+              >
                 Return Home
               </Link>
-              <Link href="/my-bookings" className="px-8 py-3 border-2 border-green-700 text-green-700 rounded-xl font-semibold hover:bg-green-50 transition">
+              <Link 
+                href="/my-bookings" 
+                className="px-8 py-3 border-2 border-green-700 text-green-700 rounded-xl font-semibold hover:bg-green-50 transition"
+              >
                 View My Bookings
               </Link>
             </div>

@@ -1,4 +1,11 @@
-// app/booking/confirm/page.js (COMPLETE COPY-PASTE VERSION)
+
+
+
+
+
+
+
+
 'use client';
 
 import Link from 'next/link';
@@ -12,13 +19,11 @@ export default function BookingConfirmPage() {
   const [detailsData, setDetailsData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Auth state
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState('signup'); // 'signup' or 'login'
+  const [authMode, setAuthMode] = useState('signup');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // Form state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,13 +34,11 @@ export default function BookingConfirmPage() {
   const [receiveOffers, setReceiveOffers] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [address, setAddress] = useState('123 8 Avenue Southwest, Suite 504, Calgary AB');
+  const [address, setAddress] = useState('');
 
-  // UI state
   const [submitting, setSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  // Check for existing session on load
   useEffect(() => {
     const savedSchedule = sessionStorage.getItem('bookingSchedule');
     const savedDetails = sessionStorage.getItem('bookingDetails');
@@ -43,12 +46,16 @@ export default function BookingConfirmPage() {
 
     if (savedSchedule && savedDetails) {
       setScheduleData(JSON.parse(savedSchedule));
-      setDetailsData(JSON.parse(savedDetails));
+      const details = JSON.parse(savedDetails);
+      setDetailsData(details);
+      
+      if (details.address) {
+        setAddress(details.address);
+      }
     } else {
       router.push('/services');
     }
 
-    // Check if user is already logged in
     if (savedUser) {
       const user = JSON.parse(savedUser);
       setCurrentUser(user);
@@ -60,7 +67,7 @@ export default function BookingConfirmPage() {
     }
 
     setLoading(false);
-  }, []);
+  }, [router]);
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -97,7 +104,6 @@ export default function BookingConfirmPage() {
       const data = await res.json();
 
       if (data.success) {
-        // Save user to localStorage
         localStorage.setItem('workontap_user', JSON.stringify(data.user));
         setCurrentUser(data.user);
         setIsAuthenticated(true);
@@ -130,7 +136,6 @@ export default function BookingConfirmPage() {
       const data = await res.json();
 
       if (data.success) {
-        // Save user to localStorage
         localStorage.setItem('workontap_user', JSON.stringify(data.user));
         setCurrentUser(data.user);
         setIsAuthenticated(true);
@@ -160,60 +165,129 @@ export default function BookingConfirmPage() {
     setPassword('');
   };
 
-  const handleSubmitBooking = async (e) => {
-    e.preventDefault();
+  // const handleSubmitBooking = async (e) => {
+  //   e.preventDefault();
 
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
+  //   if (!isAuthenticated) {
+  //     setShowAuthModal(true);
+  //     return;
+  //   }
 
-    setSubmitting(true);
+  //   setSubmitting(true);
 
-    const bookingPayload = {
-      service_id: scheduleData.service_id,
-      service_name: scheduleData.service_name,
-      service_price: scheduleData.service_price,
-      additional_price: scheduleData.additional_price || 0,
-      first_name: firstName,
-      last_name: lastName,
-      email: email,
-      phone: phone,
-      job_date: scheduleData.job_date,
-      job_time_slot: scheduleData.job_time_slot,
-      timing_constraints: scheduleData.timing_constraints,
-      job_description: detailsData.job_description,
-      instructions: detailsData.instructions,
-      parking_access: detailsData.parking_access,
-      elevator_access: detailsData.elevator_access,
-      has_pets: detailsData.has_pets,
-      address_line1: address,
-      city: 'Calgary',
-      photos: detailsData.photos || [],
-      user_id: currentUser?.id
-    };
+  //   const bookingPayload = {
+  //     service_id: scheduleData.service_id,
+  //     service_name: scheduleData.service_name,
+  //     service_price: scheduleData.service_price,
+  //     additional_price: scheduleData.additional_price || 0,
+  //     first_name: firstName,
+  //     last_name: lastName,
+  //     email: email,
+  //     phone: phone,
+  //     job_date: scheduleData.job_date,
+  //     job_time_slot: scheduleData.job_time_slot,
+  //     timing_constraints: scheduleData.timing_constraints,
+  //     job_description: detailsData.job_description,
+  //     instructions: detailsData.instructions,
+  //     parking_access: detailsData.parking_access,
+  //     elevator_access: detailsData.elevator_access,
+  //     has_pets: detailsData.has_pets,
+  //     address_line1: address,
+  //     city: 'Calgary',
+  //     province: 'AB',
+  //     postal_code: '',
+  //     photos: detailsData.photos || [],
+  //     user_id: currentUser?.id
+  //   };
 
-    try {
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookingPayload)
-      });
+  //   try {
+  //     const res = await fetch('/api/bookings', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify(bookingPayload)
+  //     });
 
-      const data = await res.json();
-      if (data.success) {
-        sessionStorage.clear();
-        router.push(`/booking/success/${data.booking_id}`);
-      } else {
-        alert('Something went wrong. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Something went wrong. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
+  //     const data = await res.json();
+  //     if (data.success) {
+  //       sessionStorage.clear();
+  //       router.push(`/booking/success/${data.booking_id}`);
+  //     } else {
+  //       alert('Something went wrong. Please try again.');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error:', error);
+  //     alert('Something went wrong. Please try again.');
+  //   } finally {
+  //     setSubmitting(false);
+  //   }
+  // };
+
+
+
+
+  // Find this function in your BookingConfirmPage component
+const handleSubmitBooking = async (e) => {
+  e.preventDefault();
+
+  if (!isAuthenticated) {
+    setShowAuthModal(true);
+    return;
+  }
+
+  setSubmitting(true);
+
+  const bookingPayload = {
+    service_id: scheduleData.service_id,
+    service_name: scheduleData.service_name,
+    service_price: scheduleData.service_price,
+    additional_price: scheduleData.additional_price || 0,
+    first_name: firstName,
+    last_name: lastName,
+    email: email,
+    phone: phone,
+    job_date: scheduleData.job_date,
+    job_time_slot: scheduleData.job_time_slot, // This is already an array from sessionStorage
+    timing_constraints: scheduleData.timing_constraints,
+    job_description: detailsData.job_description,
+    instructions: detailsData.instructions,
+    parking_access: detailsData.parking_access,
+    elevator_access: detailsData.elevator_access,
+    has_pets: detailsData.has_pets,
+    address_line1: address,
+    city: 'Calgary',
+    province: 'AB',
+    postal_code: '',
+    photos: detailsData.photos || [],
+    user_id: currentUser?.id
   };
+
+  try {
+    const res = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bookingPayload)
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      sessionStorage.clear();
+      router.push(`/booking/success/${data.booking_id}`);
+    } else {
+      alert('Something went wrong. Please try again.');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Something went wrong. Please try again.');
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+
+
+
+
+
 
   if (loading || !scheduleData || !detailsData) {
     return (
@@ -233,7 +307,6 @@ export default function BookingConfirmPage() {
     <div className="min-h-screen bg-gray-50/50 font-sans antialiased">
       <Header />
 
-      {/* Breadcrumbs */}
       <div className="bg-white border-b border-gray-200 py-3">
         <div className="container mx-auto px-4">
           <div className="flex items-center text-sm text-gray-600">
@@ -255,7 +328,6 @@ export default function BookingConfirmPage() {
       <div className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-6xl mx-auto">
 
-          {/* Progress Tracker */}
           <div className="mb-10 md:mb-12">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm md:text-base font-bold text-green-700 bg-green-100 px-4 py-1.5 rounded-full">STEP 3 OF 3</span>
@@ -290,7 +362,6 @@ export default function BookingConfirmPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
 
-            {/* Left Column - Account Info */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                 <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-5">
@@ -307,7 +378,6 @@ export default function BookingConfirmPage() {
 
                 <div className="p-6 md:p-8">
                   {isAuthenticated ? (
-                    // Logged in view
                     <div>
                       <div className="bg-green-50 rounded-xl p-6 border-2 border-green-200 mb-6">
                         <div className="flex items-center justify-between">
@@ -330,20 +400,22 @@ export default function BookingConfirmPage() {
                         </div>
                       </div>
 
-                      <div className="mb-6">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Service address <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition outline-none"
-                          required
-                        />
-                        <p className="text-xs text-gray-500 mt-2">
-                          Your address is kept private until you accept a pro
-                        </p>
+                      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <div className="flex items-start">
+                          <svg className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                          </svg>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">Service Address</h4>
+                            <p className="text-sm text-gray-700">{address}</p>
+                            <Link href="/booking/details" className="text-xs text-blue-700 hover:text-blue-800 font-medium mt-2 inline-flex items-center">
+                              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                              </svg>
+                              Edit address
+                            </Link>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="mb-6">
@@ -360,7 +432,7 @@ export default function BookingConfirmPage() {
                           </div>
                           <div className="ml-3 text-sm">
                             <label htmlFor="terms" className="text-gray-600">
-                              I agree to workontap&apos;s{' '}
+                              I agree to WorkOnTap&apos;s{' '}
                               <Link href="/terms" className="text-green-700 hover:text-green-800 font-medium underline">
                                 Terms of Service
                               </Link>{' '}
@@ -392,7 +464,6 @@ export default function BookingConfirmPage() {
                       </button>
                     </div>
                   ) : (
-                    // Not logged in - Show Sign Up / Login buttons
                     <div className="text-center py-8">
                       <div className="mb-8">
                         <span className="text-6xl mb-4 block">🔐</span>
@@ -422,7 +493,7 @@ export default function BookingConfirmPage() {
                         </button>
 
                         <p className="text-xs text-gray-500 mt-4">
-                          By continuing, you agree to Jiffy&apos;s{' '}
+                          By continuing, you agree to WorkOnTap&apos;s{' '}
                           <Link href="/terms" className="text-green-700 hover:underline">
                             Terms
                           </Link>{' '}
@@ -433,11 +504,10 @@ export default function BookingConfirmPage() {
                         </p>
                       </div>
 
-                      {/* Protection Promise */}
                       <div className="mt-8 pt-6 border-t border-gray-200">
                         <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                           <span className="text-green-700">🛡️</span>
-                          You&apos;re Protected with Jiffy
+                          You&apos;re Protected with WorkOnTap
                         </div>
                         <p className="text-xs text-gray-500 mt-2 max-w-md mx-auto">
                           We&apos;re proud to back every job with our Homeowner Protection Promise so you can be confident you&apos;re getting a high level of service every time.
@@ -452,7 +522,6 @@ export default function BookingConfirmPage() {
               </div>
             </div>
 
-            {/* Right Column - Booking Summary (same as before) */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
 
@@ -481,13 +550,43 @@ export default function BookingConfirmPage() {
                         </svg>
                         <span className="font-semibold text-gray-800">{formatDate(scheduleData.job_date)}</span>
                       </div>
-                      <div className="flex gap-2 ml-7">
+                      {/* <div className="flex gap-2 ml-7">
                         <span className="px-3 py-1 bg-green-700 text-white text-xs font-medium rounded-full capitalize">
                           {scheduleData.job_time_slot === 'morning' && '🌅 '}
                           {scheduleData.job_time_slot === 'afternoon' && '☀️ '}
                           {scheduleData.job_time_slot === 'evening' && '🌙 '}
                           {scheduleData.job_time_slot}
                         </span>
+                      </div> */}
+
+
+
+                      {/* Replace the single time slot display with this */}
+<div className="flex flex-wrap gap-2 mt-2">
+  {scheduleData.job_time_slot?.map((time) => (
+    <span key={time} className="px-3 py-1 bg-green-700 text-white text-xs font-medium rounded-full capitalize flex items-center">
+      {time === 'morning' && '🌅'}
+      {time === 'afternoon' && '☀️'}
+      {time === 'evening' && '🌙'}
+      <span className="ml-1">{time}</span>
+    </span>
+  ))}
+</div>
+
+
+
+
+                    </div>
+
+                    <div className="mb-4 pb-4 border-b border-gray-200">
+                      <div className="flex items-start">
+                        <svg className="w-5 h-5 text-green-700 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                          <p className="text-sm text-gray-700 font-medium mb-1">Service Location</p>
+                          <p className="text-xs text-gray-600">{address}</p>
+                        </div>
                       </div>
                     </div>
 
@@ -522,12 +621,11 @@ export default function BookingConfirmPage() {
                   </div>
                 </div>
 
-                {/* Protection Promise Badge */}
                 <div className="bg-gradient-to-br from-green-800 to-green-700 rounded-2xl p-6 text-white shadow-lg">
                   <div className="flex items-start space-x-4">
                     <div className="text-4xl">🛡️</div>
                     <div>
-                      <h4 className="font-bold text-xl mb-2">You&apos;re Protected with Jiffy</h4>
+                      <h4 className="font-bold text-xl mb-2">You&apos;re Protected with WorkOnTap</h4>
                       <p className="text-green-100 text-sm mb-4 leading-relaxed">
                         We back every job with our Homeowner Protection Promise. All pros are licensed, background-checked, and well-rated.
                       </p>
@@ -546,12 +644,10 @@ export default function BookingConfirmPage() {
         </div>
       </div>
 
-      {/* Auth Modal - Sign Up / Login */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
 
-            {/* Modal Header */}
             <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-5 sticky top-0">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white">
@@ -568,13 +664,12 @@ export default function BookingConfirmPage() {
               </div>
               <p className="text-green-100 text-sm mt-1">
                 {authMode === 'signup'
-                  ? 'Create a free account with Jiffy'
-                  : 'Welcome back to Jiffy'}
+                  ? 'Create a free account with WorkOnTap'
+                  : 'Welcome back to WorkOnTap'}
               </p>
             </div>
 
             <div className="p-6">
-              {/* Error Message */}
               {authError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700 text-sm">
                   <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -585,7 +680,6 @@ export default function BookingConfirmPage() {
               )}
 
               {authMode === 'signup' ? (
-                /* Sign Up Form */
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -699,7 +793,7 @@ export default function BookingConfirmPage() {
                       className="mt-1 w-4 h-4 text-green-600 border-2 border-gray-300 rounded"
                     />
                     <label htmlFor="offers" className="ml-2 text-sm text-gray-600">
-                      Yes! I&apos;d like to receive news and special offers from Jiffy.
+                      Yes! I&apos;d like to receive news and special offers from WorkOnTap.
                     </label>
                   </div>
 
@@ -712,7 +806,7 @@ export default function BookingConfirmPage() {
                   </button>
 
                   <p className="text-xs text-center text-gray-500 mt-4">
-                    By signing up you&apos;re agreeing to Jiffy&apos;s{' '}
+                    By signing up you&apos;re agreeing to WorkOnTap&apos;s{' '}
                     <Link href="/terms" className="text-green-700 hover:underline">
                       Terms and Conditions
                     </Link>
@@ -733,7 +827,6 @@ export default function BookingConfirmPage() {
                   </div>
                 </form>
               ) : (
-                /* Login Form */
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -785,7 +878,6 @@ export default function BookingConfirmPage() {
                 </form>
               )}
 
-              {/* Trust badges */}
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center">
@@ -803,12 +895,11 @@ export default function BookingConfirmPage() {
         </div>
       )}
 
-      {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-16 py-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
             <div className="flex items-center space-x-4">
-              <Link href="/" className="text-green-800 font-extrabold text-lg">Jiffy</Link>
+              <Link href="/" className="text-green-800 font-extrabold text-lg">WorkOnTap</Link>
               <span>© 2026</span>
             </div>
             <div className="flex space-x-6 mt-4 md:mt-0">

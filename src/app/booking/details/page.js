@@ -558,6 +558,11 @@
 
 
 // app/booking/details/page.js
+
+
+
+
+
 'use client';
 
 import Link from 'next/link';
@@ -575,33 +580,37 @@ export default function BookingDetailsPage() {
   const [parkingAccess, setParkingAccess] = useState(false);
   const [elevatorAccess, setElevatorAccess] = useState(false);
   const [hasPets, setHasPets] = useState(false);
+  const [address, setAddress] = useState('123 8 Avenue Southwest, Suite 504, Calgary AB');
   const fileInputRef = useRef(null);
 
   const maxDescriptionLength = 500;
-  const maxFileSize = 10 * 1024 * 1024; // 10MB
+  const maxFileSize = 10 * 1024 * 1024;
   const maxPhotos = 5;
 
-  // Get schedule data from session storage
   useEffect(() => {
     const saved = sessionStorage.getItem('bookingSchedule');
+    const savedAddress = sessionStorage.getItem('userAddress');
+    
     if (saved) {
       setScheduleData(JSON.parse(saved));
     } else {
       router.push('/services');
     }
-  }, []);
+    
+    if (savedAddress) {
+      setAddress(savedAddress);
+    }
+  }, [router]);
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
     setUploadError('');
 
-    // Check total photos limit
     if (photos.length + files.length > maxPhotos) {
       setUploadError(`You can only upload up to ${maxPhotos} photos`);
       return;
     }
 
-    // Validate each file before upload
     for (let file of files) {
       if (file.size > maxFileSize) {
         setUploadError('Some files exceed the 10MB limit');
@@ -615,7 +624,6 @@ export default function BookingDetailsPage() {
 
     setUploading(true);
 
-    // Upload each file
     const uploadPromises = files.map(async (file) => {
       const formData = new FormData();
       formData.append('file', file);
@@ -658,14 +666,14 @@ export default function BookingDetailsPage() {
   };
 
   const handleContinue = () => {
-    // Save details data to session storage
     const detailsData = {
       job_description: jobDescription,
       instructions: '',
       parking_access: parkingAccess,
       elevator_access: elevatorAccess,
       has_pets: hasPets,
-      photos: photos  // Now these are actual URLs, not object URLs
+      photos: photos,
+      address: address
     };
     
     sessionStorage.setItem('bookingDetails', JSON.stringify(detailsData));
@@ -690,7 +698,6 @@ export default function BookingDetailsPage() {
     <div className="min-h-screen bg-gray-50/50 font-sans antialiased">
       <Header/>
 
-      {/* Breadcrumbs */}
       <div className="bg-white border-b border-gray-200 py-3">
         <div className="container mx-auto px-4">
           <div className="flex items-center text-sm text-gray-600">
@@ -710,7 +717,6 @@ export default function BookingDetailsPage() {
       <div className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-6xl mx-auto">
           
-          {/* Progress Tracker */}
           <div className="mb-10 md:mb-12">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm md:text-base font-bold text-green-700 bg-green-100 px-4 py-1.5 rounded-full">STEP 2 OF 3</span>
@@ -752,10 +758,40 @@ export default function BookingDetailsPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             
-            {/* Left Column - Main Form */}
             <div className="lg:col-span-2 space-y-8">
               
-              {/* Job Description Card */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-5">
+                  <h2 className="text-xl md:text-2xl font-bold text-white flex items-center">
+                    <span className="mr-3 text-2xl">📍</span>
+                    Where do you need service?
+                  </h2>
+                  <p className="text-green-100 text-sm mt-1 ml-1">
+                    Your exact address helps us match you with nearby pros
+                  </p>
+                </div>
+                
+                <div className="p-6 md:p-8">
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">
+                    Service Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition outline-none text-gray-700"
+                    placeholder="Enter your full service address"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-3 flex items-center">
+                    <svg className="w-4 h-4 text-green-600 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                    </svg>
+                    Your address is kept private until you accept a pro
+                  </p>
+                </div>
+              </div>
+
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                 <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-5">
                   <h2 className="text-xl md:text-2xl font-bold text-white flex items-center">
@@ -789,7 +825,6 @@ export default function BookingDetailsPage() {
                 </div>
               </div>
 
-              {/* Photo Upload Card */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                 <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-5">
                   <h2 className="text-xl md:text-2xl font-bold text-white flex items-center">
@@ -802,7 +837,6 @@ export default function BookingDetailsPage() {
                 </div>
                 
                 <div className="p-6 md:p-8">
-                  {/* Upload error message */}
                   {uploadError && (
                     <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700 text-sm">
                       <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -812,7 +846,6 @@ export default function BookingDetailsPage() {
                     </div>
                   )}
 
-                  {/* Photo grid */}
                   {photos.length > 0 && (
                     <div className="mb-6">
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -840,7 +873,6 @@ export default function BookingDetailsPage() {
                     </div>
                   )}
 
-                  {/* Upload area */}
                   {photos.length < maxPhotos ? (
                     <label className={`
                       border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer
@@ -901,7 +933,6 @@ export default function BookingDetailsPage() {
                 </div>
               </div>
 
-              {/* Access & Safety Card */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                 <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-5">
                   <h2 className="text-xl md:text-2xl font-bold text-white flex items-center">
@@ -963,7 +994,6 @@ export default function BookingDetailsPage() {
                 </div>
               </div>
 
-              {/* Navigation Buttons */}
               <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4">
                 <Link href="/booking/schedule" className="sm:order-1">
                   <button className="w-full sm:w-auto px-8 py-4 border-2 border-gray-300 rounded-xl hover:bg-gray-100 hover:border-gray-400 transition font-medium text-gray-700 flex items-center justify-center">
@@ -976,11 +1006,11 @@ export default function BookingDetailsPage() {
                 
                 <button 
                   onClick={handleContinue}
-                  disabled={jobDescription.length < 20 || uploading}
+                  disabled={jobDescription.length < 20 || uploading || !address.trim()}
                   className={`
                     w-full sm:w-auto px-10 py-4 rounded-xl font-bold text-lg shadow-lg
                     flex items-center justify-center transition-all duration-300
-                    ${jobDescription.length >= 20 && !uploading
+                    ${jobDescription.length >= 20 && !uploading && address.trim()
                       ? 'bg-gradient-to-r from-green-700 to-green-600 text-white hover:from-green-800 hover:to-green-700 hover:scale-[1.02] shadow-green-200' 
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }
@@ -993,26 +1023,16 @@ export default function BookingDetailsPage() {
                 </button>
               </div>
               
-              {jobDescription.length < 20 && jobDescription.length > 0 && (
+              {(jobDescription.length < 20 || !address.trim()) && (
                 <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg flex items-center">
                   <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
-                  Please write at least 20 characters to help pros understand your job
-                </p>
-              )}
-              
-              {jobDescription.length === 0 && (
-                <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg flex items-center">
-                  <svg className="w-5 h-5 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                  </svg>
-                  Describe your job to continue
+                  {!address.trim() ? 'Please enter your service address' : 'Please write at least 20 characters to help pros understand your job'}
                 </p>
               )}
             </div>
 
-            {/* Right Column - Booking Summary */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
                 
@@ -1027,7 +1047,7 @@ export default function BookingDetailsPage() {
                   <div className="p-6">
                     <div className="flex items-start space-x-3 mb-5 pb-5 border-b border-gray-200">
                       <div className="bg-green-100 rounded-xl p-3">
-                        <span className="text-2xl">🔌</span>
+                        <span className="text-2xl">🔧</span>
                       </div>
                       <div>
                         <h4 className="font-bold text-gray-900">{scheduleData.service_name}</h4>
@@ -1121,3 +1141,6 @@ export default function BookingDetailsPage() {
     </div>
   );
 }
+
+
+

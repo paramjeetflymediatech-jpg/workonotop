@@ -117,20 +117,45 @@ function ScheduleContent() {
     setSelectedDate(null);
   };
 
-  const handleContinue = () => {
-    const scheduleData = {
-      service_id: service.id,
-      service_name: service.name,
-      service_price: service.base_price,
-      additional_price: service.additional_price,
-      job_date: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`,
-      job_time_slot: selectedTimes[0],
-      timing_constraints: timingConstraints
-    };
+  // const handleContinue = () => {
+  //   const scheduleData = {
+  //     service_id: service.id,
+  //     service_name: service.name,
+  //     service_price: service.base_price,
+  //     additional_price: service.additional_price,
+  //     job_date: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`,
+  //     job_time_slot: selectedTimes[0],
+  //     timing_constraints: timingConstraints
+  //   };
     
-    sessionStorage.setItem('bookingSchedule', JSON.stringify(scheduleData));
-    router.push('/booking/details');
+  //   sessionStorage.setItem('bookingSchedule', JSON.stringify(scheduleData));
+  //   router.push('/booking/details');
+  // };
+
+
+
+
+  // Find this function in your ScheduleContent component
+const handleContinue = () => {
+  const scheduleData = {
+    service_id: service.id,
+    service_name: service.name,
+    service_price: service.base_price,
+    additional_price: service.additional_price,
+    job_date: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`,
+    job_time_slot: selectedTimes, // Store ALL selected times as array
+    timing_constraints: timingConstraints
   };
+  
+  sessionStorage.setItem('bookingSchedule', JSON.stringify(scheduleData));
+  router.push('/booking/details');
+};
+
+
+
+
+
+
 
   if (loading) {
     return (

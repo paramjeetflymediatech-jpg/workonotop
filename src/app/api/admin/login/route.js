@@ -4,30 +4,21 @@ import { query } from "@/lib/db";
 
 export async function POST(request) {
   try {
-    const { username, password } = await request.json();
+    const { email, password } = await request.json();
 
-    console.log("USERNAME",username);
-    console.log("PASSWORD",password);
-
-    
-
-    if (!username || !password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { success: false, message: "Username and password are required" },
+        { success: false, message: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    // Query the database for the admin user
-    const [users] = await query(
-      "SELECT * FROM admin_users WHERE username = ? AND is_active = TRUE",
-      [username]
+    const users = await query(
+      "SELECT * FROM users WHERE email = ? AND role = 'admin'",
+      [email]
     );
 
-    const user = users; // query returns the first element directly in some mysql2 wrappers or as the first element of an array
-
-    // Fallback if query returns an array (depends on lib/db.js implementation)
-    const adminUser = Array.isArray(users) ? users[0] : users;
+    const adminUser = users[0];
 
     if (!adminUser) {
       return NextResponse.json(
@@ -45,40 +36,28 @@ export async function POST(request) {
       );
     }
 
+    // Set cookie for middleware
     const response = NextResponse.json({
       success: true,
       message: "Login successful",
-      user: {
-        id: adminUser.id,
-        username: adminUser.username,
-        role: adminUser.role
-      }
+      token: "admin-logged-in" // Send token to client
     });
 
-    // Set cookie for authentication
-    response.cookies.set("adminAuth", "true", {
+    response.cookies.set("adminAuth", "admin", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
     });
 
     return response;
+
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
+    console.error("Login error:", error);
     return NextResponse.json(
-      { success: false, message: "Something went wrong" },
+      { success: false, message: "Server error" },
       { status: 500 }
     );
   }
 }
-
-
-
-
-
-
-
-
-

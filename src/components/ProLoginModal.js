@@ -1,27 +1,58 @@
-// src/components/ProLoginModal.js
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-export default function ProLoginModal({ isOpen, onClose, onSwitchToSignup }) {
+export default function ProLoginModal({ isOpen, onClose, onSwitchToSignup, onLoginSuccess }) {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    // API call later
-    setTimeout(() => {
+
+    try {
+      const res = await fetch('/api/provider/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          email: formData.email,
+          password: formData.password,
+          rememberMe: formData.rememberMe
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        // Store token and provider data
+        localStorage.setItem('providerToken', data.token);
+        localStorage.setItem('provider', JSON.stringify(data.provider));
+        
+        // Call the success callback with user data and type
+        onLoginSuccess?.(data.provider, 'provider');
+        
+        // Close modal (routing will be handled by the header)
+        onClose();
+      } else {
+        setError(data.message || 'Login failed. Please try again.');
+      }
+    } catch (error) {
+      setError('Network error. Please check your connection.');
+    } finally {
       setLoading(false);
-      onClose();
-    }, 1000);
+    }
   };
 
   return (
@@ -58,6 +89,13 @@ export default function ProLoginModal({ isOpen, onClose, onSwitchToSignup }) {
 
         {/* Form */}
         <div className="p-6">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>

@@ -1,10 +1,11 @@
-// src/components/ProSignupModal.js
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
+export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSignupSuccess }) {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -16,6 +17,7 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState('');
 
   if (!isOpen) return null;
 
@@ -35,19 +37,53 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiError('');
+    
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
+    
     setLoading(true);
-    // API call later
-    setTimeout(() => {
+
+    try {
+      const res = await fetch('/api/provider/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'signup',
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        // Store token and provider data
+        localStorage.setItem('providerToken', data.token);
+        localStorage.setItem('provider', JSON.stringify(data.provider));
+        
+        // Call the success callback with user data and type
+        onSignupSuccess?.(data.provider, 'provider');
+        
+        onClose();
+        router.push('/provider/dashboard');
+      } else {
+        setApiError(data.message || 'Signup failed. Please try again.');
+      }
+    } catch (error) {
+      setApiError('Network error. Please check your connection.');
+    } finally {
       setLoading(false);
-      onClose();
-    }, 1500);
+    }
   };
 
   return (
@@ -84,6 +120,13 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
 
         {/* Form */}
         <div className="p-6">
+          {/* API Error Message */}
+          {apiError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              {apiError}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name Row */}
             <div className="grid grid-cols-2 gap-3">
@@ -94,7 +137,10 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
                 <input
                   type="text"
                   value={formData.firstName}
-                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                  onChange={(e) => {
+                    setFormData({...formData, firstName: e.target.value});
+                    setErrors({...errors, firstName: null});
+                  }}
                   className={`w-full px-3 py-2.5 rounded-lg border-2 ${
                     errors.firstName ? 'border-red-500' : 'border-gray-200'
                   } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
@@ -111,7 +157,10 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
                 <input
                   type="text"
                   value={formData.lastName}
-                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                  onChange={(e) => {
+                    setFormData({...formData, lastName: e.target.value});
+                    setErrors({...errors, lastName: null});
+                  }}
                   className={`w-full px-3 py-2.5 rounded-lg border-2 ${
                     errors.lastName ? 'border-red-500' : 'border-gray-200'
                   } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
@@ -131,7 +180,10 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => {
+                  setFormData({...formData, email: e.target.value});
+                  setErrors({...errors, email: null});
+                }}
                 className={`w-full px-3 py-2.5 rounded-lg border-2 ${
                   errors.email ? 'border-red-500' : 'border-gray-200'
                 } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
@@ -150,7 +202,10 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
               <input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                onChange={(e) => {
+                  setFormData({...formData, phone: e.target.value});
+                  setErrors({...errors, phone: null});
+                }}
                 className={`w-full px-3 py-2.5 rounded-lg border-2 ${
                   errors.phone ? 'border-red-500' : 'border-gray-200'
                 } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
@@ -170,7 +225,10 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
                 <input
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onChange={(e) => {
+                    setFormData({...formData, password: e.target.value});
+                    setErrors({...errors, password: null});
+                  }}
                   className={`w-full px-3 py-2.5 rounded-lg border-2 ${
                     errors.password ? 'border-red-500' : 'border-gray-200'
                   } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
@@ -187,7 +245,10 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
                 <input
                   type="password"
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  onChange={(e) => {
+                    setFormData({...formData, confirmPassword: e.target.value});
+                    setErrors({...errors, confirmPassword: null});
+                  }}
                   className={`w-full px-3 py-2.5 rounded-lg border-2 ${
                     errors.confirmPassword ? 'border-red-500' : 'border-gray-200'
                   } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
@@ -205,7 +266,10 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin }) {
                 type="checkbox"
                 id="agreeTerms"
                 checked={formData.agreeTerms}
-                onChange={(e) => setFormData({...formData, agreeTerms: e.target.checked})}
+                onChange={(e) => {
+                  setFormData({...formData, agreeTerms: e.target.checked});
+                  setErrors({...errors, agreeTerms: null});
+                }}
                 className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-0.5"
               />
               <label htmlFor="agreeTerms" className="ml-2 text-xs text-gray-600">

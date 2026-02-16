@@ -1,27 +1,20 @@
-// app/page.js - Main Home Page
-// ✅ WorkOnTap green theme — fresh, trustworthy, attractive
-// ✅ MOBILE MENU TOGGLE FIXED - nav links visible on small screens
-// ✅ Animation working 100% - smooth typing effect
-// ✅ Search button removed - clean, minimal, eye-catching
-// ✅ Click anywhere on search bar redirects to /services
-// ✅ Fully responsive, mobile-optimized, Next.js compatible
-
 'use client';
 
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useAuth } from 'src/context/AuthContext';
 
 export default function HomePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [placeholder, setPlaceholder] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [loopNum, setLoopNum] = useState(0);
   const [typingSpeed, setTypingSpeed] = useState(100);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // Service examples - cycling animation
   const services = [
     'fridge not cooling',
     'leaky faucet',
@@ -35,7 +28,6 @@ export default function HomePage() {
     'sink clogged'
   ];
 
-  // FIXED: Proper typing effect with cleanup
   useEffect(() => {
     let timer;
     
@@ -80,18 +72,15 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
-    <Header/>
+      <Header/>
 
-      {/* ===== HERO – with FIXED animation & clean search ===== */}
       <section className="relative bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white overflow-hidden">
-        {/* Subtle pattern overlay */}
         <div className="absolute inset-0 opacity-10" style={{ 
           backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.3\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' 
         }}></div>
         
         <div className="container mx-auto px-4 py-12 lg:py-24 relative z-10">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
-            {/* Left hero content */}
             <div className="flex-1 text-center lg:text-left">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 drop-shadow-md">
                 Home maintenance <br className="hidden sm:block" />
@@ -101,7 +90,6 @@ export default function HomePage() {
                 Trusted local tradespeople • Free quotes • Verified reviews
               </p>
               
-              {/* ===== CLEAN SEARCH BAR - NO BUTTON, ANIMATION FIXED ===== */}
               <div 
                 className="bg-white rounded-2xl shadow-2xl p-1 flex items-center max-w-2xl lg:mx-0 mx-auto cursor-pointer hover:shadow-3xl transition-all duration-300 hover:scale-[1.02] border-2 border-transparent hover:border-green-300"
                 onClick={handleSearchClick}
@@ -122,7 +110,6 @@ export default function HomePage() {
                 </div>
               </div>
               
-              {/* Hint text */}
               <p className="text-white/90 text-sm sm:text-base md:text-lg mt-4 text-center lg:text-left flex items-center gap-2 justify-center lg:justify-start">
                 <span className="text-xl sm:text-2xl">🔍</span> 
                 <span className="font-medium">Click search or press Enter — see all services</span>
@@ -142,7 +129,6 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* Right hero graphic - hidden on mobile */}
             <div className="flex-1 hidden lg:flex justify-center">
               <div className="relative w-80 xl:w-96">
                 <div className="absolute inset-0 bg-green-500/20 rounded-full blur-3xl"></div>
@@ -162,7 +148,6 @@ export default function HomePage() {
           </div>
         </div>
         
-        {/* Wave separator */}
         <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
           <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
             <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white"/>
@@ -170,7 +155,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== STATS SECTION ===== */}
       <section className="py-12 md:py-16 lg:py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 lg:gap-10 text-center">
@@ -195,7 +179,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== HOW IT WORKS ===== */}
       <section className="py-12 md:py-16 lg:py-20 bg-gradient-to-b from-white to-green-50/30">
         <div className="container mx-auto px-4 text-center">
           <span className="text-green-700 font-semibold text-sm sm:text-base md:text-lg uppercase tracking-wider bg-green-100 px-3 sm:px-4 py-1 sm:py-2 rounded-full">Simple & fast</span>
@@ -204,7 +187,6 @@ export default function HomePage() {
           </h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {/* Step 1 */}
             <div className="bg-white rounded-xl md:rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition border border-gray-100 flex flex-col items-center group">
               <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-green-100 rounded-full flex items-center justify-center text-2xl sm:text-3xl md:text-4xl mb-4 md:mb-6 text-green-700 group-hover:scale-110 group-hover:bg-green-200 transition duration-300">
                 📋
@@ -212,7 +194,6 @@ export default function HomePage() {
               <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 md:mb-3">1. Tell us what you need</h3>
               <p className="text-sm sm:text-base text-gray-600">Choose date, time, and describe your job — takes 2 minutes.</p>
             </div>
-            {/* Step 2 */}
             <div className="bg-white rounded-xl md:rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition border border-gray-100 flex flex-col items-center group">
               <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-green-100 rounded-full flex items-center justify-center text-2xl sm:text-3xl md:text-4xl mb-4 md:mb-6 text-green-700 group-hover:scale-110 group-hover:bg-green-200 transition duration-300">
                 📱
@@ -220,7 +201,6 @@ export default function HomePage() {
               <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 md:mb-3">2. Instant matches</h3>
               <p className="text-sm sm:text-base text-gray-600">We find nearby certified pros — average 10 min response.</p>
             </div>
-            {/* Step 3 */}
             <div className="bg-white rounded-xl md:rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition border border-gray-100 flex flex-col items-center group">
               <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-green-100 rounded-full flex items-center justify-center text-2xl sm:text-3xl md:text-4xl mb-4 md:mb-6 text-green-700 group-hover:scale-110 group-hover:bg-green-200 transition duration-300">
                 👨‍🔧
@@ -228,7 +208,6 @@ export default function HomePage() {
               <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 md:mb-3">3. Pro arrives & fixes it</h3>
               <p className="text-sm sm:text-base text-gray-600">Relax while your WorkOnTap pro handles everything.</p>
             </div>
-            {/* Step 4 */}
             <div className="bg-white rounded-xl md:rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition border border-gray-100 flex flex-col items-center group">
               <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-green-100 rounded-full flex items-center justify-center text-2xl sm:text-3xl md:text-4xl mb-4 md:mb-6 text-green-700 group-hover:scale-110 group-hover:bg-green-200 transition duration-300">
                 💚
@@ -247,7 +226,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== GUARANTEE SECTION ===== */}
       <section className="py-12 md:py-16 lg:py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
@@ -298,7 +276,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== POPULAR SERVICES ===== */}
       <section className="py-12 md:py-16 lg:py-20 bg-green-50/50">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto mb-8 md:mb-12 lg:mb-14">
@@ -309,7 +286,6 @@ export default function HomePage() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
-            {/* Handyman */}
             <Link href="/services/handyman" className="group transform hover:-translate-y-2 transition duration-300">
               <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl border border-gray-100">
                 <div className="h-40 sm:h-44 md:h-52 bg-gradient-to-r from-green-100 to-green-200 flex items-center justify-center relative">
@@ -322,7 +298,6 @@ export default function HomePage() {
                 </div>
               </div>
             </Link>
-            {/* Electrical */}
             <Link href="/services/electrical" className="group transform hover:-translate-y-2 transition duration-300">
               <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl border border-gray-100">
                 <div className="h-40 sm:h-44 md:h-52 bg-gradient-to-r from-yellow-100 to-yellow-200 flex items-center justify-center">
@@ -335,7 +310,6 @@ export default function HomePage() {
                 </div>
               </div>
             </Link>
-            {/* Plumbing - hidden on mobile, visible on lg */}
             <Link href="/services/plumbing" className="group transform hover:-translate-y-2 transition duration-300 hidden lg:block">
               <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl border border-gray-100">
                 <div className="h-52 bg-gradient-to-r from-blue-100 to-blue-200 flex items-center justify-center">
@@ -361,7 +335,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== FOOTER ===== */}
       <footer className="bg-gray-900 text-gray-300 pt-12 md:pt-16 pb-6 md:pb-10">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-8">
@@ -425,7 +398,6 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* Add custom animation styles */}
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }
