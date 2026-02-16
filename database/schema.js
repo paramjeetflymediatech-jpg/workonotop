@@ -15,7 +15,7 @@ const initialConnection = async () => {
   return await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
+    password: process.env.DB_PASSWORD || 'root',
     port: process.env.DB_PORT || 3306
   });
 };
@@ -25,7 +25,7 @@ const createPool = () => {
   return mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
+    password: process.env.DB_PASSWORD || 'root',
     database: process.env.DB_NAME || 'workontap_db',
     port: process.env.DB_PORT || 3306,
     waitForConnections: true,
