@@ -1,160 +1,108 @@
+// app/api/provider/profile/route.js
+
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
 
-// GET provider profile
-export async function GET(request) {
+function verifyToken(request) {
+  const token = request.headers.get('Authorization')?.split(' ')[1]
+  if (!token) return null
   try {
-    // Get token from header
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.split(' ')[1]
-    
-    // Verify token
-    let decoded
-    try {
-      decoded = jwt.verify(token, JWT_SECRET)
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    const providerId = decoded.id
-
-    // Get provider profile
-    const providers = await query(
-      `SELECT 
-        id, name, email, phone, specialty, experience_years, 
-        rating, total_jobs, bio, avatar_url, location, status,
-        created_at
-      FROM service_providers 
-      WHERE id = ?`,
-      [providerId]
-    )
-
-    if (providers.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Provider not found' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: providers[0]
-    })
-
-  } catch (error) {
-    console.error('Error fetching provider profile:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch profile' },
-      { status: 500 }
-    )
+    return jwt.verify(token, JWT_SECRET)
+  } catch {
+    return null
   }
 }
 
-// PUT update provider profile
+// ── GET ───────────────────────────────────────────────────────────────────────
+export async function GET(request) {
+  try {
+    const decoded = verifyToken(request)
+    if (!decoded) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const providers = await query(
+      `SELECT id, name, email, phone, specialty, experience_years,
+              rating, total_jobs, bio, avatar_url, location, city, status,
+              DATE_FORMAT(created_at, '%Y-%m-%d') as join_date
+       FROM service_providers WHERE id = ?`,
+      [decoded.id]
+    )
+
+    if (providers.length === 0) {
+      return NextResponse.json({ success: false, message: 'Provider not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true, data: providers[0] })
+
+  } catch (error) {
+    console.error('Error fetching profile:', error)
+    return NextResponse.json({ success: false, message: 'Failed to fetch profile' }, { status: 500 })
+  }
+}
+
+// ── PUT ───────────────────────────────────────────────────────────────────────
 export async function PUT(request) {
   try {
-    // Get token from header
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
+    const decoded = verifyToken(request)
+    if (!decoded) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.split(' ')[1]
-    
-    // Verify token
-    let decoded
-    try {
-      decoded = jwt.verify(token, JWT_SECRET)
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    const providerId = decoded.id
     const body = await request.json()
-    const {
-      name,
-      phone,
-      specialty,
-      experience_years,
-      bio,
-      location,
-      avatar_url
-    } = body
+    const { name, email, phone, specialty, experience_years, bio, location, city, avatar_url } = body
 
-    // Build update query
-    let updateFields = []
-    let updateParams = []
-
-    if (name) {
-      updateFields.push('name = ?')
-      updateParams.push(name)
-    }
-    if (phone) {
-      updateFields.push('phone = ?')
-      updateParams.push(phone)
-    }
-    if (specialty !== undefined) {
-      updateFields.push('specialty = ?')
-      updateParams.push(specialty)
-    }
-    if (experience_years !== undefined) {
-      updateFields.push('experience_years = ?')
-      updateParams.push(experience_years)
-    }
-    if (bio !== undefined) {
-      updateFields.push('bio = ?')
-      updateParams.push(bio)
-    }
-    if (location !== undefined) {
-      updateFields.push('location = ?')
-      updateParams.push(location)
-    }
-    if (avatar_url !== undefined) {
-      updateFields.push('avatar_url = ?')
-      updateParams.push(avatar_url)
-    }
-
-    if (updateFields.length === 0) {
+    if (!name || !email || !phone) {
       return NextResponse.json(
-        { success: false, message: 'No fields to update' },
+        { success: false, message: 'Name, email and phone are required' },
         { status: 400 }
       )
     }
 
-    updateParams.push(providerId)
+    // Check email uniqueness
+    const existing = await query(
+      'SELECT id FROM service_providers WHERE email = ? AND id != ?',
+      [email, decoded.id]
+    )
+    if (existing.length > 0) {
+      return NextResponse.json({ success: false, message: 'Email already in use' }, { status: 400 })
+    }
 
     await query(
-      `UPDATE service_providers SET ${updateFields.join(', ')}, updated_at = NOW() WHERE id = ?`,
-      updateParams
+      `UPDATE service_providers SET
+        name             = ?,
+        email            = ?,
+        phone            = ?,
+        specialty        = ?,
+        experience_years = ?,
+        bio              = ?,
+        location         = ?,
+        city             = ?,
+        avatar_url       = COALESCE(?, avatar_url),
+        updated_at       = NOW()
+       WHERE id = ?`,
+      [
+        name,
+        email,
+        phone,
+        specialty        || null,
+        experience_years ? parseInt(experience_years) : null,
+        bio              || null,
+        location         || null,
+        city             || null,
+        avatar_url       || null,
+        decoded.id
+      ]
     )
 
-    // Get updated profile
     const providers = await query(
-      `SELECT 
-        id, name, email, phone, specialty, experience_years, 
-        rating, total_jobs, bio, avatar_url, location, status
-      FROM service_providers 
-      WHERE id = ?`,
-      [providerId]
+      `SELECT id, name, email, phone, specialty, experience_years,
+              rating, total_jobs, bio, avatar_url, location, city, status
+       FROM service_providers WHERE id = ?`,
+      [decoded.id]
     )
 
     return NextResponse.json({
@@ -164,10 +112,7 @@ export async function PUT(request) {
     })
 
   } catch (error) {
-    console.error('Error updating provider profile:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to update profile' },
-      { status: 500 }
-    )
+    console.error('Error updating profile:', error)
+    return NextResponse.json({ success: false, message: 'Failed to update profile' }, { status: 500 })
   }
 }

@@ -40,11 +40,19 @@ export default function ProLoginModal({ isOpen, onClose, onSwitchToSignup, onLog
         localStorage.setItem('providerToken', data.token);
         localStorage.setItem('provider', JSON.stringify(data.provider));
         
+        // Store profile image if exists
+        if (data.provider?.avatar_url) {
+          localStorage.setItem('providerProfileImage', data.provider.avatar_url);
+        }
+        
         // Call the success callback with user data and type
         onLoginSuccess?.(data.provider, 'provider');
         
-        // Close modal (routing will be handled by the header)
+        // Close modal
         onClose();
+        
+        // Redirect to provider dashboard
+        router.push('/provider/dashboard');
       } else {
         setError(data.message || 'Login failed. Please try again.');
       }
@@ -152,7 +160,7 @@ export default function ProLoginModal({ isOpen, onClose, onSwitchToSignup, onLog
                 href="#" 
                 className="text-sm text-green-700 hover:text-green-800 font-medium hover:underline"
               >
-                I forgot my password
+                Forgot password?
               </Link>
             </div>
 
@@ -168,7 +176,7 @@ export default function ProLoginModal({ isOpen, onClose, onSwitchToSignup, onLog
                   Logging in...
                 </>
               ) : (
-                'Login'
+                'Login to Dashboard'
               )}
             </button>
 

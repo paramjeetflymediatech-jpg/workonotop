@@ -15,6 +15,11 @@ export default function HomePage() {
   const [typingSpeed, setTypingSpeed] = useState(100);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
+  // State for dynamic homepage services
+  const [homepageServices, setHomepageServices] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const services = [
     'fridge not cooling',
     'leaky faucet',
@@ -27,6 +32,42 @@ export default function HomePage() {
     'door not closing properly',
     'sink clogged'
   ];
+
+  // Fetch homepage services and categories
+  useEffect(() => {
+    fetchHomepageData();
+  }, []);
+
+  const fetchHomepageData = async () => {
+    setLoading(true);
+    try {
+      // Fetch services with is_homepage = 1
+      const servicesRes = await fetch('/api/services?is_homepage=1');
+      const servicesData = await servicesRes.json();
+
+      // Fetch categories for icons
+      const categoriesRes = await fetch('/api/categories');
+      const categoriesData = await categoriesRes.json();
+
+      if (servicesData.success) {
+        setHomepageServices(servicesData.data || []);
+      }
+
+      if (categoriesData.success) {
+        setCategories(categoriesData.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading homepage data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper function to get category icon
+  const getCategoryIcon = (categoryId) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category?.icon || '🔧';
+  };
 
   useEffect(() => {
     let timer;
@@ -69,6 +110,14 @@ export default function HomePage() {
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-500 border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
@@ -276,6 +325,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* DYNAMIC SERVICES SECTION - Only shows services with is_homepage = 1 */}
       <section className="py-12 md:py-16 lg:py-20 bg-green-50/50">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto mb-8 md:mb-12 lg:mb-14">
@@ -285,44 +335,73 @@ export default function HomePage() {
             <p className="text-base md:text-lg text-gray-600">Trending services — book in under 2 minutes</p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
-            <Link href="/services/handyman" className="group transform hover:-translate-y-2 transition duration-300">
-              <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl border border-gray-100">
-                <div className="h-40 sm:h-44 md:h-52 bg-gradient-to-r from-green-100 to-green-200 flex items-center justify-center relative">
-                  <span className="text-5xl sm:text-6xl md:text-7xl group-hover:scale-110 transition duration-300">🔨</span>
-                </div>
-                <div className="p-4 md:p-6">
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-800 group-hover:text-green-700 transition">Handyman Services</h3>
-                  <p className="text-sm md:text-base text-gray-500 mt-1">Repairs, mounting, furniture</p>
-                  <span className="inline-block mt-2 md:mt-4 text-sm md:text-base text-green-600 font-semibold">Starting at $69</span>
-                </div>
-              </div>
-            </Link>
-            <Link href="/services/electrical" className="group transform hover:-translate-y-2 transition duration-300">
-              <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl border border-gray-100">
-                <div className="h-40 sm:h-44 md:h-52 bg-gradient-to-r from-yellow-100 to-yellow-200 flex items-center justify-center">
-                  <span className="text-5xl sm:text-6xl md:text-7xl group-hover:scale-110 transition duration-300">💡</span>
-                </div>
-                <div className="p-4 md:p-6">
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-800 group-hover:text-green-700 transition">Electrical</h3>
-                  <p className="text-sm md:text-base text-gray-500 mt-1">Fixtures, outlets, troubleshooting</p>
-                  <span className="inline-block mt-2 md:mt-4 text-sm md:text-base text-green-600 font-semibold">Starting at $89</span>
-                </div>
-              </div>
-            </Link>
-            <Link href="/services/plumbing" className="group transform hover:-translate-y-2 transition duration-300 hidden lg:block">
-              <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl border border-gray-100">
-                <div className="h-52 bg-gradient-to-r from-blue-100 to-blue-200 flex items-center justify-center">
-                  <span className="text-7xl group-hover:scale-110 transition duration-300">🔧</span>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold text-gray-800 group-hover:text-green-700 transition">Plumbing</h3>
-                  <p className="text-gray-500 mt-1">Leaks, drains, installations</p>
-                  <span className="inline-block mt-4 text-green-600 font-semibold">Starting at $99</span>
-                </div>
-              </div>
-            </Link>
-          </div>
+          {homepageServices.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
+              {homepageServices.slice(0, 3).map((service) => (
+                <Link
+                  key={service.id}
+                  href={`/services/${service.slug}`}
+                  className="group transform hover:-translate-y-2 transition duration-300"
+                >
+                  <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl border border-gray-100 h-full flex flex-col">
+                    {/* Image/Icon area */}
+                    <div className="h-40 sm:h-44 md:h-52 bg-gradient-to-r from-green-100 to-green-200 flex items-center justify-center relative">
+                      {service.image_url ? (
+                        <img
+                          src={service.image_url}
+                          alt={service.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-5xl sm:text-6xl md:text-7xl group-hover:scale-110 transition duration-300">
+                          {getCategoryIcon(service.category_id)}
+                        </span>
+                      )}
+                      {/* Popular badge if is_popular is true */}
+                      {service.is_popular === 1 && (
+                        <span className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
+                          🔥 Popular
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="p-4 md:p-6 flex-1 flex flex-col">
+                      <h3 className="text-xl md:text-2xl font-bold text-gray-800 group-hover:text-green-700 transition line-clamp-2 min-h-[3.5rem]">
+                        {service.name}
+                      </h3>
+                      
+                      {service.short_description && (
+                        <p className="text-sm md:text-base text-gray-500 mt-1 line-clamp-2">
+                          {service.short_description}
+                        </p>
+                      )}
+                      
+                      <div className="mt-3 flex items-end justify-between">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider">Starting at</p>
+                          <p className="text-xl md:text-2xl font-extrabold text-green-700">
+                            ${parseFloat(service.base_price).toFixed(0)}
+                          </p>
+                        </div>
+                        
+                        <div className="bg-green-100 rounded-full p-2 group-hover:bg-green-600 transition-colors duration-300">
+                          <svg className="w-5 h-5 text-green-700 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            // Fallback if no homepage services - show nothing or a message
+            <div className="text-center py-8">
+              <p className="text-gray-500">No trending services available at the moment.</p>
+            </div>
+          )}
           
           <div className="text-center mt-8 md:mt-12 lg:mt-14">
             <Link href="/services" className="inline-flex items-center bg-white border-2 border-green-700 text-green-800 px-6 md:px-8 lg:px-10 py-2 md:py-3 lg:py-4 rounded-full text-sm md:text-base lg:text-lg font-bold shadow-md hover:bg-green-700 hover:text-white transition duration-300">
@@ -405,6 +484,12 @@ export default function HomePage() {
         }
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out;
+        }
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
       `}</style>
     </div>

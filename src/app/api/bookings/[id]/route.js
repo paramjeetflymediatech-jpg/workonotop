@@ -1,77 +1,19 @@
-// // app/api/bookings/[id]/route.js
-// import { NextResponse } from 'next/server'
-// import { query } from '@/lib/db'
-
-// export async function GET(request, { params }) {
-//   try {
-//     const id = params.id
-
-//     const bookings = await query(
-//       `SELECT 
-//         b.*,
-//         s.name as service_name,
-//         s.slug as service_slug,
-//         s.image_url as service_image,
-//         s.description as service_description,
-//         c.name as category_name,
-//         c.icon as category_icon
-//       FROM bookings b
-//       LEFT JOIN services s ON b.service_id = s.id
-//       LEFT JOIN service_categories c ON s.category_id = c.id
-//       WHERE b.id = ? OR b.booking_number = ?`,
-//       [id, id]
-//     )
-
-//     if (bookings.length === 0) {
-//       return NextResponse.json(
-//         { success: false, message: 'Booking not found' },
-//         { status: 404 }
-//       )
-//     }
-
-//     const booking = bookings[0]
-
-//     // Get photos
-//     const photos = await query(
-//       'SELECT photo_url FROM booking_photos WHERE booking_id = ?',
-//       [booking.id]
-//     )
-//     booking.photos = photos.map(p => p.photo_url)
-
-//     // Get status history
-//     const history = await query(
-//       `SELECT * FROM booking_status_history 
-//        WHERE booking_id = ? 
-//        ORDER BY created_at DESC`,
-//       [booking.id]
-//     )
-//     booking.status_history = history
-
-//     return NextResponse.json({ success: true, data: booking })
-
-//   } catch (error) {
-//     console.error('Error fetching booking:', error)
-//     return NextResponse.json(
-//       { success: false, message: 'Failed to fetch booking' },
-//       { status: 500 }
-//     )
-//   }
-// }
 
 
 
 
 
+
+// app/api/bookings/[id]/route.js - UPDATED with service duration
 
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 
 export async function GET(request, { params }) {
   try {
-    // ✅ FIX: Await the params first (Next.js 15 requirement)
     const { id } = await params
 
-    // Get booking details with joins
+    // Get booking details with joins - include service duration
     const bookings = await query(
       `SELECT 
         b.*,
@@ -79,6 +21,7 @@ export async function GET(request, { params }) {
         s.slug as service_slug,
         s.image_url as service_image,
         s.description as service_description,
+        s.duration_minutes as service_duration,
         c.name as category_name,
         c.icon as category_icon,
         sp.name as provider_name,
@@ -102,7 +45,7 @@ export async function GET(request, { params }) {
 
     const booking = bookings[0]
 
-    // Handle time slots - convert from comma-separated string to array
+    // Handle time slots
     if (booking.job_time_slot) {
       booking.job_time_slot = booking.job_time_slot.split(',')
     }
@@ -122,6 +65,17 @@ export async function GET(request, { params }) {
       [booking.id]
     )
     booking.status_history = history
+
+    // Ensure numeric values are proper numbers
+    booking.service_price = parseFloat(booking.service_price || 0)
+    booking.additional_price = parseFloat(booking.additional_price || 0)
+    booking.provider_amount = parseFloat(booking.provider_amount || 0)
+    booking.overtime_earnings = parseFloat(booking.overtime_earnings || 0)
+    booking.final_provider_amount = booking.final_provider_amount ? parseFloat(booking.final_provider_amount) : null
+    booking.commission_percent = booking.commission_percent ? parseFloat(booking.commission_percent) : null
+    
+    // Add duration from service
+    booking.duration_minutes = booking.service_duration || 60
 
     return NextResponse.json({ success: true, data: booking })
 

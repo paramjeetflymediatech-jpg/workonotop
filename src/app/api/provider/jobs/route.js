@@ -1,194 +1,113 @@
+// app/api/provider/jobs/route.js - UPDATED with duration
+
 import { NextResponse } from 'next/server'
-import { query, getConnection } from '@/lib/db'
+import { query } from '@/lib/db'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
 
-// GET provider's assigned jobs
 export async function GET(request) {
   try {
-    // Get token from header
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
+    const token = request.headers.get('Authorization')?.split(' ')[1]
+    if (!token) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.split(' ')[1]
-    
-    // Verify token
     let decoded
     try {
       decoded = jwt.verify(token, JWT_SECRET)
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
+    } catch {
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
-    const providerId = decoded.id
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const limit = parseInt(searchParams.get('limit') || '50')
-
-    let sql = `
-      SELECT 
-        b.*,
-        s.name as service_name,
-        s.slug as service_slug,
-        s.image_url as service_image,
-        c.name as category_name,
-        u.first_name as customer_first_name,
-        u.last_name as customer_last_name,
-        u.email as customer_email,
-        u.phone as customer_phone
+    const jobs = await query(
+      `SELECT 
+        b.id,
+        b.booking_number,
+        b.service_name,
+        b.job_date,
+        b.job_time_slot,
+        b.address_line1,
+        b.city,
+        b.status,
+        b.created_at,
+        b.accepted_at,
+        b.start_time,
+        b.end_time,
+        b.actual_duration_minutes,
+        b.overtime_minutes,
+        b.overtime_earnings,
+        b.provider_amount,
+        b.final_provider_amount,
+        b.service_price,
+        b.additional_price,
+        b.commission_percent,
+        b.customer_first_name,
+        b.customer_last_name,
+        b.customer_email,
+        b.customer_phone,
+        b.job_description,
+        b.instructions,
+        b.parking_access,
+        b.elevator_access,
+        b.has_pets,
+        b.job_timer_status,
+        s.name as service_full_name,
+        s.duration_minutes,  /* Get duration from services table */
+        c.name as category_name
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
-      LEFT JOIN users u ON b.user_id = u.id
       WHERE b.provider_id = ?
-    `
-    const params = [providerId]
+      ORDER BY 
+        CASE b.status
+          WHEN 'in_progress' THEN 1
+          WHEN 'confirmed' THEN 2
+          WHEN 'completed' THEN 3
+          ELSE 4
+        END,
+        b.job_date DESC`,
+      [decoded.id]
+    )
 
-    if (status) {
-      sql += ' AND b.status = ?'
-      params.push(status)
-    }
-
-    sql += ` ORDER BY b.job_date ASC, b.created_at DESC LIMIT ${limit}`
-
-    const jobs = await query(sql, params)
-
-    // Get photos for each job
-    for (let job of jobs) {
+    // Parse and format data
+    for (const job of jobs) {
+      // Parse time slots
       if (job.job_time_slot) {
         job.job_time_slot = job.job_time_slot.split(',')
       }
-
-      const photos = await query(
-        'SELECT photo_url FROM booking_photos WHERE booking_id = ?',
-        [job.id]
-      )
-      job.photos = photos.map(p => p.photo_url)
+      
+      // Ensure numeric values
+      job.service_price = parseFloat(job.service_price || 0)
+      job.additional_price = parseFloat(job.additional_price || 0)
+      job.provider_amount = parseFloat(job.provider_amount || 0)
+      job.overtime_earnings = parseFloat(job.overtime_earnings || 0)
+      job.final_provider_amount = job.final_provider_amount ? parseFloat(job.final_provider_amount) : null
+      job.commission_percent = job.commission_percent ? parseFloat(job.commission_percent) : null
+      
+      // Add calculated fields
+      job.overtime_rate = job.additional_price
+      job.has_overtime = job.overtime_rate > 0
+      job.duration_minutes = job.duration_minutes || 60  // Default to 60 if not set
+      
+      // Calculate display amount
+      if (job.status === 'completed' && job.final_provider_amount) {
+        job.display_amount = job.final_provider_amount
+      } else {
+        job.display_amount = job.provider_amount
+      }
     }
 
-    return NextResponse.json({ success: true, data: jobs })
+    return NextResponse.json({
+      success: true,
+      data: jobs
+    })
 
   } catch (error) {
     console.error('Error fetching provider jobs:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch jobs' },
-      { status: 500 }
-    )
-  }
-}
-
-// PUT update job status (provider can update their assigned jobs)
-export async function PUT(request) {
-  let connection
-  
-  try {
-    // Get token from header
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.split(' ')[1]
-    
-    // Verify token
-    let decoded
-    try {
-      decoded = jwt.verify(token, JWT_SECRET)
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    const providerId = decoded.id
-    const { searchParams } = new URL(request.url)
-    const jobId = searchParams.get('id')
-    const body = await request.json()
-    const { status, notes } = body
-
-    if (!jobId) {
-      return NextResponse.json(
-        { success: false, message: 'Job ID is required' },
-        { status: 400 }
-      )
-    }
-
-    if (!status) {
-      return NextResponse.json(
-        { success: false, message: 'Status is required' },
-        { status: 400 }
-      )
-    }
-
-    // Verify that this job is assigned to this provider
-    const job = await query(
-      'SELECT provider_id FROM bookings WHERE id = ?',
-      [jobId]
-    )
-
-    if (job.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Job not found' },
-        { status: 404 }
-      )
-    }
-
-    if (job[0].provider_id !== providerId) {
-      return NextResponse.json(
-        { success: false, message: 'You are not authorized to update this job' },
-        { status: 403 }
-      )
-    }
-
-    connection = await getConnection()
-    await connection.query('START TRANSACTION')
-
-    try {
-      // Update job status
-      await connection.execute(
-        'UPDATE bookings SET status = ? WHERE id = ?',
-        [status, jobId]
-      )
-
-      // Add to status history
-      await connection.execute(
-        `INSERT INTO booking_status_history (booking_id, status, notes)
-         VALUES (?, ?, ?)`,
-        [jobId, status, notes || `Status updated to ${status}`]
-      )
-
-      await connection.query('COMMIT')
-
-      return NextResponse.json({
-        success: true,
-        message: 'Job status updated successfully'
-      })
-
-    } catch (error) {
-      if (connection) await connection.query('ROLLBACK')
-      throw error
-    } finally {
-      if (connection) connection.release()
-    }
-
-  } catch (error) {
-    console.error('Error updating job:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to update job' },
-      { status: 500 }
-    )
+    return NextResponse.json({ 
+      success: false, 
+      message: 'Failed to fetch jobs' 
+    }, { status: 500 })
   }
 }

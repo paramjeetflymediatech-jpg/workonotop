@@ -1,76 +1,40 @@
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/db'
+import jwt from 'jsonwebtoken'
 
-// GET all providers
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
+
+// GET provider profile
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const specialty = searchParams.get('specialty')
-    const limit = parseInt(searchParams.get('limit') || '100')
-
-    let sql = `
-      SELECT 
-        id, 
-        name, 
-        email, 
-        phone, 
-        specialty, 
-        experience_years, 
-        rating, 
-        total_jobs, 
-        bio, 
-        avatar_url, 
-        location, 
-        status,
-        created_at
-      FROM service_providers
-      WHERE 1=1
-    `
-    const params = []
-
-    if (status) {
-      sql += ' AND status = ?'
-      params.push(status)
-    }
-
-    if (specialty) {
-      sql += ' AND specialty LIKE ?'
-      params.push(`%${specialty}%`)
-    }
-
-    sql += ` ORDER BY rating DESC, total_jobs DESC LIMIT ${limit}`
-
-    const providers = await query(sql, params)
+    // Get token from header
+    const token = request.headers.get('Authorization')?.split(' ')[1]
     
-    return NextResponse.json({ 
-      success: true, 
-      data: providers,
-      count: providers.length 
-    })
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
 
-  } catch (error) {
-    console.error('Error fetching providers:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch providers' },
-      { status: 500 }
-    )
-  }
-}
+    // Verify token
+    let decoded
+    try {
+      decoded = jwt.verify(token, JWT_SECRET)
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid token' },
+        { status: 401 }
+      )
+    }
 
-// GET single provider by ID
-export async function GET_by_id(request, { params }) {
-  try {
-    const { id } = params
-
+    // Get provider profile
     const providers = await query(
-      `SELECT 
-        id, name, email, phone, specialty, experience_years, 
-        rating, total_jobs, bio, avatar_url, location, status,
-        created_at, updated_at
-      FROM service_providers 
-      WHERE id = ?`,
-      [id]
+      `SELECT id, name, email, phone, specialty, experience_years,
+              rating, total_jobs, bio, avatar_url, location, status,
+              DATE_FORMAT(created_at, '%Y-%m-%d') as join_date
+       FROM service_providers WHERE id = ?`,
+      [decoded.id]
     )
 
     if (providers.length === 0) {
@@ -80,23 +44,59 @@ export async function GET_by_id(request, { params }) {
       )
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data: providers[0] 
+    const provider = providers[0]
+
+    // Parse skills if stored as JSON
+    let skills = []
+    if (provider.skills) {
+      try {
+        skills = JSON.parse(provider.skills)
+      } catch {
+        skills = []
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...provider,
+        skills
+      }
     })
 
   } catch (error) {
-    console.error('Error fetching provider:', error)
+    console.error('Error fetching profile:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch provider' },
+      { success: false, message: 'Failed to fetch profile' },
       { status: 500 }
     )
   }
 }
 
-// POST create new provider
-export async function POST(request) {
+// UPDATE provider profile
+export async function PUT(request) {
   try {
+    // Get token from header
+    const token = request.headers.get('Authorization')?.split(' ')[1]
+    
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Verify token
+    let decoded
+    try {
+      decoded = jwt.verify(token, JWT_SECRET)
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid token' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const {
       name,
@@ -105,7 +105,9 @@ export async function POST(request) {
       specialty,
       experience_years,
       bio,
-      location
+      location,
+      skills,
+      avatar_url
     } = body
 
     // Validation
@@ -116,183 +118,66 @@ export async function POST(request) {
       )
     }
 
-    // Check if email already exists
-    const existing = await query(
-      'SELECT id FROM service_providers WHERE email = ?',
-      [email]
-    )
-
-    if (existing.length > 0) {
-      return NextResponse.json(
-        { success: false, message: 'Email already registered' },
-        { status: 400 }
+    // Check if email exists for another provider
+    if (email) {
+      const existing = await query(
+        'SELECT id FROM service_providers WHERE email = ? AND id != ?',
+        [email, decoded.id]
       )
+      if (existing.length > 0) {
+        return NextResponse.json(
+          { success: false, message: 'Email already in use' },
+          { status: 400 }
+        )
+      }
     }
 
-    // Insert new provider
-    const result = await query(
-      `INSERT INTO service_providers 
-       (name, email, phone, specialty, experience_years, bio, location, status, created_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'active', NOW())`,
-      [name, email, phone, specialty || null, experience_years || 0, bio || null, location || null]
-    )
-
-    const providerId = result.insertId
-
-    // Get created provider
-    const provider = await query(
-      'SELECT id, name, email, phone, specialty, experience_years, rating, total_jobs, bio, location, status FROM service_providers WHERE id = ?',
-      [providerId]
-    )
-
-    return NextResponse.json({
-      success: true,
-      message: 'Provider created successfully',
-      data: provider[0]
-    })
-
-  } catch (error) {
-    console.error('Error creating provider:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to create provider' },
-      { status: 500 }
-    )
-  }
-}
-
-// PUT update provider
-export async function PUT(request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-    const body = await request.json()
-
-    if (!id) {
-      return NextResponse.json(
-        { success: false, message: 'Provider ID is required' },
-        { status: 400 }
-      )
-    }
-
-    const {
-      name,
-      phone,
-      specialty,
-      experience_years,
-      bio,
-      location,
-      status
-    } = body
-
-    // Build update query
-    let updateFields = []
-    let updateParams = []
-
-    if (name) {
-      updateFields.push('name = ?')
-      updateParams.push(name)
-    }
-    if (phone) {
-      updateFields.push('phone = ?')
-      updateParams.push(phone)
-    }
-    if (specialty !== undefined) {
-      updateFields.push('specialty = ?')
-      updateParams.push(specialty)
-    }
-    if (experience_years !== undefined) {
-      updateFields.push('experience_years = ?')
-      updateParams.push(experience_years)
-    }
-    if (bio !== undefined) {
-      updateFields.push('bio = ?')
-      updateParams.push(bio)
-    }
-    if (location !== undefined) {
-      updateFields.push('location = ?')
-      updateParams.push(location)
-    }
-    if (status) {
-      updateFields.push('status = ?')
-      updateParams.push(status)
-    }
-
-    if (updateFields.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'No fields to update' },
-        { status: 400 }
-      )
-    }
-
-    updateParams.push(id)
-
+    // Update provider profile
     await query(
-      `UPDATE service_providers SET ${updateFields.join(', ')}, updated_at = NOW() WHERE id = ?`,
-      updateParams
+      `UPDATE service_providers SET
+        name = ?,
+        email = ?,
+        phone = ?,
+        specialty = ?,
+        experience_years = ?,
+        bio = ?,
+        location = ?,
+        skills = ?,
+        avatar_url = COALESCE(?, avatar_url),
+        updated_at = NOW()
+       WHERE id = ?`,
+      [
+        name,
+        email,
+        phone,
+        specialty || null,
+        experience_years ? parseInt(experience_years) : null,
+        bio || null,
+        location || null,
+        skills ? JSON.stringify(skills) : null,
+        avatar_url || null,
+        decoded.id
+      ]
     )
 
-    // Get updated provider
-    const provider = await query(
-      'SELECT id, name, email, phone, specialty, experience_years, rating, total_jobs, bio, location, status FROM service_providers WHERE id = ?',
-      [id]
-    )
-
-    return NextResponse.json({
-      success: true,
-      message: 'Provider updated successfully',
-      data: provider[0]
-    })
-
-  } catch (error) {
-    console.error('Error updating provider:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to update provider' },
-      { status: 500 }
-    )
-  }
-}
-
-// DELETE provider
-export async function DELETE(request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-
-    if (!id) {
-      return NextResponse.json(
-        { success: false, message: 'Provider ID is required' },
-        { status: 400 }
-      )
-    }
-
-    // Check if provider has any assigned jobs
-    const jobs = await query(
-      'SELECT id FROM bookings WHERE provider_id = ? AND status NOT IN ("completed", "cancelled")',
-      [id]
-    )
-
-    if (jobs.length > 0) {
-      return NextResponse.json(
-        { success: false, message: 'Cannot delete provider with active jobs' },
-        { status: 400 }
-      )
-    }
-
-    // Soft delete - set status to inactive instead of actual delete
-    await query(
-      'UPDATE service_providers SET status = "inactive" WHERE id = ?',
-      [id]
+    // Get updated profile
+    const providers = await query(
+      `SELECT id, name, email, phone, specialty, experience_years,
+              rating, total_jobs, bio, avatar_url, location, status
+       FROM service_providers WHERE id = ?`,
+      [decoded.id]
     )
 
     return NextResponse.json({
       success: true,
-      message: 'Provider deactivated successfully'
+      message: 'Profile updated successfully',
+      data: providers[0]
     })
 
   } catch (error) {
-    console.error('Error deleting provider:', error)
+    console.error('Error updating profile:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to delete provider' },
+      { success: false, message: 'Failed to update profile' },
       { status: 500 }
     )
   }

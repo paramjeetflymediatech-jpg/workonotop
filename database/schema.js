@@ -33,7 +33,7 @@ const createPool = () => {
   });
 };
 
-// Clean schema SQL with ONLY your existing tables and fields
+// Complete schema SQL with exactly the tables and fields from your DESCRIBE output
 const schemaSql = [
   // Create database
   `CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'workontap_db'}`,
@@ -41,7 +41,7 @@ const schemaSql = [
   // Use database
   `USE ${process.env.DB_NAME || 'workontap_db'}`,
 
-  // 1. Users Table
+  // 1. users table - exactly as shown in DESCRIBE
   `CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -51,13 +51,12 @@ const schemaSql = [
     phone VARCHAR(50),
     hear_about VARCHAR(255),
     receive_offers BOOLEAN DEFAULT FALSE,
-    role ENUM('user','admin') DEFAULT 'user',
+    role ENUM('user', 'admin') DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_email (email)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`,
 
-  // 2. Service Categories Table
+  // 2. service_categories table - exactly as shown in DESCRIBE
   `CREATE TABLE IF NOT EXISTS service_categories (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -70,7 +69,29 @@ const schemaSql = [
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`,
 
-  // 3. Services Table
+  // 3. service_providers table - exactly as shown in DESCRIBE
+  `CREATE TABLE IF NOT EXISTS service_providers (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(200) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    specialty VARCHAR(200),
+    experience_years INT,
+    rating DECIMAL(3, 2) DEFAULT 0.00,
+    total_jobs INT DEFAULT 0,
+    bio TEXT,
+    avatar_url VARCHAR(255),
+    location VARCHAR(200),
+    city VARCHAR(100),
+    status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
+    remember_token VARCHAR(100),
+    last_login DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`,
+
+  // 4. services table - exactly as shown in DESCRIBE
   `CREATE TABLE IF NOT EXISTS services (
     id INT PRIMARY KEY AUTO_INCREMENT,
     category_id INT NOT NULL,
@@ -89,40 +110,16 @@ const schemaSql = [
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE CASCADE,
-    INDEX idx_category (category_id)
+    FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE CASCADE
   )`,
 
-  // 4. Service Providers Table
-  `CREATE TABLE IF NOT EXISTS service_providers (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(200) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    phone VARCHAR(20) NOT NULL,
-    specialty VARCHAR(200),
-    experience_years INT,
-    rating DECIMAL(3, 2) DEFAULT 0.00,
-    total_jobs INT DEFAULT 0,
-    bio TEXT,
-    avatar_url VARCHAR(255),
-    location VARCHAR(200),
-    status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
-    remember_token VARCHAR(100),
-    last_login DATETIME,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_email (email),
-    INDEX idx_status (status)
-  )`,
-
-  // 5. Bookings Table
+  // 5. bookings table - exactly as shown in DESCRIBE (with all 37 fields)
   `CREATE TABLE IF NOT EXISTS bookings (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT,
+    user_id INT NULL,
     booking_number VARCHAR(50) UNIQUE NOT NULL,
     service_id INT NOT NULL,
-    provider_id INT,
+    provider_id INT NULL,
     service_name VARCHAR(200),
     service_price DECIMAL(10,2) NOT NULL,
     additional_price DECIMAL(10,2) DEFAULT 0.00,
@@ -143,36 +140,68 @@ const schemaSql = [
     city VARCHAR(100) DEFAULT 'Calgary',
     postal_code VARCHAR(20),
     status ENUM('pending', 'matching', 'confirmed', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+    commission_percent DECIMAL(5,2),
+    provider_amount DECIMAL(10,2),
+    accepted_at DATETIME,
+    start_time DATETIME,
+    end_time DATETIME,
+    actual_duration_minutes INT,
+    overtime_minutes INT DEFAULT 0,
+    overtime_earnings DECIMAL(10,2) DEFAULT 0.00,
+    final_provider_amount DECIMAL(10,2),
+    job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE SET NULL,
-    INDEX idx_status (status),
-    INDEX idx_email (customer_email),
-    INDEX idx_date (job_date)
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE SET NULL
   )`,
 
-  // 6. Booking Photos Table
+  // 6. booking_photos table - exactly as shown in DESCRIBE
   `CREATE TABLE IF NOT EXISTS booking_photos (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
     photo_url VARCHAR(500) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
-    INDEX idx_booking (booking_id)
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
   )`,
 
-  // 7. Booking Status History Table
+  // 7. booking_status_history table - exactly as shown in DESCRIBE
   `CREATE TABLE IF NOT EXISTS booking_status_history (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
     status VARCHAR(50) NOT NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
-    INDEX idx_booking (booking_id)
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+  )`,
+
+  // 8. booking_time_logs table - exactly as shown in DESCRIBE
+  `CREATE TABLE IF NOT EXISTS booking_time_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    booking_id INT NOT NULL,
+    action ENUM('start', 'pause', 'resume', 'stop', 'auto_pause') NOT NULL,
+    timestamp DATETIME NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
   )`
+];
+
+// Indexes for performance (based on your DESCRIBE output)
+const indexStatements = [
+  `CREATE INDEX idx_users_email ON users(email)`,
+  `CREATE INDEX idx_service_providers_email ON service_providers(email)`,
+  `CREATE INDEX idx_service_providers_status ON service_providers(status)`,
+  `CREATE INDEX idx_services_category ON services(category_id)`,
+  `CREATE INDEX idx_bookings_status ON bookings(status)`,
+  `CREATE INDEX idx_bookings_email ON bookings(customer_email)`,
+  `CREATE INDEX idx_bookings_date ON bookings(job_date)`,
+  `CREATE INDEX idx_bookings_provider ON bookings(provider_id)`,
+  `CREATE INDEX idx_booking_photos_booking ON booking_photos(booking_id)`,
+  `CREATE INDEX idx_booking_status_history_booking ON booking_status_history(booking_id)`,
+  `CREATE INDEX idx_booking_time_logs_booking ON booking_time_logs(booking_id)`,
+  `CREATE INDEX idx_booking_time_logs_timestamp ON booking_time_logs(timestamp)`
 ];
 
 // Main function
@@ -198,6 +227,7 @@ async function initializeSchema() {
     // Step 3: Create tables
     console.log('🏗️  Step 2: Creating tables...');
     let tableCount = 0;
+    const createdTables = [];
 
     for (const sql of schemaSql) {
       try {
@@ -206,13 +236,17 @@ async function initializeSchema() {
         await pool.execute(sql);
         
         if (sql.includes('CREATE TABLE')) {
-          const tableName = sql.match(/CREATE TABLE.*?(\w+)/)?.[1] || 'table';
-          console.log(`  ✓ Created: ${tableName}`);
-          tableCount++;
+          const match = sql.match(/CREATE TABLE.*?(\w+)/);
+          if (match) {
+            const tableName = match[1];
+            createdTables.push(tableName);
+            console.log(`  ✓ Created: ${tableName}`);
+            tableCount++;
+          }
         }
       } catch (error) {
         if (error.code === 'ER_TABLE_EXISTS_ERROR') {
-          console.log(`  ⊘ Table already exists`);
+          console.log(`  ⊘ Table already exists: ${error.message.match(/'.*?'/)?.[0] || 'table'}`);
         } else {
           console.log(`  ⚠ Warning: ${error.message.substring(0, 100)}...`);
         }
@@ -220,8 +254,22 @@ async function initializeSchema() {
     }
     console.log(`  Total tables: ${tableCount}\n`);
 
-    // Step 4: Verify tables
-    console.log('🔍 Step 3: Verifying tables...');
+    // Step 4: Create indexes
+    console.log('📊 Step 3: Creating indexes...');
+    for (const indexSql of indexStatements) {
+      try {
+        await pool.execute(indexSql);
+        console.log(`  ✓ Created: ${indexSql.substring(0, 60)}...`);
+      } catch (error) {
+        if (!error.message.includes('Duplicate key')) {
+          console.log(`  ⚠ ${error.message.substring(0, 100)}...`);
+        }
+      }
+    }
+    console.log('');
+
+    // Step 5: Verify tables
+    console.log('🔍 Step 4: Verifying tables...');
     const [tables] = await pool.query('SHOW TABLES');
     console.log('  Tables in database:');
     tables.forEach(table => {
@@ -229,10 +277,40 @@ async function initializeSchema() {
       console.log(`  ✓ ${tableName}`);
     });
 
-    console.log('\n✅ Database schema initialization completed successfully!');
+    // Show table structures count
+    console.log('\n📋 Step 5: Table structures:');
+    
+    const [userColumns] = await pool.query('DESCRIBE users');
+    console.log(`  users: ${userColumns.length} columns`);
+    
+    const [catColumns] = await pool.query('DESCRIBE service_categories');
+    console.log(`  service_categories: ${catColumns.length} columns`);
+    
+    const [providerColumns] = await pool.query('DESCRIBE service_providers');
+    console.log(`  service_providers: ${providerColumns.length} columns`);
+    
+    const [serviceColumns] = await pool.query('DESCRIBE services');
+    console.log(`  services: ${serviceColumns.length} columns`);
+    
+    const [bookingColumns] = await pool.query('DESCRIBE bookings');
+    console.log(`  bookings: ${bookingColumns.length} columns`);
+    
+    const [photoColumns] = await pool.query('DESCRIBE booking_photos');
+    console.log(`  booking_photos: ${photoColumns.length} columns`);
+    
+    const [historyColumns] = await pool.query('DESCRIBE booking_status_history');
+    console.log(`  booking_status_history: ${historyColumns.length} columns`);
+    
+    const [logColumns] = await pool.query('DESCRIBE booking_time_logs');
+    console.log(`  booking_time_logs: ${logColumns.length} columns`);
+
+    console.log('\n✅ Database schema initialized successfully!');
     console.log(`📊 Database: ${dbName}`);
-    console.log(`📍 Host: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 3306}`);
     console.log(`📈 Total tables: ${tables.length}`);
+    console.log(`\n📝 Tables created:`);
+    createdTables.forEach((table, index) => {
+      console.log(`   ${index + 1}. ${table}`);
+    });
 
   } catch (error) {
     console.error('\n❌ Error initializing database schema:', error.message);
