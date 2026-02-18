@@ -20,9 +20,9 @@ export default function ProviderDashboard() {
     }
   }, [isProvider, loading, router])
 
-  useEffect(() => { 
+  useEffect(() => {
     if (isProvider()) {
-      loadJobs() 
+      loadJobs()
     }
   }, [isProvider])
 
@@ -30,7 +30,7 @@ export default function ProviderDashboard() {
     try {
       setError(null)
       const token = localStorage.getItem('providerToken')
-      
+
       if (!token) {
         setError('Authentication token not found')
         setLoading(false)
@@ -52,16 +52,16 @@ export default function ProviderDashboard() {
       }
 
       const data = await res.json()
-      
+
       if (data.success) {
         const list = data.data || []
         setJobs(list)
 
         let pending = 0, inProgress = 0, completed = 0, totalEarnings = 0
-        
+
         list.forEach(job => {
           const status = job.status?.toLowerCase() || ''
-          
+
           // Pending jobs
           if (['pending', 'matching', 'awaiting_confirmation'].includes(status)) {
             pending++
@@ -80,11 +80,11 @@ export default function ProviderDashboard() {
             }
           }
         })
-        
-        setStats({ 
-          pending, 
-          inProgress, 
-          completed, 
+
+        setStats({
+          pending,
+          inProgress,
+          completed,
           totalEarnings: Number(totalEarnings.toFixed(2))
         })
       } else {
@@ -154,7 +154,7 @@ export default function ProviderDashboard() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             Welcome back, {firstName}! 👋
           </h1>
-          <p className="text-gray-400 text-sm mt-1">Here's your activity overview</p>
+          <p className="text-gray-400 text-sm mt-1">Here&apos;s your activity overview</p>
         </div>
 
         {/* Stats grid */}
@@ -162,11 +162,11 @@ export default function ProviderDashboard() {
           <StatCard icon="⏳" label="Pending" value={stats.pending} />
           <StatCard icon="⚡" label="In Progress" value={stats.inProgress} />
           <StatCard icon="✅" label="Completed" value={stats.completed} />
-          <StatCard 
-            icon="💰" 
-            label="Earnings" 
-            value={`$${stats.totalEarnings.toFixed(2)}`} 
-            green 
+          <StatCard
+            icon="💰"
+            label="Earnings"
+            value={`$${stats.totalEarnings.toFixed(2)}`}
+            green
           />
         </div>
 
@@ -196,7 +196,7 @@ export default function ProviderDashboard() {
               <p className="text-sm text-gray-400 mb-6 max-w-sm mx-auto">
                 Ready to start earning? Browse available jobs and accept your first client!
               </p>
-              <Link 
+              <Link
                 href="/provider/available-jobs"
                 className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition shadow-md hover:shadow-lg"
               >
@@ -211,7 +211,7 @@ export default function ProviderDashboard() {
               {jobs.slice(0, 5).map((job) => {
                 const status = job.status?.toLowerCase() || 'pending'
                 const amount = safeAmt(job)
-                
+
                 // Get status style
                 const getStatusStyle = (status) => {
                   const styles = {
@@ -228,8 +228,8 @@ export default function ProviderDashboard() {
                 }
 
                 return (
-                  <Link 
-                    key={job.id} 
+                  <Link
+                    key={job.id}
                     href={`/provider/jobs/${job.id}`}
                     className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-all gap-3 group"
                   >
@@ -290,11 +290,10 @@ export default function ProviderDashboard() {
 
 function StatCard({ icon, label, value, green = false }) {
   return (
-    <div className={`rounded-2xl p-4 sm:p-5 transition-all ${
-      green 
-        ? 'bg-gradient-to-br from-green-600 to-green-700 text-white shadow-md' 
+    <div className={`rounded-2xl p-4 sm:p-5 transition-all ${green
+        ? 'bg-gradient-to-br from-green-600 to-green-700 text-white shadow-md'
         : 'bg-white border border-gray-100 shadow-sm hover:shadow-md'
-    }`}>
+      }`}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-2xl">{icon}</span>
         <span className={`text-xs font-medium ${green ? 'text-green-200' : 'text-gray-400'}`}>{label}</span>
@@ -308,7 +307,7 @@ function StatCard({ icon, label, value, green = false }) {
 
 function QuickLink({ href, icon, title, sub }) {
   return (
-    <Link 
+    <Link
       href={href}
       className="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 sm:p-5 hover:shadow-md hover:border-green-200 transition-all flex items-center gap-4 group"
     >
