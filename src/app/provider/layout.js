@@ -59,9 +59,9 @@ export default function ProviderLayout({ children }) {
     { name: 'Dashboard',      href: '/provider/dashboard',      icon: '📊' },
     { name: 'Available Jobs', href: '/provider/available-jobs', icon: '🗂️' },
     { name: 'My Jobs',        href: '/provider/jobs',           icon: '📋' },
-    { name: 'Schedule',       href: '/provider/schedule',       icon: '📅' },
-    { name: 'Earnings',       href: '/provider/earnings',       icon: '💰' },
-    { name: 'Messages',       href: '/provider/messages',       icon: '💬' },
+    // { name: 'Schedule',       href: '/provider/schedule',       icon: '📅' },
+    // { name: 'Earnings',       href: '/provider/earnings',       icon: '💰' },
+    // { name: 'Messages',       href: '/provider/messages',       icon: '💬' },
     { name: 'Profile',        href: '/provider/profile',        icon: '👤' },
   ]
 

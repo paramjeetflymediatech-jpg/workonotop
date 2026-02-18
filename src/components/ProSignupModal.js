@@ -21,19 +21,79 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSig
 
   if (!isOpen) return null;
 
+  // Enhanced phone validation
+  const validatePhone = (phone) => {
+    // Remove all non-digits
+    const digitsOnly = phone.replace(/\D/g, '');
+    
+    // Check if it's a valid North American phone number (10 digits)
+    if (digitsOnly.length === 10) return true;
+    
+    // Check if it's a valid Canadian/US number with country code
+    if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) return true;
+    
+    return false;
+  };
+
+  // Format phone number as user types
+  const formatPhoneNumber = (value) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length === 0) return '';
+    if (digits.length <= 3) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  };
+
   const validate = () => {
     const newErrors = {};
-    if (!formData.firstName) newErrors.firstName = 'Required';
-    if (!formData.lastName) newErrors.lastName = 'Required';
-    if (!formData.email) newErrors.email = 'Required';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email';
-    if (!formData.phone) newErrors.phone = 'Required';
-    if (!formData.password) newErrors.password = 'Required';
-    else if (formData.password.length < 8) newErrors.password = 'Min 8 characters';
-    if (formData.password !== formData.confirmPassword) {
+    
+    // First Name
+    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+    else if (formData.firstName.length < 2) newErrors.firstName = 'First name must be at least 2 characters';
+    
+    // Last Name
+    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+    else if (formData.lastName.length < 2) newErrors.lastName = 'Last name must be at least 2 characters';
+    
+    // Email
+    if (!formData.email) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email address';
+    
+    // Phone - Enhanced validation for unique constraint
+    if (!formData.phone) {
+      newErrors.phone = 'Phone number is required';
+    } else {
+      const digitsOnly = formData.phone.replace(/\D/g, '');
+      if (digitsOnly.length === 0) {
+        newErrors.phone = 'Phone number is required';
+      } else if (!validatePhone(formData.phone)) {
+        newErrors.phone = 'Please enter a valid 10-digit phone number';
+      }
+    }
+    
+    // Password
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/[A-Z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter';
+    } else if (!/[a-z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one lowercase letter';
+    } else if (!/[0-9]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one number';
+    }
+    
+    // Confirm Password
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    if (!formData.agreeTerms) newErrors.agreeTerms = 'Required';
+    
+    // Terms
+    if (!formData.agreeTerms) newErrors.agreeTerms = 'You must agree to the terms and conditions';
+    
     return newErrors;
   };
 
@@ -50,15 +110,18 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSig
     setLoading(true);
 
     try {
+      // Clean phone number before sending (remove formatting)
+      const cleanPhone = formData.phone.replace(/\D/g, '');
+      
       const res = await fetch('/api/provider/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'signup',
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: cleanPhone, // Send clean phone number
           password: formData.password,
           confirmPassword: formData.confirmPassword
         })
@@ -77,13 +140,28 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSig
         onClose();
         router.push('/provider/dashboard');
       } else {
-        setApiError(data.message || 'Signup failed. Please try again.');
+        // Handle specific error messages from the API
+        if (data.message?.toLowerCase().includes('email')) {
+          setApiError('This email is already registered. Please use a different email or login.');
+        } else if (data.message?.toLowerCase().includes('phone')) {
+          setApiError('This phone number is already registered. Please use a different number or login.');
+        } else {
+          setApiError(data.message || 'Signup failed. Please try again.');
+        }
       }
     } catch (error) {
-      setApiError('Network error. Please check your connection.');
+      setApiError('Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle phone input with formatting
+  const handlePhoneChange = (e) => {
+    const rawValue = e.target.value;
+    const formatted = formatPhoneNumber(rawValue);
+    setFormData({...formData, phone: formatted});
+    setErrors({...errors, phone: null});
   };
 
   return (
@@ -145,6 +223,7 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSig
                     errors.firstName ? 'border-red-500' : 'border-gray-200'
                   } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
                   placeholder="John"
+                  maxLength={50}
                 />
                 {errors.firstName && (
                   <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
@@ -165,6 +244,7 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSig
                     errors.lastName ? 'border-red-500' : 'border-gray-200'
                   } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
                   placeholder="Doe"
+                  maxLength={50}
                 />
                 {errors.lastName && (
                   <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
@@ -188,13 +268,14 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSig
                   errors.email ? 'border-red-500' : 'border-gray-200'
                 } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
                 placeholder="pro@example.com"
+                maxLength={255}
               />
               {errors.email && (
                 <p className="text-red-500 text-xs mt-1">{errors.email}</p>
               )}
             </div>
 
-            {/* Phone */}
+            {/* Phone - Now with formatting */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Cell Phone Number <span className="text-red-500">*</span>
@@ -202,18 +283,19 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSig
               <input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => {
-                  setFormData({...formData, phone: e.target.value});
-                  setErrors({...errors, phone: null});
-                }}
+                onChange={handlePhoneChange}
                 className={`w-full px-3 py-2.5 rounded-lg border-2 ${
                   errors.phone ? 'border-red-500' : 'border-gray-200'
                 } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
                 placeholder="(403) 555-0123"
+                maxLength={14} // (XXX) XXX-XXXX = 14 chars
               />
               {errors.phone && (
                 <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
               )}
+              <p className="text-gray-400 text-xs mt-1">
+                Format: (XXX) XXX-XXXX • Must be unique
+              </p>
             </div>
 
             {/* Password Row */}
@@ -233,6 +315,7 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSig
                     errors.password ? 'border-red-500' : 'border-gray-200'
                   } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
                   placeholder="••••••••"
+                  maxLength={50}
                 />
                 {errors.password && (
                   <p className="text-red-500 text-xs mt-1">{errors.password}</p>
@@ -253,12 +336,34 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSig
                     errors.confirmPassword ? 'border-red-500' : 'border-gray-200'
                   } focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition`}
                   placeholder="••••••••"
+                  maxLength={50}
                 />
                 {errors.confirmPassword && (
                   <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
                 )}
               </div>
             </div>
+
+            {/* Password Requirements Hint */}
+            {formData.password && formData.password.length > 0 && (
+              <div className="text-xs space-y-1 bg-gray-50 p-2 rounded-lg">
+                <p className="text-gray-600 font-medium mb-1">Password requirements:</p>
+                <div className="grid grid-cols-2 gap-1">
+                  <span className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}>
+                    ✓ At least 8 characters
+                  </span>
+                  <span className={/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
+                    ✓ One uppercase letter
+                  </span>
+                  <span className={/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
+                    ✓ One lowercase letter
+                  </span>
+                  <span className={/[0-9]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
+                    ✓ One number
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Terms */}
             <div className="flex items-start">
@@ -276,11 +381,15 @@ export default function ProSignupModal({ isOpen, onClose, onSwitchToLogin, onSig
                 By signing up, you agree to WorkOnTap&apos;s{' '}
                 <Link href="/terms" className="text-green-700 hover:underline font-medium">
                   Terms and Conditions
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy" className="text-green-700 hover:underline font-medium">
+                  Privacy Policy
                 </Link>
               </label>
             </div>
             {errors.agreeTerms && (
-              <p className="text-red-500 text-xs -mt-2">You must agree to terms</p>
+              <p className="text-red-500 text-xs -mt-2">{errors.agreeTerms}</p>
             )}
 
             {/* Submit Button */}

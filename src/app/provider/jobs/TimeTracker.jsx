@@ -1,10 +1,17 @@
-// app/provider/jobs/TimeTracker.jsx - UPDATED
+// app/provider/jobs/TimeTracker.jsx - FIXED: no refresh needed
 
 'use client'
 
 import { useState, useEffect } from 'react'
 
-export default function TimeTracker({ bookingId, onComplete, standardDuration = 60, overtimeRate = 0 }) {
+export default function TimeTracker({ 
+  bookingId, 
+  onComplete, 
+  standardDuration = 60, 
+  overtimeRate = 0,
+  hasBeforePhotos = false,
+  hasAfterPhotos = false   // ✅ FIX: accept as prop, NOT internal state
+}) {
   const [timerStatus, setTimerStatus] = useState('not_started')
   const [elapsedTime, setElapsedTime] = useState(0)
   const [startTime, setStartTime] = useState(null)
@@ -12,9 +19,12 @@ export default function TimeTracker({ bookingId, onComplete, standardDuration = 
   const [error, setError] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
 
+  // ✅ FIX: Removed checkAfterPhotos() entirely — parent owns this state now
   useEffect(() => {
     loadTimerStatus()
-    
+  }, [bookingId])
+
+  useEffect(() => {
     let interval
     if (timerStatus === 'running' && startTime) {
       interval = setInterval(() => {
@@ -25,10 +35,22 @@ export default function TimeTracker({ bookingId, onComplete, standardDuration = 
     return () => clearInterval(interval)
   }, [timerStatus, startTime])
 
-  const token = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('providerToken')
+  // ✅ FIX: When hasAfterPhotos becomes true (parent uploaded), clear the error immediately
+  useEffect(() => {
+    if (hasAfterPhotos && error.includes('after')) {
+      setError('')
     }
+  }, [hasAfterPhotos])
+
+  // ✅ FIX: When hasBeforePhotos becomes true, clear that error too
+  useEffect(() => {
+    if (hasBeforePhotos && error.includes('before')) {
+      setError('')
+    }
+  }, [hasBeforePhotos])
+
+  const token = () => {
+    if (typeof window !== 'undefined') return localStorage.getItem('providerToken')
     return null
   }
 
@@ -53,6 +75,19 @@ export default function TimeTracker({ bookingId, onComplete, standardDuration = 
   const sendAction = async (action, notes = '') => {
     setLoading(true)
     setError('')
+
+    if (action === 'start' && !hasBeforePhotos) {
+      setError('Please upload before-work photos before starting the job')
+      setLoading(false)
+      return
+    }
+
+    if (action === 'stop' && !hasAfterPhotos) {
+      setError('Please upload after-work photos before completing the job')
+      setLoading(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/provider/jobs/time-tracking', {
         method: 'POST',
@@ -63,7 +98,7 @@ export default function TimeTracker({ bookingId, onComplete, standardDuration = 
         body: JSON.stringify({ booking_id: bookingId, action, notes })
       })
       const data = await res.json()
-      
+
       if (data.success) {
         if (action === 'start') {
           setTimerStatus('running')
@@ -72,31 +107,21 @@ export default function TimeTracker({ bookingId, onComplete, standardDuration = 
           setTimerStatus('paused')
         } else if (action === 'resume') {
           setTimerStatus('running')
+          setStartTime(new Date().toISOString())
         } else if (action === 'stop') {
-          if (data.data) {
-            onComplete?.(data.data)
-          }
+          if (data.data) onComplete?.(data.data)
           setTimerStatus('completed')
         }
-        
         await loadTimerStatus()
         setShowConfirm(false)
       } else {
         setError(data.message || `Failed to ${action} timer`)
       }
-    } catch (error) {
+    } catch {
       setError(`Failed to ${action} timer. Please try again.`)
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleStopClick = () => {
-    setShowConfirm(true)
-  }
-
-  const confirmStop = () => {
-    sendAction('stop', 'Job completed')
   }
 
   const formatTime = (seconds) => {
@@ -106,69 +131,106 @@ export default function TimeTracker({ bookingId, onComplete, standardDuration = 
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Calculate potential overtime
   const elapsedMinutes = Math.floor(elapsedTime / 60)
   const overtimeMinutes = Math.max(0, elapsedMinutes - standardDuration)
-  const potentialOvertimeEarnings = (overtimeMinutes / 60) * overtimeRate
 
   if (timerStatus === 'completed') {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-        <p className="text-green-700 font-medium flex items-center gap-2">
-          <span>✓</span> Job completed successfully
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <p className="text-emerald-700 font-semibold flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          Job completed successfully
         </p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <span>⏱️</span> Time Tracker
-      </h3>
-      
+    <div className="space-y-4">
+
       {/* Timer Display */}
-      <div className="text-center mb-4">
-        <div className="text-4xl font-mono font-bold text-gray-900">
+      <div className={`rounded-2xl p-5 text-center border ${
+        timerStatus === 'running'
+          ? 'bg-emerald-50 border-emerald-200'
+          : timerStatus === 'paused'
+          ? 'bg-amber-50 border-amber-200'
+          : 'bg-slate-50 border-slate-200'
+      }`}>
+        <div className={`text-5xl font-mono font-bold tracking-tight ${
+          timerStatus === 'running' ? 'text-emerald-700'
+          : timerStatus === 'paused' ? 'text-amber-600'
+          : 'text-slate-400'
+        }`}>
           {formatTime(elapsedTime)}
         </div>
-        <div className="flex justify-center gap-4 mt-2 text-xs">
-          <span className="text-gray-500">Standard: {standardDuration} min</span>
-          {overtimeRate > 0 && (
-            <span className="text-purple-600">OT: ${overtimeRate}/hr</span>
-          )}
+        <div className="flex justify-center gap-4 mt-2 text-xs text-slate-500">
+          <span>Standard: {standardDuration} min</span>
         </div>
-        <p className="text-xs text-gray-400 mt-1">
-          {timerStatus === 'running' ? '⏺ Timer running' : 
-           timerStatus === 'paused' ? '⏸ Timer paused' : 
-           '⏹ Not started'}
+        <p className={`text-xs mt-1 font-medium ${
+          timerStatus === 'running' ? 'text-emerald-600'
+          : timerStatus === 'paused' ? 'text-amber-600'
+          : 'text-slate-400'
+        }`}>
+          {timerStatus === 'running' ? '● Recording time'
+          : timerStatus === 'paused' ? '⏸ Paused'
+          : 'Not started'}
         </p>
       </div>
 
-      {/* Overtime Preview */}
+      {/* ✅ Photo requirement status — driven purely by props, always live */}
+      <div className="space-y-2">
+        <StatusRow
+          done={hasBeforePhotos}
+          doneText="Before photos uploaded"
+          pendingText="Before photos required to start"
+        />
+        <StatusRow
+          done={hasAfterPhotos}
+          doneText="After photos uploaded"
+          pendingText="After photos required to complete"
+          isPending={timerStatus !== 'running'}  // only show warning when relevant
+        />
+      </div>
+
+      Overtime notice — duration only, no earnings shown
       {timerStatus === 'running' && overtimeMinutes > 0 && (
-        <div className="mb-3 p-2 bg-purple-50 rounded-lg text-xs">
-          <p className="text-purple-700">
-            ⏰ Overtime: {overtimeMinutes} min (+${potentialOvertimeEarnings.toFixed(2)})
-          </p>
+        <div className="px-4 py-2.5 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-700 font-medium">
+          ⏰ Overtime: {overtimeMinutes} min over standard duration
         </div>
       )}
 
-      {/* Confirmation Dialog */}
+      {/* Error */}
+      {error && (
+        <div className="flex items-start gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+          <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          {error}
+        </div>
+      )}
+
+      {/* Confirm complete dialog */}
       {showConfirm && (
-        <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800 mb-2">Complete this job?</p>
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+          <p className="text-sm font-semibold text-amber-800">Mark this job as complete?</p>
+          {!hasAfterPhotos && (
+            <p className="text-xs text-red-600 font-medium">
+              Upload after-work photos above first — then come back to complete.
+            </p>
+          )}
           <div className="flex gap-2">
             <button
-              onClick={confirmStop}
-              disabled={loading}
-              className="flex-1 py-2 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700"
+              onClick={() => sendAction('stop', 'Job completed')}
+              disabled={loading || !hasAfterPhotos}
+              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-40"
             >
-              Yes, Complete
+              {loading ? 'Completing…' : 'Yes, Complete'}
             </button>
             <button
               onClick={() => setShowConfirm(false)}
-              className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-300"
+              className="flex-1 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-semibold transition-colors"
             >
               Cancel
             </button>
@@ -176,22 +238,15 @@ export default function TimeTracker({ bookingId, onComplete, standardDuration = 
         </div>
       )}
 
-      {/* Error Message */}
-      {error && (
-        <div className="mb-3 text-sm text-red-600 bg-red-50 p-2 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {/* Control Buttons */}
+      {/* Action buttons */}
       <div className="grid grid-cols-2 gap-2">
         {timerStatus === 'not_started' && (
           <button
             onClick={() => sendAction('start', 'Job started')}
-            disabled={loading}
-            className="col-span-2 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 transition"
+            disabled={loading || !hasBeforePhotos}
+            className="col-span-2 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-40 text-sm"
           >
-            {loading ? 'Starting...' : '▶ Start Job'}
+            {loading ? 'Starting…' : !hasBeforePhotos ? 'Upload Before Photos to Start' : '▶  Start Job'}
           </button>
         )}
 
@@ -200,37 +255,57 @@ export default function TimeTracker({ bookingId, onComplete, standardDuration = 
             <button
               onClick={() => sendAction('pause', 'Job paused')}
               disabled={loading}
-              className="py-3 bg-yellow-500 text-white rounded-lg font-semibold hover:bg-yellow-600 disabled:opacity-50 transition"
+              className="py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors disabled:opacity-40 text-sm"
             >
-              ⏸ Pause
+              {loading ? '…' : '⏸  Pause'}
             </button>
             <button
-              onClick={handleStopClick}
+              onClick={() => hasAfterPhotos ? setShowConfirm(true) : setError('Please upload after-work photos before completing the job')}
               disabled={loading}
-              className="py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
+              className={`py-3.5 rounded-xl font-semibold transition-colors text-sm ${
+                hasAfterPhotos
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
             >
-              ⏹ Complete
+              ⏹  Complete
             </button>
           </>
         )}
 
         {timerStatus === 'paused' && (
-          <>
-            <button
-              onClick={() => sendAction('resume', 'Job resumed')}
-              disabled={loading}
-              className="col-span-2 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 transition"
-            >
-              {loading ? 'Resuming...' : '▶ Resume Job'}
-            </button>
-          </>
+          <button
+            onClick={() => sendAction('resume', 'Job resumed')}
+            disabled={loading}
+            className="col-span-2 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-40 text-sm"
+          >
+            {loading ? 'Resuming…' : '▶  Resume Job'}
+          </button>
         )}
       </div>
 
-      {/* Info Text */}
-      <p className="text-xs text-gray-400 mt-3 text-center">
+      <p className="text-xs text-slate-400 text-center">
         Track your time accurately to get paid for overtime
       </p>
+    </div>
+  )
+}
+
+function StatusRow({ done, doneText, pendingText }) {
+  return (
+    <div className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium ${
+      done ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400'
+    }`}>
+      <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
+        done ? 'bg-emerald-500' : 'bg-slate-200'
+      }`}>
+        {done && (
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+        )}
+      </div>
+      {done ? doneText : pendingText}
     </div>
   )
 }

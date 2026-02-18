@@ -174,7 +174,7 @@ export default function ProviderJobs() {
                       </div>
                     </div>
 
-                    {/* Overtime Rate if available - Show as info only */}
+                    {/* Overtime Rate if available - Show as info only
                     {hasOvertime && (
                       <div className="mb-4 p-3 bg-purple-50 rounded-lg">
                         <p className="text-sm text-purple-700 flex items-center gap-2">
@@ -182,7 +182,7 @@ export default function ProviderJobs() {
                           <span>Overtime Rate: ${overtimeRate.toFixed(2)}/hour</span>
                         </p>
                       </div>
-                    )}
+                    )} */}
 
                     {/* Time Tracking Section - For active jobs */}
                     {(job.status === 'confirmed' || job.status === 'in_progress') && (

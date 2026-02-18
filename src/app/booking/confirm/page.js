@@ -48,7 +48,7 @@ export default function BookingConfirmPage() {
       setScheduleData(JSON.parse(savedSchedule));
       const details = JSON.parse(savedDetails);
       setDetailsData(details);
-      
+
       if (details.address) {
         setAddress(details.address);
       }
@@ -226,62 +226,62 @@ export default function BookingConfirmPage() {
 
 
   // Find this function in your BookingConfirmPage component
-const handleSubmitBooking = async (e) => {
-  e.preventDefault();
+  const handleSubmitBooking = async (e) => {
+    e.preventDefault();
 
-  if (!isAuthenticated) {
-    setShowAuthModal(true);
-    return;
-  }
-
-  setSubmitting(true);
-
-  const bookingPayload = {
-    service_id: scheduleData.service_id,
-    service_name: scheduleData.service_name,
-    service_price: scheduleData.service_price,
-    additional_price: scheduleData.additional_price || 0,
-    first_name: firstName,
-    last_name: lastName,
-    email: email,
-    phone: phone,
-    job_date: scheduleData.job_date,
-    job_time_slot: scheduleData.job_time_slot, // This is already an array from sessionStorage
-    timing_constraints: scheduleData.timing_constraints,
-    job_description: detailsData.job_description,
-    instructions: detailsData.instructions,
-    parking_access: detailsData.parking_access,
-    elevator_access: detailsData.elevator_access,
-    has_pets: detailsData.has_pets,
-    address_line1: address,
-    city: 'Calgary',
-    province: 'AB',
-    postal_code: '',
-    photos: detailsData.photos || [],
-    user_id: currentUser?.id
-  };
-
-  try {
-    const res = await fetch('/api/bookings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(bookingPayload)
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      sessionStorage.clear();
-      router.push(`/booking/success/${data.booking_id}`);
-    } else {
-      alert('Something went wrong. Please try again.');
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
     }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Something went wrong. Please try again.');
-  } finally {
-    setSubmitting(false);
-  }
-};
+
+    setSubmitting(true);
+
+    const bookingPayload = {
+      service_id: scheduleData.service_id,
+      service_name: scheduleData.service_name,
+      service_price: scheduleData.service_price,
+      additional_price: scheduleData.additional_price || 0,
+      first_name: firstName,
+      last_name: lastName,
+      email: email,
+      phone: phone,
+      job_date: scheduleData.job_date,
+      job_time_slot: scheduleData.job_time_slot, // This is already an array from sessionStorage
+      timing_constraints: scheduleData.timing_constraints,
+      job_description: detailsData.job_description,
+      instructions: detailsData.instructions,
+      parking_access: detailsData.parking_access,
+      elevator_access: detailsData.elevator_access,
+      has_pets: detailsData.has_pets,
+      address_line1: address,
+      city: 'Calgary',
+      province: 'AB',
+      postal_code: '',
+      photos: detailsData.photos || [],
+      user_id: currentUser?.id
+    };
+
+    try {
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingPayload)
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        sessionStorage.clear();
+        router.push(`/booking/success/${data.booking_id}`);
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
 
 
@@ -550,28 +550,17 @@ const handleSubmitBooking = async (e) => {
                         </svg>
                         <span className="font-semibold text-gray-800">{formatDate(scheduleData.job_date)}</span>
                       </div>
-                      {/* <div className="flex gap-2 ml-7">
-                        <span className="px-3 py-1 bg-green-700 text-white text-xs font-medium rounded-full capitalize">
-                          {scheduleData.job_time_slot === 'morning' && '🌅 '}
-                          {scheduleData.job_time_slot === 'afternoon' && '☀️ '}
-                          {scheduleData.job_time_slot === 'evening' && '🌙 '}
-                          {scheduleData.job_time_slot}
-                        </span>
-                      </div> */}
 
-
-
-                      {/* Replace the single time slot display with this */}
-<div className="flex flex-wrap gap-2 mt-2">
-  {scheduleData.job_time_slot?.map((time) => (
-    <span key={time} className="px-3 py-1 bg-green-700 text-white text-xs font-medium rounded-full capitalize flex items-center">
-      {time === 'morning' && '🌅'}
-      {time === 'afternoon' && '☀️'}
-      {time === 'evening' && '🌙'}
-      <span className="ml-1">{time}</span>
-    </span>
-  ))}
-</div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {scheduleData.job_time_slot?.map((time) => (
+                          <span key={time} className="px-3 py-1 bg-green-700 text-white text-xs font-medium rounded-full capitalize flex items-center">
+                            {time === 'morning' && '🌅'}
+                            {time === 'afternoon' && '☀️'}
+                            {time === 'evening' && '🌙'}
+                            <span className="ml-1">{time}</span>
+                          </span>
+                        ))}
+                      </div>
 
 
 

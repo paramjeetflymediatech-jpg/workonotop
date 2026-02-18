@@ -1,4 +1,4 @@
-// app/provider/available-jobs/page.jsx - UPDATED WITH DURATION
+// app/provider/available-jobs/page.jsx - FIXED with correct overtime commission
 
 'use client'
 
@@ -280,6 +280,12 @@ export default function ProviderAvailableJobs() {
             <div className="space-y-3">
               {filteredJobs.map((job) => {
                 const duration = job.pricing?.duration_minutes || job.service_duration || 60
+                const commissionPct = job.pricing?.commission_percent || 0
+                const baseEarnings = job.pricing?.provider_base_earnings || 0
+                const overtimeRate = job.pricing?.overtime_rate || 0
+                
+                // Calculate net overtime rate after commission
+                const netOvertimeRate = overtimeRate * (1 - commissionPct / 100)
                 
                 return (
                   <div key={job.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-green-200 transition-all overflow-hidden">
@@ -310,7 +316,7 @@ export default function ProviderAvailableJobs() {
                       </span>
                     </div>
 
-                    {/* Overtime Banner */}
+                    {/* Overtime Banner - FIXED with correct calculations */}
                     {job.pricing?.has_overtime && (
                       <div className="mx-4 sm:mx-5 mb-3">
                         <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-3">
@@ -318,19 +324,22 @@ export default function ProviderAvailableJobs() {
                             <span className="text-xl">⏰</span>
                             <div className="flex-1">
                               <p className="text-sm font-semibold text-purple-700">
-                                Overtime Available: +${job.pricing.overtime_rate.toFixed(2)}/hour
+                                Overtime Available: +${overtimeRate.toFixed(2)}/hour
                               </p>
                               <p className="text-xs text-gray-600 mt-1">
-                                Standard duration: {formatDuration(duration)}. Earn extra for additional time.
+                                Standard duration: {formatDuration(duration)}. {commissionPct}% commission applies to overtime too.
                               </p>
                               <div className="flex gap-3 mt-2 text-xs">
                                 <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                  1hr OT: ${(job.pricing.total_provider_amount + job.pricing.overtime_rate).toFixed(2)}
+                                  1hr OT: ${(baseEarnings + netOvertimeRate).toFixed(2)}
                                 </span>
                                 <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                  2hr OT: ${(job.pricing.total_provider_amount + (job.pricing.overtime_rate * 2)).toFixed(2)}
+                                  2hr OT: ${(baseEarnings + (netOvertimeRate * 2)).toFixed(2)}
                                 </span>
                               </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Gross OT: ${overtimeRate.toFixed(2)}/hr · After {commissionPct}% commission: ${netOvertimeRate.toFixed(2)}/hr
+                              </p>
                             </div>
                           </div>
                         </div>

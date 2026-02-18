@@ -1,4 +1,4 @@
-// app/provider/available-jobs/[id]/page.jsx - UPDATED WITH DURATION
+// app/provider/available-jobs/[id]/page.jsx - NO CONTACT INFO, with correct overtime commission
 
 'use client'
 
@@ -164,7 +164,6 @@ export default function ProviderJobDetail({ params }) {
 
   const amount = parseFloat(job.provider_amount || 0)
   const slots = fmtSlots(job.job_time_slot)
-  const customerName = `${job.customer_first_name || ''} ${job.customer_last_name || ''}`.trim()
   const hasOvertime = parseFloat(job.additional_price || 0) > 0
   const overtimeRate = parseFloat(job.additional_price || 0)
   const duration = job.service_duration || 60
@@ -172,6 +171,7 @@ export default function ProviderJobDetail({ params }) {
   const commissionPercent = parseFloat(job.commission_percent || 0)
   const commissionAmount = basePrice * (commissionPercent / 100)
   const baseEarnings = basePrice - commissionAmount
+  const netOvertimeRate = overtimeRate * (1 - commissionPercent / 100)
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
@@ -265,85 +265,15 @@ export default function ProviderJobDetail({ params }) {
         )}
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - NO CUSTOMER CONTACT CARD */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-3 mt-1">
-        {/* Customer Contact Card */}
-        {(job.customer_email || job.customer_phone || customerName) && (
-          <div className="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
-            <div className="px-4 sm:px-5 py-4">
-              <SectionTitle icon="👤" title="Customer Contact" />
-              <div className="mt-3 space-y-3">
-                {customerName && (
-                  <DetailRow label="Name" value={customerName} />
-                )}
-                {job.customer_email && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-400 w-16">Email:</span>
-                    <a
-                      href={`mailto:${job.customer_email}?subject=Regarding your booking: ${job.booking_number}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 group"
-                    >
-                      <span>{job.customer_email}</span>
-                      <svg className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </a>
-                  </div>
-                )}
-                {job.customer_phone && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-400 w-16">Phone:</span>
-                    <a
-                      href={`tel:${job.customer_phone}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 group"
-                    >
-                      <span>{job.customer_phone}</span>
-                      <svg className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                    </a>
-                  </div>
-                )}
-              </div>
 
-              {/* Quick Action Buttons */}
-              {(job.customer_email || job.customer_phone) && (
-                <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap gap-2">
-                  {job.customer_email && (
-                    <QuickActionButton
-                      href={`mailto:${job.customer_email}?subject=Regarding your booking: ${job.booking_number}`}
-                      icon="📧"
-                      label="Email"
-                      color="blue"
-                    />
-                  )}
-                  {job.customer_phone && (
-                    <>
-                      <QuickActionButton
-                        href={`tel:${job.customer_phone}`}
-                        icon="📞"
-                        label="Call"
-                        color="green"
-                      />
-                      <QuickActionButton
-                        href={`https://wa.me/${job.customer_phone.replace(/\D/g, '')}`}
-                        icon="💬"
-                        label="WhatsApp"
-                        color="emerald"
-                        target="_blank"
-                      />
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Pricing Breakdown Card */}
+        {/* Pricing Breakdown Card - Updated with correct overtime commission */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 sm:px-5 py-4">
-            <SectionTitle icon="💰" title="Payment Breakdown" />
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-sm sm:text-base mb-3">
+              <span>💰</span> Payment Breakdown
+            </h2>
             
             {/* Duration Info */}
             <div className="mb-3 pb-3 border-b border-gray-100">
@@ -375,21 +305,63 @@ export default function ProviderJobDetail({ params }) {
               {hasOvertime && (
                 <>
                   <div className="flex justify-between text-sm mt-2">
-                    <span className="text-gray-500">Overtime rate:</span>
+                    <span className="text-gray-500">Overtime rate (gross):</span>
                     <span className="font-medium text-purple-600">+${overtimeRate.toFixed(2)}/hour</span>
                   </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Commission on overtime ({commissionPercent}%):</span>
+                    <span className="font-medium text-orange-600">
+                      -${(overtimeRate * commissionPercent / 100).toFixed(2)}/hour
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm font-medium">
+                    <span className="text-gray-600">You get (net overtime):</span>
+                    <span className="text-green-600">
+                      +${(overtimeRate * (1 - commissionPercent/100)).toFixed(2)}/hour
+                    </span>
+                  </div>
+                  
                   <div className="bg-purple-50 rounded-lg p-3 mt-2">
-                    <p className="text-xs text-purple-700 font-medium mb-1">What you could earn with overtime:</p>
-                    <div className="flex justify-between text-sm">
-                      <span>1 hour overtime:</span>
-                      <span className="font-bold text-purple-700">${(amount + overtimeRate).toFixed(2)}</span>
+                    <p className="text-xs text-purple-700 font-medium mb-2">What you could earn with overtime:</p>
+                    
+                    {/* 1 Hour Overtime */}
+                    <div className="mb-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Base earnings:</span>
+                        <span className="text-gray-700">${baseEarnings.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>+ 1 hour overtime (net):</span>
+                        <span className="text-green-600">+${(overtimeRate * (1 - commissionPercent/100)).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-bold pt-1 border-t border-purple-200 mt-1">
+                        <span>Total for 1hr OT:</span>
+                        <span className="text-purple-700">
+                          ${(baseEarnings + (overtimeRate * (1 - commissionPercent/100))).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm mt-1">
-                      <span>2 hours overtime:</span>
-                      <span className="font-bold text-purple-700">${(amount + (overtimeRate * 2)).toFixed(2)}</span>
+                    
+                    {/* 2 Hour Overtime */}
+                    <div>
+                      <div className="flex justify-between text-sm">
+                        <span>Base earnings:</span>
+                        <span className="text-gray-700">${baseEarnings.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>+ 2 hours overtime (net):</span>
+                        <span className="text-green-600">+${(overtimeRate * 2 * (1 - commissionPercent/100)).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-bold pt-1 border-t border-purple-200 mt-1">
+                        <span>Total for 2hr OT:</span>
+                        <span className="text-purple-700">
+                          ${(baseEarnings + (overtimeRate * 2 * (1 - commissionPercent/100))).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
+                    
                     <p className="text-xs text-gray-500 mt-2">
-                      Based on standard duration of {formatDuration(duration)}
+                      Based on {commissionPercent}% commission on all earnings
                     </p>
                   </div>
                 </>
@@ -401,9 +373,14 @@ export default function ProviderJobDetail({ params }) {
         {/* Schedule Card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 sm:px-5 py-4">
-            <SectionTitle icon="📅" title="Schedule" />
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-sm sm:text-base mb-3">
+              <span>📅</span> Schedule
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
-              <DetailRow label="Date" value={formatDate(job.job_date)} />
+              <div>
+                <p className="text-xs text-gray-400 mb-0.5">Date</p>
+                <p className="text-sm font-medium text-gray-900">{formatDate(job.job_date)}</p>
+              </div>
               <div>
                 <p className="text-xs text-gray-400 mb-1.5">Time Slots</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -417,7 +394,8 @@ export default function ProviderJobDetail({ params }) {
             </div>
             {job.timing_constraints && (
               <div className="mt-3 pt-3 border-t border-gray-50">
-                <DetailRow label="Timing Notes" value={job.timing_constraints} />
+                <p className="text-xs text-gray-400 mb-0.5">Timing Notes</p>
+                <p className="text-sm font-medium text-gray-900">{job.timing_constraints}</p>
               </div>
             )}
           </div>
@@ -426,7 +404,9 @@ export default function ProviderJobDetail({ params }) {
         {/* Location Card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
           <div className="px-4 sm:px-5 py-4">
-            <SectionTitle icon="📍" title="Location" />
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-sm sm:text-base mb-3">
+              <span>📍</span> Location
+            </h2>
             <div className="mt-3 bg-gray-50 rounded-xl p-3.5">
               <p className="text-sm font-semibold text-gray-900">{job.address_line1}</p>
               {job.address_line2 && <p className="text-sm text-gray-500 mt-0.5">{job.address_line2}</p>}
@@ -439,9 +419,18 @@ export default function ProviderJobDetail({ params }) {
             
             {/* Access Icons */}
             <div className="grid grid-cols-3 gap-2 mt-3">
-              <AccessCard label="Parking" icon="🅿️" active={job.parking_access} />
-              <AccessCard label="Elevator" icon="🛗" active={job.elevator_access} />
-              <AccessCard label="Pets" icon="🐕" active={job.has_pets} yellow />
+              <div className={`rounded-xl border p-2.5 text-center text-xs font-semibold ${job.parking_access ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-300'}`}>
+                <span className="block text-base mb-0.5">🅿️</span>
+                Parking {job.parking_access ? '✓' : '—'}
+              </div>
+              <div className={`rounded-xl border p-2.5 text-center text-xs font-semibold ${job.elevator_access ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-300'}`}>
+                <span className="block text-base mb-0.5">🛗</span>
+                Elevator {job.elevator_access ? '✓' : '—'}
+              </div>
+              <div className={`rounded-xl border p-2.5 text-center text-xs font-semibold ${job.has_pets ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-gray-50 border-gray-200 text-gray-300'}`}>
+                <span className="block text-base mb-0.5">🐕</span>
+                Pets {job.has_pets ? '✓' : '—'}
+              </div>
             </div>
           </div>
         </div>
@@ -450,7 +439,9 @@ export default function ProviderJobDetail({ params }) {
         {job.job_description && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="px-4 sm:px-5 py-4">
-              <SectionTitle icon="📝" title="Job Description" />
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-sm sm:text-base mb-3">
+                <span>📝</span> Job Description
+              </h2>
               <p className="text-sm text-gray-700 leading-relaxed mt-3">{job.job_description}</p>
             </div>
           </div>
@@ -460,7 +451,9 @@ export default function ProviderJobDetail({ params }) {
         {job.instructions && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="px-4 sm:px-5 py-4">
-              <SectionTitle icon="💡" title="Special Instructions" />
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-sm sm:text-base mb-3">
+                <span>💡</span> Special Instructions
+              </h2>
               <p className="text-sm text-gray-700 leading-relaxed mt-3">{job.instructions}</p>
             </div>
           </div>
@@ -470,7 +463,9 @@ export default function ProviderJobDetail({ params }) {
         {job.photos?.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="px-4 sm:px-5 py-4">
-              <SectionTitle icon="📷" title={`Photos (${job.photos.length})`} />
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-sm sm:text-base mb-3">
+                <span>📷</span> Photos ({job.photos.length})
+              </h2>
               <div className="grid grid-cols-3 gap-2 mt-3">
                 {job.photos.map((photo, i) => (
                   <div
@@ -512,7 +507,7 @@ export default function ProviderJobDetail({ params }) {
                     <>
                       <span className="text-xs bg-white/20 px-2 py-1 rounded-full">+OT</span>
                       <span className="text-xs opacity-90">
-                        (Std: {formatDuration(duration)})
+                        (Up to ${(baseEarnings + (netOvertimeRate * 2)).toFixed(2)} with 2hr OT)
                       </span>
                     </>
                   )}
@@ -523,56 +518,5 @@ export default function ProviderJobDetail({ params }) {
         </div>
       )}
     </div>
-  )
-}
-
-// Helper Components
-function SectionTitle({ icon, title }) {
-  return (
-    <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-sm sm:text-base">
-      <span>{icon}</span> {title}
-    </h2>
-  )
-}
-
-function DetailRow({ label, value }) {
-  return (
-    <div>
-      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p className="text-sm font-medium text-gray-900">{value}</p>
-    </div>
-  )
-}
-
-function AccessCard({ icon, label, active, yellow }) {
-  const on = yellow
-    ? 'bg-amber-50 border-amber-200 text-amber-700'
-    : 'bg-green-50 border-green-200 text-green-700'
-  const off = 'bg-gray-50 border-gray-200 text-gray-300'
-  
-  return (
-    <div className={`rounded-xl border p-2.5 text-center text-xs font-semibold ${active ? on : off}`}>
-      <span className="block text-base mb-0.5">{icon}</span>
-      {label} {active ? '✓' : '—'}
-    </div>
-  )
-}
-
-function QuickActionButton({ href, icon, label, color, target = '_self' }) {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-700 hover:bg-blue-100',
-    green: 'bg-green-50 text-green-700 hover:bg-green-100',
-    emerald: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-  }
-  
-  return (
-    <a
-      href={href}
-      target={target}
-      rel={target === '_blank' ? 'noopener noreferrer' : ''}
-      className={`inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium transition ${colorClasses[color]}`}
-    >
-      <span>{icon}</span> {label}
-    </a>
   )
 }
