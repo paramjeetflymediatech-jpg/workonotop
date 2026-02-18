@@ -2,51 +2,28 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import fs from 'fs';
-import path from 'path';
-
+ 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
+ 
 // Load environment variables
 dotenv.config({ path: resolve(__dirname, '../../.env') });
-
-// Configuration
+ 
 const DB_NAME = process.env.DB_NAME || 'workontap_db';
-
-// Create connection without specifying database
-const initialConnection = async () => {
+ 
+// Create database connection
+const connect = async (withDb = false) => {
   return await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    port: parseInt(process.env.DB_PORT || '3306')
-  });
-};
-
-// Create connection pool
-const createPool = () => {
-  return mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: DB_NAME,
+    user: process.env.DB_USER || 'aman',
+    password: process.env.DB_PASSWORD || 'aman1234',
     port: parseInt(process.env.DB_PORT || '3306'),
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    ...(withDb && { database: DB_NAME })
   });
 };
-
-// Complete schema SQL
-const schemaSql = [
-  // Create database
-  `CREATE DATABASE IF NOT EXISTS ${DB_NAME}`,
-
-  // Use database
-  `USE ${DB_NAME}`,
-
-  // Table 1: users
+ 
+// Table creation SQL
+const tables = [
   `CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -60,8 +37,7 @@ const schemaSql = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`,
-
-  // Table 2: service_categories
+ 
   `CREATE TABLE IF NOT EXISTS service_categories (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -73,8 +49,7 @@ const schemaSql = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`,
-
-  // Table 3: service_providers
+ 
   `CREATE TABLE IF NOT EXISTS service_providers (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(200) NOT NULL,
@@ -95,8 +70,7 @@ const schemaSql = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`,
-
-  // Table 4: services
+ 
   `CREATE TABLE IF NOT EXISTS services (
     id INT PRIMARY KEY AUTO_INCREMENT,
     category_id INT NOT NULL,
@@ -117,8 +91,7 @@ const schemaSql = [
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE CASCADE
   )`,
-
-  // Table 5: bookings
+ 
   `CREATE TABLE IF NOT EXISTS bookings (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NULL,
@@ -164,8 +137,7 @@ const schemaSql = [
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE SET NULL
   )`,
-
-  // Table 6: booking_photos
+ 
   `CREATE TABLE IF NOT EXISTS booking_photos (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
@@ -173,8 +145,7 @@ const schemaSql = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
   )`,
-
-  // Table 7: booking_status_history
+ 
   `CREATE TABLE IF NOT EXISTS booking_status_history (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
@@ -183,8 +154,7 @@ const schemaSql = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
   )`,
-
-  // Table 8: booking_time_logs
+ 
   `CREATE TABLE IF NOT EXISTS booking_time_logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
@@ -194,8 +164,7 @@ const schemaSql = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
   )`,
-
-  // Table 9: job_photos
+ 
   `CREATE TABLE IF NOT EXISTS job_photos (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
@@ -206,8 +175,7 @@ const schemaSql = [
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
     FOREIGN KEY (uploaded_by) REFERENCES service_providers(id)
   )`,
-
-  // Table 10: invoices
+ 
   `CREATE TABLE IF NOT EXISTS invoices (
     id INT PRIMARY KEY AUTO_INCREMENT,
     invoice_number VARCHAR(50) UNIQUE NOT NULL,
@@ -238,8 +206,7 @@ const schemaSql = [
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (provider_id) REFERENCES service_providers(id)
   )`,
-
-  // Table 11: password_reset_tokens
+ 
   `CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) NOT NULL,
@@ -251,225 +218,93 @@ const schemaSql = [
     INDEX idx_token (token)
   )`
 ];
-
+ 
 // Indexes for performance
-const indexStatements = [
-  // Users table indexes
-  `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
-  `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`,
-
-  // Service providers table indexes
-  `CREATE INDEX IF NOT EXISTS idx_providers_email ON service_providers(email)`,
-  `CREATE INDEX IF NOT EXISTS idx_providers_status ON service_providers(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_providers_city ON service_providers(city)`,
-
-  // Services table indexes
-  `CREATE INDEX IF NOT EXISTS idx_services_category ON services(category_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_services_active ON services(is_active)`,
-  `CREATE INDEX IF NOT EXISTS idx_services_slug ON services(slug)`,
-
-  // Bookings table indexes
-  `CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_bookings_email ON bookings(customer_email)`,
-  `CREATE INDEX IF NOT EXISTS idx_bookings_date ON bookings(job_date)`,
-  `CREATE INDEX IF NOT EXISTS idx_bookings_provider ON bookings(provider_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_bookings_timer ON bookings(job_timer_status)`,
-  `CREATE INDEX IF NOT EXISTS idx_bookings_provider_status ON bookings(provider_id, status)`,
-
-  // Booking photos indexes
-  `CREATE INDEX IF NOT EXISTS idx_booking_photos_booking ON booking_photos(booking_id)`,
-
-  // Booking status history indexes
-  `CREATE INDEX IF NOT EXISTS idx_status_history_booking ON booking_status_history(booking_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_status_history_created ON booking_status_history(created_at)`,
-
-  // Booking time logs indexes
-  `CREATE INDEX IF NOT EXISTS idx_time_logs_booking ON booking_time_logs(booking_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_time_logs_timestamp ON booking_time_logs(timestamp)`,
-
-  // Job photos indexes
-  `CREATE INDEX IF NOT EXISTS idx_job_photos_booking ON job_photos(booking_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_job_photos_type ON job_photos(photo_type)`,
-
-  // Invoices indexes
-  `CREATE INDEX IF NOT EXISTS idx_invoices_booking ON invoices(booking_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_invoices_user ON invoices(user_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_invoices_provider ON invoices(provider_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number)`,
-  `CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`,
-
-  // Password reset tokens indexes
-  `CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email)`,
-  `CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token)`
+const indexes = [
+  `CREATE INDEX idx_users_email ON users(email)`,
+  `CREATE INDEX idx_users_role ON users(role)`,
+  `CREATE INDEX idx_providers_email ON service_providers(email)`,
+  `CREATE INDEX idx_providers_status ON service_providers(status)`,
+  `CREATE INDEX idx_providers_city ON service_providers(city)`,
+  `CREATE INDEX idx_services_category ON services(category_id)`,
+  `CREATE INDEX idx_services_active ON services(is_active)`,
+  `CREATE INDEX idx_services_slug ON services(slug)`,
+  `CREATE INDEX idx_bookings_status ON bookings(status)`,
+  `CREATE INDEX idx_bookings_email ON bookings(customer_email)`,
+  `CREATE INDEX idx_bookings_date ON bookings(job_date)`,
+  `CREATE INDEX idx_bookings_provider ON bookings(provider_id)`,
+  `CREATE INDEX idx_bookings_timer ON bookings(job_timer_status)`,
+  `CREATE INDEX idx_bookings_provider_status ON bookings(provider_id, status)`,
+  `CREATE INDEX idx_booking_photos_booking ON booking_photos(booking_id)`,
+  `CREATE INDEX idx_status_history_booking ON booking_status_history(booking_id)`,
+  `CREATE INDEX idx_status_history_created ON booking_status_history(created_at)`,
+  `CREATE INDEX idx_time_logs_booking ON booking_time_logs(booking_id)`,
+  `CREATE INDEX idx_time_logs_timestamp ON booking_time_logs(timestamp)`,
+  `CREATE INDEX idx_job_photos_booking ON job_photos(booking_id)`,
+  `CREATE INDEX idx_job_photos_type ON job_photos(photo_type)`,
+  `CREATE INDEX idx_invoices_booking ON invoices(booking_id)`,
+  `CREATE INDEX idx_invoices_user ON invoices(user_id)`,
+  `CREATE INDEX idx_invoices_provider ON invoices(provider_id)`,
+  `CREATE INDEX idx_invoices_number ON invoices(invoice_number)`,
+  `CREATE INDEX idx_invoices_status ON invoices(status)`,
+  `CREATE INDEX idx_reset_email ON password_reset_tokens(email)`,
+  `CREATE INDEX idx_reset_token ON password_reset_tokens(token)`
 ];
-
+ 
 // Main migration function
 async function runMigration() {
-  let connection = null;
-  let pool = null;
-
-  console.log('\n' + '='.repeat(60));
+  let conn = null;
+ 
+  console.log('\n' + '='.repeat(50));
   console.log('🚀 WorkOnTap Database Migration');
-  console.log('='.repeat(60) + '\n');
-
+  console.log('='.repeat(50) + '\n');
+ 
   try {
     // Step 1: Create database
-    console.log('📁 Step 1: Creating database...');
-    connection = await initialConnection();
-    await connection.query(`CREATE DATABASE IF NOT EXISTS ${DB_NAME}`);
-    console.log(`  ✓ Database ${DB_NAME} created/verified`);
-    await connection.end();
-    
-    // Step 2: Create connection pool
-    pool = createPool();
-
+    console.log('📁 Creating database...');
+    conn = await connect(false);
+    await conn.query(`CREATE DATABASE IF NOT EXISTS ${DB_NAME}`);
+    console.log(`  ✓ Database ${DB_NAME} ready`);
+    await conn.end();
+ 
+    // Step 2: Connect to database
+    conn = await connect(true);
+ 
     // Step 3: Create tables
-    console.log('\n🏗️  Step 2: Creating tables...');
-    const createdTables = [];
-
-    for (const sql of schemaSql) {
-      try {
-        if (sql.startsWith('USE')) continue;
-        
-        await pool.execute(sql);
-        
-        if (sql.includes('CREATE TABLE')) {
-          const match = sql.match(/CREATE TABLE.*?(\w+)/);
-          if (match) {
-            const tableName = match[1];
-            createdTables.push(tableName);
-            console.log(`  ✓ Created: ${tableName}`);
-          }
-        }
-      } catch (error) {
-        if (error.code === 'ER_TABLE_EXISTS_ERROR') {
-          console.log(`  ⊘ Table already exists: ${error.message.match(/'.*?'/)?.[0] || 'table'}`);
-        } else {
-          console.log(`  ⚠ Warning: ${error.message.substring(0, 100)}...`);
-        }
-      }
+    console.log('\n🏗️  Creating tables...');
+    for (const sql of tables) {
+      await conn.execute(sql);
     }
-    console.log(`  Total tables: ${createdTables.length}`);
-
+    console.log(`  ✓ Created 11 tables`);
+ 
     // Step 4: Create indexes
-    console.log('\n📊 Step 3: Creating indexes...');
-    let indexCount = 0;
-    for (const indexSql of indexStatements) {
+    console.log('\n📊 Creating indexes...');
+    for (const sql of indexes) {
       try {
-        await pool.execute(indexSql);
-        indexCount++;
-      } catch (error) {
-        if (!error.message.includes('Duplicate key')) {
-          console.log(`  ⚠ ${error.message.substring(0, 100)}...`);
-        }
+        await conn.execute(sql);
+      } catch (err) {
+        // Ignore duplicate index errors
       }
     }
-    console.log(`  ✓ Created ${indexCount} indexes`);
-
-    // Step 5: Verify tables
-    console.log('\n🔍 Step 4: Verifying tables...');
-    const [tables] = await pool.query('SHOW TABLES');
-    console.log('  Tables in database:');
-    tables.forEach(table => {
-      const tableName = Object.values(table)[0];
-      console.log(`  ✓ ${tableName}`);
+    console.log(`  ✓ Created indexes`);
+ 
+    // Step 5: Verify
+    const [rows] = await conn.query('SHOW TABLES');
+    console.log('\n✅ Migration complete!');
+    console.log(`   ${rows.length} tables created`);
+    console.log('\n📋 Tables:');
+    rows.forEach(row => {
+      const name = Object.values(row)[0];
+      console.log(`   • ${name}`);
     });
-
-    // Step 6: Show table structures count
-    console.log('\n📋 Step 5: Table structures:');
-    
-    const tableQueries = [
-      'users', 'service_categories', 'service_providers', 'services', 
-      'bookings', 'booking_photos', 'booking_status_history', 
-      'booking_time_logs', 'job_photos', 'invoices', 'password_reset_tokens'
-    ];
-
-    for (const table of tableQueries) {
-      try {
-        const [columns] = await pool.query(`DESCRIBE ${table}`);
-        console.log(`  ${table}: ${columns.length} columns`);
-      } catch (error) {
-        console.log(`  ${table}: not found`);
-      }
-    }
-
-    // Step 7: Save migration record
-    console.log('\n💾 Step 6: Saving migration record...');
-    const migrationRecord = {
-      timestamp: new Date().toISOString(),
-      database: DB_NAME,
-      tables: createdTables,
-      indexes: indexCount,
-      status: 'success'
-    };
-
-    const migrationDir = path.join(process.cwd(), 'migrations');
-    if (!fs.existsSync(migrationDir)) {
-      fs.mkdirSync(migrationDir, { recursive: true });
-    }
-
-    const fileName = `migration_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-    fs.writeFileSync(
-      path.join(migrationDir, fileName),
-      JSON.stringify(migrationRecord, null, 2)
-    );
-    console.log(`  ✓ Migration record saved: ${fileName}`);
-
-    // Summary
-    console.log('\n' + '='.repeat(60));
-    console.log('✅ Migration completed successfully!');
-    console.log('='.repeat(60));
-    console.log(`📊 Database: ${DB_NAME}`);
-    console.log(`📈 Total tables: ${tables.length}`);
-    console.log(`📇 Total indexes: ${indexCount}`);
-    console.log(`\n📝 Tables created:`);
-    createdTables.forEach((table, index) => {
-      console.log(`   ${index + 1}. ${table}`);
-    });
-    console.log('\n' + '='.repeat(60));
-    console.log('\n⚠️  All tables are empty. Please add data through your application.\n');
-
-  } catch (error) {
-    console.error('\n❌ Error running migration:', error.message);
-    if (error.code === 'ER_ACCESS_DENIED_ERROR') {
-      console.error('   Check your database credentials in .env file');
-    } else if (error.code === 'ECONNREFUSED') {
-      console.error('   Make sure MySQL server is running');
-    } else if (error.code === 'ER_BAD_DB_ERROR') {
-      console.error('   Database does not exist and could not be created');
-    }
-    
-    // Save error record
-    try {
-      const errorDir = path.join(process.cwd(), 'migrations/errors');
-      if (!fs.existsSync(errorDir)) {
-        fs.mkdirSync(errorDir, { recursive: true });
-      }
-      
-      const errorFile = `error_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-      fs.writeFileSync(
-        path.join(errorDir, errorFile),
-        JSON.stringify({
-          timestamp: new Date().toISOString(),
-          error: error.message,
-          code: error.code,
-          sqlState: error.sqlState
-        }, null, 2)
-      );
-    } catch (e) {
-      // Ignore
-    }
-    
+ 
+  } catch (err) {
+    console.error('\n❌ Error:', err.message);
     process.exit(1);
   } finally {
-    if (pool) {
-      await pool.end();
-    }
+    if (conn) await conn.end();
   }
 }
-
-// Run migration
+ 
+// Run it
 runMigration();
-
-// Export for programmatic usage
-export { runMigration };
