@@ -12,7 +12,7 @@
 
 # production
 /build
-/public/uploads
+# /public/uploads
 /database/schema.js
 
 # misc
