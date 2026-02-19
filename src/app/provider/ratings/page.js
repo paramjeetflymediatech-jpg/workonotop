@@ -16,23 +16,23 @@ export default function ProviderRatings() {
     setMounted(true)
     checkAuth()
     loadRatings()
-    
+
     // Remove cz-shortcut-listen attribute added by browser extensions
     const removeExtensionAttributes = () => {
       if (document.body.hasAttribute('cz-shortcut-listen')) {
         document.body.removeAttribute('cz-shortcut-listen')
       }
     }
-    
+
     removeExtensionAttributes()
-    
+
     // Observe for any future additions
     const observer = new MutationObserver(() => {
       removeExtensionAttributes()
     })
-    
+
     observer.observe(document.body, { attributes: true })
-    
+
     return () => observer.disconnect()
   }, [])
 
@@ -133,11 +133,11 @@ export default function ProviderRatings() {
                 </div>
 
                 <div className="flex-1">
-                  {[5,4,3,2,1].map(star => (
+                  {[5, 4, 3, 2, 1].map(star => (
                     <div key={star} className="flex items-center gap-2 mb-2">
                       <span className="text-sm w-12">{star} stars</span>
                       <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-yellow-400 rounded-full"
                           style={{
                             width: `${(ratings.stats.distribution[star] / ratings.stats.total_reviews) * 100}%`
@@ -158,23 +158,21 @@ export default function ProviderRatings() {
           <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
-                filter === 'all'
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${filter === 'all'
                   ? 'bg-green-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-              }`}
+                }`}
             >
               All Reviews ({ratings?.reviews?.length || 0})
             </button>
-            {[5,4,3,2,1].map(star => (
+            {[5, 4, 3, 2, 1].map(star => (
               <button
                 key={star}
                 onClick={() => setFilter(star.toString())}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
-                  filter === star.toString()
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${filter === star.toString()
                     ? 'bg-green-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                }`}
+                  }`}
               >
                 {star} ★ ({ratings?.stats.distribution[star] || 0})
               </button>
@@ -195,7 +193,7 @@ export default function ProviderRatings() {
                     <RatingStars rating={Number(review.rating)} />
                   </div>
                   {review.review && (
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">"{review.review}"</p>
+                    <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">&quot;{review.review}&quot;</p>
                   )}
                 </div>
               ))}

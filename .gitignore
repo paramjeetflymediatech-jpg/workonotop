@@ -13,6 +13,7 @@
 # production
 /build
 /public/uploads
+/database/schema.js
 
 # misc
 .DS_Store

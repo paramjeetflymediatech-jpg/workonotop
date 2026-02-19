@@ -51,7 +51,7 @@ export default function ProviderDashboard() {
       const jobsData = await jobsRes.json()
       if (jobsData.success) {
         const jobs = jobsData.data || []
-        
+
         // Calculate stats (earnings removed)
         const pending = jobs.filter(j => j.status === 'pending' || j.status === 'matching').length
         const inProgress = jobs.filter(j => j.status === 'in_progress' || j.status === 'confirmed').length
@@ -138,13 +138,13 @@ export default function ProviderDashboard() {
       <Header />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           {/* Welcome Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
               Welcome back, {provider?.name || 'Provider'}!
             </h1>
-            <p className="text-gray-600 mt-1">Here's your activity overview</p>
+            <p className="text-gray-600 mt-1">Here&apos;s your activity overview</p>
           </div>
 
           {/* Stats Grid - 3 columns only (earnings removed) */}
@@ -172,7 +172,7 @@ export default function ProviderDashboard() {
           {ratings && ratings.stats.total_reviews > 0 && (
             <div className="bg-white rounded-xl shadow-md p-6 mb-8">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Ratings</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Overall Rating */}
                 <div className="text-center">
@@ -187,11 +187,11 @@ export default function ProviderDashboard() {
 
                 {/* Rating Distribution */}
                 <div className="md:col-span-2">
-                  {[5,4,3,2,1].map(star => (
+                  {[5, 4, 3, 2, 1].map(star => (
                     <div key={star} className="flex items-center gap-2 mb-2">
                       <span className="text-sm w-8">{star} ★</span>
                       <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-yellow-400 rounded-full"
                           style={{
                             width: `${(ratings.stats.distribution[star] / ratings.stats.total_reviews) * 100}%`
@@ -228,13 +228,13 @@ export default function ProviderDashboard() {
                           </div>
                         </div>
                         {review.review && (
-                          <p className="text-sm text-gray-600">"{review.review}"</p>
+                          <p className="text-sm text-gray-600">&quot;{review.review}&quot;</p>
                         )}
                         <p className="text-xs text-gray-400 mt-2">{review.date}</p>
                       </div>
                     ))}
                   </div>
-                  
+
                   {ratings.reviews.length > 3 && (
                     <button
                       onClick={() => router.push('/provider/ratings')}
