@@ -1,7 +1,7 @@
 -- =====================================================
 -- WorkOnTap Database - Complete Table Structure
 -- =====================================================
--- This script creates all 10 tables with correct fields
+-- This script creates all 12 tables with correct fields
 -- NO data is inserted - just the table structures
 -- =====================================================
 
@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS service_categories (
 -- =====================================================
 -- Table 3: service_providers
 -- Purpose: Store tradespeople/provider accounts
+-- Includes total_reviews and avg_rating columns directly
 -- =====================================================
 CREATE TABLE IF NOT EXISTS service_providers (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -53,6 +54,8 @@ CREATE TABLE IF NOT EXISTS service_providers (
   experience_years INT,
   rating DECIMAL(3, 2) DEFAULT 0.00,
   total_jobs INT DEFAULT 0,
+  total_reviews INT DEFAULT 0,      -- Added directly in table creation
+  avg_rating DECIMAL(3, 2) DEFAULT 0.00,  -- Added directly in table creation
   bio TEXT,
   avatar_url VARCHAR(255),
   location VARCHAR(200),
@@ -228,10 +231,10 @@ CREATE TABLE IF NOT EXISTS invoices (
   FOREIGN KEY (provider_id) REFERENCES service_providers(id)
 );
 
-
-//11
-
-
+-- =====================================================
+-- Table 11: password_reset_tokens
+-- Purpose: Store password reset tokens
+-- =====================================================
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id INT PRIMARY KEY AUTO_INCREMENT,
   email VARCHAR(255) NOT NULL,
@@ -241,6 +244,26 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_email (email),
   INDEX idx_token (token)
+);
+
+-- =====================================================
+-- Table 12: provider_reviews
+-- Purpose: Store customer reviews for providers
+-- =====================================================
+CREATE TABLE IF NOT EXISTS provider_reviews (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  booking_id INT NOT NULL,
+  provider_id INT NOT NULL,
+  customer_id INT NOT NULL,
+  rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  review TEXT,
+  is_anonymous BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+  FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
+  FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_booking_review (booking_id)
 );
 
 -- =====================================================
@@ -291,7 +314,11 @@ CREATE INDEX idx_invoices_provider ON invoices(provider_id);
 CREATE INDEX idx_invoices_number ON invoices(invoice_number);
 CREATE INDEX idx_invoices_status ON invoices(status);
 
+-- Provider reviews indexes
+CREATE INDEX idx_reviews_provider ON provider_reviews(provider_id);
+CREATE INDEX idx_reviews_booking ON provider_reviews(booking_id);
+
 -- =====================================================
 -- All tables created successfully
--- Total: 10 tables
+-- Total: 12 tables
 -- =====================================================

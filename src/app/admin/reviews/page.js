@@ -4,274 +4,311 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminTheme } from '../layout'
 
-export default function Reviews() {
+export default function AdminProviders() {
   const router = useRouter()
   const { isDarkMode } = useAdminTheme()
-  const [reviews, setReviews] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
+  const [providers, setProviders] = useState([])
   const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selectedProvider, setSelectedProvider] = useState(null)
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
-    checkAuth()
-    loadReviews()
-    loadStats()
+    const adminAuth = localStorage.getItem('adminAuth')
+    if (adminAuth !== 'loggedin') {
+      router.push('/admin/login')
+      return
+    }
+    loadProviders()
   }, [])
 
-  const checkAuth = () => {
-    const auth = localStorage.getItem('adminAuth')
-    if (!auth) {
-      router.push('/')
-    }
-  }
-
-  const loadReviews = async () => {
-    setLoading(true)
+  const loadProviders = async () => {
     try {
-      const res = await fetch('/api/reviews')
+      const res = await fetch('/api/admin/providers')
       const data = await res.json()
       if (data.success) {
-        setReviews(data.data || [])
+        setProviders(data.data.providers)
+        setStats(data.data.stats)
       }
     } catch (error) {
-      console.error('Error loading reviews:', error)
+      console.error('Error:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const loadStats = async () => {
+  const loadProviderDetails = async (id) => {
     try {
-      const res = await fetch('/api/stats')
+      const res = await fetch(`/api/admin/providers?id=${id}`)
       const data = await res.json()
       if (data.success) {
-        setStats(data.data)
+        setSelectedProvider(data.data)
+        setShowModal(true)
       }
     } catch (error) {
-      console.error('Error loading stats:', error)
+      console.error('Error:', error)
     }
   }
 
-  const deleteReview = async (reviewId) => {
-    if (!confirm('Are you sure you want to delete this review?')) return
-    
-    try {
-      const res = await fetch(`/api/reviews?id=${reviewId}`, {
-        method: 'DELETE'
-      })
-      const data = await res.json()
-      if (data.success) {
-        loadReviews()
-        loadStats()
-      }
-    } catch (error) {
-      console.error('Error deleting review:', error)
-    }
-  }
+  const filteredProviders = providers.filter(p => 
+    p.name?.toLowerCase().includes(search.toLowerCase()) ||
+    p.email?.toLowerCase().includes(search.toLowerCase()) ||
+    p.specialty?.toLowerCase().includes(search.toLowerCase())
+  )
 
-  const filteredReviews = reviews.filter(review => {
-    if (filter === 'all') return true
-    return review.rating === parseInt(filter)
-  })
-
-  const getRatingStars = (rating) => {
+  // ✅ FIXED: RatingStars component with number conversion
+  const RatingStars = ({ rating }) => {
+    const numRating = Number(rating) || 0
     return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <svg
-            key={star}
-            className={`w-4 h-4 ${
-              star <= rating
-                ? 'text-yellow-400'
-                : isDarkMode ? 'text-slate-600' : 'text-gray-300'
-            }`}
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
+      <div className="flex items-center gap-0.5">
+        {[1,2,3,4,5].map(star => (
+          <span key={star} className={star <= numRating ? 'text-yellow-400' : 'text-gray-300'}>
+            ★
+          </span>
         ))}
       </div>
     )
+  }
+
+  // ✅ FIXED: Helper function to format rating
+  const formatRating = (rating) => {
+    const num = Number(rating) || 0
+    return num.toFixed(1)
   }
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-teal-500 border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent"></div>
       </div>
     )
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-6">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className={`text-3xl sm:text-4xl font-bold mb-2 ${
-          isDarkMode ? 'text-white' : 'text-gray-900'
-        }`}>
-          Reviews
+        <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          Service Providers
         </h1>
-        <p className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>
-          Manage customer reviews and feedback
+        <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+          {providers.length} total providers
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-        <div className={`rounded-xl p-6 shadow-lg border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-        }`}>
-          <p className={`text-sm mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-            Total Reviews
-          </p>
-          <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {stats?.totalReviews || reviews.length}
-          </p>
-        </div>
-        
-        <div className={`rounded-xl p-6 shadow-lg border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-        }`}>
-          <p className={`text-sm mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-            Average Rating
-          </p>
-          <div className="flex items-center gap-2">
-            <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              {stats?.averageRating || '0.0'}
+      {/* Stats */}
+      {stats && (
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white'} shadow`}>
+            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Total</p>
+            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              {stats.total}
             </p>
-            <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>/ 5.0</span>
           </div>
-          <div className="mt-2">
-            {getRatingStars(Math.round(parseFloat(stats?.averageRating || 0)))}
+          <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white'} shadow`}>
+            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Active</p>
+            <p className={`text-2xl font-bold text-green-600`}>{stats.active}</p>
+          </div>
+          <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white'} shadow`}>
+            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Avg Rating</p>
+            <p className={`text-2xl font-bold text-yellow-500`}>{stats.avg_rating}</p>
+          </div>
+          <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white'} shadow`}>
+            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Reviews</p>
+            <p className={`text-2xl font-bold text-purple-600`}>{stats.total_reviews}</p>
           </div>
         </div>
-        
-        <div className={`rounded-xl p-6 shadow-lg border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-        }`}>
-          <p className={`text-sm mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-            5-Star Reviews
-          </p>
-          <p className={`text-3xl font-bold text-green-600 dark:text-green-400`}>
-            {stats?.fiveStarReviews || 0}
-          </p>
-        </div>
-      </div>
+      )}
 
-      {/* Rating Filters */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            filter === 'all'
-              ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white'
-              : isDarkMode
-                ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+      {/* Search */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search by name, email, specialty..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className={`w-full max-w-md px-4 py-2 rounded-lg border ${
+            isDarkMode 
+              ? 'bg-slate-800 border-slate-700 text-white'
+              : 'bg-white border-gray-200'
           }`}
-        >
-          All Reviews
-        </button>
-        {[5, 4, 3, 2, 1].map((rating) => (
-          <button
-            key={rating}
-            onClick={() => setFilter(rating.toString())}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${
-              filter === rating.toString()
-                ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white'
-                : isDarkMode
-                  ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {rating} Star
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          </button>
-        ))}
+        />
       </div>
 
-      {/* Reviews List */}
-      <div className="space-y-4">
-        {filteredReviews.length > 0 ? (
-          filteredReviews.map((review) => (
+      {/* Providers Grid */}
+      {filteredProviders.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredProviders.map((provider) => (
             <div
-              key={review.id}
-              className={`rounded-xl shadow-lg border p-6 ${
-                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+              key={provider.id}
+              onClick={() => loadProviderDetails(provider.id)}
+              className={`p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition ${
+                isDarkMode ? 'bg-slate-800' : 'bg-white'
               }`}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
-                    isDarkMode ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-900'
-                  }`}>
-                    {review.customer_name?.charAt(0) || 'U'}
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center gap-3 mb-1">
-                      <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {review.customer_name || 'Anonymous'}
-                      </h4>
-                      <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
-                        {new Date(review.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 mb-2">
-                      {getRatingStars(review.rating)}
-                      <span className={`text-sm font-medium ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        {review.rating}.0
-                      </span>
-                    </div>
-                    
-                    <p className={`text-sm mb-2 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                      {review.comment}
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {provider.name}
+                  </h3>
+                  <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {provider.specialty || 'General'}
+                  </p>
+                </div>
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  provider.status === 'active' 
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {provider.status}
+                </span>
+              </div>
+
+              <div className="mb-3">
+                <RatingStars rating={provider.avg_rating || provider.rating} />
+                {/* ✅ FIXED: Using formatRating helper */}
+                <p className={`text-sm mt-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                  {formatRating(provider.avg_rating || provider.rating)} ({provider.total_reviews || 0} reviews)
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Jobs</p>
+                  <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {provider.total_jobs || 0}
+                  </p>
+                </div>
+                <div>
+                  <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Experience</p>
+                  <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {provider.experience_years || 0} yrs
+                  </p>
+                </div>
+              </div>
+
+              <p className={`text-sm mt-3 truncate ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                📍 {provider.city || 'No location'} • 📧 {provider.email}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className={`text-center py-12 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+          No providers found
+        </p>
+      )}
+
+      {/* Details Modal */}
+      {showModal && selectedProvider && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-lg p-6 ${
+            isDarkMode ? 'bg-slate-900' : 'bg-white'
+          }`}>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {selectedProvider.name}
+                </h2>
+                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                  {selectedProvider.email} • {selectedProvider.phone}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Provider Details */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Specialty</p>
+                  <p className={isDarkMode ? 'text-white' : 'text-gray-900'}>{selectedProvider.specialty || '—'}</p>
+                </div>
+                <div>
+                  <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Experience</p>
+                  <p className={isDarkMode ? 'text-white' : 'text-gray-900'}>{selectedProvider.experience_years || 0} years</p>
+                </div>
+                <div>
+                  <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Location</p>
+                  <p className={isDarkMode ? 'text-white' : 'text-gray-900'}>{selectedProvider.city || '—'}</p>
+                </div>
+                <div>
+                  <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Status</p>
+                  <p className={selectedProvider.status === 'active' ? 'text-green-600' : 'text-gray-500'}>
+                    {selectedProvider.status}
+                  </p>
+                </div>
+              </div>
+
+              {/* Bio */}
+              {selectedProvider.bio && (
+                <div>
+                  <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Bio</p>
+                  <p className={isDarkMode ? 'text-slate-300' : 'text-gray-700'}>{selectedProvider.bio}</p>
+                </div>
+              )}
+
+              {/* Ratings */}
+              <div className="pt-4 border-t">
+                <h3 className={`font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Ratings & Reviews
+                </h3>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="text-center">
+                    {/* ✅ FIXED: Using formatRating */}
+                    <p className="text-3xl font-bold text-yellow-500">
+                      {formatRating(selectedProvider.avg_rating || selectedProvider.rating)}
                     </p>
-                    
-                    <div className="flex items-center gap-3 text-xs">
-                      <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>
-                        Service: {review.service_name}
-                      </span>
-                      <span className={isDarkMode ? 'text-slate-500' : 'text-gray-400'}>•</span>
-                      <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>
-                        Tradesperson: {review.provider_name}
-                      </span>
-                    </div>
+                    <RatingStars rating={selectedProvider.avg_rating || selectedProvider.rating} />
+                  </div>
+                  <div>
+                    <p className={isDarkMode ? 'text-slate-300' : 'text-gray-700'}>
+                      {selectedProvider.total_reviews || 0} reviews
+                    </p>
+                    <p className={isDarkMode ? 'text-slate-300' : 'text-gray-700'}>
+                      {selectedProvider.total_jobs || 0} total jobs
+                    </p>
                   </div>
                 </div>
-                
-                <button
-                  onClick={() => deleteReview(review.id)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-red-600 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+
+                {/* Reviews List */}
+                {selectedProvider.reviews && selectedProvider.reviews.length > 0 ? (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {selectedProvider.reviews.map((review) => (
+                      <div key={review.id} className={`p-3 rounded ${
+                        isDarkMode ? 'bg-slate-800' : 'bg-gray-50'
+                      }`}>
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium">
+                            {review.is_anonymous ? 'Anonymous' : `${review.first_name} ${review.last_name}`}
+                          </span>
+                          <RatingStars rating={review.rating} />
+                        </div>
+                        <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                          {review.review}
+                        </p>
+                        <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`}>
+                          {review.service_name} • {new Date(review.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                    No reviews yet
+                  </p>
+                )}
               </div>
             </div>
-          ))
-        ) : (
-          <div className={`text-center py-12 ${isDarkMode ? 'bg-slate-900' : 'bg-white'} rounded-xl border ${
-            isDarkMode ? 'border-slate-800' : 'border-gray-200'
-          }`}>
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-            </svg>
-            <p className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              No reviews found
-            </p>
-            <p className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>
-              {filter === 'all' ? 'No reviews yet' : `No ${filter}-star reviews`}
-            </p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

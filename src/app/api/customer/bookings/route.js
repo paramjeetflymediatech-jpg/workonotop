@@ -1,4 +1,4 @@
-// app/api/customer/bookings/route.js
+// app/api/customer/bookings/route.js - FINAL
 import { NextResponse } from 'next/server'
 import { execute } from '@/lib/db'
 
@@ -22,11 +22,15 @@ export async function GET(request) {
         s.name as service_name,
         s.slug as service_slug,
         s.image_url as service_image,
+        s.duration_minutes,
         c.name as category_name,
-        c.slug as category_slug
+        c.slug as category_slug,
+        sp.name as provider_name,
+        sp.rating as provider_rating
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
+      LEFT JOIN service_providers sp ON b.provider_id = sp.id
       WHERE 1=1
     `
     const params = []
@@ -43,7 +47,7 @@ export async function GET(request) {
 
     const bookings = await execute(sql, params)
 
-    // Get photos for each booking
+    // Get photos and calculate proper amounts
     for (let booking of bookings) {
       const photos = await execute(
         'SELECT photo_url FROM booking_photos WHERE booking_id = ?',
@@ -59,6 +63,23 @@ export async function GET(request) {
         [booking.id]
       )
       booking.status_history = statusHistory
+
+      // Calculate amounts properly
+      const basePrice = parseFloat(booking.service_price || 0)
+      const additionalPrice = parseFloat(booking.additional_price || 0)
+      const overtimeEarnings = parseFloat(booking.overtime_earnings || 0)
+      const finalAmount = parseFloat(booking.final_provider_amount || booking.provider_amount || 0)
+
+      booking.display = {
+        base_price: basePrice,
+        additional_price: additionalPrice,
+        overtime_earnings: overtimeEarnings,
+        customer_total: basePrice + overtimeEarnings,
+        provider_gets: finalAmount,
+        has_overtime: overtimeEarnings > 0,
+        overtime_minutes: booking.overtime_minutes || 0,
+        overtime_rate: additionalPrice
+      }
     }
 
     return NextResponse.json({ success: true, data: bookings })
@@ -91,16 +112,21 @@ export async function POST(request) {
         s.slug as service_slug,
         s.image_url as service_image,
         s.description as service_description,
+        s.duration_minutes,
         c.name as category_name,
-        c.slug as category_slug
+        c.slug as category_slug,
+        sp.name as provider_name,
+        sp.rating as provider_rating,
+        sp.phone as provider_phone,
+        sp.email as provider_email
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
+      LEFT JOIN service_providers sp ON b.provider_id = sp.id
       WHERE b.id = ?
     `
     const params = [booking_id]
 
-    // Verify ownership
     if (user_id) {
       sql += ' AND b.user_id = ?'
       params.push(user_id)
@@ -125,14 +151,12 @@ export async function POST(request) {
 
     const booking = bookings[0]
 
-    // Get photos
     const photos = await execute(
       'SELECT photo_url FROM booking_photos WHERE booking_id = ?',
       [booking_id]
     )
     booking.photos = photos.map(p => p.photo_url)
 
-    // Get status history
     const statusHistory = await execute(
       `SELECT * FROM booking_status_history 
        WHERE booking_id = ? 
@@ -140,6 +164,24 @@ export async function POST(request) {
       [booking_id]
     )
     booking.status_history = statusHistory
+
+    const basePrice = parseFloat(booking.service_price || 0)
+    const additionalPrice = parseFloat(booking.additional_price || 0)
+    const overtimeEarnings = parseFloat(booking.overtime_earnings || 0)
+    const finalAmount = parseFloat(booking.final_provider_amount || booking.provider_amount || 0)
+
+    booking.display = {
+      base_price: basePrice,
+      additional_price: additionalPrice,
+      overtime_earnings: overtimeEarnings,
+      customer_total: basePrice + overtimeEarnings,
+      provider_gets: finalAmount,
+      has_overtime: overtimeEarnings > 0,
+      overtime_minutes: booking.overtime_minutes || 0,
+      overtime_rate: additionalPrice,
+      standard_duration: booking.duration_minutes || 60,
+      actual_duration: booking.actual_duration_minutes || 0
+    }
 
     return NextResponse.json({ success: true, data: booking })
   } catch (error) {

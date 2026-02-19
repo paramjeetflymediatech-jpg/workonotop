@@ -2,8 +2,6 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import fs from 'fs';
-import path from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -11,41 +9,23 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: resolve(__dirname, '../../.env') });
 
-// Configuration
 const DB_NAME = process.env.DB_NAME || 'workontap_db';
 
-// Create connection without specifying database
-const initialConnection = async () => {
+// Create database connection
+const connect = async (withDb = false) => {
   return await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    port: parseInt(process.env.DB_PORT || '3306')
-  });
-};
-
-// Create connection pool
-const createPool = () => {
-  return mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: DB_NAME,
+    password: process.env.DB_PASSWORD || 'root123',
     port: parseInt(process.env.DB_PORT || '3306'),
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    ...(withDb && { database: DB_NAME })
   });
 };
 
-// Complete schema SQL
-const schemaSql = [
-  // Create database
-  `CREATE DATABASE IF NOT EXISTS ${DB_NAME}`,
-
-  // Use database
-  `USE ${DB_NAME}`,
-
+// =====================================================
+// Table creation SQL - All 12 tables
+// =====================================================
+const tables = [
   // Table 1: users
   `CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -74,7 +54,7 @@ const schemaSql = [
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`,
 
-  // Table 3: service_providers
+  // Table 3: service_providers (with total_reviews and avg_rating included)
   `CREATE TABLE IF NOT EXISTS service_providers (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(200) NOT NULL,
@@ -85,6 +65,8 @@ const schemaSql = [
     experience_years INT,
     rating DECIMAL(3, 2) DEFAULT 0.00,
     total_jobs INT DEFAULT 0,
+    total_reviews INT DEFAULT 0,
+    avg_rating DECIMAL(3, 2) DEFAULT 0.00,
     bio TEXT,
     avatar_url VARCHAR(255),
     location VARCHAR(200),
@@ -249,11 +231,30 @@ const schemaSql = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_email (email),
     INDEX idx_token (token)
+  )`,
+
+  // Table 12: provider_reviews
+  `CREATE TABLE IF NOT EXISTS provider_reviews (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    booking_id INT NOT NULL,
+    provider_id INT NOT NULL,
+    customer_id INT NOT NULL,
+    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    review TEXT,
+    is_anonymous BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
+    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_booking_review (booking_id)
   )`
 ];
 
+// =====================================================
 // Indexes for performance
-const indexStatements = [
+// =====================================================
+const indexes = [
   // Users table indexes
   `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
   `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`,
@@ -298,178 +299,130 @@ const indexStatements = [
   `CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number)`,
   `CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`,
 
-  // Password reset tokens indexes
-  `CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email)`,
-  `CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token)`
+  // Provider reviews indexes
+  `CREATE INDEX IF NOT EXISTS idx_reviews_provider ON provider_reviews(provider_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_reviews_booking ON provider_reviews(booking_id)`
 ];
 
+// =====================================================
 // Main migration function
+// =====================================================
 async function runMigration() {
-  let connection = null;
-  let pool = null;
+  let conn = null;
 
   console.log('\n' + '='.repeat(60));
-  console.log('🚀 WorkOnTap Database Migration');
+  console.log('🚀 WorkOnTap Database Migration (12 Tables)');
   console.log('='.repeat(60) + '\n');
 
   try {
     // Step 1: Create database
     console.log('📁 Step 1: Creating database...');
-    connection = await initialConnection();
-    await connection.query(`CREATE DATABASE IF NOT EXISTS ${DB_NAME}`);
-    console.log(`  ✓ Database ${DB_NAME} created/verified`);
-    await connection.end();
-    
-    // Step 2: Create connection pool
-    pool = createPool();
+    conn = await connect(false);
+    await conn.query(`CREATE DATABASE IF NOT EXISTS ${DB_NAME}`);
+    console.log(`   ✓ Database '${DB_NAME}' is ready`);
+    await conn.end();
+
+    // Step 2: Connect to database
+    conn = await connect(true);
+    console.log(`   ✓ Connected to database\n`);
 
     // Step 3: Create tables
-    console.log('\n🏗️  Step 2: Creating tables...');
-    const createdTables = [];
+    console.log('🏗️  Step 2: Creating tables...');
+    let createdCount = 0;
+    const tableNames = [];
 
-    for (const sql of schemaSql) {
+    for (const sql of tables) {
       try {
-        if (sql.startsWith('USE')) continue;
+        await conn.execute(sql);
         
-        await pool.execute(sql);
-        
-        if (sql.includes('CREATE TABLE')) {
-          const match = sql.match(/CREATE TABLE.*?(\w+)/);
-          if (match) {
-            const tableName = match[1];
-            createdTables.push(tableName);
-            console.log(`  ✓ Created: ${tableName}`);
-          }
+        // Extract table name for logging
+        const match = sql.match(/CREATE TABLE.*?(\w+)/);
+        if (match) {
+          const tableName = match[1];
+          tableNames.push(tableName);
+          console.log(`   ✓ Created: ${tableName}`);
+          createdCount++;
         }
-      } catch (error) {
-        if (error.code === 'ER_TABLE_EXISTS_ERROR') {
-          console.log(`  ⊘ Table already exists: ${error.message.match(/'.*?'/)?.[0] || 'table'}`);
+      } catch (err) {
+        if (err.code === 'ER_TABLE_EXISTS_ERROR') {
+          console.log(`   ⊘ Table already exists (skipped)`);
         } else {
-          console.log(`  ⚠ Warning: ${error.message.substring(0, 100)}...`);
+          throw err;
         }
       }
     }
-    console.log(`  Total tables: ${createdTables.length}`);
+    console.log(`   📊 Total tables created/verified: ${createdCount}/12\n`);
 
     // Step 4: Create indexes
-    console.log('\n📊 Step 3: Creating indexes...');
+    console.log('📊 Step 3: Creating indexes...');
     let indexCount = 0;
-    for (const indexSql of indexStatements) {
+    for (const sql of indexes) {
       try {
-        await pool.execute(indexSql);
+        await conn.execute(sql);
         indexCount++;
-      } catch (error) {
-        if (!error.message.includes('Duplicate key')) {
-          console.log(`  ⚠ ${error.message.substring(0, 100)}...`);
+      } catch (err) {
+        // Ignore duplicate index errors
+        if (!err.message.includes('Duplicate key name')) {
+          console.log(`   ⚠ Warning: ${err.message.substring(0, 100)}`);
         }
       }
     }
-    console.log(`  ✓ Created ${indexCount} indexes`);
+    console.log(`   ✓ Created ${indexCount} indexes\n`);
 
-    // Step 5: Verify tables
-    console.log('\n🔍 Step 4: Verifying tables...');
-    const [tables] = await pool.query('SHOW TABLES');
-    console.log('  Tables in database:');
-    tables.forEach(table => {
-      const tableName = Object.values(table)[0];
-      console.log(`  ✓ ${tableName}`);
+    // Step 5: Verify all tables
+    console.log('🔍 Step 4: Verifying tables...');
+    const [rows] = await conn.query('SHOW TABLES');
+    const actualTables = rows.map(row => Object.values(row)[0]);
+    
+    console.log(`   Found ${actualTables.length} tables in database:`);
+    actualTables.sort().forEach((name, i) => {
+      console.log(`   ${(i+1).toString().padStart(2)}. ${name}`);
     });
 
     // Step 6: Show table structures count
-    console.log('\n📋 Step 5: Table structures:');
-    
+    console.log('\n📋 Step 5: Table column counts:');
     const tableQueries = [
-      'users', 'service_categories', 'service_providers', 'services', 
-      'bookings', 'booking_photos', 'booking_status_history', 
-      'booking_time_logs', 'job_photos', 'invoices', 'password_reset_tokens'
+      'users', 'service_categories', 'service_providers', 'services',
+      'bookings', 'booking_photos', 'booking_status_history', 'booking_time_logs',
+      'job_photos', 'invoices', 'password_reset_tokens', 'provider_reviews'
     ];
 
     for (const table of tableQueries) {
       try {
-        const [columns] = await pool.query(`DESCRIBE ${table}`);
-        console.log(`  ${table}: ${columns.length} columns`);
-      } catch (error) {
-        console.log(`  ${table}: not found`);
+        const [columns] = await conn.query(`DESCRIBE ${table}`);
+        console.log(`   • ${table.padEnd(22)}: ${columns.length} columns`);
+      } catch (err) {
+        console.log(`   • ${table.padEnd(22)}: not found`);
       }
     }
-
-    // Step 7: Save migration record
-    console.log('\n💾 Step 6: Saving migration record...');
-    const migrationRecord = {
-      timestamp: new Date().toISOString(),
-      database: DB_NAME,
-      tables: createdTables,
-      indexes: indexCount,
-      status: 'success'
-    };
-
-    const migrationDir = path.join(process.cwd(), 'migrations');
-    if (!fs.existsSync(migrationDir)) {
-      fs.mkdirSync(migrationDir, { recursive: true });
-    }
-
-    const fileName = `migration_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-    fs.writeFileSync(
-      path.join(migrationDir, fileName),
-      JSON.stringify(migrationRecord, null, 2)
-    );
-    console.log(`  ✓ Migration record saved: ${fileName}`);
 
     // Summary
     console.log('\n' + '='.repeat(60));
     console.log('✅ Migration completed successfully!');
     console.log('='.repeat(60));
-    console.log(`📊 Database: ${DB_NAME}`);
-    console.log(`📈 Total tables: ${tables.length}`);
-    console.log(`📇 Total indexes: ${indexCount}`);
-    console.log(`\n📝 Tables created:`);
-    createdTables.forEach((table, index) => {
-      console.log(`   ${index + 1}. ${table}`);
-    });
-    console.log('\n' + '='.repeat(60));
-    console.log('\n⚠️  All tables are empty. Please add data through your application.\n');
+    console.log(`   Database: ${DB_NAME}`);
+    console.log(`   Tables:   ${actualTables.length}/12`);
+    console.log(`   Indexes:  ${indexCount}`);
+    console.log('='.repeat(60) + '\n');
 
-  } catch (error) {
-    console.error('\n❌ Error running migration:', error.message);
-    if (error.code === 'ER_ACCESS_DENIED_ERROR') {
-      console.error('   Check your database credentials in .env file');
-    } else if (error.code === 'ECONNREFUSED') {
-      console.error('   Make sure MySQL server is running');
-    } else if (error.code === 'ER_BAD_DB_ERROR') {
-      console.error('   Database does not exist and could not be created');
+  } catch (err) {
+    console.error('\n❌ Error:', err.message);
+    if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+      console.error('   🔑 Check database credentials in .env file');
+      console.error('   DB_HOST, DB_USER, DB_PASSWORD, DB_PORT');
+    } else if (err.code === 'ECONNREFUSED') {
+      console.error('   🔌 Make sure MySQL server is running');
+    } else if (err.code === 'ER_BAD_DB_ERROR') {
+      console.error('   📁 Database does not exist, but should be created automatically');
     }
-    
-    // Save error record
-    try {
-      const errorDir = path.join(process.cwd(), 'migrations/errors');
-      if (!fs.existsSync(errorDir)) {
-        fs.mkdirSync(errorDir, { recursive: true });
-      }
-      
-      const errorFile = `error_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-      fs.writeFileSync(
-        path.join(errorDir, errorFile),
-        JSON.stringify({
-          timestamp: new Date().toISOString(),
-          error: error.message,
-          code: error.code,
-          sqlState: error.sqlState
-        }, null, 2)
-      );
-    } catch (e) {
-      // Ignore
-    }
-    
     process.exit(1);
   } finally {
-    if (pool) {
-      await pool.end();
+    if (conn) {
+      await conn.end();
+      console.log('   🔒 Database connection closed');
     }
   }
 }
 
-// Run migration
+// Run the migration
 runMigration();
-
-// Export for programmatic usage
-export { runMigration };

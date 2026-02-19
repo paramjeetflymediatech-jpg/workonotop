@@ -1,329 +1,311 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { useAuth } from 'src/context/AuthContext'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Header from '@/components/Header'
 
 export default function ProviderDashboard() {
-  const { user, isProvider } = useAuth()
   const router = useRouter()
-  const [jobs, setJobs] = useState([])
+  const [provider, setProvider] = useState(null)
+  const [stats, setStats] = useState({
+    pending: 0,
+    inProgress: 0,
+    completed: 0
+    // earnings removed
+  })
+  const [recentJobs, setRecentJobs] = useState([])
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ pending: 0, inProgress: 0, completed: 0, totalEarnings: 0 })
-  const [error, setError] = useState(null)
+  const [ratings, setRatings] = useState(null)
 
-  // Redirect if not provider
   useEffect(() => {
-    if (!loading && !isProvider()) {
-      router.push('/')
-    }
-  }, [isProvider, loading, router])
+    checkAuth()
+    loadDashboard()
+    loadRatings()
+  }, [])
 
-  useEffect(() => { 
-    if (isProvider()) {
-      loadJobs() 
+  const checkAuth = () => {
+    const token = localStorage.getItem('providerToken')
+    if (!token) {
+      router.push('/provider/login')
     }
-  }, [isProvider])
+  }
 
-  const loadJobs = async () => {
+  const token = () => localStorage.getItem('providerToken')
+
+  const loadDashboard = async () => {
     try {
-      setError(null)
-      const token = localStorage.getItem('providerToken')
-      
-      if (!token) {
-        setError('Authentication token not found')
-        setLoading(false)
-        return
-      }
-
-      const res = await fetch('/api/provider/jobs', {
-        headers: { Authorization: `Bearer ${token}` }
+      // Load provider profile
+      const profileRes = await fetch('/api/provider', {
+        headers: { Authorization: `Bearer ${token()}` }
       })
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          // Token expired or invalid
-          localStorage.removeItem('providerToken')
-          router.push('/')
-          return
-        }
-        throw new Error(`HTTP error! status: ${res.status}`)
+      const profileData = await profileRes.json()
+      if (profileData.success) {
+        setProvider(profileData.data)
       }
 
-      const data = await res.json()
-      
-      if (data.success) {
-        const list = data.data || []
-        setJobs(list)
+      // Load jobs stats
+      const jobsRes = await fetch('/api/provider/jobs', {
+        headers: { Authorization: `Bearer ${token()}` }
+      })
+      const jobsData = await jobsRes.json()
+      if (jobsData.success) {
+        const jobs = jobsData.data || []
+        
+        // Calculate stats (earnings removed)
+        const pending = jobs.filter(j => j.status === 'pending' || j.status === 'matching').length
+        const inProgress = jobs.filter(j => j.status === 'in_progress' || j.status === 'confirmed').length
+        const completed = jobs.filter(j => j.status === 'completed').length
 
-        let pending = 0, inProgress = 0, completed = 0, totalEarnings = 0
-        
-        list.forEach(job => {
-          const status = job.status?.toLowerCase() || ''
-          
-          // Pending jobs
-          if (['pending', 'matching', 'awaiting_confirmation'].includes(status)) {
-            pending++
-          }
-          // In progress jobs
-          if (['confirmed', 'in_progress', 'assigned'].includes(status)) {
-            inProgress++
-          }
-          // Completed jobs
-          if (status === 'completed') {
-            completed++
-            // Use provider_amount if set, else fall back to full price
-            const earnings = parseFloat(job.provider_amount ?? job.service_price ?? 0)
-            if (!isNaN(earnings)) {
-              totalEarnings += earnings
-            }
-          }
-        })
-        
-        setStats({ 
-          pending, 
-          inProgress, 
-          completed, 
-          totalEarnings: Number(totalEarnings.toFixed(2))
-        })
-      } else {
-        setError(data.message || 'Failed to load jobs')
+        setStats({ pending, inProgress, completed })
+
+        // Get recent jobs
+        const recent = jobs
+          .filter(j => j.status === 'completed')
+          .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+          .slice(0, 5)
+        setRecentJobs(recent)
       }
-    } catch (err) {
-      console.error('Dashboard load error:', err)
-      setError(err.message || 'An error occurred while loading your dashboard')
+    } catch (error) {
+      console.error('Error loading dashboard:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  // Safe amount helper — never returns NaN
-  const safeAmt = (job) => {
-    const baseAmount = parseFloat(job.provider_amount ?? job.service_price ?? 0)
-    const additional = parseFloat(job.additional_price ?? 0)
-    const total = (isNaN(baseAmount) ? 0 : baseAmount) + (isNaN(additional) ? 0 : additional)
-    return Number(total.toFixed(2))
+  const loadRatings = async () => {
+    try {
+      const res = await fetch('/api/provider/ratings', {
+        headers: { Authorization: `Bearer ${token()}` }
+      })
+      const data = await res.json()
+      if (data.success) {
+        setRatings(data.data)
+      }
+    } catch (error) {
+      console.error('Error loading ratings:', error)
+    }
   }
 
-  // Format status for display
-  const formatStatus = (status) => {
-    if (!status) return 'pending'
-    return status.replace(/_/g, ' ')
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount)
+  }
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  // Rating stars component with number conversion
+  const RatingStars = ({ rating }) => {
+    const numRating = Number(rating) || 0
+    const fullStars = Math.floor(numRating)
+    const hasHalfStar = numRating % 1 >= 0.5
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
+
+    return (
+      <div className="flex items-center gap-0.5">
+        {[...Array(fullStars)].map((_, i) => (
+          <span key={`full-${i}`} className="text-yellow-400 text-lg">★</span>
+        ))}
+        {hasHalfStar && <span className="text-yellow-400 text-lg">½</span>}
+        {[...Array(emptyStars)].map((_, i) => (
+          <span key={`empty-${i}`} className="text-gray-300 text-lg">★</span>
+        ))}
+        <span className="ml-1 text-sm text-gray-600">({numRating.toFixed(1)})</span>
+      </div>
+    )
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-5xl mb-4">😕</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => {
-              setLoading(true)
-              setError(null)
-              loadJobs()
-            }}
-            className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
-          >
-            Try Again
-          </button>
+      <>
+        <Header />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent"></div>
         </div>
-      </div>
+      </>
     )
   }
-
-  // Get user's first name safely
-  const firstName = user?.name?.split(' ')[0] || 'there'
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-
-        {/* Welcome */}
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-            Welcome back, {firstName}! 👋
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">Here's your activity overview</p>
-        </div>
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-          <StatCard icon="⏳" label="Pending" value={stats.pending} />
-          <StatCard icon="⚡" label="In Progress" value={stats.inProgress} />
-          <StatCard icon="✅" label="Completed" value={stats.completed} />
-          <StatCard 
-            icon="💰" 
-            label="Earnings" 
-            value={`$${stats.totalEarnings.toFixed(2)}`} 
-            green 
-          />
-        </div>
-
-        {/* Quick links */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-          <QuickLink href="/provider/available-jobs" icon="🗂️" title="Available Jobs" sub="Browse and accept new jobs" />
-          <QuickLink href="/provider/schedule" icon="📅" title="My Schedule" sub="Manage your availability" />
-          <QuickLink href="/provider/earnings" icon="💰" title="Earnings" sub="View payment history" />
-          <QuickLink href="/provider/messages" icon="💬" title="Messages" sub="Chat with customers" />
-        </div>
-
-        {/* Recent jobs */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Recent Jobs</h2>
-            {jobs.length > 0 && (
-              <Link href="/provider/jobs" className="text-sm text-green-600 font-medium hover:text-green-700 transition">
-                View All →
-              </Link>
-            )}
+    <>
+      <Header />
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Welcome Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Welcome back, {provider?.name || 'Provider'}!
+            </h1>
+            <p className="text-gray-600 mt-1">Here's your activity overview</p>
           </div>
 
-          {jobs.length === 0 ? (
-            <div className="p-10 text-center">
-              <span className="text-5xl mb-4 block">📋</span>
-              <h3 className="font-semibold text-gray-900 mb-2">No jobs yet</h3>
-              <p className="text-sm text-gray-400 mb-6 max-w-sm mx-auto">
-                Ready to start earning? Browse available jobs and accept your first client!
-              </p>
-              <Link 
-                href="/provider/available-jobs"
-                className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition shadow-md hover:shadow-lg"
-              >
-                Browse Available Jobs
-                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
+          {/* Stats Grid - 3 columns only (earnings removed) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Pending Jobs */}
+            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-yellow-400">
+              <p className="text-sm text-gray-600 mb-1">Pending</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
             </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {jobs.slice(0, 5).map((job) => {
-                const status = job.status?.toLowerCase() || 'pending'
-                const amount = safeAmt(job)
-                
-                // Get status style
-                const getStatusStyle = (status) => {
-                  const styles = {
-                    completed: 'bg-green-100 text-green-700',
-                    in_progress: 'bg-purple-100 text-purple-700',
-                    confirmed: 'bg-blue-100 text-blue-700',
-                    assigned: 'bg-indigo-100 text-indigo-700',
-                    cancelled: 'bg-red-100 text-red-700',
-                    pending: 'bg-yellow-100 text-yellow-700',
-                    matching: 'bg-orange-100 text-orange-700',
-                    awaiting_confirmation: 'bg-amber-100 text-amber-700'
-                  }
-                  return styles[status] || 'bg-gray-100 text-gray-700'
-                }
 
-                return (
-                  <Link 
-                    key={job.id} 
-                    href={`/provider/jobs/${job.id}`}
-                    className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-all gap-3 group"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide ${getStatusStyle(status)}`}>
-                          {formatStatus(status)}
-                        </span>
-                        {job.booking_number && (
-                          <span className="text-xs text-gray-300 font-mono">#{job.booking_number}</span>
-                        )}
+            {/* In Progress */}
+            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-400">
+              <p className="text-sm text-gray-600 mb-1">In Progress</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.inProgress}</p>
+            </div>
+
+            {/* Completed */}
+            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-400">
+              <p className="text-sm text-gray-600 mb-1">Completed</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.completed}</p>
+            </div>
+          </div>
+
+          {/* Ratings Section */}
+          {ratings && ratings.stats.total_reviews > 0 && (
+            <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Ratings</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Overall Rating */}
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-yellow-500 mb-2">
+                    {Number(ratings.stats.overall_rating).toFixed(1)}
+                  </p>
+                  <RatingStars rating={Number(ratings.stats.overall_rating)} />
+                  <p className="text-sm text-gray-500 mt-2">
+                    {ratings.stats.total_reviews} reviews
+                  </p>
+                </div>
+
+                {/* Rating Distribution */}
+                <div className="md:col-span-2">
+                  {[5,4,3,2,1].map(star => (
+                    <div key={star} className="flex items-center gap-2 mb-2">
+                      <span className="text-sm w-8">{star} ★</span>
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-yellow-400 rounded-full"
+                          style={{
+                            width: `${(ratings.stats.distribution[star] / ratings.stats.total_reviews) * 100}%`
+                          }}
+                        />
                       </div>
-                      <p className="font-medium text-gray-900 text-sm truncate group-hover:text-green-700 transition">
-                        {job.service_name || 'Service'}
-                      </p>
-                      <p className="text-xs text-gray-400 truncate">
-                        {job.customer_name || [job.customer_first_name, job.customer_last_name].filter(Boolean).join(' ') || 'Customer'}
+                      <span className="text-sm text-gray-600 w-12">
+                        {ratings.stats.distribution[star]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Reviews */}
+              {ratings.reviews && ratings.reviews.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="font-medium text-gray-900 mb-3">Recent Reviews</h3>
+                  <div className="space-y-4">
+                    {ratings.reviews.slice(0, 3).map((review) => (
+                      <div key={review.id} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{review.customer_name}</span>
+                            <span className="text-xs text-gray-500">•</span>
+                            <span className="text-xs text-gray-500">{review.service}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <span key={i} className={i < review.rating ? 'text-yellow-400' : 'text-gray-300'}>
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        {review.review && (
+                          <p className="text-sm text-gray-600">"{review.review}"</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-2">{review.date}</p>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {ratings.reviews.length > 3 && (
+                    <button
+                      onClick={() => router.push('/provider/ratings')}
+                      className="mt-4 text-sm text-green-600 hover:text-green-700 font-medium"
+                    >
+                      View all {ratings.reviews.length} reviews →
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Quick Actions Grid - Only Available Jobs (Messages removed) */}
+          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
+            <Link
+              href="/provider/available-jobs"
+              className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-md p-6 text-white hover:shadow-lg transition"
+            >
+              <h3 className="text-lg font-semibold mb-2">Available Jobs</h3>
+              <p className="text-sm opacity-90 mb-4">Browse and accept new jobs</p>
+              <span className="text-2xl font-bold">{stats.pending}</span>
+              <span className="text-sm opacity-75 ml-2">pending</span>
+            </Link>
+          </div>
+
+          {/* Recent Jobs */}
+          {recentJobs.length > 0 && (
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Recent Jobs</h2>
+                <Link
+                  href="/provider/jobs"
+                  className="text-sm text-green-600 hover:text-green-700 font-medium"
+                >
+                  View All →
+                </Link>
+              </div>
+
+              <div className="space-y-3">
+                {recentJobs.map((job) => (
+                  <div
+                    key={job.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+                    onClick={() => router.push(`/provider/jobs/${job.id}`)}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                          COMPLETED
+                        </span>
+                        <span className="text-xs text-gray-500">#{job.booking_number}</span>
+                      </div>
+                      <p className="font-medium text-gray-900 mt-1">{job.service_name}</p>
+                      <p className="text-sm text-gray-600">
+                        {job.customer_first_name} {job.customer_last_name}
                       </p>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-bold text-green-600 text-lg">${amount.toFixed(2)}</p>
-                      {job.status === 'completed' && (
-                        <p className="text-[10px] text-gray-400">Earned</p>
-                      )}
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-green-600">
+                        {formatCurrency(job.final_provider_amount || job.provider_amount || 0)}
+                      </p>
+                      <p className="text-xs text-gray-500">{formatDate(job.job_date)}</p>
                     </div>
-                  </Link>
-                )
-              })}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
-
-        {/* Quick action for providers with no jobs */}
-        {jobs.length === 0 && (
-          <div className="mt-6 bg-green-50 border border-green-100 rounded-2xl p-5">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
-                💡
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Tips to get your first job</h3>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Complete your profile with a professional photo</li>
-                  <li>• Set your availability in the schedule</li>
-                  <li>• Browse and apply to available jobs</li>
-                  <li>• Respond quickly to customer messages</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </div>
-  )
-}
-
-// ── Subcomponents ─────────────────────────────────────────────────────────────
-
-function StatCard({ icon, label, value, green = false }) {
-  return (
-    <div className={`rounded-2xl p-4 sm:p-5 transition-all ${
-      green 
-        ? 'bg-gradient-to-br from-green-600 to-green-700 text-white shadow-md' 
-        : 'bg-white border border-gray-100 shadow-sm hover:shadow-md'
-    }`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-2xl">{icon}</span>
-        <span className={`text-xs font-medium ${green ? 'text-green-200' : 'text-gray-400'}`}>{label}</span>
-      </div>
-      <p className={`text-2xl sm:text-3xl font-bold ${green ? 'text-white' : 'text-gray-900'}`}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
-      </p>
-    </div>
-  )
-}
-
-function QuickLink({ href, icon, title, sub }) {
-  return (
-    <Link 
-      href={href}
-      className="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 sm:p-5 hover:shadow-md hover:border-green-200 transition-all flex items-center gap-4 group"
-    >
-      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-green-50 to-green-100 border border-green-200 flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 text-sm group-hover:text-green-700 transition">
-          {title}
-        </p>
-        <p className="text-xs text-gray-400 mt-0.5 truncate">{sub}</p>
-      </div>
-      <svg className="w-5 h-5 text-gray-300 group-hover:text-green-500 transition-all group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-      </svg>
-    </Link>
+    </>
   )
 }

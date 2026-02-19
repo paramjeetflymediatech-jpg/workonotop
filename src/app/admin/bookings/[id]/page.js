@@ -505,14 +505,14 @@ export default function BookingDetailsPage({ params }) {
                     />
                   </>
                 )}
-                {booking.final_provider_amount && (
+                {/* {booking.final_provider_amount && (
                   <Field
                     label="Final Payment"
                     value={`$${parseFloat(booking.final_provider_amount).toFixed(2)}`}
                     labelCls={labelCls}
                     valueCls={valueCls}
                   />
-                )}
+                )} */}
               </div>
             </div>
           )}
