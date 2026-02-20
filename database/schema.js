@@ -7,8 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load environment variables
-dotenv.config({ path: resolve(__dirname, '../../.env') });
-
+dotenv.config({ path: resolve(__dirname, "../.env") });
 const DB_NAME = process.env.DB_NAME || 'workontap_db';
 
 // Create database connection
@@ -16,11 +15,16 @@ const connect = async (withDb = false) => {
   return await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
+  
     password: process.env.DB_PASSWORD || 'root123',
     port: parseInt(process.env.DB_PORT || '3306'),
     ...(withDb && { database: DB_NAME })
   });
 };
+
+console.log("DBUSER",process.env.DB_USER)
+console.log("DBHOST",process.env.DB_HOST)
+
 
 // =====================================================
 // Table creation SQL - All 12 tables
