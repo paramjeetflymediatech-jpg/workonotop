@@ -14,7 +14,7 @@ export default function ContactPage() {
   })
   const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e) => { 
     e.preventDefault()
     // Add your form submission logic here
     console.log('Form submitted:', formData)
