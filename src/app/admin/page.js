@@ -17,6 +17,8 @@ export default function AdminDashboard() {
     completedJobs: 0,
     totalCustomers: 0,
     newCustomers: 0,
+    totalProviders: 0,        // 🔥 Added
+    activeProviders: 0,       // 🔥 Added
     totalServices: 0,
     totalCategories: 0,
     totalRevenue: 0,
@@ -44,20 +46,30 @@ export default function AdminDashboard() {
     if (typeof window === 'undefined') return
     setLoading(true)
     try {
-      const [bookingsRes, customersRes, servicesRes, categoriesRes] = await Promise.all([
+      // 🔥 Added providers API call
+      const [bookingsRes, customersRes, providersRes, servicesRes, categoriesRes] = await Promise.all([
         fetch('/api/bookings'),
         fetch('/api/customers'),
+        fetch('/api/admin/providers'),  // 🔥 New API call
         fetch('/api/services'),
         fetch('/api/categories')
       ])
 
       const bookingsData = await bookingsRes.json()
       const customersData = await customersRes.json()
+      const providersData = await providersRes.json()  // 🔥 New data
       const servicesData = await servicesRes.json()
       const categoriesData = await categoriesRes.json()
 
       const bookings = bookingsData.data || []
-      const customers = customersData.data || []
+      // 🔥 Filter customers by role='user' only
+      const allUsers = customersData.data || []
+      const customers = allUsers.filter(user => user.role === 'user')  // 🔥 Only users with role='user'
+      
+      // 🔥 Get providers data
+      const providers = providersData.data?.providers || []
+      const providersStats = providersData.data?.stats || { total: 0, active: 0 }
+      
       const servicesArray = servicesData.data || []
       const categoriesArray = categoriesData.data || []
 
@@ -72,10 +84,15 @@ export default function AdminDashboard() {
         completedJobs: bookings.filter(b => b.status === 'completed').length,
         cancelledJobs: bookings.filter(b => b.status === 'cancelled').length,
 
+        // 🔥 Customers count (only role='user')
         totalCustomers: customers.length,
         newCustomers: customers.filter(c =>
           new Date(c.created_at) > weekAgo
         ).length,
+
+        // 🔥 Providers count
+        totalProviders: providersStats.total || providers.length,
+        activeProviders: providersStats.active || providers.filter(p => p.status === 'active').length,
 
         totalServices: servicesArray.length,
         totalCategories: categoriesArray.length,
@@ -171,7 +188,7 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - 4 cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Total Jobs Card */}
         <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
@@ -194,7 +211,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Total Customers Card */}
+        {/* Total Customers Card - 🔥 Fixed: Only role='user' */}
         <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
           }`}>
           <div className="flex items-center justify-between mb-4">
@@ -213,24 +230,22 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Total Services Card */}
+        {/* Total Providers Card - 🔥 NEW */}
         <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
           }`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-              Services
+              Service Providers
             </h3>
             <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
           <div className={`text-3xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {stats.totalServices}
+            {stats.totalProviders}
           </div>
           <div className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-            <span className="text-green-600">Active: {stats.activeServices}</span>
-            {' • '}
-            <span>Categories: {stats.totalCategories}</span>
+            <span className="text-green-600">Active: {stats.activeProviders}</span>
           </div>
         </div>
 
@@ -256,89 +271,57 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Job Status Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      {/* Second Row - Services & Categories */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Services Card */}
         <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
           }`}>
           <h2 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            Job Status Distribution
+            Services Overview
           </h2>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>Pending</span>
-              <span className="font-semibold text-yellow-600">{stats.pendingJobs}</span>
+            <div className="flex justify-between">
+              <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Total Services</span>
+              <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {stats.totalServices}
+              </span>
             </div>
-            <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-              <div
-                className="bg-yellow-600 h-2 rounded-full transition-all"
-                style={{ width: `${stats.totalJobs > 0 ? (stats.pendingJobs / stats.totalJobs) * 100 : 0}%` }}
-              ></div>
+            <div className="flex justify-between">
+              <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Active Services</span>
+              <span className="font-semibold text-green-600">{stats.activeServices}</span>
             </div>
-
-            <div className="flex items-center justify-between">
-              <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>Confirmed</span>
-              <span className="font-semibold text-blue-600">{stats.confirmedJobs}</span>
-            </div>
-            <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all"
-                style={{ width: `${stats.totalJobs > 0 ? (stats.confirmedJobs / stats.totalJobs) * 100 : 0}%` }}
-              ></div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>In Progress</span>
-              <span className="font-semibold text-purple-600">{stats.inProgressJobs}</span>
-            </div>
-            <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-              <div
-                className="bg-purple-600 h-2 rounded-full transition-all"
-                style={{ width: `${stats.totalJobs > 0 ? (stats.inProgressJobs / stats.totalJobs) * 100 : 0}%` }}
-              ></div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>Completed</span>
-              <span className="font-semibold text-green-600">{stats.completedJobs}</span>
-            </div>
-            <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-              <div
-                className="bg-green-600 h-2 rounded-full transition-all"
-                style={{ width: `${stats.totalJobs > 0 ? (stats.completedJobs / stats.totalJobs) * 100 : 0}%` }}
-              ></div>
+            <div className="flex justify-between">
+              <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Categories</span>
+              <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {stats.totalCategories}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Categories Overview */}
+        {/* Job Status Distribution - Simplified */}
         <div className={`rounded-xl shadow-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
           }`}>
           <h2 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            Service Categories
+            Job Status
           </h2>
-          <div className="space-y-3">
-            {categories.slice(0, 4).map((category) => (
-              <div key={category.id} className={`flex items-center justify-between p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'
-                }`}>
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">{category.icon || '📦'}</div>
-                  <div>
-                    <h4 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {category.name}
-                    </h4>
-                    <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                      {category.slug}
-                    </p>
-                  </div>
-                </div>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${category.is_active
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                  }`}>
-                  {category.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-            ))}
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Pending</span>
+              <span className="font-semibold text-yellow-600">{stats.pendingJobs}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Confirmed</span>
+              <span className="font-semibold text-blue-600">{stats.confirmedJobs}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>In Progress</span>
+              <span className="font-semibold text-purple-600">{stats.inProgressJobs}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Completed</span>
+              <span className="font-semibold text-green-600">{stats.completedJobs}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -365,28 +348,22 @@ export default function AdminDashboard() {
             <table className="w-full">
               <thead className={isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}>
                 <tr>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                    }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                     ID
                   </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                    }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                     Customer
                   </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                    }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                     Service
                   </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                    }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                     Date
                   </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                    }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                     Status
                   </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                    }`}>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                     Amount
                   </th>
                 </tr>
@@ -394,8 +371,7 @@ export default function AdminDashboard() {
               <tbody className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-200'}`}>
                 {recentBookings.map((booking) => (
                   <tr key={booking.id} className={isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-50'}>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                       #{booking.id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -406,12 +382,10 @@ export default function AdminDashboard() {
                         {booking.customer_email}
                       </div>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                       {booking.service_name}
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'
-                      }`}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                       {formatDate(booking.job_date)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -419,8 +393,7 @@ export default function AdminDashboard() {
                         {booking.status?.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                       {formatCurrency(parseFloat(booking.service_price || 0) + parseFloat(booking.additional_price || 0))}
                     </td>
                   </tr>

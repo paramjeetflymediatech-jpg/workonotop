@@ -1,4 +1,4 @@
-// app/provider/jobs/TimeTracker.jsx - FIXED: no refresh needed
+// app/provider/jobs/TimeTracker.jsx - FIXED: onStart callback added
 
 'use client'
 
@@ -6,11 +6,12 @@ import { useState, useEffect } from 'react'
 
 export default function TimeTracker({ 
   bookingId, 
+  onStart,        // ← NEW: called after job starts so parent can reload job status
   onComplete, 
   standardDuration = 60, 
   overtimeRate = 0,
   hasBeforePhotos = false,
-  hasAfterPhotos = false   // ✅ FIX: accept as prop, NOT internal state
+  hasAfterPhotos = false
 }) {
   const [timerStatus, setTimerStatus] = useState('not_started')
   const [elapsedTime, setElapsedTime] = useState(0)
@@ -19,7 +20,6 @@ export default function TimeTracker({
   const [error, setError] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
 
-  // ✅ FIX: Removed checkAfterPhotos() entirely — parent owns this state now
   useEffect(() => {
     loadTimerStatus()
   }, [bookingId])
@@ -35,18 +35,12 @@ export default function TimeTracker({
     return () => clearInterval(interval)
   }, [timerStatus, startTime])
 
-  // ✅ FIX: When hasAfterPhotos becomes true (parent uploaded), clear the error immediately
   useEffect(() => {
-    if (hasAfterPhotos && error.includes('after')) {
-      setError('')
-    }
+    if (hasAfterPhotos && error.includes('after')) setError('')
   }, [hasAfterPhotos])
 
-  // ✅ FIX: When hasBeforePhotos becomes true, clear that error too
   useEffect(() => {
-    if (hasBeforePhotos && error.includes('before')) {
-      setError('')
-    }
+    if (hasBeforePhotos && error.includes('before')) setError('')
   }, [hasBeforePhotos])
 
   const token = () => {
@@ -103,6 +97,8 @@ export default function TimeTracker({
         if (action === 'start') {
           setTimerStatus('running')
           setStartTime(new Date().toISOString())
+          // ← Call parent so it reloads job and shows after photos section
+          if (onStart) await onStart()
         } else if (action === 'pause') {
           setTimerStatus('paused')
         } else if (action === 'resume') {
@@ -152,16 +148,14 @@ export default function TimeTracker({
 
       {/* Timer Display */}
       <div className={`rounded-2xl p-5 text-center border ${
-        timerStatus === 'running'
-          ? 'bg-emerald-50 border-emerald-200'
-          : timerStatus === 'paused'
-          ? 'bg-amber-50 border-amber-200'
-          : 'bg-slate-50 border-slate-200'
+        timerStatus === 'running' ? 'bg-emerald-50 border-emerald-200' :
+        timerStatus === 'paused' ? 'bg-amber-50 border-amber-200' :
+        'bg-slate-50 border-slate-200'
       }`}>
         <div className={`text-5xl font-mono font-bold tracking-tight ${
-          timerStatus === 'running' ? 'text-emerald-700'
-          : timerStatus === 'paused' ? 'text-amber-600'
-          : 'text-slate-400'
+          timerStatus === 'running' ? 'text-emerald-700' :
+          timerStatus === 'paused' ? 'text-amber-600' :
+          'text-slate-400'
         }`}>
           {formatTime(elapsedTime)}
         </div>
@@ -169,32 +163,23 @@ export default function TimeTracker({
           <span>Standard: {standardDuration} min</span>
         </div>
         <p className={`text-xs mt-1 font-medium ${
-          timerStatus === 'running' ? 'text-emerald-600'
-          : timerStatus === 'paused' ? 'text-amber-600'
-          : 'text-slate-400'
+          timerStatus === 'running' ? 'text-emerald-600' :
+          timerStatus === 'paused' ? 'text-amber-600' :
+          'text-slate-400'
         }`}>
-          {timerStatus === 'running' ? '● Recording time'
-          : timerStatus === 'paused' ? '⏸ Paused'
-          : 'Not started'}
+          {timerStatus === 'running' ? '● Recording time' :
+           timerStatus === 'paused' ? '⏸ Paused' :
+           'Not started'}
         </p>
       </div>
 
-      {/* ✅ Photo requirement status — driven purely by props, always live */}
+      {/* Photo status rows */}
       <div className="space-y-2">
-        <StatusRow
-          done={hasBeforePhotos}
-          doneText="Before photos uploaded"
-          pendingText="Before photos required to start"
-        />
-        <StatusRow
-          done={hasAfterPhotos}
-          doneText="After photos uploaded"
-          pendingText="After photos required to complete"
-          isPending={timerStatus !== 'running'}  // only show warning when relevant
-        />
+        <StatusRow done={hasBeforePhotos} doneText="Before photos uploaded" pendingText="Before photos required to start" />
+        <StatusRow done={hasAfterPhotos} doneText="After photos uploaded" pendingText="After photos required to complete" />
       </div>
 
-      Overtime notice — duration only, no earnings shown
+      {/* Overtime notice */}
       {timerStatus === 'running' && overtimeMinutes > 0 && (
         <div className="px-4 py-2.5 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-700 font-medium">
           ⏰ Overtime: {overtimeMinutes} min over standard duration
@@ -215,11 +200,6 @@ export default function TimeTracker({
       {showConfirm && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
           <p className="text-sm font-semibold text-amber-800">Mark this job as complete?</p>
-          {!hasAfterPhotos && (
-            <p className="text-xs text-red-600 font-medium">
-              Upload after-work photos above first — then come back to complete.
-            </p>
-          )}
           <div className="flex gap-2">
             <button
               onClick={() => sendAction('stop', 'Job completed')}
@@ -260,7 +240,9 @@ export default function TimeTracker({
               {loading ? '…' : '⏸  Pause'}
             </button>
             <button
-              onClick={() => hasAfterPhotos ? setShowConfirm(true) : setError('Please upload after-work photos before completing the job')}
+              onClick={() => hasAfterPhotos
+                ? setShowConfirm(true)
+                : setError('Please upload after-work photos before completing the job')}
               disabled={loading}
               className={`py-3.5 rounded-xl font-semibold transition-colors text-sm ${
                 hasAfterPhotos
@@ -283,10 +265,6 @@ export default function TimeTracker({
           </button>
         )}
       </div>
-
-      <p className="text-xs text-slate-400 text-center">
-        Track your time accurately to get paid for overtime
-      </p>
     </div>
   )
 }

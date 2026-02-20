@@ -1,5 +1,6 @@
 'use client';
 
+import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -165,13 +166,7 @@ export default function HomePage() {
               </p>
 
               <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 justify-center lg:justify-start">
-                <p className="text-white/95 text-base sm:text-lg md:text-xl flex items-center gap-2">
-                  <span className="text-xl sm:text-2xl">📌</span>
-                  Need help finding the right service? 
-                  <Link href="/chat" className="font-bold underline ml-1 hover:text-green-200 transition decoration-2 underline-offset-4">
-                    Chat with us
-                  </Link>
-                </p>
+             
                 <Link href="/services" className="bg-white/20 backdrop-blur-sm px-6 sm:px-8 py-2 sm:py-3 rounded-full text-white font-semibold hover:bg-white/30 transition border-2 border-white/40 text-sm sm:text-base md:text-lg shadow-lg hover:shadow-xl">
                   View all services →
                 </Link>
@@ -414,69 +409,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="bg-gray-900 text-gray-300 pt-12 md:pt-16 pb-6 md:pb-10">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-8">
-            <div className="sm:col-span-2 lg:col-span-2">
-              <Link href="/" className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-                WorkOnTap
-              </Link>
-              <p className="text-gray-400 mt-3 md:mt-4 max-w-xs text-sm md:text-base leading-relaxed">
-                Trusted local tradespeople, booked on demand. Free quotes, verified reviews, 100% guaranteed.
-              </p>
-              <div className="flex space-x-4 md:space-x-5 mt-4 md:mt-6">
-                <a href="#" className="text-gray-400 hover:text-white text-xl md:text-2xl transition"><i className="fab fa-facebook"></i></a>
-                <a href="#" className="text-gray-400 hover:text-white text-xl md:text-2xl transition"><i className="fab fa-twitter"></i></a>
-                <a href="#" className="text-gray-400 hover:text-white text-xl md:text-2xl transition"><i className="fab fa-instagram"></i></a>
-                <a href="#" className="text-gray-400 hover:text-white text-xl md:text-2xl transition"><i className="fab fa-linkedin"></i></a>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold text-base md:text-lg mb-3 md:mb-4">For homeowners</h4>
-              <ul className="space-y-2 md:space-y-3 text-sm md:text-base">
-                <li><Link href="/services" className="hover:text-white transition">Explore Services</Link></li>
-                <li><Link href="/how-it-works" className="hover:text-white transition">How it works</Link></li>
-                <li><Link href="/reviews" className="hover:text-white transition">Reviews</Link></li>
-                <li><Link href="/app" className="hover:text-white transition">Get the app</Link></li>
-                <li><Link href="/help" className="hover:text-white transition">Help Center</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold text-base md:text-lg mb-3 md:mb-4">For pros</h4>
-              <ul className="space-y-2 md:space-y-3 text-sm md:text-base">
-                <li><Link href="/pro-signup" className="hover:text-white transition">Become a pro</Link></li>
-                <li><Link href="/pro-login" className="hover:text-white transition">Pro login</Link></li>
-                <li><Link href="/pro-guidelines" className="hover:text-white transition">Pro guidelines</Link></li>
-                <li><Link href="/insurance" className="hover:text-white transition">Insurance</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold text-base md:text-lg mb-3 md:mb-4">Company</h4>
-              <ul className="space-y-2 md:space-y-3 text-sm md:text-base">
-                <li><Link href="/about" className="hover:text-white transition">About Us</Link></li>
-                <li><Link href="/careers" className="hover:text-white transition">Careers</Link></li>
-                <li><Link href="/blog" className="hover:text-white transition">Blog</Link></li>
-                <li><Link href="/press" className="hover:text-white transition">Press</Link></li>
-                <li><Link href="/contact" className="hover:text-white transition">Contact</Link></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 mt-10 md:mt-14 pt-6 md:pt-8 flex flex-col md:flex-row justify-between items-center text-xs md:text-sm text-gray-500">
-            <p>© 2026 WorkOnTap Inc. All rights reserved.</p>
-            <div className="flex space-x-4 md:space-x-6 mt-3 md:mt-0">
-              <Link href="/terms" className="hover:text-white transition">Terms</Link>
-              <Link href="/privacy" className="hover:text-white transition">Privacy</Link>
-              <Link href="/guarantee" className="hover:text-white transition">Guarantee</Link>
-              <Link href="/sitemap" className="hover:text-white transition">Sitemap</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
 
+
+      <Footer/>
+
+     
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }

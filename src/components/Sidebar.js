@@ -203,7 +203,7 @@ export default function Sidebar() {
                   backgroundClip: 'text'
                 }}
               >
-                WT
+                {/* // colapase logo to be here*/}
               </h1>
             </div>
           )}

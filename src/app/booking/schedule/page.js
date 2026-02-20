@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 // Separate component that uses useSearchParams
 function ScheduleContent() {
@@ -518,22 +519,7 @@ const handleContinue = () => {
         </div>
       </div>
 
-      <footer className="bg-white border-t border-gray-200 mt-16 py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="text-green-800 font-extrabold text-lg">WorkOnTap</Link>
-              <span>© 2026</span>
-            </div>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <Link href="/terms" className="hover:text-green-700 transition">Terms</Link>
-              <Link href="/privacy" className="hover:text-green-700 transition">Privacy</Link>
-              <Link href="/guarantee" className="hover:text-green-700 transition">Guarantee</Link>
-              <Link href="/help" className="hover:text-green-700 transition">Help</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+    <Footer/>
     </>
   );
 }

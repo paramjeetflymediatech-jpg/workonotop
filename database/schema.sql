@@ -266,6 +266,29 @@ CREATE TABLE IF NOT EXISTS provider_reviews (
   UNIQUE KEY unique_booking_review (booking_id)
 );
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- =====================================================
 -- Indexes for Performance
 -- =====================================================
