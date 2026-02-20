@@ -93,7 +93,7 @@
 
 //   const deleteCategory = async (categoryId) => {
 //     if (!confirm('Are you sure you want to delete this category?')) return
-    
+
 //     try {
 //       const res = await fetch(`/api/categories?id=${categoryId}`, {
 //         method: 'DELETE'
@@ -147,7 +147,7 @@
 //             Manage service categories and their display order
 //           </p>
 //         </div>
-        
+
 //         <button
 //           onClick={() => setIsAddModalOpen(true)}
 //           className="mt-4 sm:mt-0 px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
@@ -266,7 +266,7 @@
 //                 </button>
 //               </div>
 //             </div>
-            
+
 //             <form onSubmit={addCategory}>
 //               <div className="p-6 space-y-4">
 //                 <div>
@@ -288,7 +288,7 @@
 //                     placeholder="e.g., Cleaning"
 //                   />
 //                 </div>
-                
+
 //                 <div>
 //                   <label className={`block text-sm font-medium mb-1 ${
 //                     isDarkMode ? 'text-slate-400' : 'text-gray-700'
@@ -308,7 +308,7 @@
 //                     placeholder="e.g., cleaning"
 //                   />
 //                 </div>
-                
+
 //                 <div>
 //                   <label className={`block text-sm font-medium mb-1 ${
 //                     isDarkMode ? 'text-slate-400' : 'text-gray-700'
@@ -327,7 +327,7 @@
 //                     placeholder="e.g., 🧹"
 //                   />
 //                 </div>
-                
+
 //                 <div>
 //                   <label className={`block text-sm font-medium mb-1 ${
 //                     isDarkMode ? 'text-slate-400' : 'text-gray-700'
@@ -346,7 +346,7 @@
 //                     placeholder="Describe this category..."
 //                   ></textarea>
 //                 </div>
-                
+
 //                 <div>
 //                   <label className={`block text-sm font-medium mb-1 ${
 //                     isDarkMode ? 'text-slate-400' : 'text-gray-700'
@@ -366,7 +366,7 @@
 //                   />
 //                 </div>
 //               </div>
-              
+
 //               <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
 //                 <button
 //                   type="button"
@@ -413,7 +413,7 @@
 //                 </button>
 //               </div>
 //             </div>
-            
+
 //             <form onSubmit={updateCategory}>
 //               <div className="p-6 space-y-4">
 //                 <div>
@@ -434,7 +434,7 @@
 //                     } focus:outline-none focus:ring-2 focus:ring-teal-500`}
 //                   />
 //                 </div>
-                
+
 //                 <div>
 //                   <label className={`block text-sm font-medium mb-1 ${
 //                     isDarkMode ? 'text-slate-400' : 'text-gray-700'
@@ -453,7 +453,7 @@
 //                     } focus:outline-none focus:ring-2 focus:ring-teal-500`}
 //                   />
 //                 </div>
-                
+
 //                 <div>
 //                   <label className={`block text-sm font-medium mb-1 ${
 //                     isDarkMode ? 'text-slate-400' : 'text-gray-700'
@@ -471,7 +471,7 @@
 //                     } focus:outline-none focus:ring-2 focus:ring-teal-500`}
 //                   />
 //                 </div>
-                
+
 //                 <div>
 //                   <label className={`block text-sm font-medium mb-1 ${
 //                     isDarkMode ? 'text-slate-400' : 'text-gray-700'
@@ -489,7 +489,7 @@
 //                     } focus:outline-none focus:ring-2 focus:ring-teal-500`}
 //                   ></textarea>
 //                 </div>
-                
+
 //                 <div>
 //                   <label className={`block text-sm font-medium mb-1 ${
 //                     isDarkMode ? 'text-slate-400' : 'text-gray-700'
@@ -508,7 +508,7 @@
 //                   />
 //                 </div>
 //               </div>
-              
+
 //               <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
 //                 <button
 //                   type="button"
@@ -591,10 +591,9 @@ function Pagination({ total, page, setPage, isDarkMode }) {
             p === '...'
               ? <span key={`e-${i}`} className="px-2 text-slate-400 text-sm">…</span>
               : <button key={p} onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-lg text-sm font-medium transition ${
-                    page === p
-                      ? 'bg-teal-600 text-white shadow-sm'
-                      : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                className={`w-8 h-8 rounded-lg text-sm font-medium transition ${page === p
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
                   }`}>{p}</button>
           ))}
           <button
@@ -623,7 +622,7 @@ export default function Categories() {
     description: '',
     display_order: 0
   })
-  
+
   // 🔥 Pagination state
   const [page, setPage] = useState(1)
 
@@ -705,7 +704,7 @@ export default function Categories() {
 
   const deleteCategory = async (categoryId) => {
     if (!confirm('Are you sure you want to delete this category?')) return
-    
+
     try {
       const res = await fetch(`/api/categories?id=${categoryId}`, {
         method: 'DELETE'
@@ -755,16 +754,15 @@ export default function Categories() {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className={`text-3xl sm:text-4xl font-bold mb-2 ${
-            isDarkMode ? 'text-white' : 'text-gray-900'
-          }`}>
+          <h1 className={`text-3xl sm:text-4xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
             Service Categories
           </h1>
           <p className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>
             Manage service categories and their display order
           </p>
         </div>
-        
+
         <button
           onClick={() => setIsAddModalOpen(true)}
           className="mt-4 sm:mt-0 px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
@@ -790,9 +788,8 @@ export default function Categories() {
             {pagedCategories.map((category) => (
               <div
                 key={category.id}
-                className={`rounded-xl shadow-lg border overflow-hidden ${
-                  isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-                } ${!category.is_active ? 'opacity-60' : ''}`}
+                className={`rounded-xl shadow-lg border overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+                  } ${!category.is_active ? 'opacity-60' : ''}`}
               >
                 <div className="p-6">
                   <div className="flex items-start justify-between">
@@ -807,11 +804,10 @@ export default function Categories() {
                         </p>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      category.is_active
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${category.is_active
                         ? 'bg-green-500/20 text-green-600 dark:text-green-400'
                         : 'bg-red-500/20 text-red-600 dark:text-red-400'
-                    }`}>
+                      }`}>
                       {category.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
@@ -844,15 +840,14 @@ export default function Categories() {
                     </button>
                     <button
                       onClick={() => toggleCategoryStatus(category)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        category.is_active
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${category.is_active
                           ? isDarkMode
                             ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                             : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                           : isDarkMode
                             ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
                             : 'bg-green-100 text-green-700 hover:bg-green-200'
-                      }`}
+                        }`}
                     >
                       {category.is_active ? 'Deactivate' : 'Activate'}
                     </button>
@@ -874,9 +869,8 @@ export default function Categories() {
           <Pagination total={categories.length} page={page} setPage={setPage} isDarkMode={isDarkMode} />
         </>
       ) : (
-        <div className={`text-center py-12 rounded-xl border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`text-center py-12 rounded-xl border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+          }`}>
           <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
@@ -884,7 +878,7 @@ export default function Categories() {
             No categories found
           </p>
           <p className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>
-            Click "Add Category" to create your first category
+            Click &quot;Add Category&quot; to create your first category
           </p>
         </div>
       )}
@@ -893,9 +887,8 @@ export default function Categories() {
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setIsAddModalOpen(false)} />
-          <div className={`relative rounded-xl shadow-xl w-full max-w-lg ${
-            isDarkMode ? 'bg-slate-900' : 'bg-white'
-          }`}>
+          <div className={`relative rounded-xl shadow-xl w-full max-w-lg ${isDarkMode ? 'bg-slate-900' : 'bg-white'
+            }`}>
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -911,116 +904,105 @@ export default function Categories() {
                 </button>
               </div>
             </div>
-            
+
             <form onSubmit={addCategory}>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'
+                    }`}>
                     Category Name *
                   </label>
                   <input
                     type="text"
                     required
                     value={newCategory.name}
-                    onChange={(e) => setNewCategory({...newCategory, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
+                    onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                    className={`w-full px-4 py-2 rounded-lg border ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-teal-500`}
                     placeholder="e.g., Cleaning"
                   />
                 </div>
-                
+
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'
+                    }`}>
                     Slug *
                   </label>
                   <input
                     type="text"
                     required
                     value={newCategory.slug}
-                    onChange={(e) => setNewCategory({...newCategory, slug: e.target.value})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
+                    onChange={(e) => setNewCategory({ ...newCategory, slug: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-teal-500`}
                     placeholder="e.g., cleaning"
                   />
                 </div>
-                
+
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'
+                    }`}>
                     Icon (Emoji)
                   </label>
                   <input
                     type="text"
                     value={newCategory.icon}
-                    onChange={(e) => setNewCategory({...newCategory, icon: e.target.value})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
+                    onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-teal-500`}
                     placeholder="e.g., 🧹"
                   />
                 </div>
-                
+
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'
+                    }`}>
                     Description
                   </label>
                   <textarea
                     rows="3"
                     value={newCategory.description}
-                    onChange={(e) => setNewCategory({...newCategory, description: e.target.value})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
+                    onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-teal-500`}
                     placeholder="Describe this category..."
                   ></textarea>
                 </div>
-                
+
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'
+                    }`}>
                     Display Order
                   </label>
                   <input
                     type="number"
                     value={newCategory.display_order}
-                    onChange={(e) => setNewCategory({...newCategory, display_order: parseInt(e.target.value) || 0})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
+                    onChange={(e) => setNewCategory({ ...newCategory, display_order: parseInt(e.target.value) || 0 })}
+                    className={`w-full px-4 py-2 rounded-lg border ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-teal-500`}
                     placeholder="0"
                   />
                 </div>
               </div>
-              
+
               <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className={`px-4 py-2 rounded-lg font-medium ${
-                    isDarkMode 
-                      ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' 
+                  className={`px-4 py-2 rounded-lg font-medium ${isDarkMode
+                      ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   Cancel
                 </button>
@@ -1040,9 +1022,8 @@ export default function Categories() {
       {isEditModalOpen && selectedCategory && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setIsEditModalOpen(false)} />
-          <div className={`relative rounded-xl shadow-xl w-full max-w-lg ${
-            isDarkMode ? 'bg-slate-900' : 'bg-white'
-          }`}>
+          <div className={`relative rounded-xl shadow-xl w-full max-w-lg ${isDarkMode ? 'bg-slate-900' : 'bg-white'
+            }`}>
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -1058,111 +1039,100 @@ export default function Categories() {
                 </button>
               </div>
             </div>
-            
+
             <form onSubmit={updateCategory}>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'
+                    }`}>
                     Category Name *
                   </label>
                   <input
                     type="text"
                     required
                     value={selectedCategory.name}
-                    onChange={(e) => setSelectedCategory({...selectedCategory, name: e.target.value})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
+                    onChange={(e) => setSelectedCategory({ ...selectedCategory, name: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-teal-500`}
                   />
                 </div>
-                
+
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'
+                    }`}>
                     Slug *
                   </label>
                   <input
                     type="text"
                     required
                     value={selectedCategory.slug}
-                    onChange={(e) => setSelectedCategory({...selectedCategory, slug: e.target.value})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
+                    onChange={(e) => setSelectedCategory({ ...selectedCategory, slug: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-teal-500`}
                   />
                 </div>
-                
+
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'
+                    }`}>
                     Icon (Emoji)
                   </label>
                   <input
                     type="text"
                     value={selectedCategory.icon || ''}
-                    onChange={(e) => setSelectedCategory({...selectedCategory, icon: e.target.value})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
+                    onChange={(e) => setSelectedCategory({ ...selectedCategory, icon: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-teal-500`}
                   />
                 </div>
-                
+
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'
+                    }`}>
                     Description
                   </label>
                   <textarea
                     rows="3"
                     value={selectedCategory.description || ''}
-                    onChange={(e) => setSelectedCategory({...selectedCategory, description: e.target.value})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
+                    onChange={(e) => setSelectedCategory({ ...selectedCategory, description: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-teal-500`}
                   ></textarea>
                 </div>
-                
+
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-700'
-                  }`}>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'
+                    }`}>
                     Display Order
                   </label>
                   <input
                     type="number"
                     value={selectedCategory.display_order}
-                    onChange={(e) => setSelectedCategory({...selectedCategory, display_order: parseInt(e.target.value) || 0})}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-white' 
+                    onChange={(e) => setSelectedCategory({ ...selectedCategory, display_order: parseInt(e.target.value) || 0 })}
+                    className={`w-full px-4 py-2 rounded-lg border ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-teal-500`}
                   />
                 </div>
               </div>
-              
+
               <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className={`px-4 py-2 rounded-lg font-medium ${
-                    isDarkMode 
-                      ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' 
+                  className={`px-4 py-2 rounded-lg font-medium ${isDarkMode
+                      ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   Cancel
                 </button>

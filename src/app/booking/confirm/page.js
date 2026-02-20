@@ -922,12 +922,12 @@ export default function BookingConfirmPage() {
   const [hearAbout, setHearAbout] = useState('');
   const [receiveOffers, setReceiveOffers] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  
+
   // 🔥 Show password states
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
-  
+
   const [address, setAddress] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
@@ -1004,7 +1004,7 @@ export default function BookingConfirmPage() {
         // ✅ Store both token and user data
         localStorage.setItem('token', data.token);
         localStorage.setItem('workontap_user', JSON.stringify(data.user));
-        
+
         setCurrentUser(data.user);
         setIsAuthenticated(true);
         setShowAuthModal(false);
@@ -1040,7 +1040,7 @@ export default function BookingConfirmPage() {
         // ✅ Store both token and user data
         localStorage.setItem('token', data.token);
         localStorage.setItem('workontap_user', JSON.stringify(data.user));
-        
+
         setCurrentUser(data.user);
         setIsAuthenticated(true);
         setFirstName(data.user.first_name);
@@ -1062,7 +1062,7 @@ export default function BookingConfirmPage() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('workontap_user');
-    
+
     setIsAuthenticated(false);
     setCurrentUser(null);
     setFirstName('');
@@ -1279,7 +1279,7 @@ export default function BookingConfirmPage() {
                           </div>
                           <div className="ml-3 text-sm">
                             <label htmlFor="terms" className="text-gray-600">
-                              I agree to WorkOnTap's{' '}
+                              I agree to WorkOnTap&apos;s{' '}
                               <Link href="/terms" className="text-green-700 hover:text-green-800 font-medium underline">
                                 Terms of Service
                               </Link>{' '}
@@ -1342,7 +1342,7 @@ export default function BookingConfirmPage() {
                         </button>
 
                         <p className="text-xs text-gray-500 mt-4">
-                          By continuing, you agree to WorkOnTap's{' '}
+                          By continuing, you agree to WorkOnTap&apos;s{' '}
                           <Link href="/terms" className="text-green-700 hover:underline">
                             Terms
                           </Link>{' '}
@@ -1356,10 +1356,10 @@ export default function BookingConfirmPage() {
                       <div className="mt-8 pt-6 border-t border-gray-200">
                         <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                           <span className="text-green-700">🛡️</span>
-                          You're Protected with WorkOnTap
+                          You&apos;re Protected with WorkOnTap
                         </div>
                         <p className="text-xs text-gray-500 mt-2 max-w-md mx-auto">
-                          We're proud to back every job with our Homeowner Protection Promise so you can be confident you're getting a high level of service every time.
+                          We&apos;re proud to back every job with our Homeowner Protection Promise so you can be confident you&apos;re getting a high level of service every time.
                           <Link href="/guarantee" className="text-green-700 ml-1 hover:underline">
                             Learn More
                           </Link>
@@ -1464,7 +1464,7 @@ export default function BookingConfirmPage() {
                   <div className="flex items-start space-x-4">
                     <div className="text-4xl">🛡️</div>
                     <div>
-                      <h4 className="font-bold text-xl mb-2">You're Protected with WorkOnTap</h4>
+                      <h4 className="font-bold text-xl mb-2">You&apos;re Protected with WorkOnTap</h4>
                       <p className="text-green-100 text-sm mb-4 leading-relaxed">
                         We back every job with our Homeowner Protection Promise. All pros are licensed, background-checked, and well-rated.
                       </p>
@@ -1661,7 +1661,7 @@ export default function BookingConfirmPage() {
                       className="mt-1 w-4 h-4 text-green-600 border-2 border-gray-300 rounded"
                     />
                     <label htmlFor="offers" className="ml-2 text-sm text-gray-600">
-                      Yes! I'd like to receive news and special offers from WorkOnTap.
+                      Yes! I&apos;d like to receive news and special offers from WorkOnTap.
                     </label>
                   </div>
 
@@ -1674,7 +1674,7 @@ export default function BookingConfirmPage() {
                   </button>
 
                   <p className="text-xs text-center text-gray-500 mt-4">
-                    By signing up you're agreeing to WorkOnTap's{' '}
+                    By signing up you&apos;re agreeing to WorkOnTap&apos;s{' '}
                     <Link href="/terms" className="text-green-700 hover:underline">
                       Terms and Conditions
                     </Link>
@@ -1750,7 +1750,7 @@ export default function BookingConfirmPage() {
                   </button>
 
                   <div className="text-center mt-4">
-                    <span className="text-sm text-gray-600">Don't have an account? </span>
+                    <span className="text-sm text-gray-600">Don&apos;t have an account? </span>
                     <button
                       type="button"
                       onClick={() => {
@@ -1782,7 +1782,7 @@ export default function BookingConfirmPage() {
         </div>
       )}
 
-      <Footer/>
+      <Footer />
     </div>
   );
 }

@@ -29,7 +29,7 @@ export default function ReportIssue() {
         <div className="container mx-auto px-4 py-16 max-w-md text-center">
           <div className="text-6xl mb-4">✅</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Report Submitted</h1>
-          <p className="text-gray-600 mb-6">We'll look into this and get back to you within 24 hours.</p>
+          <p className="text-gray-600 mb-6">We&apos;ll look into this and get back to you within 24 hours.</p>
           <Link href="/help" className="text-green-700 hover:underline">
             ← Back to Help Center
           </Link>
@@ -42,14 +42,14 @@ export default function ReportIssue() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      
+
       <div className="bg-gradient-to-b from-green-50 to-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-8">
           <Link href="/help" className="text-green-700 hover:underline mb-2 inline-block">
             ← Back to Help Center
           </Link>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Report an Issue</h1>
-          <p className="text-gray-600 mt-1">We're here to help resolve any problems</p>
+          <p className="text-gray-600 mt-1">We&apos;re here to help resolve any problems</p>
         </div>
       </div>
 
@@ -73,7 +73,7 @@ export default function ReportIssue() {
                 type="text"
                 placeholder="e.g., BK1771388460292419"
                 value={formData.bookingId}
-                onChange={(e) => setFormData({...formData, bookingId: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, bookingId: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
               <p className="text-sm text-gray-500 mt-1">If you have a specific booking, enter its ID</p>
@@ -85,12 +85,12 @@ export default function ReportIssue() {
               </label>
               <select
                 value={formData.issueType}
-                onChange={(e) => setFormData({...formData, issueType: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, issueType: e.target.value })}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="">Select issue type</option>
-                <option value="pro-no-show">Pro didn't show up</option>
+                <option value="pro-no-show">Pro didn&apos;t show up</option>
                 <option value="poor-work">Poor quality work</option>
                 <option value="billing">Billing issue</option>
                 <option value="safety">Safety concern</option>
@@ -105,7 +105,7 @@ export default function ReportIssue() {
               <textarea
                 placeholder="Please describe the issue in detail..."
                 value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 required
                 rows="5"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
