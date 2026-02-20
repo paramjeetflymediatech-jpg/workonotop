@@ -14,7 +14,7 @@ export default function MyBookings() {
   const [filter, setFilter] = useState('all')
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  
+
   // Review states
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [reviewBooking, setReviewBooking] = useState(null)
@@ -27,16 +27,16 @@ export default function MyBookings() {
   const formatAmount = (amount) => {
     // Handle null/undefined
     if (amount === null || amount === undefined) return '0.00'
-    
+
     // Convert to number if it's a string
     let num = amount
     if (typeof amount === 'string') {
       num = parseFloat(amount)
     }
-    
+
     // Check if it's a valid number
     if (isNaN(num)) return '0.00'
-    
+
     // Return formatted number
     return num.toFixed(2)
   }
@@ -51,14 +51,14 @@ export default function MyBookings() {
 
   const loadBookings = async () => {
     if (!user) return
-    
+
     setLoading(true)
     try {
       const res = await fetch(`/api/customer/bookings?user_id=${user.id}`)
       const data = await res.json()
       if (data.success) {
         const bookingsData = data.data || []
-        
+
         // Fetch invoices for each booking
         const bookingsWithInvoices = await Promise.all(
           bookingsData.map(async (booking) => {
@@ -92,7 +92,7 @@ export default function MyBookings() {
             return booking
           })
         )
-        
+
         setBookings(bookingsWithInvoices)
       }
     } catch (error) {
@@ -140,7 +140,7 @@ export default function MyBookings() {
 
   const submitReview = async () => {
     if (!reviewBooking) return
-    
+
     setSubmittingReview(true)
     try {
       const res = await fetch('/api/customer/reviews', {
@@ -177,7 +177,7 @@ export default function MyBookings() {
   })
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300'
       case 'matching': return 'bg-orange-100 text-orange-800 border-orange-300'
       case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-300'
@@ -252,11 +252,10 @@ export default function MyBookings() {
               <button
                 key={status}
                 onClick={() => setFilter(status)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
-                  filter === status
+                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all ${filter === status
                     ? 'bg-green-600 text-white shadow-md'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                }`}
+                  }`}
               >
                 {status.replace('_', ' ')}
                 {status === 'all' && ` (${bookings.length})`}
@@ -269,7 +268,7 @@ export default function MyBookings() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredBookings.map((booking) => {
                 const invoice = invoices[booking.id]
-                
+
                 return (
                   <div
                     key={booking.id}
@@ -349,7 +348,7 @@ export default function MyBookings() {
                               <span className="text-sm text-gray-600">Base price:</span>
                               <span className="font-medium">${parseFloat(booking.service_price || 0).toFixed(2)}</span>
                             </div>
-                            
+
                             {booking.display?.has_overtime && (
                               <>
                                 <div className="flex justify-between items-center mb-1">
@@ -361,7 +360,7 @@ export default function MyBookings() {
                                 </div>
                               </>
                             )}
-                            
+
                             <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
                               <span className="text-base font-semibold text-gray-900">Total:</span>
                               <span className="text-xl font-bold text-green-600">
@@ -391,8 +390,8 @@ export default function MyBookings() {
               </svg>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No bookings found</h3>
               <p className="text-gray-600 mb-6">
-                {filter === 'all' 
-                  ? "You haven't made any bookings yet" 
+                {filter === 'all'
+                  ? "You haven't made any bookings yet"
                   : `No ${filter.replace('_', ' ')} bookings`}
               </p>
               <Link
@@ -567,7 +566,7 @@ export default function MyBookings() {
                           <span className="text-gray-700">Base Service:</span>
                           <span className="font-semibold">${parseFloat(selectedBooking.service_price || 0).toFixed(2)}</span>
                         </div>
-                        
+
                         {selectedBooking.display && (
                           <div className="text-sm text-gray-600">
                             <p>Standard: {formatDuration(selectedBooking.display.standard_duration)}</p>
@@ -620,14 +619,14 @@ export default function MyBookings() {
                   <div className="mt-4 p-4 bg-purple-50 rounded-lg">
                     <h4 className="font-semibold mb-2">Your Review</h4>
                     <div className="flex items-center gap-1 mb-2">
-                      {[1,2,3,4,5].map(star => (
+                      {[1, 2, 3, 4, 5].map(star => (
                         <span key={star} className={star <= reviewStatus[selectedBooking.id].existing_review?.rating ? 'text-yellow-400' : 'text-gray-300'}>
                           ★
                         </span>
                       ))}
                     </div>
                     {reviewStatus[selectedBooking.id].existing_review?.review && (
-                      <p className="text-sm text-gray-600">"{reviewStatus[selectedBooking.id].existing_review.review}"</p>
+                      <p className="text-sm text-gray-600">&quot;{reviewStatus[selectedBooking.id].existing_review.review}&quot;</p>
                     )}
                   </div>
                 )}
@@ -677,16 +676,15 @@ export default function MyBookings() {
               <div className="p-6">
                 <h3 className="text-xl font-bold mb-4">Rate Your Experience</h3>
                 <p className="text-sm text-gray-600 mb-4">{reviewBooking.service_name} with {reviewBooking.provider_name}</p>
-                
+
                 {/* Star Rating */}
                 <div className="flex justify-center gap-2 mb-4">
-                  {[1,2,3,4,5].map(star => (
+                  {[1, 2, 3, 4, 5].map(star => (
                     <button
                       key={star}
-                      onClick={() => setReviewData({...reviewData, rating: star})}
-                      className={`text-3xl transition-colors ${
-                        star <= reviewData.rating ? 'text-yellow-400' : 'text-gray-300'
-                      }`}
+                      onClick={() => setReviewData({ ...reviewData, rating: star })}
+                      className={`text-3xl transition-colors ${star <= reviewData.rating ? 'text-yellow-400' : 'text-gray-300'
+                        }`}
                     >
                       ★
                     </button>
@@ -697,7 +695,7 @@ export default function MyBookings() {
                 <textarea
                   placeholder="Write your review (optional)"
                   value={reviewData.review}
-                  onChange={(e) => setReviewData({...reviewData, review: e.target.value})}
+                  onChange={(e) => setReviewData({ ...reviewData, review: e.target.value })}
                   className="w-full p-3 border rounded-lg mb-4 h-24 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
 
@@ -706,7 +704,7 @@ export default function MyBookings() {
                   <input
                     type="checkbox"
                     checked={reviewData.is_anonymous}
-                    onChange={(e) => setReviewData({...reviewData, is_anonymous: e.target.checked})}
+                    onChange={(e) => setReviewData({ ...reviewData, is_anonymous: e.target.checked })}
                     className="rounded text-purple-600"
                   />
                   <span className="text-sm text-gray-600">Post anonymously</span>
