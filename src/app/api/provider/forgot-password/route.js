@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { execute, getConnection } from '@/lib/db'  // ✅ CHANGE: add getConnection
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import nodemailer from 'nodemailer'
@@ -42,6 +42,7 @@ const sendEmail = async (email, code) => {
 }
 
 export async function POST(request) {
+  let connection
   try {
     const { action, email, token, newPassword } = await request.json()
 
@@ -51,13 +52,13 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: 'Email is required' }, { status: 400 })
       }
 
-      // Check if provider exists
-      const providers = await query(
+      // ✅ Check if provider exists - using execute
+      const providers = await execute(
         'SELECT id, name FROM service_providers WHERE email = ?',
         [email.toLowerCase()]
       )
 
-      // Always return success for security (don't reveal if email exists)
+      // Always return success for security
       if (providers.length === 0) {
         return NextResponse.json({ 
           success: true, 
@@ -69,26 +70,39 @@ export async function POST(request) {
       const resetCode = generateCode()
       const hashedToken = crypto.createHash('sha256').update(resetCode).digest('hex')
       
-      // Expires in 1 hour
       const expiresAt = new Date()
       expiresAt.setHours(expiresAt.getHours() + 1)
 
-      // Delete old tokens
-      await query('DELETE FROM password_reset_tokens WHERE email = ?', [email.toLowerCase()])
+      // ✅ USE TRANSACTION for token operations
+      connection = await getConnection()
+      await connection.query('START TRANSACTION')
 
-      // Save new token
-      await query(
-        'INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (?, ?, ?)',
-        [email.toLowerCase(), hashedToken, expiresAt]
-      )
+      try {
+        // Delete old tokens
+        await connection.execute('DELETE FROM password_reset_tokens WHERE email = ?', [email.toLowerCase()])
 
-      // Send email
-      await sendEmail(email, resetCode)
+        // Save new token
+        await connection.execute(
+          'INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (?, ?, ?)',
+          [email.toLowerCase(), hashedToken, expiresAt]
+        )
 
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Reset code sent to your email' 
-      })
+        await connection.query('COMMIT')
+
+        // Send email (outside transaction - email can't be rolled back)
+        await sendEmail(email, resetCode)
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Reset code sent to your email' 
+        })
+
+      } catch (err) {
+        await connection.query('ROLLBACK')
+        throw err
+      } finally {
+        if (connection) connection.release()
+      }
     }
 
     // RESET PASSWORD
@@ -100,7 +114,6 @@ export async function POST(request) {
         }, { status: 400 })
       }
 
-      // Validate password
       if (newPassword.length < 8) {
         return NextResponse.json({ 
           success: false, 
@@ -110,36 +123,51 @@ export async function POST(request) {
 
       const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
 
-      // Find valid token
-      const tokens = await query(
-        `SELECT * FROM password_reset_tokens 
-         WHERE email = ? AND token = ? AND expires_at > NOW() AND used = FALSE`,
-        [email.toLowerCase(), hashedToken]
-      )
+      // ✅ USE TRANSACTION for password reset
+      connection = await getConnection()
+      await connection.query('START TRANSACTION')
 
-      if (tokens.length === 0) {
+      try {
+        // Find valid token
+        const tokens = await connection.execute(
+          `SELECT * FROM password_reset_tokens 
+           WHERE email = ? AND token = ? AND expires_at > NOW() AND used = FALSE`,
+          [email.toLowerCase(), hashedToken]
+        )
+
+        if (tokens.length === 0) {
+          await connection.query('ROLLBACK')
+          return NextResponse.json({ 
+            success: false, 
+            message: 'Invalid or expired reset code' 
+          }, { status: 400 })
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+        // Update password
+        await connection.execute(
+          'UPDATE service_providers SET password = ? WHERE email = ?',
+          [hashedPassword, email.toLowerCase()]
+        )
+
+        // Mark token as used
+        await connection.execute('UPDATE password_reset_tokens SET used = TRUE WHERE id = ?', [tokens[0].id])
+
+        await connection.query('COMMIT')
+
         return NextResponse.json({ 
-          success: false, 
-          message: 'Invalid or expired reset code' 
-        }, { status: 400 })
+          success: true, 
+          message: 'Password reset successful' 
+        })
+
+      } catch (err) {
+        await connection.query('ROLLBACK')
+        throw err
+      } finally {
+        if (connection) connection.release()
       }
-
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10)
-
-      // Update password
-      await query(
-        'UPDATE service_providers SET password = ? WHERE email = ?',
-        [hashedPassword, email.toLowerCase()]
-      )
-
-      // Mark token as used
-      await query('UPDATE password_reset_tokens SET used = TRUE WHERE id = ?', [tokens[0].id])
-
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Password reset successful' 
-      })
     }
 
     return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 })

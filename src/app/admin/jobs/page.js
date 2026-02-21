@@ -1,3 +1,11 @@
+
+
+
+
+
+
+
+
 // 'use client'
 
 // import { useState, useEffect } from 'react'
@@ -73,12 +81,12 @@
 //   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
 //   const [currentInvoice, setCurrentInvoice] = useState(null)
 //   const [generatingInvoice, setGeneratingInvoice] = useState(null)
+//   const [downloadingInvoice, setDownloadingInvoice] = useState(null) // 🔥 New state for download
 
 //   useEffect(() => {
 //     checkAuth()
 //     loadJobs()
 //     loadTradespeople()
-//     loadCustomers()
 //   }, [])
 
 //   // Reset page on filter or customer change
@@ -112,12 +120,6 @@
 //     } catch (error) {
 //       console.error('Error loading tradespeople:', error)
 //     }
-//   }
-
-//   // 🔥 Load unique customers from jobs
-//   const loadCustomers = () => {
-//     // This will be called after jobs are loaded
-//     // We'll extract unique customers from jobs data
 //   }
 
 //   // 🔥 Extract unique customers when jobs change
@@ -187,7 +189,8 @@
 //       const data = await res.json()
 //       if (data.success) {
 //         showMessage('success', 'Invoice generated successfully!')
-//         setTimeout(() => viewInvoice(bookingId), 1000)
+//         // Reload jobs to get the new invoice
+//         loadJobs()
 //       } else {
 //         showMessage('error', data.message || 'Failed to generate invoice')
 //       }
@@ -197,6 +200,42 @@
 //       setGeneratingInvoice(null)
 //     }
 //   }
+
+//  // Update your page.js download function
+// const downloadInvoice = async (invoiceId, invoiceNumber) => {
+//   setDownloadingInvoice(invoiceId)
+//   try {
+//     // Use preview API but force download
+//     const response = await fetch(`/api/admin/invoices/${invoiceId}/preview`, {
+//       method: 'GET',
+//     })
+
+//     if (!response.ok) {
+//       throw new Error('Download failed')
+//     }
+
+//     // Get the HTML content
+//     const html = await response.text()
+    
+//     // Create blob and download
+//     const blob = new Blob([html], { type: 'text/html' })
+//     const url = window.URL.createObjectURL(blob)
+//     const link = document.createElement('a')
+//     link.href = url
+//     link.download = `invoice-${invoiceNumber || invoiceId}.html`
+//     document.body.appendChild(link)
+//     link.click()
+//     document.body.removeChild(link)
+//     window.URL.revokeObjectURL(url)
+    
+//     showMessage('success', 'Invoice downloaded successfully!')
+//   } catch (error) {
+//     console.error('Download error:', error)
+//     showMessage('error', 'Failed to download invoice')
+//   } finally {
+//     setDownloadingInvoice(null)
+//   }
+// }
 
 //   const viewInvoice = async (bookingId) => {
 //     try {
@@ -223,7 +262,11 @@
 //       const data = await res.json()
 //       if (data.success) {
 //         showMessage('success', `Invoice marked as ${newStatus}`)
-//         if (currentInvoice) viewInvoice(currentInvoice.booking_id)
+//         if (currentInvoice) {
+//           // Update current invoice
+//           setCurrentInvoice({...currentInvoice, status: newStatus})
+//         }
+//         loadJobs() // Reload jobs to update status
 //       }
 //     } catch {
 //       showMessage('error', 'Failed to update invoice')
@@ -580,16 +623,48 @@
 //                                 </svg>Generate Invoice</>
 //                               )}
 //                             </button>
-//                             <button onClick={() => viewInvoice(job.id)}
-//                               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-colors ${
-//                                 isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-//                               }`}>
-//                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-//                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-//                                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-//                               </svg>
-//                               View Invoice
-//                             </button>
+                            
+//                             {/* 🔥 Check if invoice exists and show download button */}
+//                             {job.invoice_id ? (
+//                               <button 
+//                                 onClick={() => downloadInvoice(job.invoice_id, job.booking_number)}
+//                                 disabled={downloadingInvoice === job.invoice_id}
+//                                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-colors ${
+//                                   downloadingInvoice === job.invoice_id
+//                                     ? 'opacity-50 cursor-not-allowed'
+//                                     : isDarkMode
+//                                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+//                                       : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+//                                 }`}
+//                               >
+//                                 {downloadingInvoice === job.invoice_id ? (
+//                                   <>
+//                                     <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+//                                     Downloading...
+//                                   </>
+//                                 ) : (
+//                                   <>
+//                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+//                                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+//                                     </svg>
+//                                     Download PDF
+//                                   </>
+//                                 )}
+//                               </button>
+//                             ) : (
+//                               <button 
+//                                 onClick={() => viewInvoice(job.id)}
+//                                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-colors ${
+//                                   isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+//                                 }`}
+//                               >
+//                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+//                                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+//                                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+//                                 </svg>
+//                                 View
+//                               </button>
+//                             )}
 //                           </div>
 //                         )}
 //                       </div>
@@ -627,13 +702,32 @@
 //                   <option value="paid">Paid</option>
 //                   <option value="overdue">Overdue</option>
 //                 </select>
-//                 <a href={`/api/admin/invoices/${currentInvoice.id}/preview`} target="_blank"
-//                   className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-semibold transition-colors">
-//                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-//                     <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-//                   </svg>
-//                   Print / PDF
-//                 </a>
+                
+//                 {/* 🔥 Download button in modal */}
+//                 <button
+//                   onClick={() => downloadInvoice(currentInvoice.id, currentInvoice.invoice_number)}
+//                   disabled={downloadingInvoice === currentInvoice.id}
+//                   className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+//                     downloadingInvoice === currentInvoice.id
+//                       ? 'opacity-50 cursor-not-allowed bg-gray-400'
+//                       : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+//                   }`}
+//                 >
+//                   {downloadingInvoice === currentInvoice.id ? (
+//                     <>
+//                       <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+//                       Downloading...
+//                     </>
+//                   ) : (
+//                     <>
+//                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+//                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+//                       </svg>
+//                       Download PDF
+//                     </>
+//                   )}
+//                 </button>
+                
 //                 <button onClick={() => setShowInvoiceModal(false)}
 //                   className={`flex items-center justify-center w-9 h-9 rounded-xl transition-colors ${
 //                     isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-400' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
@@ -654,12 +748,6 @@
 //     </div>
 //   )
 // }
-
-
-
-
-
-
 
 
 'use client'
@@ -730,14 +818,14 @@ export default function JobRequests() {
   const [showErrorMessage, setShowErrorMessage] = useState('')
   const [page, setPage] = useState(1)
   
-  // 🔥 Customer dropdown filter
+  // Customer dropdown filter
   const [selectedCustomer, setSelectedCustomer] = useState('all')
   const [customers, setCustomers] = useState([])
 
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [currentInvoice, setCurrentInvoice] = useState(null)
   const [generatingInvoice, setGeneratingInvoice] = useState(null)
-  const [downloadingInvoice, setDownloadingInvoice] = useState(null) // 🔥 New state for download
+  const [downloadingInvoice, setDownloadingInvoice] = useState(null)
 
   useEffect(() => {
     checkAuth()
@@ -778,7 +866,7 @@ export default function JobRequests() {
     }
   }
 
-  // 🔥 Extract unique customers when jobs change
+  // Extract unique customers when jobs change
   useEffect(() => {
     if (jobs.length > 0) {
       const uniqueCustomers = []
@@ -845,7 +933,6 @@ export default function JobRequests() {
       const data = await res.json()
       if (data.success) {
         showMessage('success', 'Invoice generated successfully!')
-        // Reload jobs to get the new invoice
         loadJobs()
       } else {
         showMessage('error', data.message || 'Failed to generate invoice')
@@ -857,41 +944,37 @@ export default function JobRequests() {
     }
   }
 
- // Update your page.js download function
-const downloadInvoice = async (invoiceId, invoiceNumber) => {
-  setDownloadingInvoice(invoiceId)
-  try {
-    // Use preview API but force download
-    const response = await fetch(`/api/admin/invoices/${invoiceId}/preview`, {
-      method: 'GET',
-    })
+  // ✅ FIXED: Simple HTML download function
+  const downloadInvoice = async (invoiceId, invoiceNumber) => {
+    setDownloadingInvoice(invoiceId)
+    try {
+      const response = await fetch(`/api/admin/invoices/${invoiceId}/preview`)
+      
+      if (!response.ok) {
+        throw new Error('Download failed')
+      }
 
-    if (!response.ok) {
-      throw new Error('Download failed')
+      const html = await response.text()
+      
+      // Create blob and download as HTML
+      const blob = new Blob([html], { type: 'text/html' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `invoice-${invoiceNumber || invoiceId}.html`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
+      showMessage('success', 'Invoice downloaded successfully!')
+    } catch (error) {
+      console.error('Download error:', error)
+      showMessage('error', 'Failed to download invoice')
+    } finally {
+      setDownloadingInvoice(null)
     }
-
-    // Get the HTML content
-    const html = await response.text()
-    
-    // Create blob and download
-    const blob = new Blob([html], { type: 'text/html' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `invoice-${invoiceNumber || invoiceId}.html`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-    
-    showMessage('success', 'Invoice downloaded successfully!')
-  } catch (error) {
-    console.error('Download error:', error)
-    showMessage('error', 'Failed to download invoice')
-  } finally {
-    setDownloadingInvoice(null)
   }
-}
 
   const viewInvoice = async (bookingId) => {
     try {
@@ -919,22 +1002,19 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
       if (data.success) {
         showMessage('success', `Invoice marked as ${newStatus}`)
         if (currentInvoice) {
-          // Update current invoice
           setCurrentInvoice({...currentInvoice, status: newStatus})
         }
-        loadJobs() // Reload jobs to update status
+        loadJobs()
       }
     } catch {
       showMessage('error', 'Failed to update invoice')
     }
   }
 
-  // 🔥 Filter by status AND customer
+  // Filter by status AND customer
   const filteredJobs = jobs.filter(job => {
-    // Status filter
     if (filter !== 'all' && job.status !== filter) return false
     
-    // Customer filter
     if (selectedCustomer !== 'all') {
       const customerId = job.customer_id || `${job.customer_first_name}-${job.customer_last_name}-${job.customer_email}`
       if (customerId !== selectedCustomer) return false
@@ -1008,7 +1088,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                 {jobs.length} total booking{jobs.length !== 1 ? 's' : ''}
               </p>
             </div>
-            {/* Summary pills — hidden on mobile */}
             <div className="hidden md:flex items-center gap-3 flex-wrap">
               {['pending', 'in_progress', 'completed'].map(s => {
                 const cfg = STATUS_CONFIG[s]
@@ -1025,9 +1104,8 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
           </div>
         </div>
 
-        {/* 🔥 Filters Row */}
+        {/* Filters Row */}
         <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Status Filter Tabs */}
           <div className="overflow-x-auto pb-1">
             <div className={`flex gap-1.5 w-max sm:w-full p-1.5 rounded-2xl ${
               isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200 shadow-sm'
@@ -1059,7 +1137,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
             </div>
           </div>
 
-          {/* 🔥 Customer Dropdown */}
           <div>
             <select
               value={selectedCustomer}
@@ -1078,7 +1155,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
               ))}
             </select>
             
-            {/* Selected filter indicator */}
             {selectedCustomer !== 'all' && (
               <div className="mt-2 flex items-center gap-2">
                 <span className={`text-xs px-2 py-1 rounded-full ${
@@ -1136,12 +1212,10 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                         : 'bg-white border-slate-200 hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/5'
                     }`}
                   >
-                    {/* Status accent line */}
                     <div className={`absolute top-0 left-6 right-6 h-0.5 rounded-b-full ${cfg.dot} opacity-60`}></div>
 
                     <div className="p-4 sm:p-5 flex flex-col flex-1">
 
-                      {/* Card Header */}
                       <div className="flex items-center justify-between mb-4">
                         <button onClick={() => router.push(`/admin/bookings/${job.id}`)}
                           className={`font-mono text-xs font-bold px-2.5 py-1 rounded-lg transition-colors ${
@@ -1157,7 +1231,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                         </span>
                       </div>
 
-                      {/* Customer */}
                       <div className="mb-4 cursor-pointer" onClick={() => router.push(`/admin/bookings/${job.id}`)}>
                         <p className={`text-base font-semibold leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                           {job.customer_first_name} {job.customer_last_name}
@@ -1167,7 +1240,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                         </p>
                       </div>
 
-                      {/* Info Grid */}
                       <div
                         className={`grid grid-cols-3 gap-2 mb-4 p-3 rounded-xl cursor-pointer ${isDarkMode ? 'bg-slate-800/60' : 'bg-slate-50'}`}
                         onClick={() => router.push(`/admin/bookings/${job.id}`)}
@@ -1188,7 +1260,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                         </div>
                       </div>
 
-                      {/* Provider + Price */}
                       <div className="flex items-end justify-between gap-3 mb-4">
                         <div className="flex-1 min-w-0">
                           <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Provider</p>
@@ -1226,7 +1297,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                         </div>
                       </div>
 
-                      {/* Commission */}
                       <div className={`flex items-center gap-1.5 text-[11px] mb-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         {job.commission_percent ? (
                           <>
@@ -1241,7 +1311,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                         )}
                       </div>
 
-                      {/* Location */}
                       <div className={`flex items-center gap-1.5 text-[11px] mb-4 truncate ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
@@ -1249,7 +1318,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                         <span className="truncate">{job.address_line1}</span>
                       </div>
 
-                      {/* Actions */}
                       <div className="mt-auto space-y-2">
                         <div className="flex gap-2">
                           <button onClick={() => router.push(`/admin/bookings/${job.id}`)}
@@ -1280,7 +1348,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                               )}
                             </button>
                             
-                            {/* 🔥 Check if invoice exists and show download button */}
                             {job.invoice_id ? (
                               <button 
                                 onClick={() => downloadInvoice(job.invoice_id, job.booking_number)}
@@ -1303,7 +1370,7 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                     </svg>
-                                    Download PDF
+                                    Download Invoice
                                   </>
                                 )}
                               </button>
@@ -1330,7 +1397,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
               })}
             </div>
 
-            {/* Pagination */}
             <Pagination total={filteredJobs.length} page={page} setPage={setPage} isDarkMode={isDarkMode} />
           </>
         )}
@@ -1359,7 +1425,6 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                   <option value="overdue">Overdue</option>
                 </select>
                 
-                {/* 🔥 Download button in modal */}
                 <button
                   onClick={() => downloadInvoice(currentInvoice.id, currentInvoice.invoice_number)}
                   disabled={downloadingInvoice === currentInvoice.id}
@@ -1379,7 +1444,7 @@ const downloadInvoice = async (invoiceId, invoiceNumber) => {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
-                      Download PDF
+                      Download Invoice
                     </>
                   )}
                 </button>

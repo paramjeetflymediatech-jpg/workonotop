@@ -1,6 +1,6 @@
-// app/api/admin/invoices/route.js
+// app/api/admin/invoices/route.js - FIXED
 import { NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { execute } from '@/lib/db'  // ✅ CHANGE: query → execute
 
 export async function GET(request) {
   try {
@@ -28,7 +28,8 @@ export async function GET(request) {
     
     sql += ` ORDER BY created_at DESC`
 
-    const invoices = await query(sql, params)
+    // ✅ CHANGE: query → execute
+    const invoices = await execute(sql, params)
 
     return NextResponse.json({ 
       success: true, 
@@ -48,7 +49,8 @@ export async function PATCH(request) {
   try {
     const { invoice_id, status } = await request.json()
 
-    await query(
+    // ✅ CHANGE: query → execute
+    await execute(
       `UPDATE invoices SET status = ? WHERE id = ?`,
       [status, invoice_id]
     )

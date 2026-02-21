@@ -1,7 +1,6 @@
-// app/api/provider/jobs/photos/route.js
-
+// app/api/provider/jobs/photos/route.js - FIXED
 import { NextResponse } from 'next/server'
-import { getConnection } from '@/lib/db'
+import { execute, getConnection } from '@/lib/db'  // ✅ ADD execute import
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
@@ -12,7 +11,7 @@ function verifyToken(request) {
   try { return jwt.verify(token, JWT_SECRET) } catch { return null }
 }
 
-// POST: Upload photo record
+// POST: Upload photo record (PERFECT - no changes)
 export async function POST(request) {
   let connection
   try {
@@ -98,7 +97,7 @@ export async function POST(request) {
   }
 }
 
-// GET: Get photos for a booking
+// GET: Get photos for a booking - FIXED
 export async function GET(request) {
   try {
     const decoded = verifyToken(request)
@@ -116,9 +115,8 @@ export async function GET(request) {
       }, { status: 400 })
     }
 
-    const { query } = await import('@/lib/db')
-    
-    const photos = await query(
+    // ✅ DIRECT execute() call - no dynamic import needed
+    const photos = await execute(
       `SELECT * FROM job_photos 
        WHERE booking_id = ? 
        ORDER BY photo_type, uploaded_at`,
@@ -142,4 +140,5 @@ export async function GET(request) {
       message: 'Failed to fetch photos' 
     }, { status: 500 })
   }
+  // ✅ Connection auto-released by execute()
 }

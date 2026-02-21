@@ -1,6 +1,7 @@
+// app/api/admin/auth/login/route.js - FIXED
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { query } from "@/lib/db";
+import { execute } from "@/lib/db";  // ✅ CHANGE: query → execute
 
 export async function POST(request) {
   try {
@@ -13,7 +14,8 @@ export async function POST(request) {
       );
     }
 
-    const users = await query(
+    // ✅ CHANGE: query → execute
+    const users = await execute(
       "SELECT * FROM users WHERE email = ? AND role = 'admin'",
       [email]
     );
@@ -40,7 +42,7 @@ export async function POST(request) {
     const response = NextResponse.json({
       success: true,
       message: "Login successful",
-      token: "admin-logged-in" // Send token to client
+      token: "admin-logged-in"
     });
 
     response.cookies.set("adminAuth", "admin", {

@@ -1,7 +1,6 @@
-// app/api/provider/jobs/route.js - UPDATED with duration
-
+// app/api/provider/jobs/route.js - OPTIONAL IMPROVEMENT
 import { NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { execute } from '@/lib/db'  // ✅ CHANGE: query → execute
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
@@ -20,7 +19,8 @@ export async function GET(request) {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
-    const jobs = await query(
+    // ✅ Using execute() instead of query()
+    const jobs = await execute(
       `SELECT 
         b.id,
         b.booking_number,
@@ -53,7 +53,7 @@ export async function GET(request) {
         b.has_pets,
         b.job_timer_status,
         s.name as service_full_name,
-        s.duration_minutes,  /* Get duration from services table */
+        s.duration_minutes,
         c.name as category_name
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
@@ -70,14 +70,12 @@ export async function GET(request) {
       [decoded.id]
     )
 
-    // Parse and format data
+    // Parse and format data (same as before)
     for (const job of jobs) {
-      // Parse time slots
       if (job.job_time_slot) {
         job.job_time_slot = job.job_time_slot.split(',')
       }
       
-      // Ensure numeric values
       job.service_price = parseFloat(job.service_price || 0)
       job.additional_price = parseFloat(job.additional_price || 0)
       job.provider_amount = parseFloat(job.provider_amount || 0)
@@ -85,12 +83,10 @@ export async function GET(request) {
       job.final_provider_amount = job.final_provider_amount ? parseFloat(job.final_provider_amount) : null
       job.commission_percent = job.commission_percent ? parseFloat(job.commission_percent) : null
       
-      // Add calculated fields
       job.overtime_rate = job.additional_price
       job.has_overtime = job.overtime_rate > 0
-      job.duration_minutes = job.duration_minutes || 60  // Default to 60 if not set
+      job.duration_minutes = job.duration_minutes || 60
       
-      // Calculate display amount
       if (job.status === 'completed' && job.final_provider_amount) {
         job.display_amount = job.final_provider_amount
       } else {
@@ -110,4 +106,5 @@ export async function GET(request) {
       message: 'Failed to fetch jobs' 
     }, { status: 500 })
   }
+  // ✅ Connection auto-released by execute()
 }

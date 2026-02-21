@@ -1,7 +1,6 @@
-// app/api/provider/available-jobs/[id]/route.js - NO CONTACT INFO
-
+// app/api/provider/available-jobs/[id]/route.js - FIXED
 import { NextResponse } from 'next/server'
-import { query, getConnection } from '@/lib/db'
+import { execute, getConnection } from '@/lib/db'  // ✅ CHANGE: query → execute
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
@@ -21,8 +20,8 @@ export async function GET(request, { params }) {
 
     const { id } = await params
 
-    // NO customer contact info in query
-    const bookings = await query(
+    // ✅ SINGLE QUERY - Booking + Photos ek saath using JSON
+    const results = await execute(
       `SELECT
         b.id, b.booking_number, b.service_name, b.job_date, b.job_time_slot,
         b.address_line1, b.address_line2, b.city, b.postal_code,
@@ -32,13 +31,18 @@ export async function GET(request, { params }) {
         b.provider_amount, b.commission_percent,
         b.service_price as base_price,
         b.additional_price as overtime_rate,
-        -- Customer contact fields REMOVED --
         s.name AS service_full_name,
         s.description AS service_description,
         s.image_url AS service_image,
         s.duration_minutes AS service_duration,
         c.name AS category_name,
-        c.icon AS category_icon
+        c.icon AS category_icon,
+        -- Photos as JSON array
+        (
+          SELECT JSON_ARRAYAGG(photo_url)
+          FROM booking_photos 
+          WHERE booking_id = b.id
+        ) as photos_json
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
@@ -46,21 +50,24 @@ export async function GET(request, { params }) {
       [id]
     )
 
-    if (bookings.length === 0) {
+    if (results.length === 0) {
       return NextResponse.json({ success: false, message: 'Job not found' }, { status: 404 })
     }
 
-    const booking = bookings[0]
+    const booking = results[0]
 
+    // Parse time slots
     if (booking.job_time_slot) {
       booking.job_time_slot = booking.job_time_slot.split(',')
     }
 
-    const photos = await query(
-      'SELECT photo_url FROM booking_photos WHERE booking_id = ?',
-      [booking.id]
-    )
-    booking.photos = photos.map(p => p.photo_url)
+    // Parse photos from JSON
+    try {
+      booking.photos = JSON.parse(booking.photos_json) || []
+    } catch {
+      booking.photos = []
+    }
+    delete booking.photos_json
 
     // Parse numeric values
     booking.base_price = parseFloat(booking.base_price || 0)
@@ -103,8 +110,10 @@ export async function GET(request, { params }) {
     console.error('Error fetching job details:', error)
     return NextResponse.json({ success: false, message: 'Failed to fetch job' }, { status: 500 })
   }
+  // ✅ Connection automatically released by execute()
 }
 
+// ✅ POST method is PERFECT - only change import from query to execute
 export async function POST(request, { params }) {
   let connection
   try {
@@ -197,7 +206,7 @@ export async function POST(request, { params }) {
       await connection.query('ROLLBACK')
       throw err
     } finally {
-      connection.release()
+      connection.release()  // ✅ CRITICAL
     }
 
   } catch (error) {

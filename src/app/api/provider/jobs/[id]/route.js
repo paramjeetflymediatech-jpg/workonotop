@@ -1,7 +1,6 @@
-// app/api/provider/jobs/[id]/route.js
-
+// app/api/provider/jobs/[id]/route.js - OPTIONAL IMPROVEMENT
 import { NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { execute } from '@/lib/db'  // ✅ CHANGE: query → execute
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
@@ -21,7 +20,8 @@ export async function GET(request, { params }) {
 
     const { id } = await params
 
-    const jobs = await query(
+    // ✅ Using execute() instead of query()
+    const jobs = await execute(
       `SELECT 
         b.*,
         s.name as service_full_name,
@@ -69,4 +69,5 @@ export async function GET(request, { params }) {
       message: 'Failed to fetch job' 
     }, { status: 500 })
   }
+  // ✅ Connection auto-released by execute()
 }

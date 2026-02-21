@@ -1,74 +1,95 @@
-// app/api/customers/[id]/route.js
+// app/api/customers/[id]/route.js - FIXED
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { execute } from '@/lib/db';  // ✅ CHANGE: query → execute
 
 export async function GET(request, { params }) {
   try {
     const id = params.id;
 
-    const customers = await query(
-      `SELECT 
-        id, 
-        email, 
-        first_name, 
-        last_name, 
-        phone, 
-        hear_about,
-        receive_offers,
-        created_at,
-        updated_at,
-        (SELECT COUNT(*) FROM bookings WHERE user_id = users.id) as total_bookings,
-        (SELECT COALESCE(SUM(service_price), 0) FROM bookings WHERE user_id = users.id) as total_spent
-      FROM users 
-      WHERE id = ? AND (is_pro = FALSE OR is_pro IS NULL)`,
-      [id]
-    );
+    // ✅ SINGLE QUERY - sab kuch ek saath
+    const results = await execute(`
+      SELECT 
+        -- Customer info
+        u.id, 
+        u.email, 
+        u.first_name, 
+        u.last_name, 
+        u.phone, 
+        u.hear_about,
+        u.receive_offers,
+        u.created_at,
+        u.updated_at,
+        
+        -- Customer stats (from subqueries)
+        (SELECT COUNT(*) FROM bookings WHERE user_id = u.id) as total_bookings,
+        (SELECT COALESCE(SUM(service_price), 0) FROM bookings WHERE user_id = u.id) as total_spent,
+        (SELECT COALESCE(AVG(service_price), 0) FROM bookings WHERE user_id = u.id) as avg_booking_value,
+        (SELECT MIN(created_at) FROM bookings WHERE user_id = u.id) as first_booking,
+        (SELECT MAX(created_at) FROM bookings WHERE user_id = u.id) as last_booking,
+        
+        -- Recent bookings as JSON
+        (
+          SELECT JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'id', b.id,
+              'booking_number', b.booking_number,
+              'service_name', b.service_name,
+              'service_price', b.service_price,
+              'status', b.status,
+              'job_date', b.job_date,
+              'job_time_slot', b.job_time_slot,
+              'created_at', b.created_at,
+              'address_line1', b.address_line1,
+              'city', b.city,
+              'photo_count', (SELECT COUNT(*) FROM booking_photos WHERE booking_id = b.id)
+            )
+          )
+          FROM bookings b
+          WHERE b.user_id = u.id
+          ORDER BY b.created_at DESC
+        ) as recent_bookings_json
+        
+      FROM users u
+      WHERE u.id = ? AND (u.is_pro = FALSE OR u.is_pro IS NULL)
+    `, [id]);
 
-    if (customers.length === 0) {
+    if (results.length === 0) {
       return NextResponse.json(
         { success: false, message: 'Customer not found' },
         { status: 404 }
       );
     }
 
-    const customer = customers[0];
+    const row = results[0];
 
-    // Get customer's bookings with details
-    const bookings = await query(
-      `SELECT 
-        b.id, 
-        b.booking_number, 
-        b.service_name, 
-        b.service_price,
-        b.status,
-        b.job_date,
-        b.job_time_slot,
-        b.created_at,
-        b.address_line1,
-        b.city,
-        (SELECT COUNT(*) FROM booking_photos WHERE booking_id = b.id) as photo_count
-      FROM bookings b
-      WHERE b.user_id = ?
-      ORDER BY b.created_at DESC`,
-      [id]
-    );
+    // Parse JSON fields
+    const customer = {
+      id: row.id,
+      email: row.email,
+      first_name: row.first_name,
+      last_name: row.last_name,
+      phone: row.phone,
+      hear_about: row.hear_about,
+      receive_offers: row.receive_offers,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      total_bookings: row.total_bookings || 0,
+      total_spent: row.total_spent || 0,
+      stats: {
+        total_bookings: row.total_bookings || 0,
+        total_spent: row.total_spent || 0,
+        avg_booking_value: row.avg_booking_value || 0,
+        first_booking: row.first_booking,
+        last_booking: row.last_booking
+      }
+    };
 
-    customer.recent_bookings = bookings;
-
-    // Get customer stats
-    const stats = await query(
-      `SELECT 
-        COUNT(*) as total_bookings,
-        COALESCE(SUM(service_price), 0) as total_spent,
-        AVG(service_price) as avg_booking_value,
-        MIN(created_at) as first_booking,
-        MAX(created_at) as last_booking
-      FROM bookings 
-      WHERE user_id = ?`,
-      [id]
-    );
-
-    customer.stats = stats[0];
+    // Parse recent bookings
+    try {
+      customer.recent_bookings = JSON.parse(row.recent_bookings_json) || [];
+    } catch {
+      customer.recent_bookings = [];
+    }
 
     return NextResponse.json({
       success: true,
@@ -78,8 +99,9 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error('Error fetching customer:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch customer' },
+      { success: false, message: 'Failed to fetch customer: ' + error.message },
       { status: 500 }
     );
   }
+  // ✅ Connection automatically released by execute()
 }

@@ -1,7 +1,6 @@
 // app/api/provider/available-jobs/route.js - COMPLETE FIXED VERSION
-
 import { NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { execute, getConnection } from '@/lib/db'  // ✅ FIXED: execute, not query
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
@@ -24,8 +23,8 @@ export async function GET(request) {
     const city = searchParams.get('city')
     const limit = parseInt(searchParams.get('limit') || '20')
 
-    // Get provider's city
-    const providers = await query(
+    // ✅ Get provider's city - using execute()
+    const providers = await execute(
       'SELECT city FROM service_providers WHERE id = ?',
       [decoded.id]
     )
@@ -33,7 +32,7 @@ export async function GET(request) {
 
     const locationFilter = city || providerCity
 
-    // Main query - NO customer contact info
+    // ✅ Main query - using execute() directly, no helper function
     let sql = `
       SELECT
         b.id,
@@ -80,8 +79,10 @@ export async function GET(request) {
 
     sql += ` ORDER BY b.created_at DESC LIMIT ${limit}`
 
-    const jobs = await execute_query(sql, params)
+    // ✅ DIRECT execute() call - no helper function needed
+    const jobs = await execute(sql, params)
 
+    // Data formatting (same as before)
     for (const job of jobs) {
       if (job.job_time_slot) {
         job.job_time_slot = job.job_time_slot.split(',')
@@ -147,9 +148,11 @@ export async function GET(request) {
       message: 'Failed to fetch jobs' 
     }, { status: 500 })
   }
+  // ✅ Connection automatically released by execute()
 }
 
 // ─── POST: Provider accepts a job ────────────────────────────────────────────
+// ✅ POST method is PERFECT - no changes needed
 export async function POST(request) {
   let connection
   try {
@@ -170,7 +173,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'booking_id is required' }, { status: 400 })
     }
 
-    const { getConnection } = await import('@/lib/db')
+    // ✅ Direct import at top now
     connection = await getConnection()
     await connection.query('START TRANSACTION')
 
@@ -275,7 +278,7 @@ export async function POST(request) {
       await connection.query('ROLLBACK')
       throw err
     } finally {
-      if (connection) connection.release()
+      if (connection) connection.release()  // ✅ CRITICAL
     }
 
   } catch (error) {
@@ -287,14 +290,4 @@ export async function POST(request) {
   }
 }
 
-async function execute_query(sql, params) {
-  try {
-    const { query } = await import('@/lib/db')
-    return await query(sql, params)
-  } catch (error) {
-    console.error('Database query error:', error)
-    throw error
-  }
-}
-
-
+// ✅ REMOVED: execute_query helper function - no longer needed

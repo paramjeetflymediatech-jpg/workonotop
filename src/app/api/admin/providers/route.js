@@ -1,18 +1,15 @@
-// app/api/admin/providers/route.js - SIMPLE
 import { NextResponse } from 'next/server'
-import { getConnection } from '@/lib/db'
+import { execute } from '@/lib/db'
 
-// GET all providers
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    const connection = await getConnection()
-
-    // Agar ID diya hai to single provider do
+    // CASE 1: Get single provider with reviews
     if (id) {
-      const [providers] = await connection.execute(
+      // Get provider details
+      const providers = await execute(
         `SELECT 
           id, name, email, phone, specialty, experience_years,
           rating, total_jobs, bio, avatar_url, location, city, status,
@@ -30,7 +27,7 @@ export async function GET(request) {
       }
 
       // Get provider's reviews
-      const [reviews] = await connection.execute(
+      const reviews = await execute(
         `SELECT 
           pr.*,
           u.first_name, u.last_name,
@@ -52,8 +49,9 @@ export async function GET(request) {
       })
     }
 
-    // Nahi to saare providers do
-    const [providers] = await connection.execute(
+    // CASE 2: Get all providers with stats
+    // Get all providers
+    const providers = await execute(
       `SELECT 
         id, name, email, phone, specialty, experience_years,
         rating, total_jobs, city, status, total_reviews, avg_rating
@@ -61,8 +59,8 @@ export async function GET(request) {
       ORDER BY name ASC`
     )
 
-    // Simple stats
-    const [stats] = await connection.execute(
+    // Get stats
+    const statsResult = await execute(
       `SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
@@ -71,24 +69,27 @@ export async function GET(request) {
       FROM service_providers`
     )
 
+    const stats = statsResult[0] || {}
+
     return NextResponse.json({
       success: true,
       data: {
         providers: providers,
         stats: {
-          total: stats[0].total || 0,
-          active: stats[0].active || 0,
-          avg_rating: Number(stats[0].avg_rating_all || 0).toFixed(1),
-          total_reviews: stats[0].total_reviews || 0
+          total: stats.total || 0,
+          active: stats.active || 0,
+          avg_rating: Number(stats.avg_rating_all || 0).toFixed(1),
+          total_reviews: stats.total_reviews || 0
         }
       }
     })
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('API Error:', error)
     return NextResponse.json({ 
       success: false, 
-      message: 'Failed to fetch providers' 
+      message: 'Failed to fetch providers',
+      error: error.message 
     }, { status: 500 })
   }
 }

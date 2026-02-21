@@ -1,5 +1,5 @@
 // database/seed-data.js
-import mysql from 'mysql2/promise';
+// import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -10,24 +10,17 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: resolve(__dirname, "../.env") });
 
 async function seedData() {
-  const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'workontap_db',
-    port: parseInt(process.env.DB_PORT || '3306'),
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-  });
+
+  // Use execute from shared db util
+  const { execute } = await import('../src/lib/db.js');
 
   try {
     console.log('🌱 Seeding database with categories and services...\n');
 
     // Clear existing data (optional)
     console.log('Clearing existing data...');
-    await pool.execute('DELETE FROM services');
-    await pool.execute('DELETE FROM service_categories');
+    await execute('DELETE FROM services');
+    await execute('DELETE FROM service_categories');
     console.log('✓ Existing data cleared\n');
 
     // Insert categories and store their IDs
@@ -44,13 +37,15 @@ async function seedData() {
     const categoryIds = {};
     
     for (const cat of categories) {
-      const [result] = await pool.execute(
+      const result = await execute(
         `INSERT INTO service_categories (name, slug, icon, description, display_order, is_active) 
          VALUES (?, ?, ?, ?, ?, 1)`,
         [cat.name, cat.slug, cat.icon, cat.description, cat.display_order]
       );
-      categoryIds[cat.name] = result.insertId;
-      console.log(`  ✓ Inserted: ${cat.name} (ID: ${result.insertId})`);
+      // execute returns array of results, get insertId
+      const insertId = Array.isArray(result) && result[0]?.insertId ? result[0].insertId : (result?.insertId || null);
+      categoryIds[cat.name] = insertId;
+      console.log(`  ✓ Inserted: ${cat.name} (ID: ${insertId})`);
     }
     console.log('');
 
@@ -131,7 +126,7 @@ async function seedData() {
     let serviceCount = 0;
     for (const service of services) {
       try {
-        await pool.execute(
+        await execute(
           `INSERT INTO services (
             category_id, name, slug, description, short_description, 
             base_price, additional_price, duration_minutes, image_url, use_cases,
@@ -149,22 +144,20 @@ async function seedData() {
     console.log(`\n✓ Inserted ${serviceCount} services\n`);
 
     // Verify counts
-    const [categoriesResult] = await pool.query('SELECT COUNT(*) as count FROM service_categories');
-    const [servicesResult] = await pool.query('SELECT COUNT(*) as count FROM services');
+    const [categoriesResult] = await execute('SELECT COUNT(*) as count FROM service_categories');
+    const [servicesResult] = await execute('SELECT COUNT(*) as count FROM services');
     
     console.log('✅ Seeding completed successfully!');
     console.log(`📊 Categories: ${categoriesResult[0].count}`);
     console.log(`📊 Services: ${servicesResult[0].count}`);
     
     // Show sample data
-    const [sampleCategories] = await pool.query('SELECT id, name FROM service_categories LIMIT 3');
+    const [sampleCategories] = await execute('SELECT id, name FROM service_categories LIMIT 3');
     console.log('\n📋 Sample categories:');
     sampleCategories.forEach(c => console.log(`   ${c.id}: ${c.name}`));
 
   } catch (error) {
     console.error('❌ Error seeding data:', error);
-  } finally {
-    await pool.end();
   }
 }
 

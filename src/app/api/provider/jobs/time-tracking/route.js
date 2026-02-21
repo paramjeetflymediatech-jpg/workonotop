@@ -1,7 +1,6 @@
-// app/api/provider/jobs/time-tracking/route.js
-
+// app/api/provider/jobs/time-tracking/route.js - FIXED
 import { NextResponse } from 'next/server'
-import { getConnection } from '@/lib/db'
+import { execute, getConnection } from '@/lib/db'  // ✅ ADD execute import
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
@@ -13,7 +12,7 @@ function verifyToken(request) {
   try { return jwt.verify(token, JWT_SECRET) } catch { return null }
 }
 
-// POST: Start/Stop/Pause timer
+// POST: Start/Stop/Pause timer (PERFECT - no changes)
 export async function POST(request) {
   let connection
   try {
@@ -256,7 +255,7 @@ export async function POST(request) {
   }
 }
 
-// GET: Get timer status for a job
+// GET: Get timer status for a job - FIXED
 export async function GET(request) {
   try {
     const decoded = verifyToken(request)
@@ -274,9 +273,8 @@ export async function GET(request) {
       }, { status: 400 })
     }
 
-    const { query } = await import('@/lib/db')
-    
-    const bookings = await query(
+    // ✅ DIRECT execute() calls - no dynamic import
+    const bookings = await execute(
       `SELECT 
         b.id, 
         b.status, 
@@ -313,8 +311,8 @@ export async function GET(request) {
 
     const booking = bookings[0]
 
-    // Get all logs
-    const logs = await query(
+    // Get all logs - using execute()
+    const logs = await execute(
       `SELECT * FROM booking_time_logs 
        WHERE booking_id = ? 
        ORDER BY timestamp DESC`,
@@ -334,4 +332,5 @@ export async function GET(request) {
       message: 'Failed to fetch timer status' 
     }, { status: 500 })
   }
+  // ✅ Connections auto-released by execute()
 }

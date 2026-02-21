@@ -1,7 +1,6 @@
-// app/api/provider/profile/route.js
-
+// app/api/provider/profile/route.js - OPTIONAL IMPROVEMENT
 import { NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { execute } from '@/lib/db'  // ✅ CHANGE: query → execute
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
@@ -16,7 +15,7 @@ function verifyToken(request) {
   }
 }
 
-// ── GET ───────────────────────────────────────────────────────────────────────
+// GET
 export async function GET(request) {
   try {
     const decoded = verifyToken(request)
@@ -24,7 +23,8 @@ export async function GET(request) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
-    const providers = await query(
+    // ✅ Using execute()
+    const providers = await execute(
       `SELECT id, name, email, phone, specialty, experience_years,
               rating, total_jobs, bio, avatar_url, location, city, status,
               DATE_FORMAT(created_at, '%Y-%m-%d') as join_date
@@ -44,7 +44,7 @@ export async function GET(request) {
   }
 }
 
-// ── PUT ───────────────────────────────────────────────────────────────────────
+// PUT
 export async function PUT(request) {
   try {
     const decoded = verifyToken(request)
@@ -62,16 +62,18 @@ export async function PUT(request) {
       )
     }
 
-    // Check email uniqueness
-    const existing = await query(
+    // Check email uniqueness - using execute()
+    const existing = await execute(
       'SELECT id FROM service_providers WHERE email = ? AND id != ?',
       [email, decoded.id]
     )
+    
     if (existing.length > 0) {
       return NextResponse.json({ success: false, message: 'Email already in use' }, { status: 400 })
     }
 
-    await query(
+    // Update profile - using execute()
+    await execute(
       `UPDATE service_providers SET
         name             = ?,
         email            = ?,
@@ -98,7 +100,8 @@ export async function PUT(request) {
       ]
     )
 
-    const providers = await query(
+    // Fetch updated profile - using execute()
+    const providers = await execute(
       `SELECT id, name, email, phone, specialty, experience_years,
               rating, total_jobs, bio, avatar_url, location, city, status
        FROM service_providers WHERE id = ?`,
