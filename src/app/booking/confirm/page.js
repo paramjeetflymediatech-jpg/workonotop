@@ -944,12 +944,12 @@ export default function BookingConfirmPage() {
   const [hearAbout, setHearAbout] = useState('');
   const [receiveOffers, setReceiveOffers] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  
+
   // 🔥 Show password states
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
-  
+
   const [address, setAddress] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
@@ -1026,7 +1026,7 @@ export default function BookingConfirmPage() {
         // ✅ Store both token and user data
         localStorage.setItem('token', data.token);
         localStorage.setItem('workontap_user', JSON.stringify(data.user));
-        
+
         setCurrentUser(data.user);
         setIsAuthenticated(true);
         setShowAuthModal(false);
@@ -1062,7 +1062,7 @@ export default function BookingConfirmPage() {
         // ✅ Store both token and user data
         localStorage.setItem('token', data.token);
         localStorage.setItem('workontap_user', JSON.stringify(data.user));
-        
+
         setCurrentUser(data.user);
         setIsAuthenticated(true);
         setFirstName(data.user.first_name);
@@ -1084,7 +1084,7 @@ export default function BookingConfirmPage() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('workontap_user');
-    
+
     setIsAuthenticated(false);
     setCurrentUser(null);
     setFirstName('');
@@ -1305,7 +1305,7 @@ export default function BookingConfirmPage() {
                           </div>
                           <div className="ml-2 sm:ml-3 text-xs sm:text-sm">
                             <label htmlFor="terms" className="text-gray-600">
-                              I agree to WorkOnTap's{' '}
+                              I agree to WorkOnTap&apos;s{' '}
                               <Link href="/terms" className="text-green-700 hover:text-green-800 font-medium underline">
                                 Terms of Service
                               </Link>{' '}

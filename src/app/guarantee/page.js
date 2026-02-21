@@ -19,25 +19,25 @@ export default function GuaranteePage() {
 
       {/* Content */}
       <div className="container mx-auto px-4 py-16 max-w-4xl">
-        
+
         {/* Main Guarantee */}
         <div className="bg-green-50 rounded-2xl p-8 mb-12 text-center">
           <div className="text-6xl mb-4">🛡️</div>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">WorkOnTap Protection Promise</h2>
           <p className="text-lg text-gray-700 mb-6 max-w-2xl mx-auto">
-            If you're not happy with the work, we'll make it right. 
+            If you&apos;re not happy with the work, we&apos;ll make it right.
             Contact us within 48 hours of job completion.
           </p>
         </div>
 
-        {/* What's Covered */}
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">What's Covered</h2>
+        {/* What&apos;s Covered */}
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">What&apos;s Covered</h2>
         <div className="grid md:grid-cols-2 gap-6 mb-12">
-          
+
           <div className="bg-gray-50 p-6 rounded-xl">
             <div className="text-3xl mb-3">✅</div>
             <h3 className="font-semibold text-gray-900 mb-2">Quality of Work</h3>
-            <p className="text-gray-600">If the work isn't up to professional standards, we'll fix it.</p>
+            <p className="text-gray-600">If the work isn&apos;t up to professional standards, we&apos;ll fix it.</p>
           </div>
 
           <div className="bg-gray-50 p-6 rounded-xl">
@@ -55,7 +55,7 @@ export default function GuaranteePage() {
           <div className="bg-gray-50 p-6 rounded-xl">
             <div className="text-3xl mb-3">✅</div>
             <h3 className="font-semibold text-gray-900 mb-2">Timely Service</h3>
-            <p className="text-gray-600">If the pro is significantly late, we'll help reschedule.</p>
+            <p className="text-gray-600">If the pro is significantly late, we&apos;ll help reschedule.</p>
           </div>
         </div>
 
@@ -65,8 +65,8 @@ export default function GuaranteePage() {
           <ol className="list-decimal list-inside space-y-3 text-gray-600">
             <li>Contact us within 48 hours of job completion</li>
             <li>Provide your booking number and details of the issue</li>
-            <li>We'll review and get back to you within 24 hours</li>
-            <li>If eligible, we'll arrange for a fix or refund</li>
+            <li>We&apos;ll review and get back to you within 24 hours</li>
+            <li>If eligible, we&apos;ll arrange for a fix or refund</li>
           </ol>
         </div>
 

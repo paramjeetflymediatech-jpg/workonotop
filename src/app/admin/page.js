@@ -65,11 +65,11 @@ export default function AdminDashboard() {
       // 🔥 Filter customers by role='user' only
       const allUsers = customersData.data || []
       const customers = allUsers.filter(user => user.role === 'user')  // 🔥 Only users with role='user'
-      
+
       // 🔥 Get providers data
       const providers = providersData.data?.providers || []
       const providersStats = providersData.data?.stats || { total: 0, active: 0 }
-      
+
       const servicesArray = servicesData.data || []
       const categoriesArray = categoriesData.data || []
 

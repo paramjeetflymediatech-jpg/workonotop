@@ -20,14 +20,14 @@ export default function AboutPage() {
       {/* Content */}
       <div className="container mx-auto px-4 py-16 max-w-4xl">
         <div className="space-y-12">
-          
+
           {/* Our Story */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Story</h2>
             <p className="text-gray-600 leading-relaxed">
-              WorkOnTap was born from a simple idea: homeowners should be able to find trusted, 
-              qualified tradespeople quickly and easily. What started as a small local service 
-              in Calgary has grown into a platform connecting thousands of homeowners with 
+              WorkOnTap was born from a simple idea: homeowners should be able to find trusted,
+              qualified tradespeople quickly and easily. What started as a small local service
+              in Calgary has grown into a platform connecting thousands of homeowners with
               verified professionals across Canada.
             </p>
           </div>
@@ -36,8 +36,8 @@ export default function AboutPage() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Mission</h2>
             <p className="text-gray-600 leading-relaxed">
-              We're on a mission to take the stress out of home maintenance. By providing 
-              transparent pricing, verified reviews, and guaranteed work, we help homeowners 
+              We&apos;re on a mission to take the stress out of home maintenance. By providing
+              transparent pricing, verified reviews, and guaranteed work, we help homeowners
               feel confident in every booking.
             </p>
           </div>

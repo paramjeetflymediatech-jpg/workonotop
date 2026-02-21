@@ -32,7 +32,7 @@ export default function PaymentHelp() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      
+
       <div className="bg-gradient-to-b from-green-50 to-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-8">
           <Link href="/help" className="text-green-700 hover:underline mb-2 inline-block">
@@ -58,7 +58,7 @@ export default function PaymentHelp() {
             </div>
             <div className="flex items-start gap-3">
               <span className="text-green-600 font-bold">3.</span>
-              <p className="text-gray-700"><span className="font-semibold">You review and pay</span> - Only pay when you're satisfied</p>
+              <p className="text-gray-700"><span className="font-semibold">You review and pay</span> - Only pay when you&apos;re satisfied</p>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-green-600 font-bold">4.</span>
@@ -84,10 +84,10 @@ export default function PaymentHelp() {
         {showExample && (
           <div className="bg-white border-2 border-green-200 rounded-xl p-6 mb-8 shadow-lg">
             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-green-600">📋</span> 
+              <span className="text-green-600">📋</span>
               Sample Invoice - AC Installation
             </h3>
-            
+
             {/* Provider & Service Info */}
             <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-200">
               <div>
@@ -133,7 +133,7 @@ export default function PaymentHelp() {
             </div>
 
             <div className="bg-green-50 rounded-lg p-3 text-sm text-green-700 text-center">
-              ✓ You only pay after the work is done and you're satisfied
+              ✓ You only pay after the work is done and you&apos;re satisfied
             </div>
           </div>
         )}
@@ -158,30 +158,30 @@ export default function PaymentHelp() {
               When do I pay?
             </h3>
             <p className="text-gray-600">
-              Payment is processed <span className="font-semibold">AFTER the job is completed</span>. 
+              Payment is processed <span className="font-semibold">AFTER the job is completed</span>.
               You only pay for the actual time worked, as shown in your invoice.
             </p>
           </div>
-          
+
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
               <span className="text-green-600">🔒</span>
               Is it secure?
             </h3>
             <p className="text-gray-600">
-              Yes! All payments are encrypted and processed securely through our payment partners. 
+              Yes! All payments are encrypted and processed securely through our payment partners.
               We never store your full card details.
             </p>
           </div>
-          
+
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
               <span className="text-green-600">📧</span>
               Can I get a receipt?
             </h3>
             <p className="text-gray-600">
-              Absolutely! After payment, you'll receive an email receipt and can view it anytime 
-              in <span className="font-semibold">'My Bookings'</span> under each completed job.
+              Absolutely! After payment, you&apos;ll receive an email receipt and can view it anytime
+              in <span className="font-semibold">&apos;My Bookings&apos;</span> under each completed job.
             </p>
           </div>
 
@@ -191,7 +191,7 @@ export default function PaymentHelp() {
               How is the amount calculated?
             </h3>
             <p className="text-gray-600 mb-2">
-              You're charged based on the actual time worked:
+              You&apos;re charged based on the actual time worked:
             </p>
             <ul className="list-disc list-inside text-gray-600 space-y-1 text-sm">
               <li>Standard rate for the first X minutes (as shown in service)</li>
@@ -208,8 +208,8 @@ export default function PaymentHelp() {
             <div>
               <h3 className="font-bold text-gray-900 mb-1">Invoices are generated automatically</h3>
               <p className="text-gray-700 text-sm">
-                Once a job is completed, an invoice is created with the exact time worked and amount due. 
-                You can view it in 'My Bookings' before making payment.
+                Once a job is completed, an invoice is created with the exact time worked and amount due.
+                You can view it in &apos;My Bookings&apos; before making payment.
               </p>
             </div>
           </div>

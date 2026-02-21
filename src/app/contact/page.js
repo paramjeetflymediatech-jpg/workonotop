@@ -14,7 +14,7 @@ export default function ContactPage() {
   })
   const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e) => { 
     e.preventDefault()
     // Add your form submission logic here
     console.log('Form submitted:', formData)
@@ -28,7 +28,7 @@ export default function ContactPage() {
         <div className="container mx-auto px-4 py-16 text-center max-w-md">
           <div className="text-6xl mb-4">✅</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Message Sent!</h1>
-          <p className="text-gray-600 mb-6">We'll get back to you within 24 hours.</p>
+          <p className="text-gray-600 mb-6">We&apos;ll get back to you within 24 hours.</p>
           <Link href="/" className="text-green-600 hover:underline">
             ← Back to Home
           </Link>
@@ -45,17 +45,17 @@ export default function ContactPage() {
       <div className="bg-gradient-to-r from-green-800 to-green-700 text-white py-16">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
-          <p className="text-xl text-green-100">We're here to help 24/7</p>
+          <p className="text-xl text-green-100">We&apos;re here to help 24/7</p>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-16">
         <div className="grid md:grid-cols-2 gap-12 max-w-4xl mx-auto">
-          
+
           {/* Contact Info */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h2>
-            
+
             <div className="space-y-6">
               <div className="flex items-start gap-4">
                 <div className="text-2xl">📧</div>
@@ -104,7 +104,7 @@ export default function ContactPage() {
           {/* Contact Form */}
           <div className="bg-gray-50 p-8 rounded-2xl">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Send a Message</h2>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -112,7 +112,7 @@ export default function ContactPage() {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
@@ -123,7 +123,7 @@ export default function ContactPage() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
@@ -134,7 +134,7 @@ export default function ContactPage() {
                   type="text"
                   required
                   value={formData.subject}
-                  onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
@@ -145,7 +145,7 @@ export default function ContactPage() {
                   rows="4"
                   required
                   value={formData.message}
-                  onChange={(e) => setFormData({...formData, message: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
