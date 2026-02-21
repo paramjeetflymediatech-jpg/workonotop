@@ -22,7 +22,7 @@
 //     getUserDisplayName,
 //     getUserInitials 
 //   } = useAuth();
-  
+
 //   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 //   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
 //   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -37,7 +37,7 @@
 //   const handleProviderAuth = (userData, type) => {
 //     // Use the login function from AuthContext to update the UI immediately
 //     login(userData, type);
-    
+
 //     // Close modals
 //     setIsLoginModalOpen(false);
 //     setIsSignupModalOpen(false);
@@ -293,18 +293,18 @@ import ProSignupModal from './ProSignupModal';
 import CustomerAuthModal from './CustomerAuthModal';
 
 export default function Header() {
-  const { 
-    user, 
+  const {
+    user,
     userType,
-    logout, 
+    logout,
     login,
     isProvider,
     isCustomer,
     getDashboardLink,
     getUserDisplayName,
-    getUserInitials 
+    getUserInitials
   } = useAuth();
-  
+
   const [isProLoginModalOpen, setIsProLoginModalOpen] = useState(false);
   const [isProSignupModalOpen, setIsProSignupModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -348,8 +348,8 @@ export default function Header() {
                 </Link>
               )}
               {user && (
-                <Link 
-                  href={getDashboardLink()} 
+                <Link
+                  href={getDashboardLink()}
                   className="text-gray-700 hover:text-green-700 transition duration-200 border-b-2 border-transparent hover:border-green-700 pb-1"
                 >
                   {isProvider() ? 'Dashboard' : 'My Bookings'}
@@ -532,7 +532,7 @@ export default function Header() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-1">Logout?</h3>
-              <p className="text-sm text-gray-600">You'll need to log in again to access your account.</p>
+              <p className="text-sm text-gray-600">You&apos;ll need to log in again to access your account.</p>
             </div>
             <div className="flex gap-3">
               <button onClick={handleLogout}
