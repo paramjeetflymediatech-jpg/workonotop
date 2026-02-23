@@ -1,5 +1,5 @@
 // app/api/admin/invoices/[id]/preview/download/route.js
-import { query } from '@/lib/db'
+import { execute } from '@/lib/db'
 import { NextResponse } from 'next/server'
 import puppeteer from 'puppeteer'
 
@@ -8,7 +8,7 @@ export async function GET(request, { params }) {
     const { id } = await params
 
     // Fetch invoice details
-    const invoices = await query(`
+    const invoices = await execute(`
       SELECT * FROM invoices WHERE id = ?
     `, [id])
 
@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
 
     const invoice = invoices[0]
 
-    const bookings = await query(
+    const bookings = await execute(
       `SELECT 
         b.customer_first_name, 
         b.customer_last_name, 
