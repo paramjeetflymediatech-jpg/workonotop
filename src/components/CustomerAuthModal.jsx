@@ -178,22 +178,20 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
             <button
               type="button"
               onClick={() => { setAuthMode('login'); setAuthError(''); }}
-              className={`flex-1 py-2 text-sm font-semibold transition ${
-                authMode === 'login'
+              className={`flex-1 py-2 text-sm font-semibold transition ${authMode === 'login'
                   ? 'bg-green-700 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               Log In
             </button>
             <button
               type="button"
               onClick={() => { setAuthMode('signup'); setAuthError(''); }}
-              className={`flex-1 py-2 text-sm font-semibold transition ${
-                authMode === 'signup'
+              className={`flex-1 py-2 text-sm font-semibold transition ${authMode === 'signup'
                   ? 'bg-green-700 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               Sign Up
             </button>
@@ -329,7 +327,7 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
                   onChange={(e) => setReceiveOffers(e.target.checked)}
                   className="mt-0.5 w-4 h-4 text-green-600 border-2 border-gray-300 rounded" />
                 <span className="text-xs text-gray-600">
-                  Yes! I'd like to receive news and special offers from WorkOnTap.
+                  Yes! I&apos;d like to receive news and special offers from WorkOnTap.
                 </span>
               </label>
 
@@ -339,7 +337,7 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
               </button>
 
               <p className="text-xs text-center text-gray-500">
-                By signing up you agree to WorkOnTap's{' '}
+                By signing up you agree to WorkOnTap&apos;s{' '}
                 <Link href="/terms" className="text-green-700 hover:underline">Terms</Link> &{' '}
                 <Link href="/privacy" className="text-green-700 hover:underline">Privacy Policy</Link>
               </p>
