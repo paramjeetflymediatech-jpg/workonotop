@@ -1,7 +1,3 @@
-
-
-
-
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
@@ -23,10 +19,14 @@ export function AuthProvider({ children }) {
     // Check for customer first
     const savedCustomer = localStorage.getItem('workontap_user');
     if (savedCustomer) {
-      setUser(JSON.parse(savedCustomer));
-      setUserType('customer');
-      setLoading(false);
-      return;
+      try {
+        setUser(JSON.parse(savedCustomer));
+        setUserType('customer');
+        setLoading(false);
+        return;
+      } catch (e) {
+        console.error('Error parsing customer data:', e);
+      }
     }
 
     // Check for provider
@@ -34,8 +34,12 @@ export function AuthProvider({ children }) {
     const providerToken = localStorage.getItem('providerToken');
     
     if (savedProvider && providerToken) {
-      setUser(JSON.parse(savedProvider));
-      setUserType('provider');
+      try {
+        setUser(JSON.parse(savedProvider));
+        setUserType('provider');
+      } catch (e) {
+        console.error('Error parsing provider data:', e);
+      }
     }
     
     setLoading(false);
@@ -52,6 +56,10 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('providerToken');
     } else if (type === 'provider') {
       localStorage.setItem('provider', JSON.stringify(userData));
+      // Store token if provided
+      if (userData.token) {
+        localStorage.setItem('providerToken', userData.token);
+      }
       // Clear customer data if exists
       localStorage.removeItem('workontap_user');
     }
@@ -92,11 +100,15 @@ export function AuthProvider({ children }) {
     if (!user) return '';
     
     if (isProvider()) {
-      // Provider format
-      return user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+      // Provider format - try different possible name fields
+      return user.name || 
+             user.business_name || 
+             `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
+             user.email || 
+             'Provider';
     } else {
       // Customer format
-      return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+      return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Customer';
     }
   };
 
@@ -105,13 +117,17 @@ export function AuthProvider({ children }) {
     if (!user) return 'U';
     
     if (isProvider()) {
-      if (user.name) return user.name[0];
-      if (user.first_name) return user.first_name[0];
+      // Try to get initials from name
+      if (user.name) return user.name.charAt(0).toUpperCase();
+      if (user.first_name) return user.first_name.charAt(0).toUpperCase();
+      if (user.business_name) return user.business_name.charAt(0).toUpperCase();
     } else {
-      if (user.first_name) return user.first_name[0];
-      if (user.last_name) return user.last_name[0];
+      if (user.first_name) return user.first_name.charAt(0).toUpperCase();
+      if (user.last_name) return user.last_name.charAt(0).toUpperCase();
     }
-    return user.email?.[0]?.toUpperCase() || 'U';
+    
+    // Fallback to email first character
+    return user.email?.charAt(0)?.toUpperCase() || 'U';
   };
 
   return (
@@ -139,12 +155,3 @@ export function useAuth() {
   }
   return context;
 }
-
-
-
-
-
-
-
-
-

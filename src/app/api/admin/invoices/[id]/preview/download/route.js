@@ -1,7 +1,30 @@
 // app/api/admin/invoices/[id]/preview/download/route.js
 import { execute } from '@/lib/db'
 import { NextResponse } from 'next/server'
-import puppeteer from 'puppeteer'
+
+// Puppeteer is an optional dependency; if it's not installed we fall back gracefully
+let puppeteer
+// dynamic import helper that uses eval to prevent webpack from statically
+// resolving the module name. this lets us keep puppeteer optional and avoid
+// build-time errors when the package isn't installed.
+const dynamicImport = (spec) => eval(`import("${spec}")`)
+
+async function loadPuppeteer() {
+  if (puppeteer) return puppeteer
+  try {
+    const mod = await dynamicImport('puppeteer')
+    puppeteer = mod?.default || mod
+  } catch (err) {
+    console.warn('⚠️ puppeteer module not available, trying puppeteer-core')
+    try {
+      const mod = await dynamicImport('puppeteer-core')
+      puppeteer = mod?.default || mod
+    } catch (err2) {
+      puppeteer = null
+    }
+  }
+  return puppeteer
+}
 
 export async function GET(request, { params }) {
   try {
@@ -249,7 +272,12 @@ export async function GET(request, { params }) {
     `
 
     // Launch puppeteer
-    const browser = await puppeteer.launch({
+    // ensure puppeteer module is available
+    const pp = await loadPuppeteer()
+    if (!pp) {
+      return NextResponse.json({ success: false, message: 'PDF export not available' }, { status: 503 })
+    }
+    const browser = await pp.launch({
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     })

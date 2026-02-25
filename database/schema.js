@@ -15,19 +15,17 @@ const connect = async (withDb = false) => {
   return await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
-  
     password: process.env.DB_PASSWORD || 'root123',
     port: parseInt(process.env.DB_PORT || '3306'),
     ...(withDb && { database: DB_NAME })
   });
 };
 
-console.log("DBUSER",process.env.DB_USER)
-console.log("DBHOST",process.env.DB_HOST)
-
+console.log("DB USER:", process.env.DB_USER);
+console.log("DB HOST:", process.env.DB_HOST);
 
 // =====================================================
-// Table creation SQL - All 12 tables
+// Table creation SQL - All 13 tables (NO SAMPLE DATA)
 // =====================================================
 const tables = [
   // Table 1: users
@@ -39,10 +37,11 @@ const tables = [
     last_name VARCHAR(100) NOT NULL,
     phone VARCHAR(50),
     hear_about VARCHAR(255),
-    receive_offers BOOLEAN DEFAULT FALSE,
+    receive_offers TINYINT(1) DEFAULT 0,
     role ENUM('user', 'admin') DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_role (role)
   )`,
 
   // Table 2: service_categories
@@ -52,13 +51,13 @@ const tables = [
     slug VARCHAR(100) UNIQUE NOT NULL,
     icon VARCHAR(255),
     description TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
+    is_active TINYINT(1) DEFAULT 1,
     display_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`,
 
-  // Table 3: service_providers (with total_reviews and avg_rating included)
+  // Table 3: service_providers (UPDATED with all fields)
   `CREATE TABLE IF NOT EXISTS service_providers (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(200) NOT NULL,
@@ -75,11 +74,30 @@ const tables = [
     avatar_url VARCHAR(255),
     location VARCHAR(200),
     city VARCHAR(100),
-    status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
+    status ENUM('active', 'inactive', 'pending', 'rejected') DEFAULT 'pending',
     remember_token VARCHAR(100),
     last_login DATETIME,
+    email_verified TINYINT(1) DEFAULT 0,
+    email_verification_token VARCHAR(255),
+    email_verification_expires DATETIME,
+    onboarding_step INT DEFAULT 1,
+    onboarding_completed TINYINT(1) DEFAULT 0,
+    documents_uploaded TINYINT(1) DEFAULT 0,
+    documents_verified TINYINT(1) DEFAULT 0,
+    stripe_account_id VARCHAR(255),
+    stripe_onboarding_complete TINYINT(1) DEFAULT 0,
+    approved_by INT,
+    approved_at DATETIME,
+    rejection_reason TEXT,
+    service_areas JSON,
+    skills JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_city (city),
+    INDEX idx_status (status),
+    INDEX idx_onboarding_step (onboarding_step),
+    INDEX idx_stripe_account (stripe_account_id),
+    INDEX idx_email_verified (email_verified)
   )`,
 
   // Table 4: services
@@ -95,22 +113,71 @@ const tables = [
     duration_minutes INT,
     image_url VARCHAR(255),
     use_cases TEXT,
-    is_homepage BOOLEAN DEFAULT FALSE,
-    is_trending BOOLEAN DEFAULT FALSE,
-    is_popular BOOLEAN DEFAULT FALSE,
-    is_active BOOLEAN DEFAULT TRUE,
+    is_homepage TINYINT(1) DEFAULT 0,
+    is_trending TINYINT(1) DEFAULT 0,
+    is_popular TINYINT(1) DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE CASCADE
+    FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE CASCADE,
+    INDEX idx_is_active (is_active)
   )`,
 
-  // Table 5: bookings
+  // Table 5: provider_documents
+  `CREATE TABLE IF NOT EXISTS provider_documents (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    provider_id INT NOT NULL,
+    document_type ENUM('id_proof', 'trade_license', 'insurance', 'certification', 'profile_photo', 'other') NOT NULL,
+    document_url VARCHAR(500) NOT NULL,
+    document_number VARCHAR(100),
+    issue_date DATE,
+    expiry_date DATE,
+    is_verified TINYINT(1) DEFAULT 0,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    verified_by INT,
+    reviewed_by INT,
+    verified_at DATETIME,
+    reviewed_at DATETIME,
+    rejection_reason TEXT,
+    admin_notes TEXT,
+    metadata JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
+    INDEX idx_provider (provider_id),
+    INDEX idx_status (status),
+    INDEX idx_is_verified (is_verified)
+  )`,
+
+  // Table 6: provider_bank_accounts
+  `CREATE TABLE IF NOT EXISTS provider_bank_accounts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    provider_id INT NOT NULL,
+    stripe_account_id VARCHAR(255) NOT NULL,
+    stripe_onboarding_url VARCHAR(500),
+    onboarding_completed TINYINT(1) DEFAULT 0,
+    account_status ENUM('pending', 'verified', 'rejected', 'incomplete') DEFAULT 'pending',
+    bank_name VARCHAR(255),
+    last4 VARCHAR(4),
+    payout_method ENUM('stripe', 'bank_transfer') DEFAULT 'stripe',
+    payout_schedule ENUM('instant', 'daily', 'weekly', 'monthly') DEFAULT 'weekly',
+    default_payout TINYINT(1) DEFAULT 1,
+    metadata JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
+    INDEX idx_provider (provider_id),
+    INDEX idx_stripe_account (stripe_account_id),
+    INDEX idx_account_status (account_status)
+  )`,
+
+  // Table 7: bookings
   `CREATE TABLE IF NOT EXISTS bookings (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NULL,
+    user_id INT,
     booking_number VARCHAR(50) UNIQUE NOT NULL,
     service_id INT NOT NULL,
-    provider_id INT NULL,
+    provider_id INT,
     service_name VARCHAR(200),
     service_price DECIMAL(10, 2) NOT NULL,
     additional_price DECIMAL(10, 2) DEFAULT 0.00,
@@ -123,9 +190,9 @@ const tables = [
     timing_constraints TEXT,
     job_description TEXT NOT NULL,
     instructions TEXT,
-    parking_access BOOLEAN DEFAULT FALSE,
-    elevator_access BOOLEAN DEFAULT FALSE,
-    has_pets BOOLEAN DEFAULT FALSE,
+    parking_access TINYINT(1) DEFAULT 0,
+    elevator_access TINYINT(1) DEFAULT 0,
+    has_pets TINYINT(1) DEFAULT 0,
     address_line1 VARCHAR(255) NOT NULL,
     address_line2 VARCHAR(255),
     city VARCHAR(100) DEFAULT 'Calgary',
@@ -141,36 +208,45 @@ const tables = [
     overtime_earnings DECIMAL(10, 2) DEFAULT 0.00,
     final_provider_amount DECIMAL(10, 2),
     job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started',
-    before_photos_uploaded BOOLEAN DEFAULT FALSE,
-    after_photos_uploaded BOOLEAN DEFAULT FALSE,
+    before_photos_uploaded TINYINT(1) DEFAULT 0,
+    after_photos_uploaded TINYINT(1) DEFAULT 0,
     photo_upload_deadline TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE SET NULL
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE SET NULL,
+    INDEX idx_user (user_id),
+    INDEX idx_provider (provider_id),
+    INDEX idx_status (status),
+    INDEX idx_job_date (job_date),
+    INDEX idx_job_timer_status (job_timer_status),
+    INDEX idx_customer_email (customer_email)
   )`,
 
-  // Table 6: booking_photos
+  // Table 8: booking_photos
   `CREATE TABLE IF NOT EXISTS booking_photos (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
     photo_url VARCHAR(500) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    INDEX idx_booking (booking_id)
   )`,
 
-  // Table 7: booking_status_history
+  // Table 9: booking_status_history
   `CREATE TABLE IF NOT EXISTS booking_status_history (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
     status VARCHAR(50) NOT NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    INDEX idx_booking (booking_id),
+    INDEX idx_created_at (created_at)
   )`,
 
-  // Table 8: booking_time_logs
+  // Table 10: booking_time_logs
   `CREATE TABLE IF NOT EXISTS booking_time_logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
@@ -178,10 +254,12 @@ const tables = [
     timestamp DATETIME NOT NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    INDEX idx_booking (booking_id),
+    INDEX idx_timestamp (timestamp)
   )`,
 
-  // Table 9: job_photos
+  // Table 11: job_photos
   `CREATE TABLE IF NOT EXISTS job_photos (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
@@ -190,10 +268,31 @@ const tables = [
     uploaded_by INT NOT NULL,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
-    FOREIGN KEY (uploaded_by) REFERENCES service_providers(id)
+    FOREIGN KEY (uploaded_by) REFERENCES service_providers(id) ON DELETE CASCADE,
+    INDEX idx_booking (booking_id),
+    INDEX idx_photo_type (photo_type),
+    INDEX idx_uploaded_by (uploaded_by)
   )`,
 
-  // Table 10: invoices
+  // Table 12: provider_reviews
+  `CREATE TABLE IF NOT EXISTS provider_reviews (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    booking_id INT NOT NULL UNIQUE,
+    provider_id INT NOT NULL,
+    customer_id INT NOT NULL,
+    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    review TEXT,
+    is_anonymous TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
+    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_provider (provider_id),
+    INDEX idx_customer (customer_id)
+  )`,
+
+  // Table 13: invoices
   `CREATE TABLE IF NOT EXISTS invoices (
     id INT PRIMARY KEY AUTO_INCREMENT,
     invoice_number VARCHAR(50) UNIQUE NOT NULL,
@@ -220,38 +319,13 @@ const tables = [
     pdf_path VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (provider_id) REFERENCES service_providers(id)
-  )`,
-
-  // Table 11: password_reset_tokens
-  `CREATE TABLE IF NOT EXISTS password_reset_tokens (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    email VARCHAR(255) NOT NULL,
-    token VARCHAR(255) NOT NULL,
-    expires_at DATETIME NOT NULL,
-    used BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_email (email),
-    INDEX idx_token (token)
-  )`,
-
-  // Table 12: provider_reviews
-  `CREATE TABLE IF NOT EXISTS provider_reviews (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    booking_id INT NOT NULL,
-    provider_id INT NOT NULL,
-    customer_id INT NOT NULL,
-    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    review TEXT,
-    is_anonymous BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
-    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_booking_review (booking_id)
+    INDEX idx_booking (booking_id),
+    INDEX idx_user (user_id),
+    INDEX idx_provider (provider_id),
+    INDEX idx_status (status)
   )`
 ];
 
@@ -267,6 +341,18 @@ const indexes = [
   `CREATE INDEX IF NOT EXISTS idx_providers_email ON service_providers(email)`,
   `CREATE INDEX IF NOT EXISTS idx_providers_status ON service_providers(status)`,
   `CREATE INDEX IF NOT EXISTS idx_providers_city ON service_providers(city)`,
+  `CREATE INDEX IF NOT EXISTS idx_providers_onboarding ON service_providers(onboarding_step)`,
+  `CREATE INDEX IF NOT EXISTS idx_providers_stripe ON service_providers(stripe_account_id)`,
+
+  // Provider documents indexes
+  `CREATE INDEX IF NOT EXISTS idx_documents_provider ON provider_documents(provider_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_documents_status ON provider_documents(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_documents_verified ON provider_documents(is_verified)`,
+
+  // Provider bank accounts indexes
+  `CREATE INDEX IF NOT EXISTS idx_bank_provider ON provider_bank_accounts(provider_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_bank_stripe ON provider_bank_accounts(stripe_account_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_bank_status ON provider_bank_accounts(account_status)`,
 
   // Services table indexes
   `CREATE INDEX IF NOT EXISTS idx_services_category ON services(category_id)`,
@@ -296,16 +382,16 @@ const indexes = [
   `CREATE INDEX IF NOT EXISTS idx_job_photos_booking ON job_photos(booking_id)`,
   `CREATE INDEX IF NOT EXISTS idx_job_photos_type ON job_photos(photo_type)`,
 
+  // Provider reviews indexes
+  `CREATE INDEX IF NOT EXISTS idx_reviews_provider ON provider_reviews(provider_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_reviews_booking ON provider_reviews(booking_id)`,
+
   // Invoices indexes
   `CREATE INDEX IF NOT EXISTS idx_invoices_booking ON invoices(booking_id)`,
   `CREATE INDEX IF NOT EXISTS idx_invoices_user ON invoices(user_id)`,
   `CREATE INDEX IF NOT EXISTS idx_invoices_provider ON invoices(provider_id)`,
   `CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number)`,
-  `CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`,
-
-  // Provider reviews indexes
-  `CREATE INDEX IF NOT EXISTS idx_reviews_provider ON provider_reviews(provider_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_reviews_booking ON provider_reviews(booking_id)`
+  `CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`
 ];
 
 // =====================================================
@@ -315,7 +401,7 @@ async function runMigration() {
   let conn = null;
 
   console.log('\n' + '='.repeat(60));
-  console.log('🚀 WorkOnTap Database Migration (12 Tables)');
+  console.log('🚀 WorkOnTap Database Migration (13 Tables)');
   console.log('='.repeat(60) + '\n');
 
   try {
@@ -355,7 +441,7 @@ async function runMigration() {
         }
       }
     }
-    console.log(`   📊 Total tables created/verified: ${createdCount}/12\n`);
+    console.log(`   📊 Total tables created/verified: ${createdCount}/13\n`);
 
     // Step 4: Create indexes
     console.log('📊 Step 3: Creating indexes...');
@@ -387,8 +473,9 @@ async function runMigration() {
     console.log('\n📋 Step 5: Table column counts:');
     const tableQueries = [
       'users', 'service_categories', 'service_providers', 'services',
-      'bookings', 'booking_photos', 'booking_status_history', 'booking_time_logs',
-      'job_photos', 'invoices', 'password_reset_tokens', 'provider_reviews'
+      'provider_documents', 'provider_bank_accounts', 'bookings', 
+      'booking_photos', 'booking_status_history', 'booking_time_logs',
+      'job_photos', 'provider_reviews', 'invoices'
     ];
 
     for (const table of tableQueries) {
@@ -405,7 +492,7 @@ async function runMigration() {
     console.log('✅ Migration completed successfully!');
     console.log('='.repeat(60));
     console.log(`   Database: ${DB_NAME}`);
-    console.log(`   Tables:   ${actualTables.length}/12`);
+    console.log(`   Tables:   ${actualTables.length}/13`);
     console.log(`   Indexes:  ${indexCount}`);
     console.log('='.repeat(60) + '\n');
 

@@ -1,226 +1,208 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import Link from 'next/link'
-import { useAuth } from 'src/context/AuthContext'
-import Image from 'next/image'
+import { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { Home, Briefcase, DollarSign, User, LogOut, Menu, X } from 'lucide-react';
 
 export default function ProviderLayout({ children }) {
-  const router   = useRouter()
-  const pathname = usePathname()
-  const { user, loading, logout } = useAuth()
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [profileImage, setProfileImage] = useState(null)
-  const [cityChecked, setCityChecked]   = useState(false)
-  const [hasCity, setHasCity]           = useState(false)
+  const router = useRouter();
+  const pathname = usePathname();
+  const [loading, setLoading] = useState(true);
+  const [provider, setProvider] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // ── Load saved avatar ─────────────────────────────────────────────────────
+  const publicPaths = [
+    '/provider/login', 
+    '/provider/signup', 
+    '/provider/verify-email', 
+    '/provider/verify-email-pending', 
+    '/provider/onboarding', 
+    '/provider/pending',
+    '/provider/rejected'  // 👈 ADDED rejected page
+  ];
+
   useEffect(() => {
-    const img = localStorage.getItem('providerProfileImage')
-    if (img) setProfileImage(img)
-  }, [user])
+    checkAuth();
+  }, [pathname]);
 
-  // ── Auth guard ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!loading && !user) router.push('/')
-  }, [loading, user, router])
+  const checkAuth = async () => {
+    try {
+      // Allow public paths without auth
+      if (publicPaths.includes(pathname)) {
+        setLoading(false);
+        return;
+      }
 
-  // ── City guard — check provider city from API ─────────────────────────────
-  useEffect(() => {
-    if (!user) return
-    const isProfilePage = pathname === '/provider/profile'
-    if (isProfilePage) { setCityChecked(true); return }   // always allow profile
+      const res = await fetch('/api/provider/me');
+      const data = await res.json();
 
-    const token = localStorage.getItem('providerToken')
-    fetch('/api/provider/profile', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.json())
-      .then(data => {
-        const city = data?.data?.city?.trim()
-        if (city) {
-          setHasCity(true)
-        } else {
-          setHasCity(false)
-          router.replace('/provider/profile')
-        }
-      })
-      .catch(() => setHasCity(false))
-      .finally(() => setCityChecked(true))
-  }, [user, pathname])
+      if (!data.success || !data.provider) {
+        router.push('/provider/login');
+        return;
+      }
 
-  const handleLogout = () => {
-    setIsMobileOpen(false)
-    logout(true)
-  }
+      setProvider(data.provider);
 
-  const menuItems = [
-    { name: 'Dashboard',      href: '/provider/dashboard',      icon: '📊' },
-    { name: 'Available Jobs', href: '/provider/available-jobs', icon: '🗂️' },
-    { name: 'My Jobs',        href: '/provider/jobs',           icon: '📋' },
-    { name: 'Ratings',       href: '/provider/ratings',       icon: '★' },
-    // { name: 'Earnings',       href: '/provider/earnings',       icon: '💰' },
-    // { name: 'Messages',       href: '/provider/messages',       icon: '💬' },
-    { name: 'Profile',        href: '/provider/profile',        icon: '👤' },
-  ]
+      // 🔴 IMPORTANT: Check if rejected first
+      if (data.provider.status === 'rejected') {
+        console.log('🚫 Provider is rejected, redirecting to rejected page');
+        router.push('/provider/rejected');
+        return;
+      }
 
-  if (loading || !cityChecked) {
+      // ✅ Your existing redirect logic
+      if (!data.provider.email_verified) {
+        router.push('/provider/verify-email-pending');
+      } 
+      else if (data.provider.status === 'active' && data.provider.onboarding_completed) {
+        if (pathname !== '/provider/dashboard') router.push('/provider/dashboard');
+      } 
+      else if (data.provider.onboarding_completed === 1 && data.provider.status !== 'active') {
+        if (pathname !== '/provider/pending') router.push('/provider/pending');
+      } 
+      else if (data.provider.onboarding_completed === 0) {
+        if (pathname !== '/provider/onboarding') router.push('/provider/onboarding');
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      if (!publicPaths.includes(pathname)) router.push('/provider/login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-teal-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-600 border-t-transparent"></div>
       </div>
-    )
+    );
   }
 
-  if (!user) return null
+  // Don't show navbar on public pages
+  if (publicPaths.includes(pathname)) {
+    return children;
+  }
 
-  const isProfilePage = pathname === '/provider/profile'
-  const avatarLetter  = user?.name?.charAt(0)?.toUpperCase() || 'P'
+  const navItems = [
+    { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/provider/jobs', label: 'Jobs', icon: Briefcase },
+    { href: '/provider/earnings', label: 'Earnings', icon: DollarSign },
+    { href: '/provider/profile', label: 'Profile', icon: User },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-
-      {/* ── Mobile top bar ── */}
-      <div className="lg:hidden bg-white border-b border-gray-100 px-4 py-3 fixed top-0 left-0 right-0 z-40 flex items-center justify-between shadow-sm">
-        <button onClick={() => setIsMobileOpen(true)}
-          className="p-2 hover:bg-gray-100 rounded-xl transition" aria-label="Open menu">
-          <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-
-        <span className="text-lg font-bold text-gray-900">WorkOnTap</span>
-
-        <Link href="/provider/profile" className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-green-500">
-          {profileImage
-            ? <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-            : <div className="w-full h-full bg-green-600 flex items-center justify-center text-white font-bold text-sm">{avatarLetter}</div>
-          }
-        </Link>
-      </div>
-
-      {/* ── Mobile overlay ── */}
-      {isMobileOpen && (
-        <div className="lg:hidden fixed inset-0 bg-black/40 z-50 backdrop-blur-sm" onClick={() => setIsMobileOpen(false)} />
-      )}
-
-      {/* ── Sidebar ── */}
-      <aside className={`
-        fixed top-0 left-0 h-full bg-white z-50 transition-transform duration-300 ease-in-out
-        w-72 lg:w-64 lg:translate-x-0 border-r border-gray-100
-        ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:shadow-none'}
-      `}>
-        <div className="h-full flex flex-col overflow-hidden">
-
-          {/* Logo */}
-          <div className="px-5 py-5 border-b border-gray-100 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">WorkOnTap</h1>
-              <p className="text-xs text-gray-400 mt-0.5">Provider Portal</p>
+    <div className="min-h-screen bg-slate-50">
+      {/* Navbar */}
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <Link href="/provider/dashboard" className="flex items-center">
+                <span className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                  WorkOnTap
+                </span>
+              </Link>
             </div>
-            <button onClick={() => setIsMobileOpen(false)}
-              className="lg:hidden p-1.5 hover:bg-gray-100 rounded-lg transition">
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      isActive
+                        ? 'bg-teal-50 text-teal-700'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 mr-2" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+              
+              <div className="h-6 w-px bg-slate-200 mx-2" />
+              
+              <span className="text-sm text-slate-600">{provider?.name}</span>
+              
+              <button
+                onClick={async () => {
+                  await fetch('/api/provider/logout', { method: 'POST' });
+                  router.push('/provider/login');
+                }}
+                className="flex items-center px-3 py-2 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </button>
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="flex md:hidden items-center">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              >
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </div>
           </div>
-
-          {/* Provider card */}
-          <Link href="/provider/profile" onClick={() => setIsMobileOpen(false)}
-            className="mx-3 mt-3 p-3 rounded-xl hover:bg-gray-50 transition flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-green-100 group-hover:ring-green-300 transition">
-              {profileImage
-                ? <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                : <div className="w-full h-full bg-green-600 flex items-center justify-center text-white font-bold">{avatarLetter}</div>
-              }
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-gray-900 truncate text-sm">{user?.name || 'Provider'}</p>
-              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
-            </div>
-            <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-
-          {/* City missing warning in sidebar */}
-          {!hasCity && !isProfilePage && (
-            <div className="mx-3 mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <p className="text-xs text-amber-700 font-medium">⚠️ Set your city to access all features</p>
-            </div>
-          )}
-
-          {/* Nav */}
-          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            {menuItems.map((item) => {
-              const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
-              const isLocked = !hasCity && item.href !== '/provider/profile'
-
-              return (
-                <Link key={item.name} href={item.href}
-                  onClick={() => setIsMobileOpen(false)}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-medium relative
-                    ${isActive
-                      ? 'bg-green-600 text-white shadow-sm shadow-green-200'
-                      : isLocked
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}
-                  `}>
-                  <span className="text-base">{item.icon}</span>
-                  <span className="flex-1">{item.name}</span>
-                  {isLocked && !isActive && (
-                    <svg className="w-3.5 h-3.5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
-                    </svg>
-                  )}
-                </Link>
-              )
-            })}
-          </nav>
-
-          {/* Logout */}
-          <div className="px-3 pb-4 pt-2 border-t border-gray-100">
-            <button onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-red-500 rounded-xl hover:bg-red-50 transition text-sm font-medium">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Logout
-            </button>
-          </div>
-
         </div>
-      </aside>
 
-      {/* ── Main ── */}
-      <main className="lg:ml-64 min-h-screen">
-        <div className="pt-[60px] lg:pt-0">
-
-          {/* City gate — full screen block if not on profile and no city */}
-          {!hasCity && !isProfilePage ? (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-md w-full text-center">
-                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">📍</span>
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-200 bg-white">
+            <div className="px-4 py-2 space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      isActive
+                        ? 'bg-teal-50 text-teal-700'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 mr-3" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+              
+              <div className="border-t border-slate-200 my-2 pt-2">
+                <div className="px-3 py-2 text-sm text-slate-600">
+                  Signed in as <span className="font-medium">{provider?.name}</span>
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">City Required</h2>
-                <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                  Please set your city in your profile so we can show you available jobs in your area and unlock all dashboard features.
-                </p>
-                <Link href="/provider/profile"
-                  className="inline-block w-full py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition text-sm">
-                  Go to Profile → Set City
-                </Link>
+                <button
+                  onClick={async () => {
+                    await fetch('/api/provider/logout', { method: 'POST' });
+                    router.push('/provider/login');
+                  }}
+                  className="w-full flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
+                >
+                  <LogOut className="h-4 w-4 mr-3" />
+                  Logout
+                </button>
               </div>
             </div>
-          ) : children}
+          </div>
+        )}
+      </nav>
 
-        </div>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {children}
       </main>
-
     </div>
-  )
+  );
 }

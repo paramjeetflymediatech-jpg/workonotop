@@ -1,95 +1,298 @@
-import { NextResponse } from 'next/server'
-import { execute } from '@/lib/db'
+
+
+
+
+// // app/api/admin/providers/route.js
+// import { NextResponse } from 'next/server';
+// import { execute } from '@/lib/db';
+// import { sendEmail, getApprovalEmailHtml, getRejectionEmailHtml } from '@/lib/email';
+
+// export async function GET(request) {
+//   try {
+//     const { searchParams } = new URL(request.url);
+//     const status = searchParams.get('status');
+//     const search = searchParams.get('search');
+
+//     // Main providers query with all data
+//     let query = `
+//       SELECT 
+//         sp.*,
+//         (SELECT COUNT(*) FROM provider_documents WHERE provider_id = sp.id) as documents_count,
+//         (SELECT COUNT(*) FROM provider_documents WHERE provider_id = sp.id AND status = 'approved') as approved_docs,
+//         (SELECT COUNT(*) FROM provider_documents WHERE provider_id = sp.id AND status = 'pending') as pending_docs,
+//         (SELECT COUNT(*) FROM provider_documents WHERE provider_id = sp.id AND status = 'rejected') as rejected_docs,
+//         (SELECT account_status FROM provider_bank_accounts WHERE provider_id = sp.id LIMIT 1) as bank_status
+//       FROM service_providers sp
+//       WHERE 1=1
+//     `;
+
+//     const params = [];
+
+//     if (status && status !== 'all') {
+//       if (status === 'pending') {
+//         query += ` AND sp.status = 'inactive' AND sp.onboarding_completed = 1`;
+//       } else {
+//         query += ` AND sp.status = ?`;
+//         params.push(status);
+//       }
+//     }
+
+//     if (search) {
+//       query += ` AND (sp.name LIKE ? OR sp.email LIKE ? OR sp.phone LIKE ?)`;
+//       const searchTerm = `%${search}%`;
+//       params.push(searchTerm, searchTerm, searchTerm);
+//     }
+
+//     query += ` ORDER BY sp.created_at DESC`;
+
+//     const providers = await execute(query, params);
+
+//     // Calculate stats
+//     const stats = {
+//       total: providers.length,
+//       active: providers.filter(p => p.status === 'active').length,
+//       pending: providers.filter(p => p.status === 'inactive' && p.onboarding_completed === 1).length,
+//       rejected: providers.filter(p => p.status === 'rejected').length,
+//       onboarding_completed: providers.filter(p => p.onboarding_completed === 1).length,
+//       stripe_connected: providers.filter(p => p.stripe_account_id).length,
+//       docs_verified: providers.filter(p => p.documents_verified === 1).length
+//     };
+
+//     return NextResponse.json({
+//       success: true,
+//       data: { providers, stats }
+//     });
+
+//   } catch (error) {
+//     console.error('Error:', error);
+//     return NextResponse.json(
+//       { success: false, message: error.message },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+// export async function PUT(request) {
+//   try {
+//     const { providerId, action, rejectionReason } = await request.json();
+
+//     // Get provider details for email
+//     const provider = await execute(
+//       `SELECT name, email FROM service_providers WHERE id = ?`,
+//       [providerId]
+//     );
+
+//     if (!provider.length) {
+//       return NextResponse.json(
+//         { success: false, message: 'Provider not found' },
+//         { status: 404 }
+//       );
+//     }
+
+//     if (action === 'approve') {
+//       // Approve provider
+//       await execute(
+//         `UPDATE service_providers 
+//          SET status = 'active', approved_at = NOW(), updated_at = NOW() 
+//          WHERE id = ?`,
+//         [providerId]
+//       );
+
+//       // Send approval email
+//       await sendEmail({
+//         to: provider[0].email,
+//         subject: '🎉 Congratulations! Your WorkOnTap Account is Approved',
+//         html: getApprovalEmailHtml(provider[0].name)
+//       });
+
+//       console.log(`✅ Approval email sent to ${provider[0].email}`);
+
+//     } else if (action === 'reject') {
+//       // Reject provider
+//       await execute(
+//         `UPDATE service_providers 
+//          SET status = 'rejected', rejection_reason = ?, updated_at = NOW() 
+//          WHERE id = ?`,
+//         [rejectionReason, providerId]
+//       );
+
+//       // Send rejection email with reason
+//       await sendEmail({
+//         to: provider[0].email,
+//         subject: '📋 Update on Your WorkOnTap Application',
+//         html: getRejectionEmailHtml(provider[0].name, rejectionReason)
+//       });
+
+//       console.log(`✅ Rejection email sent to ${provider[0].email} with reason: ${rejectionReason}`);
+//     }
+
+//     return NextResponse.json({ 
+//       success: true,
+//       message: `Provider ${action}ed successfully. Email sent.`
+//     });
+
+//   } catch (error) {
+//     console.error('Error:', error);
+//     return NextResponse.json(
+//       { success: false, message: error.message },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// app/api/admin/providers/route.js - STABLE VERSION
+import { NextResponse } from 'next/server';
+import { execute } from '@/lib/db';
+import { sendEmail, getApprovalEmailHtml, getRejectionEmailHtml } from '@/lib/email';
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    const search = searchParams.get('search');
 
-    // CASE 1: Get single provider with reviews
-    if (id) {
-      // Get provider details
-      const providers = await execute(
-        `SELECT 
-          id, name, email, phone, specialty, experience_years,
-          rating, total_jobs, bio, avatar_url, location, city, status,
-          total_reviews, avg_rating, created_at
-        FROM service_providers 
-        WHERE id = ?`,
-        [id]
-      )
+    // Main providers query with all data
+    let query = `
+      SELECT 
+        sp.*,
+        (SELECT COUNT(*) FROM provider_documents WHERE provider_id = sp.id) as documents_count,
+        (SELECT COUNT(*) FROM provider_documents WHERE provider_id = sp.id AND status = 'approved') as approved_docs,
+        (SELECT COUNT(*) FROM provider_documents WHERE provider_id = sp.id AND status = 'pending') as pending_docs,
+        (SELECT COUNT(*) FROM provider_documents WHERE provider_id = sp.id AND status = 'rejected') as rejected_docs,
+        (SELECT account_status FROM provider_bank_accounts WHERE provider_id = sp.id LIMIT 1) as bank_status
+      FROM service_providers sp
+      WHERE 1=1
+    `;
 
-      if (providers.length === 0) {
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Provider not found' 
-        }, { status: 404 })
+    const params = [];
+
+    if (status && status !== 'all') {
+      if (status === 'pending') {
+        query += ` AND sp.status = 'inactive' AND sp.onboarding_completed = 1`;
+      } else {
+        query += ` AND sp.status = ?`;
+        params.push(status);
       }
-
-      // Get provider's reviews
-      const reviews = await execute(
-        `SELECT 
-          pr.*,
-          u.first_name, u.last_name,
-          b.service_name
-        FROM provider_reviews pr
-        LEFT JOIN users u ON pr.customer_id = u.id
-        LEFT JOIN bookings b ON pr.booking_id = b.id
-        WHERE pr.provider_id = ?
-        ORDER BY pr.created_at DESC`,
-        [id]
-      )
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          ...providers[0],
-          reviews: reviews
-        }
-      })
     }
 
-    // CASE 2: Get all providers with stats
-    // Get all providers
-    const providers = await execute(
-      `SELECT 
-        id, name, email, phone, specialty, experience_years,
-        rating, total_jobs, city, status, total_reviews, avg_rating
-      FROM service_providers 
-      ORDER BY name ASC`
-    )
+    if (search) {
+      query += ` AND (sp.name LIKE ? OR sp.email LIKE ? OR sp.phone LIKE ?)`;
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
 
-    // Get stats
-    const statsResult = await execute(
-      `SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-        AVG(avg_rating) as avg_rating_all,
-        SUM(total_reviews) as total_reviews
-      FROM service_providers`
-    )
+    query += ` ORDER BY sp.created_at DESC`;
 
-    const stats = statsResult[0] || {}
+    const providers = await execute(query, params);
+
+    // Calculate stats
+    const stats = {
+      total: providers.length,
+      active: providers.filter(p => p.status === 'active').length,
+      pending: providers.filter(p => p.status === 'inactive' && p.onboarding_completed === 1).length,
+      rejected: providers.filter(p => p.status === 'rejected').length,
+      onboarding_completed: providers.filter(p => p.onboarding_completed === 1).length,
+      stripe_connected: providers.filter(p => p.stripe_account_id).length,
+      docs_verified: providers.filter(p => p.documents_verified === 1).length
+    };
 
     return NextResponse.json({
       success: true,
-      data: {
-        providers: providers,
-        stats: {
-          total: stats.total || 0,
-          active: stats.active || 0,
-          avg_rating: Number(stats.avg_rating_all || 0).toFixed(1),
-          total_reviews: stats.total_reviews || 0
-        }
-      }
-    })
+      data: { providers, stats }
+    });
 
   } catch (error) {
-    console.error('API Error:', error)
+    console.error('Error:', error);
+    return NextResponse.json(
+      { success: false, message: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const { providerId, action, rejectionReason } = await request.json();
+
+    console.log(`🔄 Processing ${action} for provider:`, providerId);
+
+    // 🔴 STEP 1: Pehle DATABASE UPDATE karo (yeh hamesha hoga)
+    if (action === 'approve') {
+      // Approve provider
+      await execute(
+        `UPDATE service_providers 
+         SET status = 'active', approved_at = NOW(), updated_at = NOW() 
+         WHERE id = ?`,
+        [providerId]
+      );
+      console.log(`✅ Database updated: Provider ${providerId} approved`);
+
+    } else if (action === 'reject') {
+      // Reject provider
+      await execute(
+        `UPDATE service_providers 
+         SET status = 'rejected', rejection_reason = ?, updated_at = NOW() 
+         WHERE id = ?`,
+        [rejectionReason, providerId]
+      );
+      console.log(`✅ Database updated: Provider ${providerId} rejected with reason: ${rejectionReason}`);
+    }
+
+    // 🔴 STEP 2: Email bhejo (agar fail hua to bhi database update rahega)
+    try {
+      const provider = await execute(
+        `SELECT name, email FROM service_providers WHERE id = ?`,
+        [providerId]
+      );
+
+      if (provider.length > 0) {
+        if (action === 'approve') {
+          await sendEmail({
+            to: provider[0].email,
+            subject: '🎉 Congratulations! Your WorkOnTap Account is Approved',
+            html: getApprovalEmailHtml(provider[0].name)
+          });
+          console.log(`📧 Approval email sent to ${provider[0].email}`);
+        } else if (action === 'reject') {
+          await sendEmail({
+            to: provider[0].email,
+            subject: '📋 Update on Your WorkOnTap Application',
+            html: getRejectionEmailHtml(provider[0].name, rejectionReason)
+          });
+          console.log(`📧 Rejection email sent to ${provider[0].email}`);
+        }
+      }
+    } catch (emailError) {
+      // 🔴 Email fail hua to sirf log karo, database update already ho chuka hai
+      console.error('⚠️ Email sending failed but database updated:', emailError.message);
+    }
+
+    // 🔴 STEP 3: Success response do (chahe email gayi ho ya nahi)
     return NextResponse.json({ 
-      success: false, 
-      message: 'Failed to fetch providers',
-      error: error.message 
-    }, { status: 500 })
+      success: true,
+      message: `Provider ${action}ed successfully. ${action === 'approve' ? 'Approved' : 'Rejected'}`
+    });
+
+  } catch (error) {
+    console.error('❌ Database error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Database error: ' + error.message },
+      { status: 500 }
+    );
   }
 }
