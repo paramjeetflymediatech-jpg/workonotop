@@ -55,7 +55,7 @@ export default function Step2Documents({ onNext, onBack }) {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch('/api/provider/documents');
+      const res = await fetch('/api/provider/onboarding/documents');
       const data = await res.json();
       
       if (data.success) {

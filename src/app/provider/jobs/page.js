@@ -1,12 +1,13 @@
-// app/provider/jobs/page.jsx - UPDATED (Only show time, no earnings)
-
+// app/provider/jobs/page.jsx - FIXED with cookie auth
 'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import TimeTracker from './TimeTracker'
 
 export default function ProviderJobs() {
+  const router = useRouter()
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedJob, setSelectedJob] = useState(null)
@@ -15,24 +16,33 @@ export default function ProviderJobs() {
 
   useEffect(() => {
     setMounted(true)
+    checkAuth()
     loadJobs()
   }, [])
 
-  const token = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('providerToken')
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/provider/me')
+      if (!res.ok) {
+        router.push('/provider/login')
+      }
+    } catch {
+      router.push('/provider/login')
     }
-    return null
   }
 
   const loadJobs = async () => {
     try {
-      const res = await fetch('/api/provider/jobs', {
-        headers: { Authorization: `Bearer ${token()}` }
-      })
+      // No manual token needed - cookies are sent automatically
+      const res = await fetch('/api/provider/jobs')
       const data = await res.json()
       if (data.success) {
         setJobs(data.data || [])
+      } else {
+        if (res.status === 401) {
+          router.push('/provider/login')
+        }
+        showToast('error', data.message || 'Failed to load jobs')
       }
     } catch (error) {
       showToast('error', 'Failed to load jobs')
@@ -146,7 +156,7 @@ export default function ProviderJobs() {
 
                   {/* Job Details */}
                   <div className="p-4">
-                    {/* Duration Display - Only Show Time, Not Earnings */}
+                    {/* Duration Display */}
                     <div className="mb-3 flex flex-wrap gap-2">
                       <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg">
                         <span>⏱️</span> Est: {formatDuration(duration)}
@@ -174,16 +184,6 @@ export default function ProviderJobs() {
                       </div>
                     </div>
 
-                    {/* Overtime Rate if available - Show as info only
-                    {hasOvertime && (
-                      <div className="mb-4 p-3 bg-purple-50 rounded-lg">
-                        <p className="text-sm text-purple-700 flex items-center gap-2">
-                          <span>⏰</span>
-                          <span>Overtime Rate: ${overtimeRate.toFixed(2)}/hour</span>
-                        </p>
-                      </div>
-                    )} */}
-
                     {/* Time Tracking Section - For active jobs */}
                     {(job.status === 'confirmed' || job.status === 'in_progress') && (
                       <div className="mb-4">
@@ -196,7 +196,7 @@ export default function ProviderJobs() {
                       </div>
                     )}
 
-                    {/* Completed Job - Show Only Time Info, No Earnings */}
+                    {/* Completed Job */}
                     {job.status === 'completed' && (
                       <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
                         <p className="text-green-700 font-medium flex items-center gap-2 mb-2">

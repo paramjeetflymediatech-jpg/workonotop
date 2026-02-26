@@ -4,127 +4,130 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Briefcase, DollarSign, Clock, Star, ArrowRight, TrendingUp, Calendar, Zap } from 'lucide-react';
 
 export default function ProviderDashboard() {
   const router = useRouter();
   const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalJobs: 0,
-    completedJobs: 0,
-    pendingJobs: 0,
-    totalEarnings: 0,
-    averageRating: 0
-  });
+  const [stats, setStats] = useState({ totalJobs: 0, completedJobs: 0, pendingJobs: 0, totalEarnings: 0, averageRating: 0 });
 
-  useEffect(() => {
-    loadProviderData();
-  }, []);
+  useEffect(() => { loadProviderData(); }, []);
 
   const loadProviderData = async () => {
     try {
       const res = await fetch('/api/provider/me');
       const data = await res.json();
-      
       if (data.success) {
         setProvider(data.provider);
-        // Load stats
-        loadStats(data.provider.id);
+        setStats({ totalJobs: 0, completedJobs: 0, pendingJobs: 0, totalEarnings: 0, averageRating: 0 });
       } else {
         router.push('/provider/login');
       }
-    } catch (error) {
-      console.error('Error loading provider:', error);
+    } catch {
       router.push('/provider/login');
-    }
-  };
-
-  const loadStats = async (providerId) => {
-    try {
-      // This would be a real API call in production
-      setStats({
-        totalJobs: 0,
-        completedJobs: 0,
-        pendingJobs: 0,
-        totalEarnings: 0,
-        averageRating: 0
-      });
-    } catch (error) {
-      console.error('Error loading stats:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent"></div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  const statCards = [
+    { label: 'Total Jobs', value: stats.totalJobs, icon: Briefcase, color: 'bg-blue-50 text-blue-600', iconBg: 'bg-blue-100' },
+    { label: 'Completed', value: stats.completedJobs, icon: TrendingUp, color: 'bg-green-50 text-green-600', iconBg: 'bg-green-100' },
+    { label: 'In Progress', value: stats.pendingJobs, icon: Clock, color: 'bg-amber-50 text-amber-600', iconBg: 'bg-amber-100' },
+    { label: 'Total Earned', value: `$${stats.totalEarnings}`, icon: DollarSign, color: 'bg-purple-50 text-purple-600', iconBg: 'bg-purple-100' },
+    { label: 'Rating', value: stats.averageRating ? `${stats.averageRating} ★` : '—', icon: Star, color: 'bg-orange-50 text-orange-600', iconBg: 'bg-orange-100' },
+  ];
+
+  const quickActions = [
+    { href: '/provider/jobs', icon: Briefcase, label: 'Browse Jobs', desc: 'Find new opportunities', color: 'group-hover:text-blue-600' },
+    { href: '/provider/schedule', icon: Calendar, label: 'My Schedule', desc: 'View upcoming jobs', color: 'group-hover:text-green-600' },
+    { href: '/provider/earnings', icon: DollarSign, label: 'Earnings', desc: 'Track your payouts', color: 'group-hover:text-purple-600' },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back, {provider?.name}!</h1>
-          <p className="text-gray-600">Here's what's happening with your business today.</p>
+    <div className="space-y-6 w-full">
+      {/* Welcome header */}
+      <div className="bg-gradient-to-r from-green-700 to-teal-600 rounded-2xl p-6 text-white shadow-md">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <p className="text-green-200 text-sm font-medium mb-1">Good to see you back</p>
+            <h1 className="text-2xl font-bold">{provider?.name} 👋</h1>
+            <p className="text-green-100 text-sm mt-1">{provider?.specialty || 'Service Professional'} · {provider?.city || 'Calgary'}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
+              Active
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600">Total Jobs</p>
-            <p className="text-2xl font-bold">{stats.totalJobs}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600">Completed</p>
-            <p className="text-2xl font-bold text-green-600">{stats.completedJobs}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600">Pending</p>
-            <p className="text-2xl font-bold text-yellow-600">{stats.pendingJobs}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600">Total Earnings</p>
-            <p className="text-2xl font-bold text-teal-600">${stats.totalEarnings}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600">Rating</p>
-            <p className="text-2xl font-bold">{stats.averageRating} ⭐</p>
-          </div>
+      {/* Stats grid */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Overview</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {statCards.map((s) => {
+            const Icon = s.icon;
+            return (
+              <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition">
+                <div className={`w-9 h-9 rounded-lg ${s.iconBg} flex items-center justify-center mb-3`}>
+                  <Icon className={`h-4 w-4 ${s.color.split(' ')[1]}`} />
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{s.value}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+              </div>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Quick Actions */}
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link href="/provider/jobs" className="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
-              <h3 className="font-semibold text-gray-900">Available Jobs</h3>
-              <p className="text-sm text-gray-600 mt-1">Find new job opportunities</p>
-            </Link>
-            <Link href="/provider/schedule" className="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
-              <h3 className="font-semibold text-gray-900">My Schedule</h3>
-              <p className="text-sm text-gray-600 mt-1">View and manage your jobs</p>
-            </Link>
-            <Link href="/provider/earnings" className="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
-              <h3 className="font-semibold text-gray-900">Earnings</h3>
-              <p className="text-sm text-gray-600 mt-1">Track your payouts</p>
-            </Link>
-          </div>
+      {/* Quick actions */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {quickActions.map((a) => {
+            const Icon = a.icon;
+            return (
+              <Link key={a.href} href={a.href}
+                className="group bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md hover:border-green-200 transition flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center group-hover:bg-green-50 transition">
+                    <Icon className={`h-5 w-5 text-gray-400 ${a.color} transition`} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800 text-sm">{a.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{a.desc}</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-green-500 group-hover:translate-x-0.5 transition" />
+              </Link>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Recent Jobs */}
-        <div className="mt-8 bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Jobs</h2>
-          </div>
-          <div className="p-6 text-center text-gray-500">
-            No jobs yet. Complete your profile to start receiving job requests.
+      {/* Empty state - recent jobs */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Recent Jobs</h2>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mb-4">
+              <Zap className="h-7 w-7 text-green-500" />
+            </div>
+            <h3 className="font-semibold text-gray-800 mb-1">No jobs yet</h3>
+            <p className="text-sm text-gray-400 max-w-xs">Once you start accepting jobs, they'll appear here. Browse available jobs to get started.</p>
+            <Link href="/provider/available-jobs"
+              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl transition">
+              Browse Jobs <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </div>

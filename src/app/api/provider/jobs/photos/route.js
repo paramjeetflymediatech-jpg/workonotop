@@ -1,23 +1,21 @@
-// app/api/provider/jobs/photos/route.js - FIXED
+// app/api/provider/jobs/photos/route.js - FIXED with cookie auth
 import { NextResponse } from 'next/server'
-import { execute, getConnection } from '@/lib/db'  // ✅ ADD execute import
-import jwt from 'jsonwebtoken'
+import { execute, getConnection } from '@/lib/db'
+import { verifyToken } from '@/lib/jwt'  // Import from jwt utility
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
-
-function verifyToken(request) {
-  const token = request.headers.get('Authorization')?.split(' ')[1]
-  if (!token) return null
-  try { return jwt.verify(token, JWT_SECRET) } catch { return null }
-}
-
-// POST: Upload photo record (PERFECT - no changes)
+// POST: Upload photo record
 export async function POST(request) {
   let connection
   try {
-    const decoded = verifyToken(request)
-    if (!decoded) {
+    // ✅ Cookie-based auth
+    const token = request.cookies.get('provider_token')?.value
+    if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const decoded = verifyToken(token)
+    if (!decoded || decoded.type !== 'provider') {
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
     const { booking_id, photo_url, photo_type } = await request.json()
@@ -40,10 +38,10 @@ export async function POST(request) {
     await connection.query('START TRANSACTION')
 
     try {
-      // Verify booking belongs to provider
+      // Verify booking belongs to provider - using decoded.providerId
       const [[booking]] = await connection.execute(
         `SELECT id FROM bookings WHERE id = ? AND provider_id = ?`,
-        [booking_id, decoded.id]
+        [booking_id, decoded.providerId]  // Note: using providerId
       )
 
       if (!booking) {
@@ -58,7 +56,7 @@ export async function POST(request) {
       await connection.execute(
         `INSERT INTO job_photos (booking_id, photo_url, photo_type, uploaded_by)
          VALUES (?, ?, ?, ?)`,
-        [booking_id, photo_url, photo_type, decoded.id]
+        [booking_id, photo_url, photo_type, decoded.providerId]  // using providerId
       )
 
       // Update booking photo status
@@ -97,12 +95,18 @@ export async function POST(request) {
   }
 }
 
-// GET: Get photos for a booking - FIXED
+// GET: Get photos for a booking
 export async function GET(request) {
   try {
-    const decoded = verifyToken(request)
-    if (!decoded) {
+    // ✅ Cookie-based auth
+    const token = request.cookies.get('provider_token')?.value
+    if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const decoded = verifyToken(token)
+    if (!decoded || decoded.type !== 'provider') {
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -115,7 +119,20 @@ export async function GET(request) {
       }, { status: 400 })
     }
 
-    // ✅ DIRECT execute() call - no dynamic import needed
+    // First verify the booking belongs to this provider
+    const booking = await execute(
+      `SELECT id FROM bookings WHERE id = ? AND provider_id = ?`,
+      [booking_id, decoded.providerId]
+    )
+
+    if (booking.length === 0) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Booking not found or not assigned to you' 
+      }, { status: 404 })
+    }
+
+    // Get photos
     const photos = await execute(
       `SELECT * FROM job_photos 
        WHERE booking_id = ? 
@@ -140,5 +157,4 @@ export async function GET(request) {
       message: 'Failed to fetch photos' 
     }, { status: 500 })
   }
-  // ✅ Connection auto-released by execute()
 }

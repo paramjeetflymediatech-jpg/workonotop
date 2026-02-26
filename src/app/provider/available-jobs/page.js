@@ -1,419 +1,77 @@
-// app/provider/available-jobs/page.jsx - FIXED with correct overtime commission
-
+// app/provider/available-jobs/page.jsx
 'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { RefreshCw, MapPin, Clock, Calendar, Filter } from 'lucide-react'
 
-export default function ProviderAvailableJobs() {
-  const router = useRouter()
-  const [jobs, setJobs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [providerCity, setProviderCity] = useState('')
-  const [toast, setToast] = useState(null)
-  const [filter, setFilter] = useState('all')
-  const [mounted, setMounted] = useState(false)
-
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function Toast({ toast, onDismiss }) {
   useEffect(() => {
-    setMounted(true)
-    checkAuth()
-    loadJobs()
-  }, [])
-
-  const checkAuth = () => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('providerToken')
-      if (!token) {
-        router.push('/provider/login')
-      }
-    }
-  }
-
-  const token = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('providerToken')
-    }
-    return null
-  }
-
-  const loadJobs = async (silent = false) => {
-    if (silent) setRefreshing(true)
-    else setLoading(true)
-    
-    try {
-      const res = await fetch('/api/provider/available-jobs', {
-        headers: { Authorization: `Bearer ${token()}` }
-      })
-      const data = await res.json()
-      
-      if (data.success) {
-        setJobs(data.data || [])
-        if (data.provider_city) setProviderCity(data.provider_city)
-        if (data.data.length === 0 && !silent) {
-          showToast('info', 'No jobs available in your area')
-        }
-      } else {
-        showToast('error', data.message || 'Failed to load jobs')
-      }
-    } catch (error) {
-      showToast('error', 'Connection failed. Please try again.')
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }
-
-  const showToast = (type, text) => {
-    setToast({ type, text })
-    setTimeout(() => setToast(null), 4000)
-  }
-
-  const acceptJob = async (jobId) => {
-    try {
-      const res = await fetch('/api/provider/available-jobs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token()}`
-        },
-        body: JSON.stringify({ booking_id: jobId })
-      })
-      
-      const data = await res.json()
-      
-      if (data.success) {
-        showToast('success', data.message)
-        setJobs(jobs.filter(j => j.id !== jobId))
-        
-        if (data.overtime_info) {
-          setTimeout(() => {
-            showToast('info', data.overtime_info.message)
-          }, 1000)
-        }
-      } else {
-        showToast('error', data.message || 'Failed to accept job')
-        loadJobs(true)
-      }
-    } catch (error) {
-      showToast('error', 'Failed to accept job')
-    }
-  }
-
-  const formatDate = (dateString) => {
-    if (!dateString) return ''
-    if (!mounted) {
-      const date = new Date(dateString)
-      return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`
-    }
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
-
-  const fmtSlots = (slots) => {
-    if (!slots) return ''
-    const slotArray = Array.isArray(slots) ? slots : [slots]
-    return slotArray.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' · ')
-  }
-
-  // Format duration nicely
-  const formatDuration = (minutes) => {
-    if (!minutes) return '60 min'
-    if (minutes < 60) return `${minutes} min`
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours} hour${hours > 1 ? 's' : ''}`
-  }
-
-  // Filter jobs
-  const filteredJobs = jobs.filter(job => {
-    if (filter === 'all') return true
-    if (filter === 'with_overtime') return job.pricing?.has_overtime
-    if (filter === 'base_only') return !job.pricing?.has_overtime
-    return true
-  })
-
-  // Calculate stats
-  const totalJobs = jobs.length
-  const overtimeJobs = jobs.filter(j => j.pricing?.has_overtime).length
-  const baseJobs = totalJobs - overtimeJobs
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-4 border-green-600 border-t-transparent" />
-      </div>
-    )
-  }
-
+    if (!toast) return
+    const t = setTimeout(onDismiss, 4000)
+    return () => clearTimeout(t)
+  }, [toast, onDismiss])
+  if (!toast) return null
+  const bg = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-blue-600' }
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium flex items-center gap-2 max-w-xs
-          ${toast.type === 'success' ? 'bg-green-500' : 
-            toast.type === 'info' ? 'bg-blue-500' : 'bg-red-500'}`}>
-          {toast.type === 'success' ? '✓' : toast.type === 'info' ? 'ℹ️' : '✕'} {toast.text}
-        </div>
-      )}
+    <div className={`fixed top-4 right-4 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-2xl text-white text-sm font-medium max-w-xs ${bg[toast.type]}`}>
+      {toast.type === 'success' ? '✓' : toast.type === 'info' ? 'ℹ' : '✕'}
+      {toast.text}
+    </div>
+  )
+}
 
-      {/* Sticky Header */}
-      <div className="sticky top-[60px] lg:top-0 z-10 bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3.5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900">Available Jobs</h1>
-              {providerCity && (
-                <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-                  <span className="text-green-500">📍</span>
-                  <span>Showing jobs near <strong className="text-gray-600">{providerCity}</strong></span>
-                </p>
-              )}
-            </div>
-            <button 
-              onClick={() => loadJobs(true)} 
-              disabled={refreshing}
-              className={`flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition ${refreshing ? 'opacity-50' : ''}`}
-            >
-              <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh
-            </button>
+// ── Confirm Modal ─────────────────────────────────────────────────────────────
+function ConfirmModal({ isOpen, onClose, onConfirm, title, message, amount }) {
+  if (!isOpen) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="p-6 text-center">
+          <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">💼</span>
           </div>
-
-          {/* Stats and Filters */}
-          {!loading && jobs.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <div className="flex gap-2 text-xs">
-                <span className="text-gray-500">Total: <strong className="text-gray-900">{totalJobs}</strong></span>
-                <span className="text-gray-300">|</span>
-                <span className="text-green-600">Overtime: <strong>{overtimeJobs}</strong></span>
-                <span className="text-gray-300">|</span>
-                <span className="text-gray-500">Base: <strong>{baseJobs}</strong></span>
-              </div>
-              
-              <div className="flex gap-1 ml-auto">
-                <button
-                  onClick={() => setFilter('all')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                    filter === 'all' 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setFilter('with_overtime')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                    filter === 'with_overtime' 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  With Overtime
-                </button>
-                <button
-                  onClick={() => setFilter('base_only')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                    filter === 'base_only' 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  Base Only
-                </button>
-              </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-1">{title}</h3>
+          <p className="text-sm text-gray-500 mb-2">{message}</p>
+          {amount && (
+            <div className="inline-flex items-center gap-1.5 bg-green-50 border border-green-100 text-green-700 text-lg font-bold px-4 py-2 rounded-xl mt-1">
+              You earn: {amount}
             </div>
           )}
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
-        {/* Loading State */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <div className="animate-spin rounded-full h-10 w-10 border-4 border-green-600 border-t-transparent" />
-            <p className="text-sm text-gray-400">Loading jobs near you…</p>
-          </div>
-
-        ) : filteredJobs.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 sm:p-14 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">🔍</span>
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">No jobs available</h3>
-            <p className="text-gray-400 text-sm max-w-xs mx-auto leading-relaxed">
-              {filter !== 'all' 
-                ? `No ${filter === 'with_overtime' ? 'jobs with overtime' : 'base jobs'} available in ${providerCity || 'your area'}`
-                : `No open jobs in ${providerCity || 'your area'} right now`
-              }
-            </p>
-            <button 
-              onClick={() => {
-                setFilter('all')
-                loadJobs()
-              }}
-              className="mt-6 px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition"
-            >
-              Check Again
-            </button>
-          </div>
-
-        ) : (
-          <>
-            <p className="text-sm text-gray-400 mb-4">
-              <strong className="text-gray-700">{filteredJobs.length}</strong> job{filteredJobs.length !== 1 ? 's' : ''} available
-              {filter !== 'all' && (
-                <span className="ml-1">
-                  ({filter === 'with_overtime' ? 'with overtime' : 'base only'})
-                </span>
-              )}
-            </p>
-
-            <div className="space-y-3">
-              {filteredJobs.map((job) => {
-                const duration = job.pricing?.duration_minutes || job.service_duration || 60
-                const commissionPct = job.pricing?.commission_percent || 0
-                const baseEarnings = job.pricing?.provider_base_earnings || 0
-                const overtimeRate = job.pricing?.overtime_rate || 0
-                
-                // Calculate net overtime rate after commission
-                const netOvertimeRate = overtimeRate * (1 - commissionPct / 100)
-                
-                return (
-                  <div key={job.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-green-200 transition-all overflow-hidden">
-                    
-                    {/* Card Header */}
-                    <div className="flex items-start justify-between p-4 sm:p-5 pb-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-xl flex-shrink-0">
-                          {job.category_icon || '🔧'}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="font-bold text-gray-900 text-sm sm:text-base truncate">{job.service_name}</h3>
-                          <p className="text-xs text-gray-400">{job.category_name}</p>
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0 ml-3">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">You earn</p>
-                        <p className="text-xl sm:text-2xl font-extrabold text-green-600 leading-tight">
-                          {job.display_amount}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Duration Badge */}
-                    <div className="mx-4 sm:mx-5 mb-3">
-                      <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-lg">
-                        <span>⏱️</span> Duration: {formatDuration(duration)}
-                      </span>
-                    </div>
-
-                    {/* Overtime Banner - FIXED with correct calculations */}
-                    {job.pricing?.has_overtime && (
-                      <div className="mx-4 sm:mx-5 mb-3">
-                        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-3">
-                          <div className="flex items-start gap-2">
-                            <span className="text-xl">⏰</span>
-                            <div className="flex-1">
-                              <p className="text-sm font-semibold text-purple-700">
-                                Overtime Available: +${overtimeRate.toFixed(2)}/hour
-                              </p>
-                              <p className="text-xs text-gray-600 mt-1">
-                                Standard duration: {formatDuration(duration)}. {commissionPct}% commission applies to overtime too.
-                              </p>
-                              <div className="flex gap-3 mt-2 text-xs">
-                                <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                  1hr OT: ${(baseEarnings + netOvertimeRate).toFixed(2)}
-                                </span>
-                                <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                  2hr OT: ${(baseEarnings + (netOvertimeRate * 2)).toFixed(2)}
-                                </span>
-                              </div>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Gross OT: ${overtimeRate.toFixed(2)}/hr · After {commissionPct}% commission: ${netOvertimeRate.toFixed(2)}/hr
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Meta Row */}
-                    <div className="flex flex-wrap gap-2 px-4 sm:px-5 pb-3">
-                      <MetaBadge icon="📅" text={formatDate(job.job_date)} />
-                      <MetaBadge icon="🕐" text={fmtSlots(job.job_time_slot)} />
-                      <MetaBadge icon="📍" text={job.address_line1?.split(',')[0] || '—'} />
-                    </div>
-
-                    {/* Access Icons */}
-                    {(job.parking_access || job.elevator_access || job.has_pets) && (
-                      <div className="flex gap-1.5 px-4 sm:px-5 pb-3 flex-wrap">
-                        {job.parking_access && <Chip label="🅿️ Parking" green />}
-                        {job.elevator_access && <Chip label="🛗 Elevator" green />}
-                        {job.has_pets && <Chip label="🐕 Pets" />}
-                      </div>
-                    )}
-
-                    {/* Description */}
-                    {job.job_description && (
-                      <p className="px-4 sm:px-5 pb-3 text-sm text-gray-500 line-clamp-2 leading-relaxed">
-                        {job.job_description}
-                      </p>
-                    )}
-
-                    {/* Commission Info */}
-                    <div className="px-4 sm:px-5 pb-3">
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <span>💰 Commission: {job.pricing?.commission_percent}%</span>
-                        <span>•</span>
-                        <span>Base: ${job.pricing?.base_price.toFixed(2)}</span>
-                        <span>•</span>
-                        <span>You get: ${job.pricing?.provider_base_earnings.toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="p-4 sm:p-5 pt-0 flex flex-col sm:flex-row gap-2">
-                      <Link
-                        href={`/provider/available-jobs/${job.id}`}
-                        className="flex-1 py-2.5 text-center border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition"
-                      >
-                        View Details
-                      </Link>
-                      <button
-                        onClick={() => acceptJob(job.id)}
-                        className={`flex-1 py-2.5 text-center text-white rounded-xl text-sm font-bold transition ${
-                          job.pricing?.has_overtime
-                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
-                            : 'bg-green-600 hover:bg-green-700'
-                        }`}
-                      >
-                        Accept — {job.display_amount}
-                        {job.pricing?.has_overtime && (
-                          <span className="ml-1 text-xs opacity-90">+OT</span>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </>
-        )}
+        <div className="flex gap-3 px-6 pb-6">
+          <button onClick={onClose}
+            className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl text-sm hover:bg-gray-50 transition">
+            Cancel
+          </button>
+          <button onClick={() => { onConfirm(); onClose(); }}
+            className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition">
+            Accept Job
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
-// Helper Components
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatDate(d) {
+  if (!d) return ''
+  return new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+function fmtSlots(s) {
+  if (!s) return ''
+  return (Array.isArray(s) ? s : [s]).map(x => x.charAt(0).toUpperCase() + x.slice(1)).join(' · ')
+}
+function formatDuration(m) {
+  if (!m) return '60 min'
+  if (m < 60) return `${m} min`
+  const h = Math.floor(m / 60), r = m % 60
+  return r ? `${h}h ${r}m` : `${h} hour${h > 1 ? 's' : ''}`
+}
+
 function MetaBadge({ icon, text }) {
   return (
     <span className="inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-lg">
@@ -422,11 +80,258 @@ function MetaBadge({ icon, text }) {
   )
 }
 
-function Chip({ label, green }) {
+// ── Main Component ────────────────────────────────────────────────────────────
+export default function ProviderAvailableJobs() {
+  const [jobs, setJobs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [providerCity, setProviderCity] = useState('')
+  const [toast, setToast] = useState(null)
+  const [filter, setFilter] = useState('all')
+  const [confirmModal, setConfirmModal] = useState({ open: false, jobId: null, amount: null })
+
+  const showToast = (type, text) => setToast({ type, text })
+
+  useEffect(() => { loadJobs() }, [])
+
+  const loadJobs = async (silent = false) => {
+    silent ? setRefreshing(true) : setLoading(true)
+    try {
+      // ✅ Cookie-based auth — no Authorization header needed
+      const res = await fetch('/api/provider/available-jobs')
+      const data = await res.json()
+      if (data.success) {
+        setJobs(data.data || [])
+        if (data.provider_city) setProviderCity(data.provider_city)
+        if (!data.data?.length && !silent) showToast('info', 'No jobs available in your area')
+      } else {
+        showToast('error', data.message || 'Failed to load jobs')
+      }
+    } catch {
+      showToast('error', 'Connection failed. Please try again.')
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
+  const acceptJob = async (jobId) => {
+    try {
+      const res = await fetch('/api/provider/available-jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ booking_id: jobId })
+      })
+      const data = await res.json()
+      if (data.success) {
+        showToast('success', data.message)
+        setJobs(prev => prev.filter(j => j.id !== jobId))
+        if (data.overtime_info) {
+          setTimeout(() => showToast('info', data.overtime_info.message), 1000)
+        }
+      } else {
+        showToast('error', data.message || 'Failed to accept job')
+        loadJobs(true)
+      }
+    } catch {
+      showToast('error', 'Failed to accept job')
+    }
+  }
+
+  const filteredJobs = jobs.filter(j => {
+    if (filter === 'with_overtime') return j.pricing?.has_overtime
+    if (filter === 'base_only') return !j.pricing?.has_overtime
+    return true
+  })
+
+  const stats = {
+    total: jobs.length,
+    overtime: jobs.filter(j => j.pricing?.has_overtime).length,
+    base: jobs.filter(j => !j.pricing?.has_overtime).length,
+  }
+
   return (
-    <span className={`text-xs px-2.5 py-1 rounded-full font-medium border
-      ${green ? 'bg-green-50 border-green-200 text-green-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
-      {label}
-    </span>
+    <div className="w-full">
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
+
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal({ open: false, jobId: null, amount: null })}
+        onConfirm={() => acceptJob(confirmModal.jobId)}
+        title="Accept this Job?"
+        message="This job will be assigned to you immediately."
+        amount={confirmModal.amount}
+      />
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Available Jobs</h1>
+          {providerCity && (
+            <p className="text-sm text-gray-400 mt-0.5 flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5 text-green-500" />
+              Jobs near <strong className="text-gray-600 ml-1">{providerCity}</strong>
+            </p>
+          )}
+        </div>
+        <button onClick={() => loadJobs(true)} disabled={refreshing}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition disabled:opacity-50">
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Stats + Filters */}
+      {!loading && jobs.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div className="flex gap-3 text-xs">
+            <span className="text-gray-500">Total: <strong className="text-gray-900">{stats.total}</strong></span>
+            <span className="text-gray-300">|</span>
+            <span className="text-purple-600">+OT: <strong>{stats.overtime}</strong></span>
+            <span className="text-gray-300">|</span>
+            <span className="text-gray-500">Base: <strong>{stats.base}</strong></span>
+          </div>
+          <div className="flex gap-1.5 bg-gray-100 p-1 rounded-xl">
+            {[['all','All'], ['with_overtime','+Overtime'], ['base_only','Base Only']].map(([val, label]) => (
+              <button key={val} onClick={() => setFilter(val)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  filter === val ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Content */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-400">Loading jobs near you…</p>
+        </div>
+
+      ) : filteredJobs.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">🔍</span>
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-1">No jobs available</h3>
+          <p className="text-sm text-gray-400 max-w-xs mx-auto">
+            {filter !== 'all'
+              ? `No ${filter === 'with_overtime' ? 'overtime' : 'base'} jobs in ${providerCity || 'your area'}`
+              : `No open jobs in ${providerCity || 'your area'} right now`
+            }
+          </p>
+          <button onClick={() => { setFilter('all'); loadJobs() }}
+            className="mt-5 px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
+            Check Again
+          </button>
+        </div>
+
+      ) : (
+        <div className="space-y-3">
+          {filteredJobs.map((job) => {
+            const dur = job.pricing?.duration_minutes || 60
+            const commPct = job.pricing?.commission_percent || 0
+            const baseEarnings = job.pricing?.provider_base_earnings || 0
+            const otRate = job.pricing?.overtime_rate || 0
+            const netOT = otRate * (1 - commPct / 100)
+
+            return (
+              <div key={job.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-green-200 transition-all overflow-hidden">
+                {/* Card Header */}
+                <div className="flex items-start justify-between p-5 pb-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-xl flex-shrink-0">
+                      {job.category_icon || '🔧'}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-gray-900 text-sm truncate">{job.service_name}</h3>
+                      <p className="text-xs text-gray-400">{job.category_name}</p>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-3">
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">You earn</p>
+                    <p className="text-2xl font-extrabold text-green-600 leading-tight">{job.display_amount}</p>
+                  </div>
+                </div>
+
+                {/* Duration + Overtime */}
+                <div className="flex flex-wrap gap-2 px-5 pb-3">
+                  <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded-lg">
+                    <Clock className="h-3 w-3" /> {formatDuration(dur)}
+                  </span>
+                  {job.pricing?.has_overtime && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2.5 py-1 rounded-lg font-semibold">
+                      ⏰ +${otRate.toFixed(2)}/hr OT
+                    </span>
+                  )}
+                </div>
+
+                {/* Overtime breakdown mini */}
+                {job.pricing?.has_overtime && (
+                  <div className="mx-5 mb-3 bg-purple-50 border border-purple-100 rounded-xl p-3">
+                    <p className="text-xs font-semibold text-purple-700 mb-1.5">Overtime earnings potential</p>
+                    <div className="flex gap-2">
+                      <span className="bg-white border border-purple-200 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-lg">
+                        1hr OT: ${(baseEarnings + netOT).toFixed(2)}
+                      </span>
+                      <span className="bg-white border border-purple-200 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-lg">
+                        2hr OT: ${(baseEarnings + netOT * 2).toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      Net rate after {commPct}% commission: ${netOT.toFixed(2)}/hr
+                    </p>
+                  </div>
+                )}
+
+                {/* Meta */}
+                <div className="flex flex-wrap gap-2 px-5 pb-3">
+                  <MetaBadge icon="📅" text={formatDate(job.job_date)} />
+                  <MetaBadge icon="🕐" text={fmtSlots(job.job_time_slot)} />
+                  <MetaBadge icon="📍" text={job.address_line1?.split(',')[0] || '—'} />
+                </div>
+
+                {/* Access */}
+                {(job.parking_access || job.elevator_access || job.has_pets) && (
+                  <div className="flex gap-1.5 px-5 pb-3 flex-wrap">
+                    {job.parking_access && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 border border-green-200 text-green-700">🅿️ Parking</span>}
+                    {job.elevator_access && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 border border-green-200 text-green-700">🛗 Elevator</span>}
+                    {job.has_pets && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-amber-50 border border-amber-200 text-amber-700">🐕 Pets</span>}
+                  </div>
+                )}
+
+                {/* Commission */}
+                <div className="px-5 pb-3">
+                  <p className="text-xs text-gray-400">
+                    Base ${job.pricing?.base_price?.toFixed(2)} · {commPct}% commission · You get ${baseEarnings.toFixed(2)}
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="p-5 pt-0 flex gap-2">
+                  <Link href={`/provider/available-jobs/${job.id}`}
+                    className="flex-1 py-2.5 text-center border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition">
+                    View Details
+                  </Link>
+                  <button
+                    onClick={() => setConfirmModal({ open: true, jobId: job.id, amount: job.display_amount })}
+                    className={`flex-1 py-2.5 text-center text-white rounded-xl text-sm font-bold transition ${
+                      job.pricing?.has_overtime
+                        ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}>
+                    Accept — {job.display_amount}
+                    {job.pricing?.has_overtime && <span className="ml-1 text-xs opacity-80">+OT</span>}
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }

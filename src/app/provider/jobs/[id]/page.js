@@ -1,5 +1,4 @@
-// app/provider/jobs/[id]/page.jsx
-
+// app/provider/jobs/[id]/page.jsx - FIXED auth
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -27,25 +26,31 @@ export default function ProviderJobDetail({ params }) {
     loadPhotos()
   }, [id])
 
-  const checkAuth = () => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('providerToken')
-      if (!token) router.push('/provider/login')
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/provider/me')
+      if (!res.ok) {
+        router.push('/provider/login')
+      }
+    } catch {
+      router.push('/provider/login')
     }
   }
 
-  const token = () => {
-    if (typeof window !== 'undefined') return localStorage.getItem('providerToken')
-    return null
-  }
+  // No token function needed
 
   const loadJob = async () => {
     try {
-      const res = await fetch(`/api/provider/jobs/${id}`, {
-        headers: { Authorization: `Bearer ${token()}` }
-      })
+      const res = await fetch(`/api/provider/jobs/${id}`)
       const data = await res.json()
-      if (data.success) setJob(data.data)
+      if (data.success) {
+        setJob(data.data)
+      } else {
+        if (res.status === 401) {
+          router.push('/provider/login')
+        }
+        showToast('error', data.message || 'Failed to load job')
+      }
     } catch {
       showToast('error', 'Failed to load job')
     } finally {
@@ -55,9 +60,7 @@ export default function ProviderJobDetail({ params }) {
 
   const loadPhotos = useCallback(async () => {
     try {
-      const res = await fetch(`/api/provider/jobs/photos?booking_id=${id}`, {
-        headers: { Authorization: `Bearer ${token()}` }
-      })
+      const res = await fetch(`/api/provider/jobs/photos?booking_id=${id}`)
       const data = await res.json()
       if (data.success) setPhotos(data.data)
     } catch (error) {

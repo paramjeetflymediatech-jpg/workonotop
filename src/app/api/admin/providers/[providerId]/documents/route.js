@@ -1,164 +1,24 @@
-// // app/api/admin/providers/[providerId]/documents/route.js
-// import { NextResponse } from 'next/server';
-// import { execute } from '@/lib/db';
-
-// export async function GET(request, { params }) {
-//   try {
-//     // ✅ FIX: Await the params
-//     const { providerId } = await params;
-
-//     console.log('Fetching documents for provider:', providerId);
-
-//     // Get provider details
-//     const providers = await execute(
-//       `SELECT id, name, email, phone, specialty, experience_years, city, bio,
-//               documents_uploaded, documents_verified, status, created_at,
-//               stripe_account_id, stripe_onboarding_complete
-//        FROM service_providers WHERE id = ?`,
-//       [providerId]
-//     );
-
-//     if (!providers.length) {
-//       return NextResponse.json(
-//         { success: false, message: 'Provider not found' },
-//         { status: 404 }
-//       );
-//     }
-
-//     // Get all documents
-//     const documents = await execute(
-//       `SELECT * FROM provider_documents WHERE provider_id = ? ORDER BY created_at DESC`,
-//       [providerId]
-//     );
-
-//     // Get bank account info
-//     const bankAccounts = await execute(
-//       `SELECT * FROM provider_bank_accounts WHERE provider_id = ?`,
-//       [providerId]
-//     );
-
-//     return NextResponse.json({
-//       success: true,
-//       provider: providers[0],
-//       documents,
-//       bankAccount: bankAccounts[0] || null
-//     });
-
-//   } catch (error) {
-//     console.error('Error:', error);
-//     return NextResponse.json(
-//       { success: false, message: error.message },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// export async function POST(request, { params }) {
-//   try {
-//     // ✅ FIX: Await the params
-//     const { providerId } = await params;
-//     const { action, documentId, rejectionReason } = await request.json();
-
-//     if (action === 'approve_document') {
-//       // Approve document
-//       await execute(
-//         `UPDATE provider_documents 
-//          SET status = 'approved', is_verified = 1, reviewed_at = NOW() 
-//          WHERE id = ?`,
-//         [documentId]
-//       );
-
-//       // Check if all required docs are approved
-//       const requiredDocs = ['profile_photo', 'id_proof', 'insurance'];
-//       const approved = await execute(
-//         `SELECT document_type FROM provider_documents 
-//          WHERE provider_id = ? AND document_type IN (?,?,?) AND status = 'approved'`,
-//         [providerId, ...requiredDocs]
-//       );
-
-//       const approvedTypes = approved.map(d => d.document_type);
-//       const allApproved = requiredDocs.every(t => approvedTypes.includes(t));
-
-//       if (allApproved) {
-//         await execute(
-//           `UPDATE service_providers SET documents_verified = 1 WHERE id = ?`,
-//           [providerId]
-//         );
-//       }
-
-//     } else if (action === 'reject_document') {
-//       // Reject document
-//       await execute(
-//         `UPDATE provider_documents 
-//          SET status = 'rejected', rejection_reason = ?, reviewed_at = NOW() 
-//          WHERE id = ?`,
-//         [rejectionReason, documentId]
-//       );
-
-//       await execute(
-//         `UPDATE service_providers SET documents_verified = 0 WHERE id = ?`,
-//         [providerId]
-//       );
-//     }
-
-//     return NextResponse.json({ success: true });
-
-//   } catch (error) {
-//     console.error('Error:', error);
-//     return NextResponse.json(
-//       { success: false, message: error.message },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-
-
-
-
-
-
-
-// app/api/admin/providers/[providerId]/documents/route.js - COMPLETE FIX
+// app/api/admin/providers/[providerId]/documents/route.js
 import { NextResponse } from 'next/server';
 import { execute } from '@/lib/db';
 
+// 🔴 FIX: Sirf ye do exports hone chahiye, kuch aur nahi
 export async function GET(request, { params }) {
   try {
-    // Safely await params
-    const paramsData = await params;
-    const providerId = paramsData.providerId;
+    // ✅ FIX: Await the params
+    const { providerId } = await params;
 
     console.log('📄 Fetching documents for provider:', providerId);
 
-    // Validate providerId
-    if (!providerId || isNaN(parseInt(providerId))) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid provider ID' },
-        { status: 400 }
-      );
-    }
+    // Get provider details
+    const providers = await execute(
+      `SELECT id, name, email, phone, specialty, experience_years, city, bio,
+              documents_uploaded, documents_verified, status, created_at,
+              stripe_account_id, stripe_onboarding_complete
+       FROM service_providers WHERE id = ?`,
+      [providerId]
+    );
 
-    // Get provider details with error handling
-    let providers = [];
-    try {
-      providers = await execute(
-        `SELECT id, name, email, phone, specialty, experience_years, city, bio,
-                documents_uploaded, documents_verified, status, created_at,
-                stripe_account_id, stripe_onboarding_complete
-         FROM service_providers 
-         WHERE id = ?`,
-        [providerId]
-      );
-    } catch (dbError) {
-      console.error('❌ Database error in provider fetch:', dbError);
-      return NextResponse.json(
-        { success: false, message: 'Database error: ' + dbError.message },
-        { status: 500 }
-      );
-    }
-
-    // Check if provider exists
     if (!providers || providers.length === 0) {
       return NextResponse.json(
         { success: false, message: 'Provider not found' },
@@ -166,52 +26,29 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Get all documents with error handling
-    let documents = [];
-    try {
-      documents = await execute(
-        `SELECT * FROM provider_documents 
-         WHERE provider_id = ? 
-         ORDER BY created_at DESC`,
-        [providerId]
-      );
-    } catch (dbError) {
-      console.error('❌ Database error in documents fetch:', dbError);
-      // Continue with empty documents array
-    }
+    // Get all documents
+    const documents = await execute(
+      `SELECT * FROM provider_documents WHERE provider_id = ? ORDER BY created_at DESC`,
+      [providerId]
+    );
 
-    // Get bank account info with error handling
-    let bankAccounts = [];
-    try {
-      bankAccounts = await execute(
-        `SELECT * FROM provider_bank_accounts 
-         WHERE provider_id = ?`,
-        [providerId]
-      );
-    } catch (dbError) {
-      console.error('❌ Database error in bank fetch:', dbError);
-      // Continue with empty bankAccounts array
-    }
-
-    // Ensure documents is always an array
-    const safeDocuments = Array.isArray(documents) ? documents : [];
-    
-    // Ensure bankAccount is properly handled
-    const bankAccount = (bankAccounts && bankAccounts.length > 0) ? bankAccounts[0] : null;
-
-    console.log(`✅ Found ${safeDocuments.length} documents for provider ${providerId}`);
+    // Get bank account info
+    const bankAccounts = await execute(
+      `SELECT * FROM provider_bank_accounts WHERE provider_id = ?`,
+      [providerId]
+    );
 
     return NextResponse.json({
       success: true,
       provider: providers[0],
-      documents: safeDocuments,
-      bankAccount: bankAccount
+      documents: documents || [],
+      bankAccount: bankAccounts && bankAccounts[0] ? bankAccounts[0] : null
     });
 
   } catch (error) {
-    console.error('❌ Critical error in GET:', error);
+    console.error('❌ Error in GET:', error);
     return NextResponse.json(
-      { success: false, message: 'Server error: ' + error.message },
+      { success: false, message: error.message },
       { status: 500 }
     );
   }
@@ -219,16 +56,12 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   try {
-    // Safely await params
-    const paramsData = await params;
-    const providerId = paramsData.providerId;
-    
-    const body = await request.json();
-    const { action, documentId, rejectionReason } = body;
+    // ✅ FIX: Await the params
+    const { providerId } = await params;
+    const { action, documentId, rejectionReason } = await request.json();
 
     console.log('📝 Document action:', { action, documentId, providerId });
 
-    // Validate inputs
     if (!providerId || !action || !documentId) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields' },
@@ -248,16 +81,11 @@ export async function POST(request, { params }) {
 
       // Check if all required docs are approved
       const requiredDocs = ['profile_photo', 'id_proof', 'insurance'];
-      let approved = [];
-      try {
-        approved = await execute(
-          `SELECT document_type FROM provider_documents 
-           WHERE provider_id = ? AND document_type IN (?,?,?) AND status = 'approved'`,
-          [providerId, ...requiredDocs]
-        );
-      } catch (dbError) {
-        console.error('❌ Error checking approved docs:', dbError);
-      }
+      const approved = await execute(
+        `SELECT document_type FROM provider_documents 
+         WHERE provider_id = ? AND document_type IN (?,?,?) AND status = 'approved'`,
+        [providerId, ...requiredDocs]
+      );
 
       const approvedTypes = approved && approved.length > 0 
         ? approved.map(d => d.document_type) 
@@ -267,16 +95,13 @@ export async function POST(request, { params }) {
 
       if (allApproved) {
         await execute(
-          `UPDATE service_providers 
-           SET documents_verified = 1, updated_at = NOW() 
-           WHERE id = ?`,
+          `UPDATE service_providers SET documents_verified = 1, updated_at = NOW() WHERE id = ?`,
           [providerId]
         );
         console.log('✅ All required docs approved for provider:', providerId);
       }
 
     } else if (action === 'reject_document') {
-      // Validate rejection reason
       if (!rejectionReason) {
         return NextResponse.json(
           { success: false, message: 'Rejection reason is required' },
@@ -293,11 +118,8 @@ export async function POST(request, { params }) {
       );
       console.log('✅ Document rejected:', documentId, 'Reason:', rejectionReason);
 
-      // Reset provider verified flag
       await execute(
-        `UPDATE service_providers 
-         SET documents_verified = 0, updated_at = NOW() 
-         WHERE id = ?`,
+        `UPDATE service_providers SET documents_verified = 0, updated_at = NOW() WHERE id = ?`,
         [providerId]
       );
     } else {
@@ -315,11 +137,8 @@ export async function POST(request, { params }) {
   } catch (error) {
     console.error('❌ Error in POST:', error);
     return NextResponse.json(
-      { success: false, message: 'Server error: ' + error.message },
+      { success: false, message: error.message },
       { status: 500 }
     );
   }
 }
-
-
-

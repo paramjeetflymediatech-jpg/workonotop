@@ -1,12 +1,11 @@
-// app/provider/jobs/TimeTracker.jsx - FIXED: onStart callback added
-
+// app/provider/jobs/TimeTracker.jsx - FIXED with cookie auth
 'use client'
 
 import { useState, useEffect } from 'react'
 
 export default function TimeTracker({ 
   bookingId, 
-  onStart,        // ← NEW: called after job starts so parent can reload job status
+  onStart,
   onComplete, 
   standardDuration = 60, 
   overtimeRate = 0,
@@ -43,16 +42,10 @@ export default function TimeTracker({
     if (hasBeforePhotos && error.includes('before')) setError('')
   }, [hasBeforePhotos])
 
-  const token = () => {
-    if (typeof window !== 'undefined') return localStorage.getItem('providerToken')
-    return null
-  }
-
+  // No manual token needed - cookies are sent automatically
   const loadTimerStatus = async () => {
     try {
-      const res = await fetch(`/api/provider/jobs/time-tracking?booking_id=${bookingId}`, {
-        headers: { Authorization: `Bearer ${token()}` }
-      })
+      const res = await fetch(`/api/provider/jobs/time-tracking?booking_id=${bookingId}`)
       const data = await res.json()
       if (data.success) {
         setTimerStatus(data.data.job_timer_status || 'not_started')
@@ -86,8 +79,8 @@ export default function TimeTracker({
       const res = await fetch('/api/provider/jobs/time-tracking', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token()}`
+          'Content-Type': 'application/json'
+          // No Authorization header needed
         },
         body: JSON.stringify({ booking_id: bookingId, action, notes })
       })
@@ -97,7 +90,6 @@ export default function TimeTracker({
         if (action === 'start') {
           setTimerStatus('running')
           setStartTime(new Date().toISOString())
-          // ← Call parent so it reloads job and shows after photos section
           if (onStart) await onStart()
         } else if (action === 'pause') {
           setTimerStatus('paused')
@@ -145,8 +137,7 @@ export default function TimeTracker({
 
   return (
     <div className="space-y-4">
-
-      {/* Timer Display */}
+      {/* Timer Display - keep existing JSX */}
       <div className={`rounded-2xl p-5 text-center border ${
         timerStatus === 'running' ? 'bg-emerald-50 border-emerald-200' :
         timerStatus === 'paused' ? 'bg-amber-50 border-amber-200' :
