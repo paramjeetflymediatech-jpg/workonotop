@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { execute } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 export async function POST(request) {
   console.log('\n' + '='.repeat(80));
