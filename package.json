@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "preinstall": "cross-env PUPPETEER_SKIP_DOWNLOAD=true",
-    "postinstall": "node scripts/patch-ts-interface.js",
+    "postinstall": "node scripts/patch-ts-interface.cjs",
     "clean": "rimraf node_modules package-lock.json && rimraf %USERPROFILE%\\.cache\\puppeteer",
     "dev": "next dev",
     "build": "next build",
@@ -24,6 +24,7 @@
     "mysql2": "^3.18.0",
     "next": "^15.2.0",
     "nodemailer": "^8.0.1",
+    "preinstall": "^0.0.1-security",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "stripe": "^20.3.1"
