@@ -1,37 +1,37 @@
-// app/api/provider/jobs/[id]/route.js - OPTIONAL IMPROVEMENT
+// app/api/provider/jobs/[id]/route.js - FIXED with cookie auth
 import { NextResponse } from 'next/server'
-import { execute } from '@/lib/db'  // ✅ CHANGE: query → execute
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
-
-function verifyToken(request) {
-  const token = request.headers.get('Authorization')?.split(' ')[1]
-  if (!token) return null
-  try { return jwt.verify(token, JWT_SECRET) } catch { return null }
-}
+import { execute } from '@/lib/db'
+import { verifyToken } from '@/lib/jwt'  // Import from jwt utility
 
 export async function GET(request, { params }) {
   try {
-    const decoded = verifyToken(request)
-    if (!decoded) {
+    // ✅ Cookie-based auth
+    const token = request.cookies.get('provider_token')?.value
+    if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const decoded = verifyToken(token)
+    if (!decoded || decoded.type !== 'provider') {
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
     const { id } = await params
 
-    // ✅ Using execute() instead of query()
+    // Get job with photo status
     const jobs = await execute(
       `SELECT 
         b.*,
         s.name as service_full_name,
         s.duration_minutes,
-        c.name as category_name
+        c.name as category_name,
+        (SELECT COUNT(*) FROM job_photos WHERE booking_id = b.id AND photo_type = 'before') > 0 as has_before_photos,
+        (SELECT COUNT(*) FROM job_photos WHERE booking_id = b.id AND photo_type = 'after') > 0 as has_after_photos
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
       WHERE b.id = ? AND b.provider_id = ?`,
-      [id, decoded.id]
+      [id, decoded.providerId]  // Note: using providerId
     )
 
     if (jobs.length === 0) {
@@ -69,5 +69,4 @@ export async function GET(request, { params }) {
       message: 'Failed to fetch job' 
     }, { status: 500 })
   }
-  // ✅ Connection auto-released by execute()
 }

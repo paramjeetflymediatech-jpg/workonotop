@@ -1,182 +1,192 @@
+// app/api/provider/forgot-password/route.js - FIXED with better error handling
 import { NextResponse } from 'next/server'
-import { execute, getConnection } from '@/lib/db'  // ✅ CHANGE: add getConnection
-import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
-import nodemailer from 'nodemailer'
-
-// Create transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
-
-// Generate 6-digit code
-const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString()
-
-// Send email
-const sendEmail = async (email, code) => {
-  const mailOptions = {
-    from: `"WorkOnTap" <${process.env.SMTP_FROM || 'noreply@workontap.com'}>`,
-    to: email,
-    subject: 'Password Reset Code - WorkOnTap',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
-        <h2 style="color: #059669;">Password Reset Code</h2>
-        <p>Your password reset code is:</p>
-        <div style="background: #f3f4f6; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 8px;">
-          ${code}
-        </div>
-        <p>This code will expire in 1 hour.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-        <p style="color: #6b7280; font-size: 12px;">WorkOnTap - Your Service Platform</p>
-      </div>
-    `,
-  }
-  await transporter.sendMail(mailOptions)
-}
+import { execute } from '@/lib/db'
+import { randomBytes } from 'crypto'
+import { sendEmail } from '@/lib/email'
 
 export async function POST(request) {
-  let connection
   try {
-    const { action, email, token, newPassword } = await request.json()
+    const { email } = await request.json()
 
-    // REQUEST RESET CODE
-    if (action === 'request') {
-      if (!email) {
-        return NextResponse.json({ success: false, message: 'Email is required' }, { status: 400 })
-      }
+    if (!email) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Email is required' 
+      }, { status: 400 })
+    }
 
-      // ✅ Check if provider exists - using execute
-      const providers = await execute(
-        'SELECT id, name FROM service_providers WHERE email = ?',
-        [email.toLowerCase()]
+    console.log('🔍 Forgot password requested for:', email)
+
+    // Check if provider exists
+    let providers = []
+    try {
+      providers = await execute(
+        'SELECT id, name, email FROM service_providers WHERE email = ?',
+        [email]
       )
+      console.log('📊 Database query result:', providers.length > 0 ? 'Provider found' : 'Provider not found')
+    } catch (dbError) {
+      console.error('❌ Database error:', dbError)
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Database error occurred' 
+      }, { status: 500 })
+    }
 
-      // Always return success for security
-      if (providers.length === 0) {
-        return NextResponse.json({ 
-          success: true, 
-          message: 'If your email is registered, you will receive a reset code' 
-        })
-      }
+    // Always return success even if email not found (security)
+    // But we'll still log it
+    if (providers.length === 0) {
+      console.log('ℹ️ No provider found with email:', email)
+      return NextResponse.json({ 
+        success: true, 
+        message: 'If an account exists, you will receive a reset email' 
+      })
+    }
 
-      const provider = providers[0]
-      const resetCode = generateCode()
-      const hashedToken = crypto.createHash('sha256').update(resetCode).digest('hex')
+    const provider = providers[0]
+    console.log('✅ Provider found:', provider.id, provider.email)
+
+    // Generate reset token
+    const resetToken = randomBytes(32).toString('hex')
+    const tokenExpiry = new Date()
+    tokenExpiry.setHours(tokenExpiry.getHours() + 1) // 1 hour expiry
+
+    console.log('🔑 Reset token generated')
+
+    // Store token in database
+    try {
+      await execute(
+        `UPDATE service_providers 
+         SET reset_token = ?, reset_token_expiry = ? 
+         WHERE id = ?`,
+        [resetToken, tokenExpiry, provider.id]
+      )
+      console.log('💾 Token saved to database')
+    } catch (updateError) {
+      console.error('❌ Failed to save token:', updateError)
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Failed to process request' 
+      }, { status: 500 })
+    }
+
+    // Send reset email
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const resetUrl = `${baseUrl}/provider/reset-password?token=${resetToken}`
+    
+    const emailHtml = getResetPasswordEmailHtml(provider.name || 'Provider', resetUrl)
+    const emailText = `Reset your WorkOnTap password: ${resetUrl}`
+
+    console.log('📧 Attempting to send email to:', provider.email)
+    console.log('🔗 Reset URL:', resetUrl)
+
+    try {
+      const emailResult = await sendEmail({
+        to: provider.email,
+        subject: 'Reset Your WorkOnTap Password',
+        html: emailHtml,
+        text: emailText
+      })
       
-      const expiresAt = new Date()
-      expiresAt.setHours(expiresAt.getHours() + 1)
-
-      // ✅ USE TRANSACTION for token operations
-      connection = await getConnection()
-      await connection.query('START TRANSACTION')
-
-      try {
-        // Delete old tokens
-        await connection.execute('DELETE FROM password_reset_tokens WHERE email = ?', [email.toLowerCase()])
-
-        // Save new token
-        await connection.execute(
-          'INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (?, ?, ?)',
-          [email.toLowerCase(), hashedToken, expiresAt]
-        )
-
-        await connection.query('COMMIT')
-
-        // Send email (outside transaction - email can't be rolled back)
-        await sendEmail(email, resetCode)
-
-        return NextResponse.json({ 
-          success: true, 
-          message: 'Reset code sent to your email' 
-        })
-
-      } catch (err) {
-        await connection.query('ROLLBACK')
-        throw err
-      } finally {
-        if (connection) connection.release()
+      console.log('📨 Email send result:', emailResult)
+      
+      if (!emailResult.success) {
+        console.error('❌ Email sending failed:', emailResult.error)
+        // Don't return error to user for security, but log it
       }
+    } catch (emailError) {
+      console.error('❌ Email sending exception:', emailError)
+      // Don't return error to user for security, but log it
     }
 
-    // RESET PASSWORD
-    else if (action === 'reset') {
-      if (!email || !token || !newPassword) {
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Email, code, and new password are required' 
-        }, { status: 400 })
-      }
-
-      if (newPassword.length < 8) {
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Password must be at least 8 characters' 
-        }, { status: 400 })
-      }
-
-      const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
-
-      // ✅ USE TRANSACTION for password reset
-      connection = await getConnection()
-      await connection.query('START TRANSACTION')
-
-      try {
-        // Find valid token
-        const tokens = await connection.execute(
-          `SELECT * FROM password_reset_tokens 
-           WHERE email = ? AND token = ? AND expires_at > NOW() AND used = FALSE`,
-          [email.toLowerCase(), hashedToken]
-        )
-
-        if (tokens.length === 0) {
-          await connection.query('ROLLBACK')
-          return NextResponse.json({ 
-            success: false, 
-            message: 'Invalid or expired reset code' 
-          }, { status: 400 })
-        }
-
-        // Hash new password
-        const hashedPassword = await bcrypt.hash(newPassword, 10)
-
-        // Update password
-        await connection.execute(
-          'UPDATE service_providers SET password = ? WHERE email = ?',
-          [hashedPassword, email.toLowerCase()]
-        )
-
-        // Mark token as used
-        await connection.execute('UPDATE password_reset_tokens SET used = TRUE WHERE id = ?', [tokens[0].id])
-
-        await connection.query('COMMIT')
-
-        return NextResponse.json({ 
-          success: true, 
-          message: 'Password reset successful' 
-        })
-
-      } catch (err) {
-        await connection.query('ROLLBACK')
-        throw err
-      } finally {
-        if (connection) connection.release()
-      }
-    }
-
-    return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 })
+    return NextResponse.json({ 
+      success: true, 
+      message: 'If an account exists, you will receive a reset email' 
+    })
 
   } catch (error) {
-    console.error('Password reset error:', error)
+    console.error('🔥 Forgot password error:', error)
     return NextResponse.json({ 
       success: false, 
       message: 'Failed to process request' 
     }, { status: 500 })
   }
+}
+
+// Helper function for reset password email HTML
+function getResetPasswordEmailHtml(name, resetUrl) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#0f766e,#0891b2);padding:40px 32px;text-align:center;">
+              <div style="font-size:48px;margin-bottom:12px;">🔐</div>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">Reset Your Password</h1>
+            </td>
+          </tr>
+          
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <p style="margin:0 0 8px;font-size:18px;font-weight:600;color:#0f172a;">Hi ${name} 👋</p>
+              <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7;">
+                We received a request to reset your WorkOnTap provider account password. 
+                Click the button below to set a new password:
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+                <tr>
+                  <td align="center">
+                    <a href="${resetUrl}"
+                       style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#0f766e,#0891b2);color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;">
+                      🔑 Reset Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Info Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#64748b;">⏰ Link expires in 1 hour</p>
+                    <p style="margin:4px 0;font-size:14px;color:#475569;">
+                      If you didn't request this, please ignore this email or contact support if you're concerned.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 24px;" />
+              
+              <p style="margin:0;font-size:13px;color:#94a3b8;">
+                Or copy this link: <span style="word-break:break-all;">${resetUrl}</span>
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 32px;background:#f8fafc;text-align:center;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:12px;color:#94a3b8;">© ${new Date().getFullYear()} WorkOnTap · Calgary, Alberta, Canada</p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
 }

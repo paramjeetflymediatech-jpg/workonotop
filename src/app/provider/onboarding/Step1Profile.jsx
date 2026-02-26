@@ -1,3 +1,263 @@
+// 'use client';
+
+// import { useState } from 'react';
+
+// const SERVICE_AREAS = [
+//   'Calgary NW', 'Calgary NE', 'Calgary SW', 'Calgary SE',
+//   'Airdrie', 'Chestermere', 'Cochrane', 'Okotoks'
+// ];
+
+// const SKILLS = [
+//   'Plumbing', 'Electrical', 'Carpentry', 'Painting',
+//   'Drywall', 'Flooring', 'HVAC', 'Appliance Repair',
+//   'Landscaping', 'Cleaning', 'Moving', 'Handyman'
+// ];
+
+// export default function Step1Profile({ initialData, onNext, providerId }) {
+//   const [formData, setFormData] = useState({
+//     bio: initialData.bio || '',
+//     specialty: initialData.specialty || '',
+//     experience_years: initialData.experience_years || '',
+//     city: initialData.city || 'Calgary',
+//     location: initialData.location || '',
+//     service_areas: initialData.service_areas || [],
+//     skills: initialData.skills || []
+//   });
+
+//   const [errors, setErrors] = useState({});
+//   const [loading, setLoading] = useState(false);
+
+//   const handleChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleArrayToggle = (field, value) => {
+//     setFormData(prev => {
+//       const current = prev[field] || [];
+//       const newArray = current.includes(value)
+//         ? current.filter(item => item !== value)
+//         : [...current, value];
+//       return { ...prev, [field]: newArray };
+//     });
+//   };
+
+//   const validate = () => {
+//     const newErrors = {};
+//     if (!formData.bio.trim()) newErrors.bio = 'Bio is required';
+//     if (!formData.specialty.trim()) newErrors.specialty = 'Specialty is required';
+//     if (!formData.experience_years) newErrors.experience_years = 'Experience is required';
+//     if (formData.experience_years < 0 || formData.experience_years > 50) {
+//       newErrors.experience_years = 'Please enter valid experience';
+//     }
+//     if (!formData.location.trim()) newErrors.location = 'Address is required';
+//     if (formData.service_areas.length === 0) {
+//       newErrors.service_areas = 'Select at least one service area';
+//     }
+//     if (formData.skills.length === 0) {
+//       newErrors.skills = 'Select at least one skill';
+//     }
+//     return newErrors;
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     const newErrors = validate();
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setLoading(true);
+//     try {
+//       const res = await fetch('/api/provider/onboarding/profile', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(formData)
+//       });
+
+//       const data = await res.json();
+//       if (data.success) {
+//         onNext(formData);
+//       } else {
+//         setErrors({ submit: data.message });
+//       }
+//     } catch (error) {
+//       setErrors({ submit: 'Failed to save profile' });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <form onSubmit={handleSubmit} className="space-y-6">
+//       <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile Information</h2>
+      
+//       {/* Bio */}
+//       <div>
+//         <label className="block text-sm font-medium text-gray-700 mb-1">
+//           Professional Bio <span className="text-red-500">*</span>
+//         </label>
+//         <textarea
+//           name="bio"
+//           rows="4"
+//           value={formData.bio}
+//           onChange={handleChange}
+//           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent
+//             ${errors.bio ? 'border-red-500' : 'border-gray-300'}`}
+//           placeholder="Tell us about yourself and your experience..."
+//         />
+//         {errors.bio && <p className="mt-1 text-sm text-red-500">{errors.bio}</p>}
+//       </div>
+
+//       {/* Specialty & Experience */}
+//       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//         <div>
+//           <label className="block text-sm font-medium text-gray-700 mb-1">
+//             Primary Specialty <span className="text-red-500">*</span>
+//           </label>
+//           <input
+//             type="text"
+//             name="specialty"
+//             value={formData.specialty}
+//             onChange={handleChange}
+//             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500
+//               ${errors.specialty ? 'border-red-500' : 'border-gray-300'}`}
+//             placeholder="e.g., Plumbing, Electrical"
+//           />
+//           {errors.specialty && <p className="mt-1 text-sm text-red-500">{errors.specialty}</p>}
+//         </div>
+
+//         <div>
+//           <label className="block text-sm font-medium text-gray-700 mb-1">
+//             Years of Experience <span className="text-red-500">*</span>
+//           </label>
+//           <input
+//             type="number"
+//             name="experience_years"
+//             value={formData.experience_years}
+//             onChange={handleChange}
+//             min="0"
+//             max="50"
+//             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500
+//               ${errors.experience_years ? 'border-red-500' : 'border-gray-300'}`}
+//           />
+//           {errors.experience_years && <p className="mt-1 text-sm text-red-500">{errors.experience_years}</p>}
+//         </div>
+//       </div>
+
+//       {/* Location */}
+//       <div>
+//         <label className="block text-sm font-medium text-gray-700 mb-1">
+//           Business Address <span className="text-red-500">*</span>
+//         </label>
+//         <input
+//           type="text"
+//           name="location"
+//           value={formData.location}
+//           onChange={handleChange}
+//           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500
+//             ${errors.location ? 'border-red-500' : 'border-gray-300'}`}
+//           placeholder="Street address"
+//         />
+//         {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
+//       </div>
+
+//       {/* City */}
+//       <div>
+//         <label className="block text-sm font-medium text-gray-700 mb-1">
+//           City
+//         </label>
+//         <select
+//           name="city"
+//           value={formData.city}
+//           onChange={handleChange}
+//           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+//         >
+//           <option value="Calgary">Calgary</option>
+//           <option value="Airdrie">Airdrie</option>
+//           <option value="Chestermere">Chestermere</option>
+//           <option value="Cochrane">Cochrane</option>
+//           <option value="Okotoks">Okotoks</option>
+//         </select>
+//       </div>
+
+//       {/* Service Areas */}
+//       <div>
+//         <label className="block text-sm font-medium text-gray-700 mb-2">
+//           Service Areas <span className="text-red-500">*</span>
+//         </label>
+//         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+//           {SERVICE_AREAS.map(area => (
+//             <label key={area} className="flex items-center space-x-2">
+//               <input
+//                 type="checkbox"
+//                 checked={formData.service_areas.includes(area)}
+//                 onChange={() => handleArrayToggle('service_areas', area)}
+//                 className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+//               />
+//               <span className="text-sm text-gray-700">{area}</span>
+//             </label>
+//           ))}
+//         </div>
+//         {errors.service_areas && (
+//           <p className="mt-1 text-sm text-red-500">{errors.service_areas}</p>
+//         )}
+//       </div>
+
+//       {/* Skills */}
+//       <div>
+//         <label className="block text-sm font-medium text-gray-700 mb-2">
+//           Skills <span className="text-red-500">*</span>
+//         </label>
+//         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+//           {SKILLS.map(skill => (
+//             <label key={skill} className="flex items-center space-x-2">
+//               <input
+//                 type="checkbox"
+//                 checked={formData.skills.includes(skill)}
+//                 onChange={() => handleArrayToggle('skills', skill)}
+//                 className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+//               />
+//               <span className="text-sm text-gray-700">{skill}</span>
+//             </label>
+//           ))}
+//         </div>
+//         {errors.skills && (
+//           <p className="mt-1 text-sm text-red-500">{errors.skills}</p>
+//         )}
+//       </div>
+
+//       {errors.submit && (
+//         <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded">
+//           {errors.submit}
+//         </div>
+//       )}
+
+//       <div className="flex justify-end">
+//         <button
+//           type="submit"
+//           disabled={loading}
+//           className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 
+//                      disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+//         >
+//           {loading ? 'Saving...' : 'Continue to Documents'}
+//         </button>
+//       </div>
+//     </form>
+//   );
+// }
+
+
+
+
+
+
+
+
 'use client';
 
 import { useState } from 'react';
@@ -18,7 +278,7 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
     bio: initialData.bio || '',
     specialty: initialData.specialty || '',
     experience_years: initialData.experience_years || '',
-    city: initialData.city || 'Calgary',
+    city: initialData.city || '', // 👈 Empty by default, user type karega
     location: initialData.location || '',
     service_areas: initialData.service_areas || [],
     skills: initialData.skills || []
@@ -53,6 +313,7 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
     if (formData.experience_years < 0 || formData.experience_years > 50) {
       newErrors.experience_years = 'Please enter valid experience';
     }
+    if (!formData.city.trim()) newErrors.city = 'City is required'; // 👈 Validation add ki
     if (!formData.location.trim()) newErrors.location = 'Address is required';
     if (formData.service_areas.length === 0) {
       newErrors.service_areas = 'Select at least one service area';
@@ -149,7 +410,7 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
         </div>
       </div>
 
-      {/* Location */}
+      {/* Location (Address) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Business Address <span className="text-red-500">*</span>
@@ -166,23 +427,24 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
         {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
       </div>
 
-      {/* City */}
+      {/* 🔴 FIX: City - Manually type karega, dropdown nahi */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          City
+          City <span className="text-red-500">*</span>
         </label>
-        <select
+        <input
+          type="text"
           name="city"
           value={formData.city}
           onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-        >
-          <option value="Calgary">Calgary</option>
-          <option value="Airdrie">Airdrie</option>
-          <option value="Chestermere">Chestermere</option>
-          <option value="Cochrane">Cochrane</option>
-          <option value="Okotoks">Okotoks</option>
-        </select>
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500
+            ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
+          placeholder="Enter your city (e.g., Calgary, Airdrie)"
+        />
+        {errors.city && <p className="mt-1 text-sm text-red-500">{errors.city}</p>}
+        <p className="mt-1 text-xs text-gray-500">
+          Enter the city where your business is located
+        </p>
       </div>
 
       {/* Service Areas */}

@@ -1,25 +1,21 @@
-// app/api/provider/jobs/route.js - OPTIONAL IMPROVEMENT
+// app/api/provider/jobs/route.js - FIXED with cookie auth
 import { NextResponse } from 'next/server'
-import { execute } from '@/lib/db'  // ✅ CHANGE: query → execute
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
+import { execute } from '@/lib/db'
+import { verifyToken } from '@/lib/jwt'
 
 export async function GET(request) {
   try {
-    const token = request.headers.get('Authorization')?.split(' ')[1]
+    // ✅ Cookie-based auth
+    const token = request.cookies.get('provider_token')?.value
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
-
-    let decoded
-    try {
-      decoded = jwt.verify(token, JWT_SECRET)
-    } catch {
+    
+    const decoded = verifyToken(token)
+    if (!decoded || decoded.type !== 'provider') {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
-    // ✅ Using execute() instead of query()
     const jobs = await execute(
       `SELECT 
         b.id,
@@ -67,7 +63,7 @@ export async function GET(request) {
           ELSE 4
         END,
         b.job_date DESC`,
-      [decoded.id]
+      [decoded.providerId] // Note: using providerId, not id
     )
 
     // Parse and format data (same as before)
@@ -106,5 +102,4 @@ export async function GET(request) {
       message: 'Failed to fetch jobs' 
     }, { status: 500 })
   }
-  // ✅ Connection auto-released by execute()
 }

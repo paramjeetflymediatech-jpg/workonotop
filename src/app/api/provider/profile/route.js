@@ -1,42 +1,55 @@
-// app/api/provider/profile/route.js - OPTIONAL IMPROVEMENT
+// app/api/provider/profile/route.js
 import { NextResponse } from 'next/server'
-import { execute } from '@/lib/db'  // ✅ CHANGE: query → execute
-import jwt from 'jsonwebtoken'
+import { execute } from '@/lib/db'
+import { verifyToken } from '@/lib/jwt'  // ✅ same as your /api/provider/me
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
-
-function verifyToken(request) {
-  const token = request.headers.get('Authorization')?.split(' ')[1]
-  if (!token) return null
-  try {
-    return jwt.verify(token, JWT_SECRET)
-  } catch {
-    return null
-  }
-}
-
-// GET
+// GET - Fetch full profile
 export async function GET(request) {
   try {
-    const decoded = verifyToken(request)
-    if (!decoded) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+    const token = request.cookies.get('provider_token')?.value
+    if (!token) {
+      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
-    // ✅ Using execute()
+    const decoded = verifyToken(token)
+    if (!decoded || decoded.type !== 'provider') {
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
+    }
+
     const providers = await execute(
-      `SELECT id, name, email, phone, specialty, experience_years,
-              rating, total_jobs, bio, avatar_url, location, city, status,
-              DATE_FORMAT(created_at, '%Y-%m-%d') as join_date
+      `SELECT 
+        id, name, email, phone,
+        specialty, experience_years,
+        rating, avg_rating, total_jobs, total_reviews,
+        bio, avatar_url, location, city,
+        status, service_areas, skills,
+        stripe_onboarding_complete,
+        onboarding_completed, onboarding_step,
+        DATE_FORMAT(created_at, '%Y-%m-%d') as join_date
        FROM service_providers WHERE id = ?`,
-      [decoded.id]
+      [decoded.providerId]
     )
 
-    if (providers.length === 0) {
+    if (!providers || providers.length === 0) {
       return NextResponse.json({ success: false, message: 'Provider not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ success: true, data: providers[0] })
+    const provider = { ...providers[0] }
+
+    // Safely parse JSON fields
+    provider.service_areas = (() => {
+      if (!provider.service_areas) return []
+      try { return typeof provider.service_areas === 'string' ? JSON.parse(provider.service_areas) : provider.service_areas }
+      catch { return [] }
+    })()
+
+    provider.skills = (() => {
+      if (!provider.skills) return []
+      try { return typeof provider.skills === 'string' ? JSON.parse(provider.skills) : provider.skills }
+      catch { return [] }
+    })()
+
+    return NextResponse.json({ success: true, data: provider })
 
   } catch (error) {
     console.error('Error fetching profile:', error)
@@ -44,75 +57,71 @@ export async function GET(request) {
   }
 }
 
-// PUT
+// PUT - Update profile
 export async function PUT(request) {
   try {
-    const decoded = verifyToken(request)
-    if (!decoded) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+    const token = request.cookies.get('provider_token')?.value
+    if (!token) {
+      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
+
+    const decoded = verifyToken(token)
+    if (!decoded || decoded.type !== 'provider') {
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
+    }
+
+    const providerId = decoded.providerId
 
     const body = await request.json()
-    const { name, email, phone, specialty, experience_years, bio, location, city, avatar_url } = body
+    const { name, email, phone, specialty, experience_years, bio, location, city, service_areas, skills } = body
 
-    if (!name || !email || !phone) {
-      return NextResponse.json(
-        { success: false, message: 'Name, email and phone are required' },
-        { status: 400 }
-      )
-    }
+    if (!name?.trim()) return NextResponse.json({ success: false, message: 'Name is required' }, { status: 400 })
+    if (!email?.trim()) return NextResponse.json({ success: false, message: 'Email is required' }, { status: 400 })
+    if (!phone?.trim()) return NextResponse.json({ success: false, message: 'Phone is required' }, { status: 400 })
 
-    // Check email uniqueness - using execute()
-    const existing = await execute(
-      'SELECT id FROM service_providers WHERE email = ? AND id != ?',
-      [email, decoded.id]
-    )
-    
-    if (existing.length > 0) {
-      return NextResponse.json({ success: false, message: 'Email already in use' }, { status: 400 })
-    }
+    // Uniqueness checks
+    const existing = await execute('SELECT id FROM service_providers WHERE email = ? AND id != ?', [email.trim(), providerId])
+    if (existing.length > 0) return NextResponse.json({ success: false, message: 'Email already in use' }, { status: 400 })
 
-    // Update profile - using execute()
+    const existingPhone = await execute('SELECT id FROM service_providers WHERE phone = ? AND id != ?', [phone.trim(), providerId])
+    if (existingPhone.length > 0) return NextResponse.json({ success: false, message: 'Phone already in use' }, { status: 400 })
+
+    // All params explicitly null-safe — never undefined
     await execute(
       `UPDATE service_providers SET
-        name             = ?,
-        email            = ?,
-        phone            = ?,
-        specialty        = ?,
-        experience_years = ?,
-        bio              = ?,
-        location         = ?,
-        city             = ?,
-        avatar_url       = COALESCE(?, avatar_url),
-        updated_at       = NOW()
-       WHERE id = ?`,
+        name=?, email=?, phone=?, specialty=?, experience_years=?,
+        bio=?, location=?, city=?, service_areas=?, skills=?, updated_at=NOW()
+       WHERE id=?`,
       [
-        name,
-        email,
-        phone,
-        specialty        || null,
-        experience_years ? parseInt(experience_years) : null,
-        bio              || null,
-        location         || null,
-        city             || null,
-        avatar_url       || null,
-        decoded.id
+        name.trim(),
+        email.trim(),
+        phone.trim(),
+        specialty?.trim() || null,
+        (experience_years !== undefined && experience_years !== '' && experience_years !== null) ? parseInt(experience_years) : null,
+        bio?.trim() || null,
+        location?.trim() || null,
+        city?.trim() || null,
+        Array.isArray(service_areas) ? JSON.stringify(service_areas) : null,
+        Array.isArray(skills) ? JSON.stringify(skills) : null,
+        providerId
       ]
     )
 
-    // Fetch updated profile - using execute()
-    const providers = await execute(
+    // Return updated data
+    const updated = await execute(
       `SELECT id, name, email, phone, specialty, experience_years,
-              rating, total_jobs, bio, avatar_url, location, city, status
+              rating, avg_rating, total_jobs, total_reviews,
+              bio, avatar_url, location, city, status, service_areas, skills,
+              DATE_FORMAT(created_at, '%Y-%m-%d') as join_date
        FROM service_providers WHERE id = ?`,
-      [decoded.id]
+      [providerId]
     )
 
-    return NextResponse.json({
-      success: true,
-      message: 'Profile updated successfully',
-      data: providers[0]
-    })
+    const provider = { ...updated[0] }
+    provider.service_areas = (() => { try { return typeof provider.service_areas === 'string' ? JSON.parse(provider.service_areas) : (provider.service_areas || []) } catch { return [] } })()
+    provider.skills = (() => { try { return typeof provider.skills === 'string' ? JSON.parse(provider.skills) : (provider.skills || []) } catch { return [] } })()
+
+    return NextResponse.json({ success: true, message: 'Profile updated successfully', data: provider })
 
   } catch (error) {
     console.error('Error updating profile:', error)

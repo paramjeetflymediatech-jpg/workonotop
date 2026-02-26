@@ -1,5 +1,4 @@
-// app/provider/jobs/JobPhotoUpload.jsx
-
+// app/provider/jobs/JobPhotoUpload.jsx - FIXED with cookie auth
 'use client'
 
 import { useState } from 'react'
@@ -10,12 +9,7 @@ export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete 
   const [error, setError] = useState('')
   const [previews, setPreviews] = useState([])
 
-  const token = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('providerToken')
-    }
-    return null
-  }
+  // No token function needed - cookies are sent automatically
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files)
@@ -71,12 +65,12 @@ export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete 
 
         uploadedUrls.push(uploadData.url)
 
-        // Save to database
+        // Save to database - cookies handle auth
         const saveRes = await fetch('/api/provider/jobs/photos', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token()}`
+            'Content-Type': 'application/json'
+            // No Authorization header needed
           },
           body: JSON.stringify({
             booking_id: bookingId,

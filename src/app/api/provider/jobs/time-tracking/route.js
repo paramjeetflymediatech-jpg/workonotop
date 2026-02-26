@@ -1,24 +1,21 @@
-// app/api/provider/jobs/time-tracking/route.js - FIXED
+// app/api/provider/jobs/time-tracking/route.js - FIXED with cookie auth
 import { NextResponse } from 'next/server'
-import { execute, getConnection } from '@/lib/db'  // ✅ ADD execute import
-import jwt from 'jsonwebtoken'
+import { execute, getConnection } from '@/lib/db'
+import { verifyToken } from '@/lib/jwt'  // Import from your jwt utility
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
-
-// Verify provider token
-function verifyToken(request) {
-  const token = request.headers.get('Authorization')?.split(' ')[1]
-  if (!token) return null
-  try { return jwt.verify(token, JWT_SECRET) } catch { return null }
-}
-
-// POST: Start/Stop/Pause timer (PERFECT - no changes)
+// POST: Start/Stop/Pause timer
 export async function POST(request) {
   let connection
   try {
-    const decoded = verifyToken(request)
-    if (!decoded) {
+    // ✅ Cookie-based auth
+    const token = request.cookies.get('provider_token')?.value
+    if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const decoded = verifyToken(token)
+    if (!decoded || decoded.type !== 'provider') {
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
     const { booking_id, action, notes } = await request.json()
@@ -34,7 +31,7 @@ export async function POST(request) {
     await connection.query('START TRANSACTION')
 
     try {
-      // Get current booking with lock
+      // Get current booking with lock - using decoded.providerId
       const [[booking]] = await connection.execute(
         `SELECT b.*, s.duration_minutes as standard_duration,
                 TIMESTAMPDIFF(MINUTE, b.start_time, NOW()) as current_duration
@@ -42,7 +39,7 @@ export async function POST(request) {
          LEFT JOIN services s ON b.service_id = s.id
          WHERE b.id = ? AND b.provider_id = ?
          FOR UPDATE`,
-        [booking_id, decoded.id]
+        [booking_id, decoded.providerId]  // Note: using providerId, not id
       )
 
       if (!booking) {
@@ -54,7 +51,7 @@ export async function POST(request) {
       }
 
       const now = new Date()
-      const standardDuration = booking.standard_duration || 60 // Default 60 mins
+      const standardDuration = booking.standard_duration || 60
       const overtimeRate = parseFloat(booking.additional_price || 0)
 
       // Handle different actions
@@ -255,12 +252,18 @@ export async function POST(request) {
   }
 }
 
-// GET: Get timer status for a job - FIXED
+// GET: Get timer status for a job
 export async function GET(request) {
   try {
-    const decoded = verifyToken(request)
-    if (!decoded) {
+    // ✅ Cookie-based auth
+    const token = request.cookies.get('provider_token')?.value
+    if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const decoded = verifyToken(token)
+    if (!decoded || decoded.type !== 'provider') {
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -273,7 +276,7 @@ export async function GET(request) {
       }, { status: 400 })
     }
 
-    // ✅ DIRECT execute() calls - no dynamic import
+    // Use decoded.providerId
     const bookings = await execute(
       `SELECT 
         b.id, 
@@ -290,6 +293,8 @@ export async function GET(request) {
         b.additional_price as overtime_rate,
         s.duration_minutes as standard_duration,
         TIMESTAMPDIFF(MINUTE, b.start_time, NOW()) as current_duration,
+        (SELECT COUNT(*) FROM job_photos WHERE booking_id = b.id AND photo_type = 'before') > 0 as has_before_photos,
+        (SELECT COUNT(*) FROM job_photos WHERE booking_id = b.id AND photo_type = 'after') > 0 as has_after_photos,
         (SELECT action FROM booking_time_logs 
          WHERE booking_id = b.id 
          ORDER BY timestamp DESC LIMIT 1) as last_action,
@@ -299,7 +304,7 @@ export async function GET(request) {
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       WHERE b.id = ? AND b.provider_id = ?`,
-      [booking_id, decoded.id]
+      [booking_id, decoded.providerId]  // Note: using providerId
     )
 
     if (bookings.length === 0) {
@@ -311,7 +316,7 @@ export async function GET(request) {
 
     const booking = bookings[0]
 
-    // Get all logs - using execute()
+    // Get all logs
     const logs = await execute(
       `SELECT * FROM booking_time_logs 
        WHERE booking_id = ? 
@@ -332,5 +337,4 @@ export async function GET(request) {
       message: 'Failed to fetch timer status' 
     }, { status: 500 })
   }
-  // ✅ Connections auto-released by execute()
 }
