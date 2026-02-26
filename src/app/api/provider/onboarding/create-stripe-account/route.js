@@ -59,6 +59,9 @@ export async function POST(request) {
 
     if (existingAccounts.length > 0 && existingAccounts[0].stripe_account_id) {
       try {
+        if (!stripe) {
+          throw new Error('Stripe is not initialized.');
+        }
         const account = await stripe.accounts.retrieve(
           existingAccounts[0].stripe_account_id
         );
@@ -82,6 +85,9 @@ export async function POST(request) {
 
     // Create new Stripe Express account
     // ✅ FIX: country changed to 'GB' to match UK platform (was 'CA')
+    if (!stripe) {
+      throw new Error('Stripe is not initialized.');
+    }
     const account = await stripe.accounts.create({
       type: 'express',
       country: 'GB',
@@ -268,7 +274,7 @@ export async function POST(request) {
 
 //     // Save stripe_account_id to service_providers
 //     await execute(
-//       `UPDATE service_providers 
+//       `UPDATE service_providers
 //        SET stripe_account_id = ?, updated_at = NOW()
 //        WHERE id = ?`,
 //       [account.id, providerId]
@@ -276,7 +282,7 @@ export async function POST(request) {
 
 //     // Insert into provider_bank_accounts
 //     await execute(
-//       `INSERT INTO provider_bank_accounts 
+//       `INSERT INTO provider_bank_accounts
 //        (provider_id, stripe_account_id, account_status, onboarding_completed, created_at, updated_at)
 //        VALUES (?, ?, 'pending', 0, NOW(), NOW())`,
 //       [providerId, account.id]
