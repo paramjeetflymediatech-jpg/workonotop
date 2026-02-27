@@ -106,7 +106,7 @@
 
 //     // Save stripe_account_id to service_providers
 //     await execute(
-//       `UPDATE service_providers 
+//       `UPDATE service_providers
 //        SET stripe_account_id = ?, updated_at = NOW()
 //        WHERE id = ?`,
 //       [account.id, providerId]
@@ -114,7 +114,7 @@
 
 //     // Insert into provider_bank_accounts
 //     await execute(
-//       `INSERT INTO provider_bank_accounts 
+//       `INSERT INTO provider_bank_accounts
 //        (provider_id, stripe_account_id, account_status, onboarding_completed, created_at, updated_at)
 //        VALUES (?, ?, 'pending', 0, NOW(), NOW())`,
 //       [providerId, account.id]

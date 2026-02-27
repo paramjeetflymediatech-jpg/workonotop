@@ -284,7 +284,7 @@ import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null
 
 function calcProviderAmount(servicePrice, commissionPct) {
   if (commissionPct == null || commissionPct === '') return parseFloat(servicePrice)
@@ -297,9 +297,9 @@ function calcProviderAmount(servicePrice, commissionPct) {
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
-    const email  = searchParams.get('email')
+    const email = searchParams.get('email')
     const status = searchParams.get('status')
-    const limit  = parseInt(searchParams.get('limit') || '50')
+    const limit = parseInt(searchParams.get('limit') || '50')
 
     let sql = `
       SELECT b.*, s.name as service_name, s.slug as service_slug,
@@ -312,7 +312,7 @@ export async function GET(request) {
       WHERE 1=1
     `
     const params = []
-    if (email)  { sql += ' AND b.customer_email = ?'; params.push(email) }
+    if (email) { sql += ' AND b.customer_email = ?'; params.push(email) }
     if (status) { sql += ' AND b.status = ?'; params.push(status) }
     sql += ` ORDER BY b.created_at DESC LIMIT ${limit}`
 
@@ -370,7 +370,7 @@ export async function POST(request) {
     }
 
     const timeSlotString = (Array.isArray(job_time_slot) ? job_time_slot : [job_time_slot]).join(',')
-    const bookingNumber  = 'BK' + Date.now() + Math.floor(Math.random() * 1000)
+    const bookingNumber = 'BK' + Date.now() + Math.floor(Math.random() * 1000)
     const totalAmount = parseFloat(service_price) + parseFloat(additional_price || 0)
 
     connection = await getConnection()
@@ -415,7 +415,7 @@ export async function POST(request) {
       let clientSecret = null
       let paymentIntentId = null
 
-      if (totalAmount > 0 && process.env.STRIPE_SECRET_KEY) {
+      if (totalAmount > 0 && stripe) {
         try {
           const paymentIntent = await stripe.paymentIntents.create({
             amount: Math.round(totalAmount * 100), // Convert to cents
@@ -456,9 +456,9 @@ export async function POST(request) {
 
       await connection.query('COMMIT')
 
-      return NextResponse.json({ 
-        success: true, 
-        booking_id: bookingId, 
+      return NextResponse.json({
+        success: true,
+        booking_id: bookingId,
         booking_number: bookingNumber,
         client_secret: clientSecret // Send to frontend for payment
       })
@@ -478,7 +478,7 @@ export async function PUT(request) {
   let connection
   try {
     const { searchParams } = new URL(request.url)
-    const id   = searchParams.get('id')
+    const id = searchParams.get('id')
     const body = await request.json()
     const { status, provider_id, notes, job_time_slot, commission_percent, payment_status } = body
 
@@ -551,7 +551,7 @@ export async function PUT(request) {
         await connection.execute(
           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, ?, ?)`,
           [id, status || 'pending',
-           `Commission set to ${commission_percent}% (Admin: $${commissionAmount.toFixed(2)}, Provider: $${providerAmt.toFixed(2)})`]
+            `Commission set to ${commission_percent}% (Admin: $${commissionAmount.toFixed(2)}, Provider: $${providerAmt.toFixed(2)})`]
         )
       }
 

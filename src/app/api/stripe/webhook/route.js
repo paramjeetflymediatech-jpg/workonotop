@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getConnection } from '@/lib/db';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 export async function POST(request) {
   console.log('\n' + '='.repeat(100));
@@ -24,6 +24,9 @@ export async function POST(request) {
     let event;
 
     try {
+      if (!stripe) {
+        throw new Error('Stripe is not initialized. Check STRIPE_SECRET_KEY environment variable.');
+      }
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
       console.log(`✅ Webhook verified: ${event.type}`);
     } catch (err) {
@@ -109,11 +112,11 @@ async function handleAccountUpdated(account) {
 
     // ── Determine onboarding status ─────────────────────────────────────────
 
-    const chargesEnabled   = account.charges_enabled   || false;
-    const payoutsEnabled   = account.payouts_enabled   || false;
+    const chargesEnabled = account.charges_enabled || false;
+    const payoutsEnabled = account.payouts_enabled || false;
     const detailsSubmitted = account.details_submitted || false;
-    const cardPayments     = account.capabilities?.card_payments;
-    const transfers        = account.capabilities?.transfers;
+    const cardPayments = account.capabilities?.card_payments;
+    const transfers = account.capabilities?.transfers;
 
     console.log('📊 Account status:', {
       chargesEnabled,
@@ -340,7 +343,7 @@ export async function GET() {
 
 //     if (isComplete) {
 //       await connection.execute(
-//         `UPDATE service_providers 
+//         `UPDATE service_providers
 //          SET stripe_onboarding_complete = 1,
 //              onboarding_step = 4,
 //              updated_at = NOW()
@@ -349,7 +352,7 @@ export async function GET() {
 //       );
 
 //       await connection.execute(
-//         `INSERT INTO provider_bank_accounts 
+//         `INSERT INTO provider_bank_accounts
 //          (provider_id, stripe_account_id, account_status, onboarding_completed, updated_at)
 //          VALUES (?, ?, ?, 1, NOW())
 //          ON DUPLICATE KEY UPDATE
@@ -363,7 +366,7 @@ export async function GET() {
 //       console.log(`✅ Stripe onboarding COMPLETED for provider ${provider.id}`);
 //     } else {
 //       await connection.execute(
-//         `INSERT INTO provider_bank_accounts 
+//         `INSERT INTO provider_bank_accounts
 //          (provider_id, stripe_account_id, account_status, onboarding_completed, updated_at)
 //          VALUES (?, ?, 'pending', 0, NOW())
 //          ON DUPLICATE KEY UPDATE

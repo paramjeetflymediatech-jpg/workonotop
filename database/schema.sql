@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS service_providers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_city (city),
     INDEX idx_status (status),
-    INDEX idx_onboarding_step (onboarding_step),
+    INDEX idx_onboarding (onboarding_step, onboarding_completed),
     INDEX idx_stripe_account (stripe_account_id),
     INDEX idx_email_verified (email_verified)
 );
@@ -419,3 +419,24 @@ GROUP BY sp.id;
 -- job_photos: idx_booking, idx_photo_type, idx_uploaded_by
 -- provider_reviews: idx_provider, idx_customer
 -- invoices: idx_booking, idx_user, idx_provider, idx_status
+
+-- =====================================================
+-- LIVE ENVIRONMENT FIXES (Apply manually to production)
+-- =====================================================
+
+-- Fix for "Unknown column 'email_verification_token'"
+-- ALTER TABLE service_providers 
+-- ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE,
+-- ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255),
+-- ADD COLUMN IF NOT EXISTS email_verification_expires DATETIME,
+-- ADD COLUMN IF NOT EXISTS onboarding_step INT DEFAULT 1,
+-- ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE,
+-- ADD COLUMN IF NOT EXISTS documents_uploaded BOOLEAN DEFAULT FALSE,
+-- ADD COLUMN IF NOT EXISTS documents_verified BOOLEAN DEFAULT FALSE,
+-- ADD COLUMN IF NOT EXISTS stripe_account_id VARCHAR(255),
+-- ADD COLUMN IF NOT EXISTS stripe_onboarding_complete BOOLEAN DEFAULT FALSE,
+-- ADD COLUMN IF NOT EXISTS approved_by INT,
+-- ADD COLUMN IF NOT EXISTS approved_at DATETIME,
+-- ADD COLUMN IF NOT EXISTS rejection_reason TEXT,
+-- ADD COLUMN IF NOT EXISTS service_areas JSON,
+-- ADD COLUMN IF NOT EXISTS skills JSON;

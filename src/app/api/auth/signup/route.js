@@ -128,7 +128,7 @@ export async function POST(request) {
     const { 
       first_name, 
       last_name, 
-      email, 
+      email,   
       phone, 
       password,
       hear_about,
