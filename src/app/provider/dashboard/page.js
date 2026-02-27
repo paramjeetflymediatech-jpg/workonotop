@@ -46,9 +46,9 @@ export default function ProviderDashboard() {
   ];
 
   const quickActions = [
-    { href: '/provider/jobs', icon: Briefcase, label: 'Browse Jobs', desc: 'Find new opportunities', color: 'group-hover:text-blue-600' },
-    { href: '/provider/schedule', icon: Calendar, label: 'My Schedule', desc: 'View upcoming jobs', color: 'group-hover:text-green-600' },
-    { href: '/provider/earnings', icon: DollarSign, label: 'Earnings', desc: 'Track your payouts', color: 'group-hover:text-purple-600' },
+    { href: '/provider/avilabe-jobs', icon: Briefcase, label: 'Browse Jobs', desc: 'Find new opportunities', color: 'group-hover:text-blue-600' },
+    { href: '/provider/jobs', icon: Calendar, label: 'My Schedule', desc: 'View upcoming jobs', color: 'group-hover:text-green-600' },
+    { href: '/provider/dashboard', icon: DollarSign, label: 'Earnings', desc: 'Track your payouts', color: 'group-hover:text-purple-600' },
   ];
 
   return (

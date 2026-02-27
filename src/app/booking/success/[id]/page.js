@@ -1,4 +1,4 @@
-// app/booking/success/[id]/page.jsx - UPDATED (No progress bar, updated payment message)
+// app/booking/success/[id]/page.jsx - UPDATED with hourly rate display (no addition)
 'use client';
 
 import Link from 'next/link';
@@ -12,7 +12,7 @@ export default function BookingSuccessPage({ params }) {
   const bookingId = unwrappedParams.id;
   
   const router = useRouter();
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,14 +30,6 @@ export default function BookingSuccessPage({ params }) {
       
       if (data.success) {
         setBooking(data.data);
-        
-        // Update auth context if user exists in localStorage
-        if (!user) {
-          const savedUser = localStorage.getItem('workontap_user');
-          if (savedUser) {
-            login(JSON.parse(savedUser), 'customer');
-          }
-        }
       } else {
         setError(data.message || 'Booking not found');
       }
@@ -46,73 +38,6 @@ export default function BookingSuccessPage({ params }) {
       setError('Failed to load booking details');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Helper function to get payment status display
-  const getPaymentStatusDisplay = () => {
-    if (!booking) return null;
-    
-    switch(booking.payment_status) {
-      case 'authorized':
-        return (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-              <div className="text-left">
-                <p className="text-sm font-medium text-blue-700">
-                  ✓ Payment Authorized
-                </p>
-                <p className="text-xs text-blue-600 mt-0.5">
-                  Your card has been verified. Payment will be released after job completion.
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-      
-      case 'paid':
-        return (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <div className="text-left">
-                <p className="text-sm font-medium text-green-700">
-                  ✓ Payment Completed
-                </p>
-                <p className="text-xs text-green-600 mt-0.5">
-                  Your payment has been processed successfully after job completion.
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-      
-      case 'pending':
-        return (
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              <div className="text-left">
-                <p className="text-sm font-medium text-yellow-700">
-                  ⏳ Payment Pending
-                </p>
-                <p className="text-xs text-yellow-600 mt-0.5">
-                  Please complete your payment to confirm the booking.
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-      
-      default:
-        return null;
     }
   };
 
@@ -175,8 +100,8 @@ export default function BookingSuccessPage({ params }) {
     );
   }
 
-  // Calculate total
-  const totalAmount = (parseFloat(booking.service_price) + parseFloat(booking.additional_price || 0)).toFixed(2);
+  const basePrice = parseFloat(booking.service_price);
+  const hourlyRate = parseFloat(booking.additional_price || 0);
 
   return (
     <div className="min-h-screen bg-gray-50/50 font-sans antialiased">
@@ -211,25 +136,6 @@ export default function BookingSuccessPage({ params }) {
                 </p>
               </div>
 
-              {/* Payment Status - Updated Message */}
-              {booking.payment_status === 'authorized' && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                    </svg>
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-blue-700">
-                        ✓ Payment Authorized
-                      </p>
-                      <p className="text-xs text-blue-600 mt-0.5">
-                        Your card has been verified. Payment will be released after the job is completed.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Booking Details */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
@@ -263,10 +169,36 @@ export default function BookingSuccessPage({ params }) {
                     </span>
                   </div>
                   
+                  {/* Price breakdown - UPDATED: hourly rate instead of addition */}
+                  <div className="py-2 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Base price</span>
+                      <span className="font-bold text-gray-900">${basePrice.toFixed(2)}</span>
+                    </div>
+                    
+                    {hourlyRate > 0 && (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                          </svg>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-blue-800">
+                              ⏱️ Overtime Rate
+                            </p>
+                            <p className="text-xs text-blue-700 mt-1">
+                              If the job takes longer than estimated, you'll be charged <span className="font-bold">${hourlyRate.toFixed(2)}/hour</span> for extra time. You'll approve any additional hours before they're worked.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
                   <div className="flex justify-between py-2">
-                    <span className="text-gray-600 font-medium">Total Amount</span>
+                    <span className="text-gray-600 font-medium">Paid today</span>
                     <span className="font-bold text-green-700 text-xl">
-                      ${totalAmount}
+                      ${basePrice.toFixed(2)}
                     </span>
                   </div>
                 </div>
