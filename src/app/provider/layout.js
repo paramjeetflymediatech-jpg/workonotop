@@ -242,8 +242,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Briefcase, DollarSign, User, LogOut, Menu, X, ChevronRight } from 'lucide-react';
+import { Home, Briefcase, DollarSign, User, LogOut, Menu, X, ChevronRight, MessageCircle } from 'lucide-react';
 
+const navItems = [
+  { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/provider/available-jobs', label: 'Available Jobs', icon: Briefcase },
+  { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
+  { href: '/provider/chats', label: 'Messages', icon: MessageCircle }, // Added Messages with correct icon
+  { href: '/provider/dashboard', label: 'Earnings', icon: DollarSign },
+  { href: '/provider/profile', label: 'Profile', icon: User },
+];
 export default function ProviderLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -336,13 +344,15 @@ export default function ProviderLayout({ children }) {
     </div>
   );
 
-  const navItems = [
-    { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
-    { href: '/provider/available-jobs', label: 'Available Jobs', icon: Briefcase },
-    { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
-    { href: '/provider/earnings', label: 'Earnings', icon: DollarSign },
-    { href: '/provider/profile', label: 'Profile', icon: User },
-  ];
+
+const navItems = [
+  { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/provider/available-jobs', label: 'Available Jobs', icon: Briefcase },
+  { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
+  { href: '/provider/chats', label: 'Messages', icon: MessageCircle }, // Added Messages with correct icon
+  { href: '/provider/earnings', label: 'Earnings', icon: DollarSign },
+  { href: '/provider/profile', label: 'Profile', icon: User },
+];
 
   const handleLogout = async () => {
     await fetch('/api/provider/logout', { method: 'POST' });
