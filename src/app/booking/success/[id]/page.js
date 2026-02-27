@@ -187,7 +187,7 @@ export default function BookingSuccessPage({ params }) {
                               ⏱️ Overtime Rate
                             </p>
                             <p className="text-xs text-blue-700 mt-1">
-                              If the job takes longer than estimated, you'll be charged <span className="font-bold">${hourlyRate.toFixed(2)}/hour</span> for extra time. You'll approve any additional hours before they're worked.
+                              If the job takes longer than estimated, you&apos;ll be charged <span className="font-bold">${hourlyRate.toFixed(2)}/hour</span> for extra time. You&apos;ll approve any additional hours before they&apos;re worked.
                             </p>
                           </div>
                         </div>

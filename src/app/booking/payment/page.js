@@ -19,7 +19,7 @@ function PaymentForm({ bookingData, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!stripe || !elements) return;
 
     setProcessing(true);
@@ -53,7 +53,7 @@ function PaymentForm({ bookingData, onSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <PaymentElement />
-      
+
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
@@ -83,7 +83,7 @@ export default function PaymentPage() {
 
   useEffect(() => {
     const booking = sessionStorage.getItem('lastBooking');
-    
+
     if (booking) {
       const parsed = JSON.parse(booking);
       setBookingData(parsed);
@@ -91,7 +91,7 @@ export default function PaymentPage() {
     } else {
       router.push('/services');
     }
-    
+
     setLoading(false);
   }, [router]);
 
@@ -167,21 +167,21 @@ export default function PaymentPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Date:</span>
                     <span className="font-medium">
-                      {new Date(bookingData.job_date).toLocaleDateString('en-US', { 
-                        month: 'long', 
-                        day: 'numeric', 
-                        year: 'numeric' 
+                      {new Date(bookingData.job_date).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
                       })}
                     </span>
                   </div>
-                  
+
                   {/* Price breakdown - UPDATED */}
                   <div className="pt-2 border-t border-gray-200">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Base price:</span>
                       <span className="font-bold text-gray-900">${basePrice.toFixed(2)}</span>
                     </div>
-                    
+
                     {hourlyRate > 0 && (
                       <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex items-start gap-2">
@@ -193,13 +193,13 @@ export default function PaymentPage() {
                               ⏱️ Additional time may be required
                             </p>
                             <p className="text-xs text-blue-700 mt-1">
-                              If the job takes longer than estimated, you'll be charged <span className="font-bold">${hourlyRate.toFixed(2)}/hour</span> for extra time. You'll approve any additional hours before they're worked.
+                              If the job takes longer than estimated, you&apos;ll be charged <span className="font-bold">${hourlyRate.toFixed(2)}/hour</span> for extra time. You&apos;ll approve any additional hours before they&apos;re worked.
                             </p>
                           </div>
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex justify-between pt-3 mt-3 border-t border-gray-300">
                       <span className="font-bold text-gray-900">Amount to pay now:</span>
                       <span className="font-bold text-green-700 text-xl">
@@ -215,7 +215,7 @@ export default function PaymentPage() {
                           <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
                         <span>
-                          <strong>Note:</strong> You're only paying the base price of ${basePrice.toFixed(2)} now. If additional hours are needed, you'll be notified and can approve them before any extra charges apply.
+                          <strong>Note:</strong> You&apos;re only paying the base price of ${basePrice.toFixed(2)} now. If additional hours are needed, you&apos;ll be notified and can approve them before any extra charges apply.
                         </span>
                       </p>
                     </div>
@@ -226,8 +226,8 @@ export default function PaymentPage() {
               {/* Payment form */}
               {clientSecret ? (
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <PaymentForm 
-                    bookingData={bookingData} 
+                  <PaymentForm
+                    bookingData={bookingData}
                     onSuccess={handlePaymentSuccess}
                   />
                 </Elements>
