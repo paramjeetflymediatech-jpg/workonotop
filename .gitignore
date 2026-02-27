@@ -14,6 +14,7 @@
 /build
 /database/schema.js
 
+/public/uploads
 # misc
 .DS_Store
 *.pem
