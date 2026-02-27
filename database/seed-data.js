@@ -90,7 +90,7 @@ async function seedData() {
         'Deck Repair,New Deck Build,Fence Repair,New Fence Build,Deck & Fence Extensions,Post Replacement,Board Replacement,And much more!', 0, 0, 0, 1],
 
       // Category: Cleaning
-      [categoryIds['Cleaning'], 'Appliance Install', 'Appliance-Install',
+      [categoryIds['Cleaning'], 'Appliance Setup', 'appliance-setup-pro',
         'Appliance Install in Calgary',
         'Appliance Install', 180.00, 90.00, 120,
         'https://d1yejvhi932hco.cloudfront.net/production/service/images/34/und_image_328/57e5cfb2-5d12-481b-97de-c826e6b53e65.png',
@@ -144,15 +144,15 @@ async function seedData() {
     console.log(`\n✓ Inserted ${serviceCount} services\n`);
 
     // Verify counts
-    const [categoriesResult] = await execute('SELECT COUNT(*) as count FROM service_categories');
-    const [servicesResult] = await execute('SELECT COUNT(*) as count FROM services');
+    const categoriesResult = await execute('SELECT COUNT(*) as count FROM service_categories');
+    const servicesResult = await execute('SELECT COUNT(*) as count FROM services');
 
     console.log('✅ Seeding completed successfully!');
     console.log(`📊 Categories: ${categoriesResult[0].count}`);
     console.log(`📊 Services: ${servicesResult[0].count}`);
 
     // Show sample data
-    const [sampleCategories] = await execute('SELECT id, name FROM service_categories LIMIT 3');
+    const sampleCategories = await execute('SELECT id, name FROM service_categories LIMIT 3');
     console.log('\n📋 Sample categories:');
     sampleCategories.forEach(c => console.log(`   ${c.id}: ${c.name}`));
 
