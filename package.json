@@ -29,7 +29,9 @@
     "preinstall": "^0.0.1-security",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "stripe": "^20.4.0"
+    "react-hot-toast": "^2.6.0",
+    "stripe": "^20.4.0",
+    "toast": "^0.5.4"
   },
   "optionalDependencies": {
     "puppeteer": "^24.37.5"
