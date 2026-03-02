@@ -151,7 +151,7 @@ export async function POST(request) {
     const filename = `${providerId}-${documentType}-${timestamp}${ext}`
     
     // Ensure upload directory exists
-    const uploadDir = path.join(process.cwd(), 'public/uploads/providers')
+    const uploadDir = path.join(process.cwd(), 'public/uploads')
     await mkdir(uploadDir, { recursive: true })
 
     // Save file
@@ -159,7 +159,7 @@ export async function POST(request) {
     await writeFile(filepath, buffer)
     
     // Public URL
-    const publicUrl = `/uploads/providers/${filename}`
+    const publicUrl = `/uploads/${filename}`
 
     // Store in documents table with correct column name 'document_url'
     await execute(

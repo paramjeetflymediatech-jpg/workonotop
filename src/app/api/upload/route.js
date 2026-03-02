@@ -35,7 +35,7 @@ export async function POST(request) {
     const buffer = Buffer.from(bytes);
     
     // Create uploads directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), 'public/uploads/bookings');
+    const uploadDir = path.join(process.cwd(), 'public/uploads');
     await mkdir(uploadDir, { recursive: true });
     
     // Generate unique filename
@@ -48,7 +48,7 @@ export async function POST(request) {
     await writeFile(filepath, buffer);
     
     // Return the public URL
-    const imageUrl = `/uploads/bookings/${filename}`;
+    const imageUrl = `/uploads/${filename}`;
     
     return NextResponse.json({
       success: true,
