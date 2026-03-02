@@ -1,277 +1,85 @@
-
-
-
-
-
-
-
-
-
-// 'use client';
-
-// import { useEffect, useState } from 'react';
-// import { useRouter, usePathname } from 'next/navigation';
-// import Link from 'next/link';
-// import { Home, Briefcase, DollarSign, User, LogOut, Menu, X, ChevronRight } from 'lucide-react';
-
-// export default function ProviderLayout({ children }) {
-//   const router = useRouter();
-//   const pathname = usePathname();
-//   const [loading, setLoading] = useState(true);
-//   const [provider, setProvider] = useState(null);
-//   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-//   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-//   const publicPaths = [
-//     '/provider/login', '/provider/signup', '/provider/verify-email',
-//     '/provider/verify-email-pending', '/provider/onboarding', '/provider/pending',
-//     '/provider/rejected'
-//   ];
-
-//   useEffect(() => { checkAuth(); }, [pathname]);
-
-//   const checkAuth = async () => {
-//     try {
-//       if (publicPaths.includes(pathname)) { setLoading(false); return; }
-//       const res = await fetch('/api/provider/me');
-//       const data = await res.json();
-//       if (!data.success || !data.provider) { router.push('/provider/login'); return; }
-//       if (data.provider.status === 'rejected') { router.push('/provider/rejected'); return; }
-//       if (!data.provider.email_verified) { router.push('/provider/verify-email-pending'); return; }
-//       if (data.provider.onboarding_completed === 0) { router.push('/provider/onboarding'); return; }
-//       if (data.provider.onboarding_completed === 1 && data.provider.status !== 'active') {
-//         if (pathname !== '/provider/pending') { router.push('/provider/pending'); return; }
-//       }
-//       if (data.provider.status === 'active' && data.provider.onboarding_completed) {
-//         if (pathname !== '/provider/dashboard') { router.push('/provider/dashboard'); return; }
-//       }
-//       setProvider(data.provider);
-//     } catch (error) {
-//       if (!publicPaths.includes(pathname)) router.push('/provider/login');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   if (loading) return (
-//     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-//       <div className="flex flex-col items-center gap-3">
-//         <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
-//         <span className="text-sm text-gray-500 font-medium">Loading...</span>
-//       </div>
-//     </div>
-//   );
-
-//   if (publicPaths.includes(pathname)) return children;
-//   if (!provider) return (
-//     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-//       <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
-//     </div>
-//   );
-
-//   const navItems = [
-//     { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
-//     { href: '/provider/jobs', label: 'Jobs', icon: Briefcase },
-//     { href: '/provider/earnings', label: 'Earnings', icon: DollarSign },
-//     { href: '/provider/profile', label: 'Profile', icon: User },
-//   ];
-
-//   const handleLogout = async () => {
-//     await fetch('/api/provider/logout', { method: 'POST' });
-//     router.push('/provider/login');
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gray-50 flex">
-//       {/* Sidebar - Desktop */}
-//       <aside className={`hidden lg:flex flex-col fixed top-0 left-0 h-full bg-white border-r border-gray-100 shadow-sm z-40 transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
-//         {/* Logo */}
-//         <div className={`flex items-center h-16 border-b border-gray-100 px-4 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
-//           {!sidebarCollapsed && (
-//             <Link href="/provider/dashboard" className="text-xl font-bold text-green-700 tracking-tight">
-//               WorkOnTap
-//             </Link>
-//           )}
-//           <button
-//             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-//             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
-//           >
-//             <ChevronRight className={`h-4 w-4 transition-transform duration-300 ${sidebarCollapsed ? '' : 'rotate-180'}`} />
-//           </button>
-//         </div>
-
-//         {/* Nav */}
-//         <nav className="flex-1 py-4 px-2 space-y-1">
-//           {navItems.map((item) => {
-//             const Icon = item.icon;
-//             const isActive = pathname === item.href;
-//             return (
-//               <Link
-//                 key={item.href}
-//                 href={item.href}
-//                 title={sidebarCollapsed ? item.label : ''}
-//                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
-//                   isActive
-//                     ? 'bg-green-50 text-green-700'
-//                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-//                 }`}
-//               >
-//                 <Icon className={`h-4.5 w-4.5 flex-shrink-0 ${isActive ? 'text-green-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
-//                 {!sidebarCollapsed && <span>{item.label}</span>}
-//                 {isActive && !sidebarCollapsed && (
-//                   <span className="ml-auto w-1.5 h-1.5 rounded-full bg-green-500" />
-//                 )}
-//               </Link>
-//             );
-//           })}
-//         </nav>
-
-//         {/* User footer */}
-//         <div className={`border-t border-gray-100 p-3 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
-//           {!sidebarCollapsed && (
-//             <div className="flex items-center gap-3 mb-2 px-2">
-//               <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-//                 <span className="text-green-700 text-sm font-semibold">{provider?.name?.[0]?.toUpperCase()}</span>
-//               </div>
-//               <div className="flex-1 min-w-0">
-//                 <p className="text-sm font-medium text-gray-800 truncate">{provider?.name}</p>
-//                 <p className="text-xs text-gray-400 truncate">{provider?.email}</p>
-//               </div>
-//             </div>
-//           )}
-//           <button
-//             onClick={handleLogout}
-//             title={sidebarCollapsed ? 'Logout' : ''}
-//             className={`flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition w-full ${sidebarCollapsed ? 'justify-center' : ''}`}
-//           >
-//             <LogOut className="h-4 w-4 flex-shrink-0" />
-//             {!sidebarCollapsed && <span>Logout</span>}
-//           </button>
-//         </div>
-//       </aside>
-
-//       {/* Mobile overlay */}
-//       {mobileMenuOpen && (
-//         <div className="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-//       )}
-
-//       {/* Mobile Sidebar */}
-//       <aside className={`lg:hidden fixed top-0 left-0 h-full w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-//         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100">
-//           <Link href="/provider/dashboard" className="text-xl font-bold text-green-700">WorkOnTap</Link>
-//           <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100">
-//             <X className="h-5 w-5" />
-//           </button>
-//         </div>
-//         <nav className="flex-1 py-4 px-3 space-y-1">
-//           {navItems.map((item) => {
-//             const Icon = item.icon;
-//             const isActive = pathname === item.href;
-//             return (
-//               <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
-//                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${isActive ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}>
-//                 <Icon className={`h-4 w-4 ${isActive ? 'text-green-600' : 'text-gray-400'}`} />
-//                 {item.label}
-//               </Link>
-//             );
-//           })}
-//         </nav>
-//         <div className="border-t border-gray-100 p-4">
-//           <div className="flex items-center gap-3 mb-3">
-//             <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
-//               <span className="text-green-700 font-semibold">{provider?.name?.[0]?.toUpperCase()}</span>
-//             </div>
-//             <div>
-//               <p className="text-sm font-medium text-gray-800">{provider?.name}</p>
-//               <p className="text-xs text-gray-400">{provider?.email}</p>
-//             </div>
-//           </div>
-//           <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl transition w-full">
-//             <LogOut className="h-4 w-4" /> Logout
-//           </button>
-//         </div>
-//       </aside>
-
-//       {/* Main content area */}
-//       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-60'}`}>
-//         {/* Top bar - mobile only */}
-//         <header className="lg:hidden bg-white border-b border-gray-100 h-14 flex items-center px-4 sticky top-0 z-30 shadow-sm">
-//           <button onClick={() => setMobileMenuOpen(true)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100">
-//             <Menu className="h-5 w-5" />
-//           </button>
-//           <Link href="/provider/dashboard" className="ml-3 text-lg font-bold text-green-700">WorkOnTap</Link>
-//         </header>
-
-//         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-//           {children}
-//         </main>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Briefcase, DollarSign, User, LogOut, Menu, X, ChevronRight, MessageCircle } from 'lucide-react';
+import { Home, Briefcase, DollarSign, User, LogOut, Menu, X, ChevronRight, MessageCircle, AlertCircle } from 'lucide-react';
 
-const navItems = [
-  { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/provider/available-jobs', label: 'Available Jobs', icon: Briefcase },
-  { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
-  { href: '/provider/chats', label: 'Messages', icon: MessageCircle }, // Added Messages with correct icon
-  { href: '/provider/dashboard', label: 'Earnings', icon: DollarSign },
-  { href: '/provider/profile', label: 'Profile', icon: User },
-];
+const STRIPE_REQUIRED_PATHS = ['/provider/chats', '/provider/earnings'];
+
+function StripeRequiredModal({ isOpen, onClose }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="p-6 text-center">
+          <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">💳</span>
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Stripe Not Connected</h3>
+          <p className="text-sm text-gray-500 mb-1">
+            You need to connect your Stripe account to access this feature.
+          </p>
+          <p className="text-xs text-gray-400 mb-5">
+            Connect Stripe to accept jobs, receive payments, and chat with customers.
+          </p>
+          <div className="flex gap-3">
+            <button onClick={onClose}
+              className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl text-sm hover:bg-gray-50 transition">
+              Later
+            </button>
+            {/* ✅ No onClick=onClose here — let it navigate freely */}
+            <Link href="/provider/onboarding?step=3"
+              className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition text-center"
+              onClick={onClose}>
+              Connect Stripe →
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProviderLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
   const [provider, setProvider] = useState(null);
+  const [stripeConnected, setStripeConnected] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [stripeModal, setStripeModal] = useState(false);
 
   const publicPaths = [
     '/provider/login', '/provider/signup', '/provider/verify-email',
     '/provider/verify-email-pending', '/provider/onboarding', '/provider/pending',
-    '/provider/rejected','/provider/forgot-password','/provider/reset-password'
+    '/provider/rejected', '/provider/forgot-password', '/provider/reset-password'
   ];
+
+  // Compute isPublic fresh on every render based on current pathname
+  const isPublic = publicPaths.some(p => pathname.startsWith(p));
 
   useEffect(() => { checkAuth(); }, [pathname]);
 
+  // ✅ Only redirect to dashboard if on a restricted path AND not on a public path
+  useEffect(() => {
+    if (loading) return;
+    if (isPublic) return;  // ← KEY FIX: never interfere with public paths
+    if (!provider) return;
+    if (stripeConnected) return;
+
+    const isRestricted = STRIPE_REQUIRED_PATHS.some(p => pathname.startsWith(p));
+    if (isRestricted) {
+      setStripeModal(true);
+      router.replace('/provider/dashboard');
+    }
+  }, [pathname, loading, provider, stripeConnected, isPublic]);
+
   const checkAuth = async () => {
     try {
-      // Public pages — no auth needed
-      if (publicPaths.some(p => pathname.startsWith(p))) {
+      if (isPublic) {
         setLoading(false);
         return;
       }
@@ -286,46 +94,42 @@ export default function ProviderLayout({ children }) {
 
       const prov = data.provider;
 
-      // Step 1: Rejected
-      if (prov.status === 'rejected') {
-        router.push('/provider/rejected');
-        return;
-      }
-
-      // Step 2: Email not verified
-      if (!prov.email_verified) {
-        router.push('/provider/verify-email-pending');
-        return;
-      }
-
-      // Step 3: Onboarding not complete
-      if (!prov.onboarding_completed) {
-        router.push('/provider/onboarding');
-        return;
-      }
-
-      // Step 4: Onboarding done but awaiting admin approval
+      if (prov.status === 'rejected') { router.push('/provider/rejected'); return; }
+      if (!prov.email_verified) { router.push('/provider/verify-email-pending'); return; }
+      if (!prov.onboarding_completed) { router.push('/provider/onboarding'); return; }
       if (prov.onboarding_completed && prov.status !== 'active') {
-        if (pathname !== '/provider/pending') {
-          router.push('/provider/pending');
-        }
+        if (pathname !== '/provider/pending') router.push('/provider/pending');
         setLoading(false);
         return;
       }
 
-      // Step 5: Active provider — allow ALL protected pages freely ✅
-      // NO redirect here — dashboard, jobs, earnings, profile all allowed
       setProvider(prov);
+      setStripeConnected(prov.stripe_onboarding_complete || false);
 
     } catch (error) {
       console.error('Auth check error:', error);
-      if (!publicPaths.some(p => pathname.startsWith(p))) {
-        router.push('/provider/login');
-      }
+      if (!isPublic) router.push('/provider/login');
     } finally {
       setLoading(false);
     }
   };
+
+  const handleNavClick = (e, href) => {
+    if (!stripeConnected && STRIPE_REQUIRED_PATHS.some(p => href.startsWith(p))) {
+      e.preventDefault();
+      setMobileMenuOpen(false);
+      setStripeModal(true);
+    }
+  };
+
+  const navItems = [
+    { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/provider/available-jobs', label: 'Available Jobs', icon: Briefcase },
+    { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
+    { href: '/provider/chats', label: 'Messages', icon: MessageCircle, stripeRequired: true },
+    { href: '/provider/earnings', label: 'Earnings', icon: DollarSign, stripeRequired: true },
+    { href: '/provider/profile', label: 'Profile', icon: User },
+  ];
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -336,7 +140,8 @@ export default function ProviderLayout({ children }) {
     </div>
   );
 
-  if (publicPaths.some(p => pathname.startsWith(p))) return children;
+  // ✅ Public paths render immediately — no provider check, no spinner
+  if (isPublic) return children;
 
   if (!provider) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -344,23 +149,57 @@ export default function ProviderLayout({ children }) {
     </div>
   );
 
-
-const navItems = [
-  { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/provider/available-jobs', label: 'Available Jobs', icon: Briefcase },
-  { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
-  { href: '/provider/chats', label: 'Messages', icon: MessageCircle }, // Added Messages with correct icon
-  { href: '/provider/earnings', label: 'Earnings', icon: DollarSign },
-  { href: '/provider/profile', label: 'Profile', icon: User },
-];
-
   const handleLogout = async () => {
     await fetch('/api/provider/logout', { method: 'POST' });
     router.push('/provider/login');
   };
 
+  const renderNavItem = (item, isMobile = false) => {
+    const Icon = item.icon;
+    const isActive = pathname === item.href;
+    const isLocked = item.stripeRequired && !stripeConnected;
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        title={sidebarCollapsed ? item.label : ''}
+        onClick={(e) => {
+          handleNavClick(e, item.href);
+          if (isMobile && !isLocked) setMobileMenuOpen(false);
+        }}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group w-full ${
+          isActive ? 'bg-green-50 text-green-700'
+          : isLocked ? 'text-gray-400 hover:bg-amber-50 cursor-pointer'
+          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        }`}
+      >
+        <Icon className={`h-4 w-4 flex-shrink-0 ${
+          isActive ? 'text-green-600' : isLocked ? 'text-gray-300' : 'text-gray-400 group-hover:text-gray-600'
+        }`} />
+
+        {(isMobile || !sidebarCollapsed) && <span className="flex-1">{item.label}</span>}
+
+        {isLocked && !sidebarCollapsed && (
+          <span className="ml-auto text-[10px] bg-amber-100 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-full font-semibold">
+            💳
+          </span>
+        )}
+        {isActive && !sidebarCollapsed && !isLocked && !isMobile && (
+          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-green-500" />
+        )}
+      </Link>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
+
+      <StripeRequiredModal
+        isOpen={stripeModal}
+        onClose={() => setStripeModal(false)}
+      />
+
       {/* ── Desktop Sidebar ── */}
       <aside className={`hidden lg:flex flex-col fixed top-0 left-0 h-full bg-white border-r border-gray-100 shadow-sm z-40 transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
         <div className={`flex items-center h-16 border-b border-gray-100 px-4 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
@@ -373,21 +212,23 @@ const navItems = [
           </button>
         </div>
 
+        {!stripeConnected && !sidebarCollapsed && (
+          <div className="mx-2 mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+            <p className="text-xs font-semibold text-amber-700 flex items-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              Stripe not connected
+            </p>
+            <Link href="/provider/onboarding?step=3"
+              className="text-[11px] text-amber-600 underline font-medium mt-0.5 block">
+              Connect now →
+            </Link>
+          </div>
+        )}
+
         <nav className="flex-1 py-4 px-2 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link key={item.href} href={item.href} title={sidebarCollapsed ? item.label : ''}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
-                  isActive ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}>
-                <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-green-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
-                {!sidebarCollapsed && <span>{item.label}</span>}
-                {isActive && !sidebarCollapsed && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-green-500" />}
-              </Link>
-            );
-          })}
+          {navItems.map(item => (
+            <div key={item.href}>{renderNavItem(item, false)}</div>
+          ))}
         </nav>
 
         <div className={`border-t border-gray-100 p-3 ${sidebarCollapsed ? 'flex flex-col items-center gap-2' : ''}`}>
@@ -427,19 +268,25 @@ const navItems = [
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {!stripeConnected && (
+          <div className="mx-3 mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+            <p className="text-xs font-semibold text-amber-700 flex items-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              Stripe not connected
+            </p>
+            <Link href="/provider/onboarding?step=3"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-[11px] text-amber-600 underline font-medium mt-0.5 block">
+              Connect now →
+            </Link>
+          </div>
+        )}
+
         <nav className="flex-1 py-4 px-3 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${isActive ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}>
-                <Icon className={`h-4 w-4 ${isActive ? 'text-green-600' : 'text-gray-400'}`} />
-                {item.label}
-              </Link>
-            );
-          })}
+          {navItems.map(item => renderNavItem(item, true))}
         </nav>
+
         <div className="border-t border-gray-100 p-4">
           <div className="flex items-center gap-3 mb-3">
             {provider?.avatar_url ? (
@@ -467,6 +314,12 @@ const navItems = [
             <Menu className="h-5 w-5" />
           </button>
           <Link href="/provider/dashboard" className="ml-3 text-lg font-bold text-green-700">WorkOnTap</Link>
+          {!stripeConnected && (
+            <Link href="/provider/onboarding?step=3"
+              className="ml-auto flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-2.5 py-1.5 rounded-full font-semibold border border-amber-200">
+              💳 Connect Stripe
+            </Link>
+          )}
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {children}

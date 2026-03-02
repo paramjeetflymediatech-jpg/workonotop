@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { execute } from '@/lib/db';
+import { execute, withConnection } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
 
 // GET messages
@@ -15,39 +15,40 @@ export async function GET(request) {
       );
     }
 
-    // Get messages
-    const messages = await execute(
-      `SELECT * FROM chat_messages 
-       WHERE booking_id = ? 
-       ORDER BY created_at ASC`,
-      [bookingId]
-    );
+    // use a single connection for all queries involved in this request
+    return await withConnection(async (connection) => {
+      const [messages] = await connection.execute(
+        `SELECT * FROM chat_messages 
+           WHERE booking_id = ? 
+           ORDER BY created_at ASC`,
+        [bookingId]
+      );
 
-    // Get sender names
-    const messagesWithNames = [];
-    for (const msg of messages) {
-      let sender_name = '';
-      if (msg.sender_type === 'customer') {
-        const users = await execute(
-          'SELECT first_name FROM users WHERE id = ?',
-          [msg.sender_id]
-        );
-        sender_name = users[0]?.first_name || 'Customer';
-      } else {
-        const providers = await execute(
-          'SELECT name FROM service_providers WHERE id = ?',
-          [msg.sender_id]
-        );
-        sender_name = providers[0]?.name || 'Provider';
+      // Get sender names
+      const messagesWithNames = [];
+      for (const msg of messages) {
+        let sender_name = '';
+        if (msg.sender_type === 'customer') {
+          const [users] = await connection.execute(
+            'SELECT first_name FROM users WHERE id = ?',
+            [msg.sender_id]
+          );
+          sender_name = users[0]?.first_name || 'Customer';
+        } else {
+          const [providers] = await connection.execute(
+            'SELECT name FROM service_providers WHERE id = ?',
+            [msg.sender_id]
+          );
+          sender_name = providers[0]?.name || 'Provider';
+        }
+        messagesWithNames.push({ ...msg, sender_name });
       }
-      messagesWithNames.push({ ...msg, sender_name });
-    }
 
-    return NextResponse.json({
-      success: true,
-      messages: messagesWithNames
+      return NextResponse.json({
+        success: true,
+        messages: messagesWithNames
+      });
     });
-
   } catch (error) {
     console.error('Chat GET error:', error);
     return NextResponse.json(
@@ -92,54 +93,59 @@ export async function POST(request) {
     const senderType = customerToken ? 'customer' : 'provider';
     const senderId = senderType === 'customer' ? decoded.id : decoded.providerId;
 
-    // Check booking exists
-    const bookings = await execute(
-      `SELECT id, status FROM bookings WHERE id = ?`,
-      [bookingId]
-    );
-
-    if (bookings.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Booking not found' },
-        { status: 404 }
+    // perform all database work on a single connection for the whole
+    // request.  this prevents the pool from handing out multiple sockets
+    // when we could have just reused one.
+    return await withConnection(async (connection) => {
+      // Check booking exists
+      const [bookings] = await connection.execute(
+        `SELECT id, status FROM bookings WHERE id = ?`,
+        [bookingId]
       );
-    }
 
-    // Insert message
-    const result = await execute(
-      `INSERT INTO chat_messages (booking_id, sender_id, sender_type, message) 
-       VALUES (?, ?, ?, ?)`,
-      [bookingId, senderId, senderType, message]
-    );
+      if (bookings.length === 0) {
+        return NextResponse.json(
+          { success: false, message: 'Booking not found' },
+          { status: 404 }
+        );
+      }
 
-    // Get inserted message
-    const newMessages = await execute(
-      `SELECT * FROM chat_messages WHERE id = ?`,
-      [result.insertId]
-    );
-
-    const newMessage = newMessages[0];
-    
-    // Add sender name
-    let sender_name = '';
-    if (newMessage.sender_type === 'customer') {
-      const users = await execute(
-        'SELECT first_name FROM users WHERE id = ?',
-        [newMessage.sender_id]
+      // Insert message
+      const [result] = await connection.execute(
+        `INSERT INTO chat_messages (booking_id, sender_id, sender_type, message) 
+         VALUES (?, ?, ?, ?)`,
+        [bookingId, senderId, senderType, message]
       );
-      sender_name = users[0]?.first_name || 'Customer';
-    } else {
-      const providers = await execute(
-        'SELECT name FROM service_providers WHERE id = ?',
-        [newMessage.sender_id]
-      );
-      sender_name = providers[0]?.name || 'Provider';
-    }
-    newMessage.sender_name = sender_name;
 
-    return NextResponse.json({
-      success: true,
-      message: newMessage
+      // Get inserted message
+      const [newMessages] = await connection.execute(
+        `SELECT * FROM chat_messages WHERE id = ?`,
+        [result.insertId]
+      );
+
+      const newMessage = newMessages[0];
+      
+      // Add sender name
+      let sender_name = '';
+      if (newMessage.sender_type === 'customer') {
+        const [users] = await connection.execute(
+          'SELECT first_name FROM users WHERE id = ?',
+          [newMessage.sender_id]
+        );
+        sender_name = users[0]?.first_name || 'Customer';
+      } else {
+        const [providers] = await connection.execute(
+          'SELECT name FROM service_providers WHERE id = ?',
+          [newMessage.sender_id]
+        );
+        sender_name = providers[0]?.name || 'Provider';
+      }
+      newMessage.sender_name = sender_name;
+
+      return NextResponse.json({
+        success: true,
+        message: newMessage
+      });
     });
 
   } catch (error) {

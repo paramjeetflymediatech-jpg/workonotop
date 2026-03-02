@@ -1,11 +1,8 @@
-
-
-
-
-
-
 // import { NextResponse } from 'next/server'
-// import { execute, getConnection } from '@/lib/db'
+// import { execute, getConnection, withConnection } from '@/lib/db'
+// import Stripe from 'stripe'
+
+// const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null
 
 // function calcProviderAmount(servicePrice, commissionPct) {
 //   if (commissionPct == null || commissionPct === '') return parseFloat(servicePrice)
@@ -18,41 +15,59 @@
 // export async function GET(request) {
 //   try {
 //     const { searchParams } = new URL(request.url)
-//     const email  = searchParams.get('email')
+//     const email = searchParams.get('email')
 //     const status = searchParams.get('status')
-//     const limit  = parseInt(searchParams.get('limit') || '50')
+//     const limit = parseInt(searchParams.get('limit') || '50')
 
-//     let sql = `
-//       SELECT b.*, s.name as service_name, s.slug as service_slug,
-//         s.image_url as service_image, s.duration_minutes as service_duration,
-//         c.name as category_name, sp.name as provider_name
-//       FROM bookings b
-//       LEFT JOIN services s ON b.service_id = s.id
-//       LEFT JOIN service_categories c ON s.category_id = c.id
-//       LEFT JOIN service_providers sp ON b.provider_id = sp.id
-//       WHERE 1=1
-//     `
-//     const params = []
-//     if (email)  { sql += ' AND b.customer_email = ?'; params.push(email) }
-//     if (status) { sql += ' AND b.status = ?'; params.push(status) }
-//     sql += ` ORDER BY b.created_at DESC LIMIT ${limit}`
+//     // run all database activity on a single connection to avoid
+//     // concurrent grabs when multiple statements fire at once
+//     return await withConnection(async (connection) => {
+//       let sql = `
+//         SELECT b.*, s.name as service_name, s.slug as service_slug,
+//           s.image_url as service_image, s.duration_minutes as service_duration,
+//           c.name as category_name, sp.name as provider_name
+//         FROM bookings b
+//         LEFT JOIN services s ON b.service_id = s.id
+//         LEFT JOIN service_categories c ON s.category_id = c.id
+//         LEFT JOIN service_providers sp ON b.provider_id = sp.id
+//         WHERE 1=1
+//       `
+//       const params = []
+//       if (email) { sql += ' AND b.customer_email = ?'; params.push(email) }
+//       if (status) { sql += ' AND b.status = ?'; params.push(status) }
+//       sql += ` ORDER BY b.created_at DESC LIMIT ${limit}`
 
-//     const bookings = await execute(sql, params)
+//       const [bookings] = await connection.execute(sql, params)
 
-//     // ✅ Single query for all photos
-//     let photosByBooking = {}
-//     if (bookings.length > 0) {
-//       const bookingIds = bookings.map(b => b.id)
-//       const placeholders = bookingIds.map(() => '?').join(',')
-//       const allPhotos = await execute(
-//         `SELECT booking_id, photo_url FROM booking_photos WHERE booking_id IN (${placeholders})`,
-//         bookingIds
-//       )
-//       allPhotos.forEach(p => {
-//         if (!photosByBooking[p.booking_id]) photosByBooking[p.booking_id] = []
-//         photosByBooking[p.booking_id].push(p.photo_url)
-//       })
-//     }
+//       // Get photos for all bookings
+//       let photosByBooking = {}
+//       if (bookings.length > 0) {
+//         const bookingIds = bookings.map(b => b.id)
+//         const placeholders = bookingIds.map(() => '?').join(',')
+//         const [allPhotos] = await connection.execute(
+//           `SELECT booking_id, photo_url FROM booking_photos WHERE booking_id IN (${placeholders})`,
+//           bookingIds
+//         )
+//         allPhotos.forEach(p => {
+//           if (!photosByBooking[p.booking_id]) photosByBooking[p.booking_id] = []
+//           photosByBooking[p.booking_id].push(p.photo_url)
+//         })
+//       }
+
+//       for (const booking of bookings) {
+//         if (booking.job_time_slot) booking.job_time_slot = booking.job_time_slot.split(',')
+//         booking.photos = photosByBooking[booking.id] || []
+//         booking.service_price = parseFloat(booking.service_price || 0)
+//         booking.additional_price = parseFloat(booking.additional_price || 0)
+//         booking.provider_amount = parseFloat(booking.provider_amount || 0)
+//         booking.overtime_earnings = parseFloat(booking.overtime_earnings || 0)
+//         booking.final_provider_amount = booking.final_provider_amount ? parseFloat(booking.final_provider_amount) : null
+//         booking.commission_percent = booking.commission_percent ? parseFloat(booking.commission_percent) : null
+//         booking.duration_minutes = booking.service_duration || 60
+//       }
+
+//       return NextResponse.json({ success: true, data: bookings })
+//     })
 
 //     for (const booking of bookings) {
 //       if (booking.job_time_slot) booking.job_time_slot = booking.job_time_slot.split(',')
@@ -91,13 +106,16 @@
 //     }
 
 //     const timeSlotString = (Array.isArray(job_time_slot) ? job_time_slot : [job_time_slot]).join(',')
-//     const bookingNumber  = 'BK' + Date.now() + Math.floor(Math.random() * 1000)
-//     const initialTotal   = parseFloat(service_price)
+//     const bookingNumber = 'BK' + Date.now() + Math.floor(Math.random() * 1000)
+    
+//     // ✅ FIX: Sirf base price for initial payment
+//     const totalAmount = parseFloat(service_price) // additional_price ko ADD mat karo
 
 //     connection = await getConnection()
 //     await connection.query('START TRANSACTION')
 
 //     try {
+//       // Insert booking with payment_status = 'pending'
 //       const [result] = await connection.execute(
 //         `INSERT INTO bookings
 //          (booking_number, user_id, service_id, service_name, service_price, additional_price,
@@ -105,22 +123,23 @@
 //           job_date, job_time_slot, timing_constraints, job_description, instructions,
 //           parking_access, elevator_access, has_pets,
 //           address_line1, address_line2, city, postal_code,
-//           commission_percent, provider_amount, status, job_timer_status)
-//          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,?,'pending','not_started')`,
+//           commission_percent, provider_amount, status, job_timer_status, payment_status)
+//          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,?,'pending','not_started', 'pending')`,
 //         [
 //           bookingNumber, user_id || null, service_id, service_name || null,
-//           service_price, additional_price || 0,
+//           service_price, additional_price || 0, // ✅ additional_price store hota rahega future use ke liye
 //           first_name, last_name, email, phone,
 //           job_date, timeSlotString, timing_constraints || null,
 //           job_description || null, instructions || null,
 //           parking_access ? 1 : 0, elevator_access ? 1 : 0, has_pets ? 1 : 0,
 //           address_line1, address_line2 || null, city, postal_code || null,
-//           initialTotal
+//           totalAmount // ✅ Yeh sirf base price hai
 //         ]
 //       )
 
 //       const bookingId = result.insertId
 
+//       // Save photos
 //       if (photos.length > 0) {
 //         for (const photo of photos) {
 //           await connection.execute(
@@ -130,13 +149,55 @@
 //         }
 //       }
 
+//       // ✅ Create Stripe Payment Intent (HOLD FUNDS) - Sirf base price ka
+//       let clientSecret = null
+//       let paymentIntentId = null
+
+//       if (totalAmount > 0 && stripe) {
+//         try {
+//           const paymentIntent = await stripe.paymentIntents.create({
+//             amount: Math.round(totalAmount * 100), // Sirf base price in cents
+//             currency: 'gbp',
+//             metadata: {
+//               booking_id: bookingId,
+//               booking_number: bookingNumber,
+//               customer_email: email,
+//               customer_name: `${first_name} ${last_name}`,
+//               overtime_rate: additional_price || '0' // Store for reference
+//             },
+//             description: `WorkOnTap: ${service_name || 'Service'} - #${bookingNumber}`,
+//             capture_method: 'manual',
+//             automatic_payment_methods: {
+//               enabled: true,
+//             },
+//           })
+
+//           clientSecret = paymentIntent.client_secret
+//           paymentIntentId = paymentIntent.id
+
+//           await connection.execute(
+//             `UPDATE bookings SET payment_intent_id = ? WHERE id = ?`,
+//             [paymentIntentId, bookingId]
+//           )
+//         } catch (stripeError) {
+//           console.error('Stripe error:', stripeError)
+//         }
+//       }
+
 //       await connection.execute(
 //         `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'pending', 'Booking created')`,
 //         [bookingId]
 //       )
 
 //       await connection.query('COMMIT')
-//       return NextResponse.json({ success: true, booking_id: bookingId, booking_number: bookingNumber })
+
+//       return NextResponse.json({
+//         success: true,
+//         booking_id: bookingId,
+//         booking_number: bookingNumber,
+//         client_secret: clientSecret,
+//         overtime_rate: additional_price // Send to frontend for display
+//       })
 //     } catch (err) {
 //       await connection.query('ROLLBACK')
 //       throw err
@@ -153,9 +214,9 @@
 //   let connection
 //   try {
 //     const { searchParams } = new URL(request.url)
-//     const id   = searchParams.get('id')
+//     const id = searchParams.get('id')
 //     const body = await request.json()
-//     const { status, provider_id, notes, job_time_slot, commission_percent } = body
+//     const { status, provider_id, notes, job_time_slot, commission_percent, payment_status } = body
 
 //     if (!id) return NextResponse.json({ success: false, message: 'Booking ID required' }, { status: 400 })
 
@@ -192,6 +253,10 @@
 //         updateFields.push('job_time_slot = ?')
 //         updateParams.push(slots.join(','))
 //       }
+//       if (payment_status) {
+//         updateFields.push('payment_status = ?')
+//         updateParams.push(payment_status)
+//       }
 
 //       if (updateFields.length === 0) {
 //         await connection.query('ROLLBACK')
@@ -212,7 +277,7 @@
 //       }
 //       if (provider_id && !status) {
 //         await connection.execute(
-//           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'matching', 'Provider assigned by admin')`,
+//           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'matching', 'Provider assigned')`,
 //           [id]
 //         )
 //       }
@@ -222,7 +287,7 @@
 //         await connection.execute(
 //           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, ?, ?)`,
 //           [id, status || 'pending',
-//            `Commission set to ${commission_percent}% on base price ($${parseFloat(current.service_price).toFixed(2)}). Admin keeps: $${commissionAmount.toFixed(2)}, Provider gets: $${providerAmt.toFixed(2)}`]
+//             `Commission set to ${commission_percent}% (Admin: $${commissionAmount.toFixed(2)}, Provider: $${providerAmt.toFixed(2)})`]
 //         )
 //       }
 
@@ -279,9 +344,9 @@
 
 
 
-// app/api/bookings/route.js - COMPLETE FIXED VERSION
+
 import { NextResponse } from 'next/server'
-import { execute, getConnection } from '@/lib/db'
+import { execute, getConnection, withConnection } from '@/lib/db'
 import Stripe from 'stripe'
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null
@@ -301,57 +366,57 @@ export async function GET(request) {
     const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    let sql = `
-      SELECT b.*, s.name as service_name, s.slug as service_slug,
-        s.image_url as service_image, s.duration_minutes as service_duration,
-        c.name as category_name, sp.name as provider_name
-      FROM bookings b
-      LEFT JOIN services s ON b.service_id = s.id
-      LEFT JOIN service_categories c ON s.category_id = c.id
-      LEFT JOIN service_providers sp ON b.provider_id = sp.id
-      WHERE 1=1
-    `
-    const params = []
-    if (email) { sql += ' AND b.customer_email = ?'; params.push(email) }
-    if (status) { sql += ' AND b.status = ?'; params.push(status) }
-    sql += ` ORDER BY b.created_at DESC LIMIT ${limit}`
+    return await withConnection(async (connection) => {
+      let sql = `
+        SELECT b.*, s.name as service_name, s.slug as service_slug,
+          s.image_url as service_image, s.duration_minutes as service_duration,
+          c.name as category_name, sp.name as provider_name
+        FROM bookings b
+        LEFT JOIN services s ON b.service_id = s.id
+        LEFT JOIN service_categories c ON s.category_id = c.id
+        LEFT JOIN service_providers sp ON b.provider_id = sp.id
+        WHERE 1=1
+      `
+      const params = []
+      if (email) { sql += ' AND b.customer_email = ?'; params.push(email) }
+      if (status) { sql += ' AND b.status = ?'; params.push(status) }
+      sql += ` ORDER BY b.created_at DESC LIMIT ${limit}`
 
-    const bookings = await execute(sql, params)
+      const [bookings] = await connection.execute(sql, params)
 
-    // Get photos for all bookings
-    let photosByBooking = {}
-    if (bookings.length > 0) {
-      const bookingIds = bookings.map(b => b.id)
-      const placeholders = bookingIds.map(() => '?').join(',')
-      const allPhotos = await execute(
-        `SELECT booking_id, photo_url FROM booking_photos WHERE booking_id IN (${placeholders})`,
-        bookingIds
-      )
-      allPhotos.forEach(p => {
-        if (!photosByBooking[p.booking_id]) photosByBooking[p.booking_id] = []
-        photosByBooking[p.booking_id].push(p.photo_url)
-      })
-    }
+      let photosByBooking = {}
+      if (bookings.length > 0) {
+        const bookingIds = bookings.map(b => b.id)
+        const placeholders = bookingIds.map(() => '?').join(',')
+        const [allPhotos] = await connection.execute(
+          `SELECT booking_id, photo_url FROM booking_photos WHERE booking_id IN (${placeholders})`,
+          bookingIds
+        )
+        allPhotos.forEach(p => {
+          if (!photosByBooking[p.booking_id]) photosByBooking[p.booking_id] = []
+          photosByBooking[p.booking_id].push(p.photo_url)
+        })
+      }
 
-    for (const booking of bookings) {
-      if (booking.job_time_slot) booking.job_time_slot = booking.job_time_slot.split(',')
-      booking.photos = photosByBooking[booking.id] || []
-      booking.service_price = parseFloat(booking.service_price || 0)
-      booking.additional_price = parseFloat(booking.additional_price || 0)
-      booking.provider_amount = parseFloat(booking.provider_amount || 0)
-      booking.overtime_earnings = parseFloat(booking.overtime_earnings || 0)
-      booking.final_provider_amount = booking.final_provider_amount ? parseFloat(booking.final_provider_amount) : null
-      booking.commission_percent = booking.commission_percent ? parseFloat(booking.commission_percent) : null
-      booking.duration_minutes = booking.service_duration || 60
-    }
+      for (const booking of bookings) {
+        if (booking.job_time_slot) booking.job_time_slot = booking.job_time_slot.split(',')
+        booking.photos = photosByBooking[booking.id] || []
+        booking.service_price = parseFloat(booking.service_price || 0)
+        booking.additional_price = parseFloat(booking.additional_price || 0)
+        booking.provider_amount = parseFloat(booking.provider_amount || 0)
+        booking.overtime_earnings = parseFloat(booking.overtime_earnings || 0)
+        booking.final_provider_amount = booking.final_provider_amount ? parseFloat(booking.final_provider_amount) : null
+        booking.commission_percent = booking.commission_percent ? parseFloat(booking.commission_percent) : null
+        booking.duration_minutes = booking.service_duration || 60
+      }
 
-    return NextResponse.json({ success: true, data: bookings })
+      return NextResponse.json({ success: true, data: bookings })
+    })
   } catch (error) {
     console.error('Error fetching bookings:', error)
     return NextResponse.json({ success: false, message: 'Failed to fetch bookings' }, { status: 500 })
   }
 }
-
 export async function POST(request) {
   let connection
   try {
@@ -371,7 +436,17 @@ export async function POST(request) {
 
     const timeSlotString = (Array.isArray(job_time_slot) ? job_time_slot : [job_time_slot]).join(',')
     const bookingNumber = 'BK' + Date.now() + Math.floor(Math.random() * 1000)
-    const totalAmount = parseFloat(service_price) + parseFloat(additional_price || 0)
+    
+    // Get service duration from database
+    const [serviceInfo] = await execute('SELECT duration_minutes FROM services WHERE id = ?', [service_id])
+    const standardDuration = serviceInfo?.duration_minutes || 60
+    
+    // Calculate amounts
+    const basePrice = parseFloat(service_price)
+    const overtimeRate = parseFloat(additional_price || 0)
+    const maxOvertimeHours = 2 // Max 2 hours overtime
+    const maxOvertimeCost = overtimeRate * maxOvertimeHours
+    const totalAuthorizedAmount = basePrice + maxOvertimeCost
 
     connection = await getConnection()
     await connection.query('START TRANSACTION')
@@ -385,8 +460,8 @@ export async function POST(request) {
           job_date, job_time_slot, timing_constraints, job_description, instructions,
           parking_access, elevator_access, has_pets,
           address_line1, address_line2, city, postal_code,
-          commission_percent, provider_amount, status, job_timer_status, payment_status)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,?,'pending','not_started', 'pending')`,
+          commission_percent, provider_amount, status, job_timer_status, payment_status, standard_duration_minutes)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,?,'pending','not_started', 'pending', ?)`,
         [
           bookingNumber, user_id || null, service_id, service_name || null,
           service_price, additional_price || 0,
@@ -395,7 +470,8 @@ export async function POST(request) {
           job_description || null, instructions || null,
           parking_access ? 1 : 0, elevator_access ? 1 : 0, has_pets ? 1 : 0,
           address_line1, address_line2 || null, city, postal_code || null,
-          totalAmount
+          basePrice,
+          standardDuration
         ]
       )
 
@@ -411,23 +487,26 @@ export async function POST(request) {
         }
       }
 
-      // ✅ Create Stripe Payment Intent (HOLD FUNDS)
+      // Create Stripe Payment Intent - HOLD base + max overtime
       let clientSecret = null
       let paymentIntentId = null
 
-      if (totalAmount > 0 && stripe) {
+      if (totalAuthorizedAmount > 0 && stripe) {
         try {
           const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(totalAmount * 100), // Convert to cents
+            amount: Math.round(totalAuthorizedAmount * 100), // Hold base + max overtime
             currency: 'gbp',
             metadata: {
               booking_id: bookingId,
               booking_number: bookingNumber,
               customer_email: email,
-              customer_name: `${first_name} ${last_name}`
+              customer_name: `${first_name} ${last_name}`,
+              base_price: basePrice.toString(),
+              overtime_rate: overtimeRate.toString(),
+              max_overtime_hours: maxOvertimeHours.toString(),
+              standard_duration: standardDuration.toString()
             },
             description: `WorkOnTap: ${service_name || 'Service'} - #${bookingNumber}`,
-            // This holds funds but doesn't capture them
             capture_method: 'manual',
             automatic_payment_methods: {
               enabled: true,
@@ -437,18 +516,19 @@ export async function POST(request) {
           clientSecret = paymentIntent.client_secret
           paymentIntentId = paymentIntent.id
 
-          // Update booking with payment intent ID
+          // Store authorized amount in database
           await connection.execute(
-            `UPDATE bookings SET payment_intent_id = ? WHERE id = ?`,
-            [paymentIntentId, bookingId]
+            `UPDATE bookings SET 
+               payment_intent_id = ?,
+               authorized_amount = ?
+             WHERE id = ?`,
+            [paymentIntentId, totalAuthorizedAmount, bookingId]
           )
         } catch (stripeError) {
           console.error('Stripe error:', stripeError)
-          // Don't fail the booking if Stripe fails - continue without payment
         }
       }
 
-      // Add status history
       await connection.execute(
         `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'pending', 'Booking created')`,
         [bookingId]
@@ -460,7 +540,11 @@ export async function POST(request) {
         success: true,
         booking_id: bookingId,
         booking_number: bookingNumber,
-        client_secret: clientSecret // Send to frontend for payment
+        client_secret: clientSecret,
+        overtime_rate: additional_price,
+        standard_duration: standardDuration,
+        authorized_amount: totalAuthorizedAmount,
+        message: `✅ Your card is authorized for $${totalAuthorizedAmount} (includes up to ${maxOvertimeHours}hr overtime)`
       })
     } catch (err) {
       await connection.query('ROLLBACK')
@@ -581,3 +665,28 @@ export async function DELETE(request) {
     return NextResponse.json({ success: false, message: 'Failed to delete booking' }, { status: 500 })
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

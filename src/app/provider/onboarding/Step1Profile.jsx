@@ -1,3 +1,8 @@
+
+
+
+
+
 // 'use client';
 
 // import { useState } from 'react';
@@ -18,7 +23,7 @@
 //     bio: initialData.bio || '',
 //     specialty: initialData.specialty || '',
 //     experience_years: initialData.experience_years || '',
-//     city: initialData.city || 'Calgary',
+//     city: initialData.city || '', // 👈 Empty by default, user type karega
 //     location: initialData.location || '',
 //     service_areas: initialData.service_areas || [],
 //     skills: initialData.skills || []
@@ -53,6 +58,7 @@
 //     if (formData.experience_years < 0 || formData.experience_years > 50) {
 //       newErrors.experience_years = 'Please enter valid experience';
 //     }
+//     if (!formData.city.trim()) newErrors.city = 'City is required'; // 👈 Validation add ki
 //     if (!formData.location.trim()) newErrors.location = 'Address is required';
 //     if (formData.service_areas.length === 0) {
 //       newErrors.service_areas = 'Select at least one service area';
@@ -149,7 +155,7 @@
 //         </div>
 //       </div>
 
-//       {/* Location */}
+//       {/* Location (Address) */}
 //       <div>
 //         <label className="block text-sm font-medium text-gray-700 mb-1">
 //           Business Address <span className="text-red-500">*</span>
@@ -166,23 +172,24 @@
 //         {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
 //       </div>
 
-//       {/* City */}
+//       {/* 🔴 FIX: City - Manually type karega, dropdown nahi */}
 //       <div>
 //         <label className="block text-sm font-medium text-gray-700 mb-1">
-//           City
+//           City <span className="text-red-500">*</span>
 //         </label>
-//         <select
+//         <input
+//           type="text"
 //           name="city"
 //           value={formData.city}
 //           onChange={handleChange}
-//           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-//         >
-//           <option value="Calgary">Calgary</option>
-//           <option value="Airdrie">Airdrie</option>
-//           <option value="Chestermere">Chestermere</option>
-//           <option value="Cochrane">Cochrane</option>
-//           <option value="Okotoks">Okotoks</option>
-//         </select>
+//           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500
+//             ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
+//           placeholder="Enter your city (e.g., Calgary, Airdrie)"
+//         />
+//         {errors.city && <p className="mt-1 text-sm text-red-500">{errors.city}</p>}
+//         <p className="mt-1 text-xs text-gray-500">
+//           Enter the city where your business is located
+//         </p>
 //       </div>
 
 //       {/* Service Areas */}
@@ -258,6 +265,10 @@
 
 
 
+
+
+
+
 'use client';
 
 import { useState } from 'react';
@@ -278,7 +289,7 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
     bio: initialData.bio || '',
     specialty: initialData.specialty || '',
     experience_years: initialData.experience_years || '',
-    city: initialData.city || '', // 👈 Empty by default, user type karega
+    city: initialData.city || '', // Empty by default, user types their city
     location: initialData.location || '',
     service_areas: initialData.service_areas || [],
     skills: initialData.skills || []
@@ -313,7 +324,7 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
     if (formData.experience_years < 0 || formData.experience_years > 50) {
       newErrors.experience_years = 'Please enter valid experience';
     }
-    if (!formData.city.trim()) newErrors.city = 'City is required'; // 👈 Validation add ki
+    if (!formData.city.trim()) newErrors.city = 'City is required';
     if (!formData.location.trim()) newErrors.location = 'Address is required';
     if (formData.service_areas.length === 0) {
       newErrors.service_areas = 'Select at least one service area';
@@ -427,7 +438,7 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
         {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
       </div>
 
-      {/* 🔴 FIX: City - Manually type karega, dropdown nahi */}
+      {/* City - Text Input */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           City <span className="text-red-500">*</span>
@@ -443,7 +454,7 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
         />
         {errors.city && <p className="mt-1 text-sm text-red-500">{errors.city}</p>}
         <p className="mt-1 text-xs text-gray-500">
-          Enter the city where your business is located
+          Enter the city where your business is located - this helps customers find you in local searches
         </p>
       </div>
 

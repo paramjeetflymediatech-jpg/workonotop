@@ -173,7 +173,7 @@ const tables = [
     INDEX idx_account_status (account_status)
   )`,
 
-  // Table 7: bookings
+  // Table 7: bookings (FIXED - added authorized_amount field)
   `CREATE TABLE IF NOT EXISTS bookings (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
@@ -183,6 +183,7 @@ const tables = [
     service_name VARCHAR(200),
     service_price DECIMAL(10, 2) NOT NULL,
     additional_price DECIMAL(10, 2) DEFAULT 0.00,
+    standard_duration_minutes INT DEFAULT 60,
     customer_first_name VARCHAR(100) NOT NULL,
     customer_last_name VARCHAR(100) NOT NULL,
     customer_email VARCHAR(255) NOT NULL,
@@ -199,7 +200,7 @@ const tables = [
     address_line2 VARCHAR(255),
     city VARCHAR(100) DEFAULT 'Calgary',
     postal_code VARCHAR(20),
-    status ENUM('pending', 'matching', 'confirmed', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+    status ENUM('pending', 'matching', 'confirmed', 'in_progress', 'awaiting_approval', 'completed', 'cancelled', 'disputed') DEFAULT 'pending',
     commission_percent DECIMAL(5, 2),
     provider_amount DECIMAL(10, 2),
     accepted_at DATETIME,
@@ -212,11 +213,12 @@ const tables = [
     job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started',
     before_photos_uploaded TINYINT(1) DEFAULT 0,
     after_photos_uploaded TINYINT(1) DEFAULT 0,
-    photo_upload_deadline TIMESTAMP NULL,
     payment_intent_id VARCHAR(255) NULL,
+    authorized_amount DECIMAL(10, 2) DEFAULT NULL,
     payment_status ENUM('pending', 'authorized', 'paid', 'failed', 'refunded') DEFAULT 'pending',
     payment_method VARCHAR(50) NULL,
     stripe_customer_id VARCHAR(255) NULL,
+    photo_upload_deadline TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
@@ -233,7 +235,7 @@ const tables = [
     INDEX idx_stripe_customer (stripe_customer_id)
   )`,
 
-  // Table 8: chat_messages (NEW TABLE)
+  // Table 8: chat_messages
   `CREATE TABLE IF NOT EXISTS chat_messages (
     id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
@@ -385,12 +387,14 @@ const indexes = [
   `CREATE INDEX IF NOT EXISTS idx_services_slug ON services(slug)`,
 
   // Bookings table indexes
+  `CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_bookings_provider ON bookings(provider_id)`,
   `CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)`,
   `CREATE INDEX IF NOT EXISTS idx_bookings_email ON bookings(customer_email)`,
   `CREATE INDEX IF NOT EXISTS idx_bookings_date ON bookings(job_date)`,
-  `CREATE INDEX IF NOT EXISTS idx_bookings_provider ON bookings(provider_id)`,
   `CREATE INDEX IF NOT EXISTS idx_bookings_timer ON bookings(job_timer_status)`,
-  `CREATE INDEX IF NOT EXISTS idx_bookings_provider_status ON bookings(provider_id, status)`,
+  `CREATE INDEX IF NOT EXISTS idx_bookings_payment_intent ON bookings(payment_intent_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_bookings_payment_status ON bookings(payment_status)`,
 
   // Chat messages indexes
   `CREATE INDEX IF NOT EXISTS idx_chat_booking ON chat_messages(booking_id)`,
@@ -412,9 +416,11 @@ const indexes = [
   // Job photos indexes
   `CREATE INDEX IF NOT EXISTS idx_job_photos_booking ON job_photos(booking_id)`,
   `CREATE INDEX IF NOT EXISTS idx_job_photos_type ON job_photos(photo_type)`,
+  `CREATE INDEX IF NOT EXISTS idx_job_photos_uploaded_by ON job_photos(uploaded_by)`,
 
   // Provider reviews indexes
   `CREATE INDEX IF NOT EXISTS idx_reviews_provider ON provider_reviews(provider_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_reviews_customer ON provider_reviews(customer_id)`,
   `CREATE INDEX IF NOT EXISTS idx_reviews_booking ON provider_reviews(booking_id)`,
 
   // Invoices indexes
@@ -432,7 +438,7 @@ async function runMigration() {
   let conn = null;
 
   console.log('\n' + '='.repeat(60));
-  console.log('🚀 WorkOnTap Database Migration (14 Tables including chat_messages)');
+  console.log('🚀 WorkOnTap Database Migration');
   console.log('='.repeat(60) + '\n');
 
   try {
@@ -488,7 +494,7 @@ async function runMigration() {
         }
       }
     }
-    console.log(`   ✓ Created ${indexCount} indexes\n`);
+    console.log(`   ✓ Created/verified ${indexCount} indexes\n`);
 
     // Step 5: Verify all tables
     console.log('🔍 Step 4: Verifying tables...');
@@ -513,6 +519,16 @@ async function runMigration() {
       try {
         const [columns] = await conn.query(`DESCRIBE ${table}`);
         console.log(`   • ${table.padEnd(22)}: ${columns.length} columns`);
+        
+        // Special check for authorized_amount in bookings
+        if (table === 'bookings') {
+          const hasAuthorizedAmount = columns.some(col => col.Field === 'authorized_amount');
+          if (hasAuthorizedAmount) {
+            console.log(`     ✅ authorized_amount field present`);
+          } else {
+            console.log(`     ❌ authorized_amount field MISSING!`);
+          }
+        }
       } catch (err) {
         console.log(`   • ${table.padEnd(22)}: not found`);
       }
@@ -525,7 +541,7 @@ async function runMigration() {
     console.log(`   Database: ${DB_NAME}`);
     console.log(`   Tables:   ${actualTables.length}/14`);
     console.log(`   Indexes:  ${indexCount}`);
-    console.log('   New table added: chat_messages');
+    console.log('   ✨ New field added: authorized_amount in bookings table');
     console.log('='.repeat(60) + '\n');
 
   } catch (err) {

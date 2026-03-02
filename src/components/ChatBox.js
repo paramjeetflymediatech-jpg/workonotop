@@ -103,9 +103,10 @@ export default function ChatBox({ bookingId, currentUserType }) {
           </div>
         ) : (
           messages.map((msg) => {
-            const isMine = msg.sender_type === currentUserType;
+            // compare types in lowercase and handle undefined
+            const isMine = msg.sender_type?.toLowerCase() === currentUserType?.toLowerCase();
             return (
-              <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+              <div key={msg.id} className={`flex w-full ${isMine ? 'justify-end' : 'justify-start'}`}>
                 {!isMine && (
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mr-2 self-end mb-1">
                     {msg.sender_name?.[0]?.toUpperCase()}

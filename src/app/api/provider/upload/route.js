@@ -103,19 +103,12 @@
 
 
 
-
-
-
-
-
-
-
-// app/api/provider/upload-avatar/route.js
+// app/api/provider/upload/route.js
 import { NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { execute } from '@/lib/db'
-import { verifyToken } from '@/lib/jwt'  // ✅ same as your /api/provider/me
+import { verifyToken } from '@/lib/jwt'
 
 export async function POST(request) {
   try {
@@ -130,46 +123,77 @@ export async function POST(request) {
     }
 
     const providerId = decoded.providerId
-
     const formData = await request.formData()
     const file = formData.get('file')
+    const documentType = formData.get('type') || 'profile_photo'
 
     if (!file) {
       return NextResponse.json({ success: false, message: 'No file uploaded' }, { status: 400 })
     }
 
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ success: false, message: 'Only JPG, PNG, or WebP images allowed' }, { status: 400 })
+      return NextResponse.json({ success: false, message: 'Invalid file type' }, { status: 400 })
     }
 
+    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ success: false, message: 'Image must be under 5MB' }, { status: 400 })
+      return NextResponse.json({ success: false, message: 'File too large (max 5MB)' }, { status: 400 })
     }
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
+    // Create filename
+    const timestamp = Date.now()
+    const ext = path.extname(file.name)
+    const filename = `${providerId}-${documentType}-${timestamp}${ext}`
+    
+    // Ensure upload directory exists
     const uploadDir = path.join(process.cwd(), 'public/uploads/providers')
     await mkdir(uploadDir, { recursive: true })
 
-    const ext = path.extname(file.name).toLowerCase() || '.jpg'
-    const filename = `provider-${providerId}-${Date.now()}${ext}`
+    // Save file
     const filepath = path.join(uploadDir, filename)
-
     await writeFile(filepath, buffer)
+    
+    // Public URL
+    const publicUrl = `/uploads/providers/${filename}`
 
-    const imageUrl = `/uploads/providers/${filename}`
-
+    // Store in documents table with correct column name 'document_url'
     await execute(
-      'UPDATE service_providers SET avatar_url = ?, updated_at = NOW() WHERE id = ?',
-      [imageUrl, providerId]
+      `INSERT INTO provider_documents 
+       (provider_id, document_type, document_url, status, created_at, updated_at) 
+       VALUES (?, ?, ?, 'pending', NOW(), NOW())`,
+      [providerId, documentType, publicUrl]
     )
 
-    return NextResponse.json({ success: true, url: imageUrl, message: 'Profile photo updated!' })
+    // If it's a profile photo, update the avatar_url in service_providers table
+    if (documentType === 'profile_photo') {
+      await execute(
+        `UPDATE service_providers SET avatar_url = ? WHERE id = ?`,
+        [publicUrl, providerId]
+      )
+    }
+
+    // Update documents_uploaded count in service_providers
+    await execute(
+      `UPDATE service_providers 
+       SET documents_uploaded = (
+         SELECT COUNT(*) FROM provider_documents WHERE provider_id = ?
+       ) WHERE id = ?`,
+      [providerId, providerId]
+    )
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'File uploaded successfully',
+      url: publicUrl 
+    })
 
   } catch (error) {
     console.error('Upload error:', error)
-    return NextResponse.json({ success: false, message: 'Upload failed. Please try again.' }, { status: 500 })
+    return NextResponse.json({ success: false, message: 'Upload failed' }, { status: 500 })
   }
 }

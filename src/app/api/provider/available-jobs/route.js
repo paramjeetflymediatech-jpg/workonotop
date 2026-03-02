@@ -1,12 +1,16 @@
-// // app/api/provider/available-jobs/route.js
+
+
+
+
+
+
 // import { NextResponse } from 'next/server'
 // import { execute, getConnection } from '@/lib/db'
-// import { verifyToken } from '@/lib/jwt'  // ✅ same as /api/provider/me
+// import { verifyToken } from '@/lib/jwt'
 
 // // ── GET: List available jobs ──────────────────────────────────────────────────
 // export async function GET(request) {
 //   try {
-//     // ✅ Cookie-based auth
 //     const token = request.cookies.get('provider_token')?.value
 //     if (!token) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
 //     const decoded = verifyToken(token)
@@ -15,6 +19,8 @@
 //     const { searchParams } = new URL(request.url)
 //     const city = searchParams.get('city')
 //     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
+//     const countOnly = searchParams.get('count') === 'true'
+//     const previewLimit = parseInt(searchParams.get('preview') || '3')
 
 //     const providers = await execute('SELECT city FROM service_providers WHERE id = ?', [decoded.providerId])
 //     const providerCity = providers[0]?.city || ''
@@ -25,21 +31,25 @@
 //         b.id, b.booking_number, b.service_name, b.job_date, b.job_time_slot,
 //         b.address_line1, b.city, b.postal_code,
 //         b.job_description, b.parking_access, b.elevator_access, b.has_pets,
-//         b.status, b.created_at,
+//         b.status, b.created_at, b.provider_id,
 //         b.provider_amount, b.commission_percent,
 //         b.service_price, b.additional_price as overtime_rate,
 //         s.image_url as service_image,
 //         s.duration_minutes as service_duration,
-//         c.name as category_name, c.icon as category_icon
+//         c.name as category_name, c.icon as category_icon,
+//         CASE WHEN b.provider_id = ? THEN 1 ELSE 0 END as admin_assigned
 //       FROM bookings b
 //       LEFT JOIN services s ON b.service_id = s.id
 //       LEFT JOIN service_categories c ON s.category_id = c.id
-//       WHERE b.provider_id IS NULL
-//         AND b.status IN ('pending', 'matching')
-//         AND b.commission_percent IS NOT NULL
-//         AND b.provider_amount IS NOT NULL
+//       WHERE (
+//         -- Open jobs: no provider assigned, any status pending/matching (commission not required)
+//         (b.provider_id IS NULL AND b.status IN ('pending', 'matching'))
+//         OR
+//         -- Admin pre-assigned to THIS provider: show regardless of commission
+//         (b.provider_id = ? AND b.status = 'matching')
+//       )
 //     `
-//     const params = []
+//     const params = [decoded.providerId, decoded.providerId]
 
 //     if (locationFilter) {
 //       sql += ` AND (LOWER(b.city) LIKE LOWER(?) OR LOWER(b.address_line1) LIKE LOWER(?) OR LOWER(b.postal_code) LIKE LOWER(?))`
@@ -47,9 +57,20 @@
 //       params.push(loc, loc, loc)
 //     }
 
-//     sql += ` ORDER BY b.created_at DESC LIMIT ${limit}`
+//     sql += ` ORDER BY admin_assigned DESC, b.created_at DESC`
 
 //     const jobs = await execute(sql, params)
+
+//     if (countOnly) {
+//       const recentJobs = jobs.slice(0, previewLimit).map(job => ({
+//         id: job.id,
+//         service_name: job.service_name,
+//         display_amount: `$${parseFloat(job.provider_amount || job.service_price || 0).toFixed(2)}`,
+//         job_date: job.job_date,
+//         city: job.city
+//       }))
+//       return NextResponse.json({ success: true, count: jobs.length, recentJobs, provider_city: providerCity })
+//     }
 
 //     for (const job of jobs) {
 //       if (job.job_time_slot) job.job_time_slot = job.job_time_slot.split(',')
@@ -60,7 +81,7 @@
 //       const providerAmount = parseFloat(job.provider_amount || 0)
 //       const duration = job.service_duration || 60
 //       const commAmt = basePrice * (commPct / 100)
-//       const baseEarnings = basePrice - commAmt
+//       const baseEarnings = commPct > 0 ? basePrice - commAmt : basePrice
 //       const netOT = otRate * (1 - commPct / 100)
 
 //       job.pricing = {
@@ -71,7 +92,7 @@
 //         has_overtime: otRate > 0,
 //         overtime_rate: otRate,
 //         net_overtime_rate: netOT,
-//         total_provider_amount: providerAmount,
+//         total_provider_amount: providerAmount || basePrice,
 //         duration_minutes: duration,
 //       }
 
@@ -85,7 +106,14 @@
 //         }
 //       }
 
-//       job.display_amount = `$${providerAmount.toFixed(2)}`
+//       // If no commission set, show base price as earnings
+//       if (job.commission_percent === null) {
+//         job.display_amount = `$${basePrice.toFixed(2)}`
+//       } else {
+//         job.display_amount = `$${(providerAmount || baseEarnings).toFixed(2)}`
+//       }
+
+//       job.is_admin_assigned = job.admin_assigned === 1
 //     }
 
 //     return NextResponse.json({ success: true, data: jobs, provider_city: providerCity, total: jobs.length })
@@ -100,7 +128,6 @@
 // export async function POST(request) {
 //   let connection
 //   try {
-//     // ✅ Cookie-based auth
 //     const token = request.cookies.get('provider_token')?.value
 //     if (!token) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
 //     const decoded = verifyToken(token)
@@ -123,10 +150,21 @@
 //         [booking_id]
 //       )
 
-//       if (!job) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: 'Job not found' }, { status: 404 }) }
-//       if (job.commission_percent === null) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: 'Job not yet approved by admin' }, { status: 409 }) }
-//       if (job.provider_id !== null) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: 'Job already accepted by another provider' }, { status: 409 }) }
-//       if (!['pending', 'matching'].includes(job.status)) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: `Job not available (status: ${job.status})` }, { status: 409 }) }
+//       if (!job) {
+//         await connection.query('ROLLBACK')
+//         return NextResponse.json({ success: false, message: 'Job not found' }, { status: 404 })
+//       }
+
+//       // Allow if: no provider assigned yet, OR this provider was pre-assigned by admin
+//       if (job.provider_id !== null && job.provider_id !== decoded.providerId) {
+//         await connection.query('ROLLBACK')
+//         return NextResponse.json({ success: false, message: 'Job already accepted by another provider' }, { status: 409 })
+//       }
+
+//       if (!['pending', 'matching'].includes(job.status)) {
+//         await connection.query('ROLLBACK')
+//         return NextResponse.json({ success: false, message: `Job not available (status: ${job.status})` }, { status: 409 })
+//       }
 
 //       await connection.execute(
 //         `UPDATE bookings SET provider_id = ?, status = 'confirmed', accepted_at = NOW(), updated_at = NOW() WHERE id = ?`,
@@ -142,13 +180,13 @@
 //       const basePrice = parseFloat(job.service_price || 0)
 //       const commPct = parseFloat(job.commission_percent || 0)
 //       const otRate = parseFloat(job.overtime_rate || 0)
-//       const baseEarnings = basePrice * (1 - commPct / 100)
+//       const baseEarnings = commPct > 0 ? basePrice * (1 - commPct / 100) : basePrice
 //       const netOT = otRate * (1 - commPct / 100)
 
 //       const response = {
 //         success: true,
 //         message: `You accepted: ${job.service_name}`,
-//         provider_amount: job.provider_amount,
+//         provider_amount: job.provider_amount || basePrice,
 //       }
 
 //       if (otRate > 0) {
@@ -182,19 +220,13 @@
 
 
 
-
-
-
-
-
 import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
-import { verifyToken } from '@/lib/jwt'  // ✅ same as /api/provider/me
+import { verifyToken } from '@/lib/jwt'
 
 // ── GET: List available jobs ──────────────────────────────────────────────────
 export async function GET(request) {
   try {
-    // ✅ Cookie-based auth
     const token = request.cookies.get('provider_token')?.value
     if (!token) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     const decoded = verifyToken(token)
@@ -203,8 +235,6 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const city = searchParams.get('city')
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
-    
-    // ✅ NEW: Check if we only need count
     const countOnly = searchParams.get('count') === 'true'
     const previewLimit = parseInt(searchParams.get('preview') || '3')
 
@@ -217,21 +247,30 @@ export async function GET(request) {
         b.id, b.booking_number, b.service_name, b.job_date, b.job_time_slot,
         b.address_line1, b.city, b.postal_code,
         b.job_description, b.parking_access, b.elevator_access, b.has_pets,
-        b.status, b.created_at,
+        b.status, b.created_at, b.provider_id,
         b.provider_amount, b.commission_percent,
         b.service_price, b.additional_price as overtime_rate,
         s.image_url as service_image,
         s.duration_minutes as service_duration,
-        c.name as category_name, c.icon as category_icon
+        c.name as category_name, c.icon as category_icon,
+        CASE WHEN b.provider_id = ? THEN 1 ELSE 0 END as admin_assigned
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
-      WHERE b.provider_id IS NULL
-        AND b.status IN ('pending', 'matching')
-        AND b.commission_percent IS NOT NULL
-        AND b.provider_amount IS NOT NULL
+      WHERE (
+        -- ✅ FIXED: Sirf wohi jobs jahan commission set hai
+        b.commission_percent IS NOT NULL
+        AND
+        (
+          -- Open jobs: no provider assigned, any status pending/matching
+          (b.provider_id IS NULL AND b.status IN ('pending', 'matching'))
+          OR
+          -- Admin pre-assigned to THIS provider: show regardless of commission
+          (b.provider_id = ? AND b.status = 'matching')
+        )
+      )
     `
-    const params = []
+    const params = [decoded.providerId, decoded.providerId]
 
     if (locationFilter) {
       sql += ` AND (LOWER(b.city) LIKE LOWER(?) OR LOWER(b.address_line1) LIKE LOWER(?) OR LOWER(b.postal_code) LIKE LOWER(?))`
@@ -239,35 +278,21 @@ export async function GET(request) {
       params.push(loc, loc, loc)
     }
 
-    sql += ` ORDER BY b.created_at DESC`
-    
-    // Execute query
+    sql += ` ORDER BY admin_assigned DESC, b.created_at DESC`
+
     const jobs = await execute(sql, params)
 
-    // ✅ NEW: If countOnly is true, return just the count and preview
     if (countOnly) {
-      // Get recent jobs for preview (first few)
-      const recentJobs = jobs.slice(0, previewLimit).map(job => {
-        // Format basic info for preview
-        const providerAmount = parseFloat(job.provider_amount || 0)
-        return {
-          id: job.id,
-          service_name: job.service_name,
-          display_amount: `$${providerAmount.toFixed(2)}`,
-          job_date: job.job_date,
-          city: job.city
-        }
-      })
-      
-      return NextResponse.json({ 
-        success: true, 
-        count: jobs.length,
-        recentJobs: recentJobs,
-        provider_city: providerCity
-      })
+      const recentJobs = jobs.slice(0, previewLimit).map(job => ({
+        id: job.id,
+        service_name: job.service_name,
+        display_amount: `$${parseFloat(job.provider_amount || job.service_price || 0).toFixed(2)}`,
+        job_date: job.job_date,
+        city: job.city
+      }))
+      return NextResponse.json({ success: true, count: jobs.length, recentJobs, provider_city: providerCity })
     }
 
-    // ✅ Original flow: Full job details
     for (const job of jobs) {
       if (job.job_time_slot) job.job_time_slot = job.job_time_slot.split(',')
 
@@ -277,7 +302,7 @@ export async function GET(request) {
       const providerAmount = parseFloat(job.provider_amount || 0)
       const duration = job.service_duration || 60
       const commAmt = basePrice * (commPct / 100)
-      const baseEarnings = basePrice - commAmt
+      const baseEarnings = commPct > 0 ? basePrice - commAmt : basePrice
       const netOT = otRate * (1 - commPct / 100)
 
       job.pricing = {
@@ -288,7 +313,7 @@ export async function GET(request) {
         has_overtime: otRate > 0,
         overtime_rate: otRate,
         net_overtime_rate: netOT,
-        total_provider_amount: providerAmount,
+        total_provider_amount: providerAmount || basePrice,
         duration_minutes: duration,
       }
 
@@ -302,15 +327,11 @@ export async function GET(request) {
         }
       }
 
-      job.display_amount = `$${providerAmount.toFixed(2)}`
+      job.display_amount = `$${(providerAmount || baseEarnings).toFixed(2)}`
+      job.is_admin_assigned = job.admin_assigned === 1
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data: jobs, 
-      provider_city: providerCity, 
-      total: jobs.length 
-    })
+    return NextResponse.json({ success: true, data: jobs, provider_city: providerCity, total: jobs.length })
 
   } catch (error) {
     console.error('Error fetching available jobs:', error)
@@ -322,7 +343,6 @@ export async function GET(request) {
 export async function POST(request) {
   let connection
   try {
-    // ✅ Cookie-based auth
     const token = request.cookies.get('provider_token')?.value
     if (!token) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     const decoded = verifyToken(token)
@@ -345,10 +365,30 @@ export async function POST(request) {
         [booking_id]
       )
 
-      if (!job) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: 'Job not found' }, { status: 404 }) }
-      if (job.commission_percent === null) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: 'Job not yet approved by admin' }, { status: 409 }) }
-      if (job.provider_id !== null) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: 'Job already accepted by another provider' }, { status: 409 }) }
-      if (!['pending', 'matching'].includes(job.status)) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: `Job not available (status: ${job.status})` }, { status: 409 }) }
+      if (!job) {
+        await connection.query('ROLLBACK')
+        return NextResponse.json({ success: false, message: 'Job not found' }, { status: 404 })
+      }
+
+      // ✅ Check if commission is set
+      if (job.commission_percent === null) {
+        await connection.query('ROLLBACK')
+        return NextResponse.json({ 
+          success: false, 
+          message: 'Commission not set yet. Job will be available once admin sets commission.' 
+        }, { status: 400 })
+      }
+
+      // Allow if: no provider assigned yet, OR this provider was pre-assigned by admin
+      if (job.provider_id !== null && job.provider_id !== decoded.providerId) {
+        await connection.query('ROLLBACK')
+        return NextResponse.json({ success: false, message: 'Job already accepted by another provider' }, { status: 409 })
+      }
+
+      if (!['pending', 'matching'].includes(job.status)) {
+        await connection.query('ROLLBACK')
+        return NextResponse.json({ success: false, message: `Job not available (status: ${job.status})` }, { status: 409 })
+      }
 
       await connection.execute(
         `UPDATE bookings SET provider_id = ?, status = 'confirmed', accepted_at = NOW(), updated_at = NOW() WHERE id = ?`,
@@ -364,13 +404,13 @@ export async function POST(request) {
       const basePrice = parseFloat(job.service_price || 0)
       const commPct = parseFloat(job.commission_percent || 0)
       const otRate = parseFloat(job.overtime_rate || 0)
-      const baseEarnings = basePrice * (1 - commPct / 100)
+      const baseEarnings = commPct > 0 ? basePrice * (1 - commPct / 100) : basePrice
       const netOT = otRate * (1 - commPct / 100)
 
       const response = {
         success: true,
         message: `You accepted: ${job.service_name}`,
-        provider_amount: job.provider_amount,
+        provider_amount: job.provider_amount || basePrice,
       }
 
       if (otRate > 0) {
