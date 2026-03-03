@@ -40,16 +40,15 @@ function Pagination({ total, page, setPage }) {
             p === '...'
               ? <span key={`ellipsis-${i}`} className="px-2 text-gray-400 text-sm">…</span>
               : <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-lg text-sm font-medium transition ${
-                    page === p
-                      ? 'bg-teal-500 text-white'
-                      : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                key={p}
+                onClick={() => setPage(p)}
+                className={`w-8 h-8 rounded-lg text-sm font-medium transition ${page === p
+                  ? 'bg-teal-500 text-white'
+                  : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                   }`}
-                >
-                  {p}
-                </button>
+              >
+                {p}
+              </button>
           ))}
           <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
@@ -76,6 +75,8 @@ export default function Users() {
   const [selectedUser, setSelectedUser] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [newUser, setNewUser] = useState({ first_name: '', last_name: '', email: '', phone: '', password: '', role: 'user' })
   const [userBookings, setUserBookings] = useState([])
   const [loadingBookings, setLoadingBookings] = useState(false)
   const [providerFilter, setProviderFilter] = useState('all')
@@ -135,12 +136,18 @@ export default function Users() {
         const all = usersData.data || []
         setCustomers(all.filter(u => u.role !== 'admin'))
         setAdmins(all.filter(u => u.role === 'admin'))
+      } else {
+        showMessage('error', usersData.message || 'Failed to load users')
       }
       if (providersRes.ok) {
         const providersData = await providersRes.json()
         if (providersData.success) setProviders(providersData.data || [])
+        else showMessage('error', providersData.message || 'Failed to load providers')
+      } else {
+        showMessage('error', 'Failed to load providers')
       }
-    } catch {
+    } catch (err) {
+      console.error('Load error:', err)
       showMessage('error', 'Failed to load users')
     } finally {
       setLoading(false)
@@ -209,17 +216,42 @@ export default function Users() {
     }
   }
 
+  const handleCreateUser = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      const res = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser)
+      })
+      const data = await res.json()
+      if (data.success) {
+        setIsCreateModalOpen(false)
+        setNewUser({ first_name: '', last_name: '', email: '', phone: '', password: '', role: 'user' })
+        loadAllUsers()
+        showMessage('success', 'User created successfully')
+      } else {
+        showMessage('error', data.message || 'Failed to create user')
+      }
+    } catch {
+      showMessage('error', 'Failed to create user')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const deleteCustomer = async (customerId) => {
-    if (!confirm('Delete this customer? This cannot be undone.')) return
+    if (!confirm('⚠️ WARNING: This will permanently delete this user and ALL their data from the platform including:\n\n• All bookings & job history\n• Chat messages\n• Reviews & ratings\n• Invoices\n• Photos & uploads\n\nThis action CANNOT be undone. Continue?')) return
     try {
       const res = await fetch(`/api/customers?id=${customerId}`, { method: 'DELETE' })
       const data = await res.json()
       if (data.success) {
-        showMessage('success', 'Customer deleted successfully')
+        showMessage('success', `User deleted successfully (${data.deleted?.bookings || 0} bookings removed)`)
         loadAllUsers()
         setIsModalOpen(false)
-      } else showMessage('error', data.message || 'Failed to delete customer')
-    } catch { showMessage('error', 'Failed to delete customer') }
+      } else showMessage('error', data.message || 'Failed to delete user')
+    } catch { showMessage('error', 'Failed to delete user') }
   }
 
   const updateCustomer = async (e) => {
@@ -305,7 +337,6 @@ export default function Users() {
 
   const tabs = [
     { key: 'customers', label: 'Customers', count: customers.length },
-    { key: 'admins', label: 'Admins', count: admins.length },
     { key: 'providers', label: 'Providers', count: providers.length },
   ]
 
@@ -319,25 +350,32 @@ export default function Users() {
         <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm">✕ {showErrorMessage}</div>
       )}
 
-      <div className="mb-8">
-        <h1 className={`text-3xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Users</h1>
-        <p className={isDarkMode ? 'text-slate-400' : 'text-gray-500'}>Manage all customers, admins, and providers</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h1 className={`text-3xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Users</h1>
+          <p className={isDarkMode ? 'text-slate-400' : 'text-gray-500'}>Manage all customers, admins, and providers</p>
+        </div>
+        <button onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold shadow-lg shadow-teal-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all whitespace-nowrap">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Create New User
+        </button>
       </div>
 
       <div className="mb-6 flex border-b border-gray-200 dark:border-gray-700">
         {tabs.map(tab => (
           <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchTerm('') }}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab.key
-                ? isDarkMode ? 'text-white border-b-2 border-teal-500' : 'text-teal-600 border-b-2 border-teal-500'
-                : isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-gray-600 hover:text-gray-900'
-            }`}>
+            className={`px-6 py-3 text-sm font-medium transition-colors ${activeTab === tab.key
+              ? isDarkMode ? 'text-white border-b-2 border-teal-500' : 'text-teal-600 border-b-2 border-teal-500'
+              : isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-gray-600 hover:text-gray-900'
+              }`}>
             {tab.label}
-            <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
-              activeTab === tab.key
-                ? 'bg-teal-500/20 text-teal-600 dark:text-teal-400'
-                : isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-gray-200 text-gray-600'
-            }`}>{tab.count}</span>
+            <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${activeTab === tab.key
+              ? 'bg-teal-500/20 text-teal-600 dark:text-teal-400'
+              : isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-gray-200 text-gray-600'
+              }`}>{tab.count}</span>
           </button>
         ))}
       </div>
@@ -363,11 +401,10 @@ export default function Users() {
         <div className="mb-4 flex flex-wrap gap-2">
           {['all', 'active', 'inactive', 'suspended'].map(s => (
             <button key={s} onClick={() => setProviderFilter(s)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${
-                providerFilter === s
-                  ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white'
-                  : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}>{s}</button>
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${providerFilter === s
+                ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white'
+                : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}>{s}</button>
           ))}
         </div>
       )}
@@ -375,19 +412,73 @@ export default function Users() {
       <div className="mb-5 relative">
         <input type="text" placeholder="Search by name, email, or phone…"
           value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-          className={`w-full pl-10 pr-4 py-3 rounded-lg border text-sm ${
-            isDarkMode ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-          } focus:outline-none focus:ring-2 focus:ring-teal-500`}
+          className={`w-full pl-10 pr-4 py-3 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+            } focus:outline-none focus:ring-2 focus:ring-teal-500`}
         />
         <svg className={`absolute left-3 top-3.5 w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
 
-      {/* ── CUSTOMERS TABLE ── */}
+      {/* ── CUSTOMERS ── */}
       {activeTab === 'customers' && (
         <div className={`${card} overflow-hidden`}>
-          <div className="overflow-x-auto">
+          {/* ── Mobile Card View ── */}
+          <div className="md:hidden">
+            {pagedCustomers.length > 0 ? (
+              <div className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-100'}`}>
+                {pagedCustomers.map(c => (
+                  <div key={c.id}
+                    className={`p-4 cursor-pointer transition-colors ${isDarkMode ? 'active:bg-slate-800' : 'active:bg-gray-50'}`}
+                    onClick={() => { setSelectedUser({ ...c, type: 'customer' }); loadUserBookings(c.email); setIsModalOpen(true) }}>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isDarkMode ? 'bg-teal-900/60 text-teal-300' : 'bg-teal-100 text-teal-700'}`}>
+                        {`${c.first_name?.charAt(0) || ''}${c.last_name?.charAt(0) || ''}`.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {c.first_name} {c.last_name}
+                          </p>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${c.booking_count > 0 ? 'bg-green-500/20 text-green-600 dark:text-green-400' : isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'
+                            }`}>
+                            {c.booking_count} booking{c.booking_count !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <p className={`text-xs truncate mb-1.5 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{c.email}</p>
+                        <div className="flex items-center justify-between">
+                          <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
+                            {c.phone || 'No phone'} • {formatDate(c.created_at)}
+                          </p>
+                          <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                            <button onClick={e => { e.stopPropagation(); setSelectedUser({ ...c, type: 'customer' }); setIsEditModalOpen(true) }}
+                              className={`p-1.5 rounded-lg ${isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button onClick={e => { e.stopPropagation(); deleteCustomer(c.id) }}
+                              className={`p-1.5 rounded-lg ${isDarkMode ? 'text-slate-400 hover:text-red-400 hover:bg-slate-700' : 'text-gray-400 hover:text-red-600 hover:bg-red-50'}`}>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center">
+                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No customers match your search' : 'No customers yet'}</p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Desktop Table View ── */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className={isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}>
                 <tr>
@@ -434,13 +525,13 @@ export default function Users() {
                         <button onClick={e => { e.stopPropagation(); setSelectedUser({ ...c, type: 'customer' }); setIsEditModalOpen(true) }}
                           className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500'}`}>
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
                         <button onClick={e => { e.stopPropagation(); deleteCustomer(c.id) }}
                           className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-red-400' : 'hover:bg-red-50 text-gray-500 hover:text-red-600'}`}>
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
                       </div>
@@ -460,10 +551,40 @@ export default function Users() {
         </div>
       )}
 
-      {/* ── ADMINS TABLE ── */}
+      {/* ── ADMINS ── */}
       {activeTab === 'admins' && (
         <div className={`${card} overflow-hidden`}>
-          <div className="overflow-x-auto">
+          {/* ── Mobile Card View ── */}
+          <div className="md:hidden">
+            {pagedAdmins.length > 0 ? (
+              <div className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-100'}`}>
+                {pagedAdmins.map(a => (
+                  <div key={a.id} className={`p-4 transition-colors ${isDarkMode ? 'active:bg-slate-800' : 'active:bg-gray-50'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isDarkMode ? 'bg-purple-900/60 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
+                        {`${a.first_name?.charAt(0) || ''}${a.last_name?.charAt(0) || ''}`.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{a.first_name} {a.last_name}</p>
+                          <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full flex-shrink-0">Admin</span>
+                        </div>
+                        <p className={`text-xs truncate mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{a.email}</p>
+                        <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{a.phone || 'No phone'} • Joined {formatDate(a.created_at)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center">
+                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No admins match your search' : 'No admins found'}</p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Desktop Table View ── */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className={isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}>
                 <tr>
@@ -530,9 +651,9 @@ export default function Users() {
                 </div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-1">
-                    {[1,2,3,4,5].map(star => (
+                    {[1, 2, 3, 4, 5].map(star => (
                       <svg key={star} className={`w-3.5 h-3.5 ${star <= getRatingValue(p.rating) ? 'text-yellow-400' : isDarkMode ? 'text-slate-600' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ))}
                     <span className={`text-xs ml-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{formatRating(p.rating)}</span>
@@ -583,7 +704,7 @@ export default function Users() {
                 </div>
                 <button onClick={() => setIsProviderDetailsOpen(false)} className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
@@ -623,9 +744,9 @@ export default function Users() {
                       <div className="flex items-center gap-2 mt-1">
                         <p className="text-2xl font-bold text-yellow-500">{formatRating(providerStats.avgRating)}</p>
                         <div className="flex items-center gap-0.5">
-                          {[1,2,3,4,5].map(star => (
+                          {[1, 2, 3, 4, 5].map(star => (
                             <svg key={star} className={`w-4 h-4 ${star <= getRatingValue(providerStats.avgRating) ? 'text-yellow-400' : isDarkMode ? 'text-slate-600' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
                           ))}
                         </div>
@@ -710,7 +831,7 @@ export default function Users() {
 
             <div className={`p-5 border-t flex justify-end gap-3 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
               <select value={selectedProvider.status}
-                onChange={e => { updateProviderStatus(selectedProvider.id, e.target.value); setSelectedProvider({...selectedProvider, status: e.target.value}) }}
+                onChange={e => { updateProviderStatus(selectedProvider.id, e.target.value); setSelectedProvider({ ...selectedProvider, status: e.target.value }) }}
                 className={`px-3 py-2 rounded-lg text-sm border ${isDarkMode ? 'bg-slate-800 text-white border-slate-700' : 'bg-gray-50 text-gray-900 border-gray-200'} focus:outline-none focus:ring-2 focus:ring-teal-500`}>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -735,7 +856,7 @@ export default function Users() {
                 <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Customer Details</h3>
                 <button onClick={() => setIsModalOpen(false)} className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
@@ -825,7 +946,7 @@ export default function Users() {
                 <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Edit Customer</h3>
                 <button onClick={() => setIsEditModalOpen(false)} className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
@@ -871,6 +992,85 @@ export default function Users() {
                 <button type="submit"
                   className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium hover:opacity-90">
                   Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── CREATE USER MODAL ── */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
+          <div className={`relative rounded-2xl shadow-2xl w-full max-w-md ${isDarkMode ? 'bg-slate-900' : 'bg-white'}`}>
+            <div className={`p-6 border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+              <div className="flex items-center justify-between">
+                <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Create New User</h3>
+                <button onClick={() => setIsCreateModalOpen(false)} className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <form onSubmit={handleCreateUser}>
+              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>First Name <span className="text-red-500">*</span></label>
+                    <input type="text" required value={newUser.first_name}
+                      onChange={e => setNewUser({ ...newUser, first_name: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Last Name <span className="text-red-500">*</span></label>
+                    <input type="text" required value={newUser.last_name}
+                      onChange={e => setNewUser({ ...newUser, last_name: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Email <span className="text-red-500">*</span></label>
+                  <input type="email" required value={newUser.email}
+                    onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Phone</label>
+                  <input type="tel" value={newUser.phone}
+                    onChange={e => setNewUser({ ...newUser, phone: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Password <span className="text-red-500">*</span></label>
+                  <input type="password" required value={newUser.password}
+                    onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Role</label>
+                  <select value={newUser.role}
+                    onChange={e => setNewUser({ ...newUser, role: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}>
+                    <option value="user">Customer</option>
+                    <option value="provider">Provider</option>
+                  </select>
+                </div>
+              </div>
+              <div className={`p-5 border-t flex justify-end gap-3 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+                <button type="button" onClick={() => setIsCreateModalOpen(false)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={loading}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium hover:opacity-90 disabled:opacity-50">
+                  {loading ? 'Creating...' : 'Create User'}
                 </button>
               </div>
             </form>
