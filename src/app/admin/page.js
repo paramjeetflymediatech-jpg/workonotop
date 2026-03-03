@@ -345,61 +345,87 @@ export default function AdminDashboard() {
 
         <div className="overflow-x-auto">
           {recentBookings.length > 0 ? (
-            <table className="w-full">
-              <thead className={isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}>
-                <tr>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                    ID
-                  </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                    Customer
-                  </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                    Service
-                  </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                    Date
-                  </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                    Status
-                  </th>
-                  <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                    Amount
-                  </th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-200'}`}>
+            <>
+              {/* Desktop View - Table */}
+              <div className="hidden md:block">
+                <table className="w-full">
+                  <thead className={isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}>
+                    <tr>
+                      <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>ID</th>
+                      <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>Customer</th>
+                      <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>Service</th>
+                      <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>Date</th>
+                      <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>Status</th>
+                      <th className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-200'}`}>
+                    {recentBookings.map((booking) => (
+                      <tr key={booking.id} className={isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-50'}>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          #{booking.id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{booking.customer_first_name} {booking.customer_last_name}</div>
+                          <div className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{booking.customer_email}</div>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{booking.service_name}</td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{formatDate(booking.job_date)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                            {booking.status?.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {formatCurrency(parseFloat(booking.service_price || 0) + parseFloat(booking.additional_price || 0))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile View - Cards */}
+              <div className="md:hidden divide-y divide-gray-200 dark:divide-slate-800">
                 {recentBookings.map((booking) => (
-                  <tr key={booking.id} className={isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-50'}>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      #{booking.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {booking.customer_first_name} {booking.customer_last_name}
-                      </div>
-                      <div className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                        {booking.customer_email}
-                      </div>
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {booking.service_name}
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                      {formatDate(booking.job_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                  <div key={booking.id} className={`p-4 ${isDarkMode ? 'bg-slate-900 hover:bg-slate-800' : 'bg-white hover:bg-gray-50'}`}
+                    onClick={() => router.push(`/admin/jobs`)}>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className={`text-xs font-bold font-mono ${isDarkMode ? 'text-teal-400' : 'text-teal-600'}`}>
+                        #{booking.booking_number || booking.id}
+                      </span>
+                      <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${getStatusColor(booking.status)}`}>
                         {booking.status?.replace('_', ' ')}
                       </span>
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {formatCurrency(parseFloat(booking.service_price || 0) + parseFloat(booking.additional_price || 0))}
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="mb-2">
+                      <p className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {booking.customer_first_name} {booking.customer_last_name}
+                      </p>
+                      <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{booking.customer_email}</p>
+                    </div>
+                    <div className="flex justify-between items-center mt-3">
+                      <div className="flex flex-col">
+                        <span className={`text-[10px] uppercase font-semibold ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Service</span>
+                        <span className={`text-xs font-medium ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>{booking.service_name}</span>
+                      </div>
+                      <div className="flex flex-col text-right">
+                        <span className={`text-[10px] uppercase font-semibold ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Amount</span>
+                        <span className="text-sm font-bold text-teal-500">
+                          {formatCurrency(parseFloat(booking.service_price || 0) + parseFloat(booking.additional_price || 0))}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{formatDate(booking.job_date)}</span>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </>
           ) : (
             <div className={`p-8 text-center ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
               No recent bookings found
