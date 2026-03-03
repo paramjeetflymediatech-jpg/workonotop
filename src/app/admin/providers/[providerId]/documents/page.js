@@ -953,8 +953,8 @@ export default function ReviewDocuments({ params }) {
       />
 
       {/* ── Header ── */}
-      <div className={`border-b sticky top-0 z-10 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} shadow-sm`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className={`sticky top-0 z-10 ${isDarkMode ? 'bg-slate-800 border-slate-700' : ' border-gray-200'}`}>
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <button onClick={() => router.back()}
               className={`p-2 rounded-xl transition ${isDarkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-100 text-gray-500'}`}>
