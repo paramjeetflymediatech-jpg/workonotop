@@ -1,0 +1,196 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - navigation [ref=e4]:
+        - link "WorkOnTap" [ref=e5] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e6]:
+          - link "Explore Services" [ref=e7] [cursor=pointer]:
+            - /url: /services
+          - link "Help Center" [ref=e8] [cursor=pointer]:
+            - /url: /help
+        - generic [ref=e10]:
+          - button "Log In" [ref=e12] [cursor=pointer]:
+            - text: Log In
+            - img [ref=e13]
+          - button "Sign Up" [ref=e16] [cursor=pointer]:
+            - text: Sign Up
+            - img [ref=e17]
+    - generic [ref=e19]:
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - heading "Home maintenance booked when you need it." [level=1] [ref=e24]:
+            - text: Home maintenance
+            - generic [ref=e25]: booked when you need it.
+          - paragraph [ref=e26]: Trusted local tradespeople • Free quotes • Verified reviews
+          - generic [ref=e28] [cursor=pointer]:
+            - img [ref=e29]
+            - textbox "fridge not cooling" [ref=e31]
+          - paragraph [ref=e32]:
+            - generic [ref=e33]: 🔍
+            - generic [ref=e34]: Click search or press Enter — see all services
+          - link "View all services →" [ref=e36] [cursor=pointer]:
+            - /url: /services
+        - generic [ref=e40]:
+          - generic [ref=e41]: 🛠️
+          - heading "5,000+ pros ready" [level=4] [ref=e42]
+          - paragraph [ref=e43]: in Calgary & surrounding
+          - generic [ref=e44]:
+            - generic [ref=e45]: 👩‍🔧
+            - generic [ref=e46]: 👨‍🔧
+            - generic [ref=e47]: 👩‍🏭
+            - generic [ref=e48]: 👨‍🏭
+      - img [ref=e50]
+    - generic [ref=e54]:
+      - generic [ref=e55]:
+        - heading "500,000+" [level=3] [ref=e56]
+        - paragraph [ref=e57]: JOBS COMPLETED
+        - generic [ref=e58]: trusted by thousands
+      - generic [ref=e59]:
+        - heading "96%" [level=3] [ref=e60]
+        - paragraph [ref=e61]: RATED THEIR PRO PERFECT
+        - generic [ref=e62]: ⭐ 4.8 average
+      - generic [ref=e63]:
+        - heading "4.8 ★" [level=3] [ref=e64]:
+          - text: "4.8"
+          - generic [ref=e65]: ★
+        - paragraph [ref=e66]: APP STORE RATING
+        - generic [ref=e67]: iOS & Android
+    - generic [ref=e69]:
+      - text: Simple & fast
+      - heading "How WorkOnTap works" [level=2] [ref=e70]
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]: 📋
+          - heading "1. Tell us what you need" [level=3] [ref=e74]
+          - paragraph [ref=e75]: Choose date, time, and describe your job — takes 2 minutes.
+        - generic [ref=e76]:
+          - generic [ref=e77]: 📱
+          - heading "2. Instant matches" [level=3] [ref=e78]
+          - paragraph [ref=e79]: We find nearby certified pros — average 10 min response.
+        - generic [ref=e80]:
+          - generic [ref=e81]: 👨‍🔧
+          - heading "3. Pro arrives & fixes it" [level=3] [ref=e82]
+          - paragraph [ref=e83]: Relax while your WorkOnTap pro handles everything.
+        - generic [ref=e84]:
+          - generic [ref=e85]: 💚
+          - heading "4. Pay & review" [level=3] [ref=e86]
+          - paragraph [ref=e87]: Secure payment, receipt, and job history all in one place.
+      - link "Start booking my service" [ref=e88] [cursor=pointer]:
+        - /url: /services
+        - text: Start booking my service
+        - img [ref=e89]
+    - generic [ref=e93]:
+      - generic [ref=e95]:
+        - generic [ref=e96]:
+          - img [ref=e98]
+          - generic [ref=e100]: Homeowner Protection Promise
+        - heading "Guaranteed jobs by certified professionals." [level=2] [ref=e101]
+        - paragraph [ref=e102]: Every WorkOnTap pro is licensed, background-checked, and well-rated. If your experience isn't perfect, we'll make it right — 100% guaranteed.
+        - link "Learn more about our promise" [ref=e103] [cursor=pointer]:
+          - /url: /guarantee
+          - text: Learn more about our promise
+          - img [ref=e104]
+      - generic [ref=e107]:
+        - generic [ref=e109]:
+          - generic [ref=e110]: 🛡️
+          - heading "WorkOnTap Verified" [level=3] [ref=e111]
+          - paragraph [ref=e112]: Every pro is screened, insured, and reviewed
+          - generic [ref=e113]:
+            - generic [ref=e114]: ✓
+            - generic [ref=e115]: License check
+            - generic [ref=e116]: ✓
+            - generic [ref=e117]: Background
+        - generic [ref=e118]: Trusted since 2022
+    - generic [ref=e120]:
+      - generic [ref=e121]:
+        - heading "What people in Calgary are doing now" [level=2] [ref=e122]
+        - paragraph [ref=e123]: Trending services — book in under 2 minutes
+      - generic [ref=e124]:
+        - link "🧹 Ac Installation fix ac problem Starting at $40" [ref=e125] [cursor=pointer]:
+          - /url: /services/ac-installation
+          - generic [ref=e126]:
+            - generic [ref=e128]: 🧹
+            - generic [ref=e129]:
+              - heading "Ac Installation" [level=3] [ref=e130]
+              - paragraph [ref=e131]: fix ac problem
+              - generic [ref=e132]:
+                - generic [ref=e133]:
+                  - paragraph [ref=e134]: Starting at
+                  - paragraph [ref=e135]: $40
+                - img [ref=e137]
+        - link "Appliance Setup Appliance Setup Appliance Install Starting at $180" [ref=e139] [cursor=pointer]:
+          - /url: /services/appliance-setup-pro
+          - generic [ref=e140]:
+            - img "Appliance Setup" [ref=e142]
+            - generic [ref=e143]:
+              - heading "Appliance Setup" [level=3] [ref=e144]
+              - paragraph [ref=e145]: Appliance Install
+              - generic [ref=e146]:
+                - generic [ref=e147]:
+                  - paragraph [ref=e148]: Starting at
+                  - paragraph [ref=e149]: $180
+                - img [ref=e151]
+        - link "🏠 Bathtub & Shower Caulking Seal and waterproof your bathroom Starting at $100" [ref=e153] [cursor=pointer]:
+          - /url: /services/bathtub-shower-caulking
+          - generic [ref=e154]:
+            - generic [ref=e156]: 🏠
+            - generic [ref=e157]:
+              - heading "Bathtub & Shower Caulking" [level=3] [ref=e158]
+              - paragraph [ref=e159]: Seal and waterproof your bathroom
+              - generic [ref=e160]:
+                - generic [ref=e161]:
+                  - paragraph [ref=e162]: Starting at
+                  - paragraph [ref=e163]: $100
+                - img [ref=e165]
+      - link "View all services" [ref=e168] [cursor=pointer]:
+        - /url: /services
+        - text: View all services
+        - img [ref=e169]
+    - contentinfo [ref=e171]:
+      - generic [ref=e172]:
+        - generic [ref=e173]:
+          - generic [ref=e174]:
+            - heading "Services" [level=4] [ref=e175]
+            - list [ref=e176]:
+              - listitem [ref=e177]:
+                - link "All Services" [ref=e178] [cursor=pointer]:
+                  - /url: /services
+          - generic [ref=e179]:
+            - heading "Company" [level=4] [ref=e180]
+            - list [ref=e181]:
+              - listitem [ref=e182]:
+                - link "About Us" [ref=e183] [cursor=pointer]:
+                  - /url: /about
+              - listitem [ref=e184]:
+                - link "How It Works" [ref=e185] [cursor=pointer]:
+                  - /url: /how-it-works
+              - listitem [ref=e186]:
+                - link "Contact" [ref=e187] [cursor=pointer]:
+                  - /url: /contact
+          - generic [ref=e188]:
+            - heading "Support" [level=4] [ref=e189]
+            - list [ref=e190]:
+              - listitem [ref=e191]:
+                - link "FAQ" [ref=e192] [cursor=pointer]:
+                  - /url: /faq
+              - listitem [ref=e193]:
+                - link "Help Center" [ref=e194] [cursor=pointer]:
+                  - /url: /help
+              - listitem [ref=e195]:
+                - link "Our Guarantee" [ref=e196] [cursor=pointer]:
+                  - /url: /guarantee
+        - generic [ref=e197]:
+          - paragraph [ref=e198]: © 2026 WorkOnTap. All rights reserved.
+          - generic [ref=e199]:
+            - link "Privacy Policy" [ref=e200] [cursor=pointer]:
+              - /url: /privacy
+            - link "Terms of Service" [ref=e201] [cursor=pointer]:
+              - /url: /terms
+  - button "Open Next.js Dev Tools" [ref=e207] [cursor=pointer]:
+    - img [ref=e208]
+  - alert [ref=e211]
+```

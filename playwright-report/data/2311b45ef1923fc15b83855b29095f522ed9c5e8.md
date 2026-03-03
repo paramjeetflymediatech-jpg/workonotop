@@ -1,0 +1,62 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - heading "WorkOnTap" [level=1] [ref=e16]
+          - paragraph [ref=e17]: Admin Panel
+        - button [ref=e18] [cursor=pointer]:
+          - img [ref=e19]
+      - generic [ref=e22]:
+        - link "Dashboard" [ref=e23] [cursor=pointer]:
+          - /url: /admin
+          - img [ref=e25]
+          - generic [ref=e27]: Dashboard
+        - link "Job Requests" [ref=e28] [cursor=pointer]:
+          - /url: /admin/jobs
+          - img [ref=e30]
+          - generic [ref=e32]: Job Requests
+        - link "Users" [ref=e33] [cursor=pointer]:
+          - /url: /admin/users
+          - img [ref=e35]
+          - generic [ref=e37]: Users
+        - link "Providers" [ref=e38] [cursor=pointer]:
+          - /url: /admin/providers
+          - img [ref=e40]
+          - generic [ref=e42]: Providers
+        - link "Categories" [ref=e43] [cursor=pointer]:
+          - /url: /admin/categories
+          - img [ref=e45]
+          - generic [ref=e47]: Categories
+        - link "Services" [ref=e48] [cursor=pointer]:
+          - /url: /admin/services
+          - img [ref=e50]
+          - generic [ref=e52]: Services
+        - link "Reviews" [ref=e53] [cursor=pointer]:
+          - /url: /admin/reviews
+          - img [ref=e55]
+          - generic [ref=e57]: Reviews
+        - link "Analytics" [ref=e58] [cursor=pointer]:
+          - /url: /admin/analytics
+          - img [ref=e60]
+          - generic [ref=e62]: Analytics
+        - link "Settings" [ref=e63] [cursor=pointer]:
+          - /url: /admin/settings
+          - img [ref=e65]
+          - generic [ref=e68]: Settings
+      - generic [ref=e69]:
+        - button "Dark Mode" [ref=e70] [cursor=pointer]:
+          - img [ref=e71]
+          - generic [ref=e73]: Dark Mode
+        - button "Logout" [ref=e74] [cursor=pointer]:
+          - img [ref=e75]
+          - generic [ref=e77]: Logout
+    - main [ref=e78]:
+      - paragraph [ref=e84]: Loading dashboard...
+```
