@@ -1,6 +1,13 @@
 
 
 
+
+
+
+
+
+
+
 // import { NextResponse } from 'next/server'
 // import Stripe from 'stripe'
 // import { getConnection } from '@/lib/db'
@@ -49,10 +56,14 @@
 //   await connection.query('START TRANSACTION')
 
 //   try {
+//     // Get service duration from services table or booking, with sensible fallback
 //     const [[booking]] = await connection.execute(
-//       `SELECT b.*, sp.stripe_account_id, sp.name as provider_name, 
+//       `SELECT b.*, 
+//               sp.stripe_account_id, 
+//               sp.name as provider_name, 
 //               sp.stripe_onboarding_complete,
-//               s.duration_minutes as standard_duration
+//               s.duration_minutes as service_duration,
+//               COALESCE(s.duration_minutes, b.standard_duration_minutes, 60) as standard_minutes
 //        FROM bookings b
 //        LEFT JOIN service_providers sp ON b.provider_id = sp.id
 //        LEFT JOIN services s ON b.service_id = s.id
@@ -94,9 +105,13 @@
 //         return NextResponse.json({ success: false, message: 'No payment intent found' }, { status: 400 })
 //       }
 
-//       // Get actual minutes worked from timer
-//       const actualMinutes = booking.actual_duration_minutes || 0
-//       const standardMinutes = booking.standard_duration_minutes || booking.standard_duration || 60
+//       // Get actual minutes worked from booking
+//       const actualMinutes = parseInt(booking.actual_duration_minutes || 0, 10)
+//       // Determine standard minutes
+//       const standardMinutes = parseInt(
+//         booking.standard_minutes || booking.service_duration || booking.standard_duration_minutes || booking.duration_minutes || 60,
+//         10
+//       )
 //       const basePrice = parseFloat(booking.service_price)
 //       const overtimeRate = parseFloat(booking.additional_price || 0)
       
@@ -115,7 +130,7 @@
 //       const providerStripeAccountId = booking.stripe_account_id
 //       const hasProviderAccount = !!providerStripeAccountId && booking.stripe_onboarding_complete === 1
 
-//       console.log('💰 Pro-rated Payment:', {
+//       console.log('💰 Payment:', {
 //         booking: id,
 //         actual_minutes: actualMinutes,
 //         standard_minutes: standardMinutes,
@@ -130,7 +145,7 @@
 //       try {
 //         const paymentIntent = await stripe.paymentIntents.retrieve(booking.payment_intent_id)
 
-//         // ⚡ FIX: Don't update amount, directly capture with amount_to_capture
+//         // Capture the payment with calculated amount
 //         if (paymentIntent.status === 'requires_capture') {
 //           console.log(`🔄 Capturing £${finalAmount} from authorized £${paymentIntent.amount/100}`)
           
@@ -152,6 +167,8 @@
 //           [providerAmount, id]
 //         )
 
+//         let transferId = null
+
 //         // Transfer to provider if they have Stripe account
 //         if (hasProviderAccount && providerStripeAccountId && providerCents > 0) {
 //           try {
@@ -170,6 +187,7 @@
 //               description: `Payment for booking #${booking.booking_number} to ${booking.provider_name}`
 //             })
             
+//             transferId = transfer.id
 //             console.log('✅ Transfer created:', transfer.id)
             
 //             let paymentNote = ''
@@ -199,6 +217,30 @@
 //             [id, `💰 Pay ${booking.provider_name} £${providerAmount} manually (worked ${actualMinutes}min)`]
 //           )
 //         }
+
+//         // ========== NEW CODE: Record payout in provider_payouts table ==========
+//         if (providerAmount > 0 && booking.provider_id) {
+//           await connection.execute(
+//             `INSERT INTO provider_payouts 
+//              (provider_id, amount, status, stripe_transfer_id, booking_id, notes, created_at)
+//              VALUES (?, ?, 'pending', ?, ?, ?, NOW())`,
+//             [booking.provider_id, providerAmount, transferId, id, 
+//              `Payment for booking #${booking.booking_number}`]
+//           );
+
+//           // Update provider balances
+//           await connection.execute(
+//             `UPDATE service_providers 
+//              SET total_earnings = total_earnings + ?,
+//                  available_balance = available_balance + ?,
+//                  lifetime_balance = lifetime_balance + ?
+//              WHERE id = ?`,
+//             [providerAmount, providerAmount, providerAmount, booking.provider_id]
+//           );
+          
+//           console.log(`✅ Payout recorded for provider ${booking.provider_id}: £${providerAmount}`);
+//         }
+//         // ========== END OF NEW CODE ==========
 
 //         await connection.execute(
 //           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'completed', ?)`,
@@ -271,10 +313,17 @@
 
 
 
+
+
+
+
+
+
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
+import { sendEmail } from '@/lib/email'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
@@ -301,6 +350,149 @@ function calculateFinalAmount(basePrice, standardMinutes, actualMinutes, overtim
   return basePrice
 }
 
+// Receipt email HTML generator using your email layout
+function getReceiptEmailHtml(data, isCustomer = true) {
+  const { 
+    bookingNumber, 
+    serviceName, 
+    customerName, 
+    providerName, 
+    finalAmount,
+    providerAmount,
+    actualMinutes,
+    standardMinutes,
+    isProrated,
+    isOvertime,
+    jobDate
+  } = data
+
+  const role = isCustomer ? 'Customer' : 'Provider'
+  const recipientName = isCustomer ? customerName : providerName
+  const amount = isCustomer ? finalAmount : providerAmount
+  const amountLabel = isCustomer ? 'Total Paid' : 'Your Earnings'
+  
+  const percentageWorked = Math.round((actualMinutes / standardMinutes) * 100)
+  const formattedDate = jobDate ? new Date(jobDate).toLocaleDateString() : new Date().toLocaleDateString()
+
+  const body = `
+    <p style="margin:0 0 8px;font-size:18px;font-weight:600;color:#0f172a;">Hi ${recipientName},</p>
+    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7;">
+      ${isCustomer 
+        ? `Thank you for your payment. Your booking with <strong>${providerName}</strong> has been completed successfully.` 
+        : `Payment has been processed for your service <strong>"${serviceName}"</strong> provided to ${customerName}.`}
+    </p>
+
+    <!-- Booking Details Box -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:20px;">
+          <p style="margin:0 0 12px;font-size:14px;font-weight:600;color:#0f172a;">Booking Details</p>
+          <p style="margin:0 0 8px;font-size:14px;color:#334155;"><strong>Booking #:</strong> ${bookingNumber}</p>
+          <p style="margin:0 0 8px;font-size:14px;color:#334155;"><strong>Service:</strong> ${serviceName}</p>
+          <p style="margin:0 0 8px;font-size:14px;color:#334155;"><strong>Date:</strong> ${formattedDate}</p>
+          <p style="margin:0 0 8px;font-size:14px;color:#334155;"><strong>Duration:</strong> ${actualMinutes} minutes 
+            ${isProrated ? `(${percentageWorked}% of standard ${standardMinutes}min)` : ''}
+            ${isOvertime ? '(includes overtime)' : ''}
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Amount Box -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:${isCustomer ? '#f0fdf4' : '#eff6ff'};border:1px solid ${isCustomer ? '#bbf7d0' : '#bae6fd'};border-radius:12px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:20px;text-align:center;">
+          <p style="margin:0 0 5px;font-size:14px;color:#64748b;">${amountLabel}</p>
+          <p style="margin:0;font-size:36px;font-weight:bold;color:${isCustomer ? '#16a34a' : '#2563eb'};">£${amount.toFixed(2)}</p>
+        </td>
+      </tr>
+    </table>
+
+    ${!isCustomer ? `
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;border-radius:8px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:15px;">
+          <p style="margin:0;font-size:14px;color:#475569;"><strong>Customer:</strong> ${customerName}</p>
+        </td>
+      </tr>
+    </table>
+    ` : ''}
+
+    <p style="margin:24px 0 0;font-size:14px;color:#64748b;">
+      This receipt is for your records. Thank you for using WorkOnTap!
+    </p>
+    <p style="margin:8px 0 0;font-size:14px;color:#64748b;">
+      Best regards,<br>
+      The WorkOnTap Team
+    </p>
+  `;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment Receipt</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- Logo Bar -->
+          <tr>
+            <td align="center" style="padding-bottom:20px;">
+              <span style="font-size:22px;font-weight:700;color:#0f766e;letter-spacing:-0.5px;">Work<span style="color:#0891b2;">On</span>Tap</span>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+              <!-- Header Banner -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:${isCustomer ? 'linear-gradient(135deg, #0f766e, #0891b2)' : 'linear-gradient(135deg, #7e22ce, #9333ea)'};padding:40px 32px;text-align:center;">
+                    <div style="font-size:48px;margin-bottom:12px;">${isCustomer ? '🧾' : '💰'}</div>
+                    <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.3px;">
+                      ${isCustomer ? 'Payment Receipt' : 'Payment Received'}
+                    </h1>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Body -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:40px 40px 32px;">
+                    ${body}
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 0;text-align:center;">
+              <p style="margin:0 0 4px;font-size:13px;color:#94a3b8;">© ${new Date().getFullYear()} WorkOnTap · Calgary, Alberta, Canada</p>
+              <p style="margin:0;font-size:12px;color:#cbd5e1;">This receipt was sent to you because you have a booking on WorkOnTap.</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>`;
+}
+
 export async function POST(request, { params }) {
   const token = request.cookies.get('customer_token')?.value
   if (!token) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
@@ -320,11 +512,11 @@ export async function POST(request, { params }) {
 
   try {
     // Get service duration from services table or booking, with sensible fallback
-    // Prefer service duration, then booking.standard_duration_minutes, then 60
     const [[booking]] = await connection.execute(
       `SELECT b.*, 
               sp.stripe_account_id, 
-              sp.name as provider_name, 
+              sp.name as provider_name,
+              sp.email as provider_email,
               sp.stripe_onboarding_complete,
               s.duration_minutes as service_duration,
               COALESCE(s.duration_minutes, b.standard_duration_minutes, 60) as standard_minutes
@@ -371,8 +563,7 @@ export async function POST(request, { params }) {
 
       // Get actual minutes worked from booking
       const actualMinutes = parseInt(booking.actual_duration_minutes || 0, 10)
-      // Determine standard minutes: prefer the SQL-coalesced `standard_minutes`,
-      // fall back to any other duration fields if present, then 60
+      // Determine standard minutes
       const standardMinutes = parseInt(
         booking.standard_minutes || booking.service_duration || booking.standard_duration_minutes || booking.duration_minutes || 60,
         10
@@ -395,7 +586,7 @@ export async function POST(request, { params }) {
       const providerStripeAccountId = booking.stripe_account_id
       const hasProviderAccount = !!providerStripeAccountId && booking.stripe_onboarding_complete === 1
 
-      console.log('💰 Pro-rated Payment:', {
+      console.log('💰 Payment:', {
         booking: id,
         actual_minutes: actualMinutes,
         standard_minutes: standardMinutes,
@@ -432,6 +623,8 @@ export async function POST(request, { params }) {
           [providerAmount, id]
         )
 
+        let transferId = null
+
         // Transfer to provider if they have Stripe account
         if (hasProviderAccount && providerStripeAccountId && providerCents > 0) {
           try {
@@ -450,6 +643,7 @@ export async function POST(request, { params }) {
               description: `Payment for booking #${booking.booking_number} to ${booking.provider_name}`
             })
             
+            transferId = transfer.id
             console.log('✅ Transfer created:', transfer.id)
             
             let paymentNote = ''
@@ -480,6 +674,30 @@ export async function POST(request, { params }) {
           )
         }
 
+        // ========== NEW CODE: Record payout in provider_payouts table ==========
+        if (providerAmount > 0 && booking.provider_id) {
+          await connection.execute(
+            `INSERT INTO provider_payouts 
+             (provider_id, amount, status, stripe_transfer_id, booking_id, notes, created_at)
+             VALUES (?, ?, 'pending', ?, ?, ?, NOW())`,
+            [booking.provider_id, providerAmount, transferId, id, 
+             `Payment for booking #${booking.booking_number}`]
+          );
+
+          // Update provider balances
+          await connection.execute(
+            `UPDATE service_providers 
+             SET total_earnings = total_earnings + ?,
+                 available_balance = available_balance + ?,
+                 lifetime_balance = lifetime_balance + ?
+             WHERE id = ?`,
+            [providerAmount, providerAmount, providerAmount, booking.provider_id]
+          );
+          
+          console.log(`✅ Payout recorded for provider ${booking.provider_id}: £${providerAmount}`);
+        }
+        // ========== END OF NEW CODE ==========
+
         await connection.execute(
           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'completed', ?)`,
           [id, `✅ Customer approved. Final payment: £${finalAmount} for ${actualMinutes}min work`]
@@ -487,14 +705,66 @@ export async function POST(request, { params }) {
 
         await connection.query('COMMIT')
 
+        // ===== SEND EMAIL RECEIPTS =====
+        try {
+          // Get customer details from users table
+          const [users] = await connection.execute(
+            `SELECT email, first_name, last_name FROM users WHERE id = ?`,
+            [booking.user_id]
+          )
+          
+          const customer = users[0]
+          const customerEmail = customer?.email
+          const customerName = `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || 'Customer'
+
+          const receiptData = {
+            bookingNumber: booking.booking_number,
+            serviceName: booking.service_name,
+            customerName: customerName,
+            providerName: booking.provider_name || 'Provider',
+            finalAmount: finalAmount,
+            providerAmount: providerAmount,
+            actualMinutes: actualMinutes,
+            standardMinutes: standardMinutes,
+            isProrated: actualMinutes < standardMinutes,
+            isOvertime: actualMinutes > standardMinutes,
+            jobDate: booking.job_date || new Date().toISOString()
+          }
+
+          // Send to customer
+          if (customerEmail) {
+            await sendEmail({
+              to: customerEmail,
+              subject: `🧾 Your WorkOnTap Receipt - Booking #${booking.booking_number}`,
+              html: getReceiptEmailHtml(receiptData, true),
+              text: `Thank you for your payment of £${finalAmount.toFixed(2)} for booking #${booking.booking_number}`
+            })
+            console.log(`✅ Receipt email sent to customer: ${customerEmail}`)
+          }
+
+          // Send to provider
+          if (booking.provider_email) {
+            await sendEmail({
+              to: booking.provider_email,
+              subject: `💰 Payment Received - WorkOnTap Booking #${booking.booking_number}`,
+              html: getReceiptEmailHtml(receiptData, false),
+              text: `Payment of £${providerAmount.toFixed(2)} has been processed for booking #${booking.booking_number}`
+            })
+            console.log(`✅ Receipt email sent to provider: ${booking.provider_email}`)
+          }
+        } catch (emailErr) {
+          console.error('❌ Email error:', emailErr)
+          // Don't fail the transaction if emails fail
+        }
+
         // Create success message based on timing
         let successMessage = ''
         if (actualMinutes < standardMinutes) {
-          successMessage = `✅ Payment released! You were charged £${finalAmount} for ${actualMinutes}min (pro-rated from £${basePrice} for ${standardMinutes}min)`
+          successMessage = `✅ Payment released! You were charged £${finalAmount} for ${actualMinutes}min (pro-rated from £${basePrice} for ${standardMinutes}min). Receipt sent to your email.`
         } else if (actualMinutes > standardMinutes) {
-          successMessage = `✅ Payment released! You were charged £${finalAmount} for ${actualMinutes}min (includes overtime)`
+          successMessage = `✅ Payment released! You were charged £${finalAmount} for ${actualMinutes}min (includes overtime). Receipt sent to your email.`
         } else {
-          successMessage = `✅ Payment released successfully!`
+          successMessage = `✅ Payment released successfully! Receipt sent to your email.`
         }
 
         return NextResponse.json({

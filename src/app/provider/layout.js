@@ -127,7 +127,7 @@ export default function ProviderLayout({ children }) {
     { href: '/provider/available-jobs', label: 'Available Jobs', icon: Briefcase },
     { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
     { href: '/provider/chats', label: 'Messages', icon: MessageCircle, stripeRequired: true },
-    { href: '/provider/earnings', label: 'Earnings', icon: DollarSign, stripeRequired: true },
+    { href: '/provider/payouts', label: 'Earnings', icon: DollarSign, stripeRequired: true },
     { href: '/provider/profile', label: 'Profile', icon: User },
   ];
 

@@ -10,7 +10,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:init": "node --experimental-modules database/schema.js"
+    "db:init": "node --experimental-modules database/schema.js",
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:report": "npx playwright show-report"
   },
   "type": "module",
   "dependencies": {
@@ -26,6 +29,7 @@
     "mysql2": "^3.18.0",
     "next": "^15.2.0",
     "nodemailer": "^8.0.1",
+    "playwright": "^1.58.2",
     "preinstall": "^0.0.1-security",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -37,6 +41,7 @@
     "puppeteer": "^24.37.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "autoprefixer": "^10.4.20",
     "cross-env": "^7.0.3",
     "eslint": "^9.17.0",
