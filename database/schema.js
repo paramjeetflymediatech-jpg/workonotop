@@ -21,11 +21,8 @@ const connect = async (withDb = false) => {
   });
 };
 
-console.log("DB USER:", process.env.DB_USER);
-console.log("DB HOST:", process.env.DB_HOST);
-
 // =====================================================
-// Table creation SQL - All 14 tables with all fields
+// Table creation SQL - All 15 tables with exact fields
 // =====================================================
 const tables = [
   // Table 1: users
@@ -66,10 +63,14 @@ const tables = [
     phone VARCHAR(20) UNIQUE NOT NULL,
     specialty VARCHAR(200),
     experience_years INT,
-    rating DECIMAL(3, 2) DEFAULT 0.00,
+    rating DECIMAL(3,2) DEFAULT 0.00,
     total_jobs INT DEFAULT 0,
     total_reviews INT DEFAULT 0,
-    avg_rating DECIMAL(3, 2) DEFAULT 0.00,
+    avg_rating DECIMAL(3,2) DEFAULT 0.00,
+    total_earnings DECIMAL(10,2) DEFAULT 0.00,
+    available_balance DECIMAL(10,2) DEFAULT 0.00,
+    pending_balance DECIMAL(10,2) DEFAULT 0.00,
+    lifetime_balance DECIMAL(10,2) DEFAULT 0.00,
     bio TEXT,
     avatar_url VARCHAR(255),
     location VARCHAR(200),
@@ -80,8 +81,6 @@ const tables = [
     email_verified TINYINT(1) DEFAULT 0,
     email_verification_token VARCHAR(255),
     email_verification_expires DATETIME,
-    reset_token VARCHAR(255) NULL,
-    reset_token_expiry DATETIME NULL,
     onboarding_step INT DEFAULT 1,
     onboarding_completed TINYINT(1) DEFAULT 0,
     documents_uploaded TINYINT(1) DEFAULT 0,
@@ -95,6 +94,8 @@ const tables = [
     skills JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    reset_token VARCHAR(255),
+    reset_token_expiry DATETIME,
     INDEX idx_city (city),
     INDEX idx_status (status),
     INDEX idx_onboarding_step (onboarding_step),
@@ -110,8 +111,8 @@ const tables = [
     slug VARCHAR(200) UNIQUE NOT NULL,
     description TEXT,
     short_description VARCHAR(500),
-    base_price DECIMAL(10, 2) NOT NULL,
-    additional_price DECIMAL(10, 2),
+    base_price DECIMAL(10,2) NOT NULL,
+    additional_price DECIMAL(10,2),
     duration_minutes INT,
     image_url VARCHAR(255),
     use_cases TEXT,
@@ -173,7 +174,7 @@ const tables = [
     INDEX idx_account_status (account_status)
   )`,
 
-  // Table 7: bookings (FIXED - added authorized_amount field)
+  // Table 7: bookings
   `CREATE TABLE IF NOT EXISTS bookings (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
@@ -181,8 +182,8 @@ const tables = [
     service_id INT NOT NULL,
     provider_id INT,
     service_name VARCHAR(200),
-    service_price DECIMAL(10, 2) NOT NULL,
-    additional_price DECIMAL(10, 2) DEFAULT 0.00,
+    service_price DECIMAL(10,2) NOT NULL,
+    additional_price DECIMAL(10,2) DEFAULT 0.00,
     standard_duration_minutes INT DEFAULT 60,
     customer_first_name VARCHAR(100) NOT NULL,
     customer_last_name VARCHAR(100) NOT NULL,
@@ -201,23 +202,23 @@ const tables = [
     city VARCHAR(100) DEFAULT 'Calgary',
     postal_code VARCHAR(20),
     status ENUM('pending', 'matching', 'confirmed', 'in_progress', 'awaiting_approval', 'completed', 'cancelled', 'disputed') DEFAULT 'pending',
-    commission_percent DECIMAL(5, 2),
-    provider_amount DECIMAL(10, 2),
+    commission_percent DECIMAL(5,2),
+    provider_amount DECIMAL(10,2),
     accepted_at DATETIME,
     start_time DATETIME,
     end_time DATETIME,
     actual_duration_minutes INT,
     overtime_minutes INT DEFAULT 0,
-    overtime_earnings DECIMAL(10, 2) DEFAULT 0.00,
-    final_provider_amount DECIMAL(10, 2),
+    overtime_earnings DECIMAL(10,2) DEFAULT 0.00,
+    final_provider_amount DECIMAL(10,2),
     job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started',
     before_photos_uploaded TINYINT(1) DEFAULT 0,
     after_photos_uploaded TINYINT(1) DEFAULT 0,
-    payment_intent_id VARCHAR(255) NULL,
-    authorized_amount DECIMAL(10, 2) DEFAULT NULL,
+    payment_intent_id VARCHAR(255),
+    authorized_amount DECIMAL(10,2),
     payment_status ENUM('pending', 'authorized', 'paid', 'failed', 'refunded') DEFAULT 'pending',
-    payment_method VARCHAR(50) NULL,
-    stripe_customer_id VARCHAR(255) NULL,
+    payment_method VARCHAR(50),
+    stripe_customer_id VARCHAR(255),
     photo_upload_deadline TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -353,6 +354,27 @@ const tables = [
     INDEX idx_user (user_id),
     INDEX idx_provider (provider_id),
     INDEX idx_status (status)
+  )`,
+
+  // Table 15: provider_payouts
+  `CREATE TABLE IF NOT EXISTS provider_payouts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    provider_id INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    status ENUM('pending', 'processing', 'paid', 'failed') DEFAULT 'pending',
+    stripe_payout_id VARCHAR(255),
+    stripe_transfer_id VARCHAR(255),
+    booking_id INT,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    paid_at TIMESTAMP NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL,
+    INDEX idx_provider (provider_id),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at),
+    INDEX idx_booking (booking_id)
   )`
 ];
 
@@ -362,73 +384,64 @@ const tables = [
 const indexes = [
   // Users table indexes
   `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
-  `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`,
 
   // Service providers table indexes
   `CREATE INDEX IF NOT EXISTS idx_providers_email ON service_providers(email)`,
-  `CREATE INDEX IF NOT EXISTS idx_providers_status ON service_providers(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_providers_phone ON service_providers(phone)`,
   `CREATE INDEX IF NOT EXISTS idx_providers_city ON service_providers(city)`,
+  `CREATE INDEX IF NOT EXISTS idx_providers_status ON service_providers(status)`,
   `CREATE INDEX IF NOT EXISTS idx_providers_onboarding ON service_providers(onboarding_step)`,
-  `CREATE INDEX IF NOT EXISTS idx_providers_stripe ON service_providers(stripe_account_id)`,
 
   // Provider documents indexes
   `CREATE INDEX IF NOT EXISTS idx_documents_provider ON provider_documents(provider_id)`,
   `CREATE INDEX IF NOT EXISTS idx_documents_status ON provider_documents(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_documents_verified ON provider_documents(is_verified)`,
 
   // Provider bank accounts indexes
   `CREATE INDEX IF NOT EXISTS idx_bank_provider ON provider_bank_accounts(provider_id)`,
   `CREATE INDEX IF NOT EXISTS idx_bank_stripe ON provider_bank_accounts(stripe_account_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_bank_status ON provider_bank_accounts(account_status)`,
 
   // Services table indexes
   `CREATE INDEX IF NOT EXISTS idx_services_category ON services(category_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_services_active ON services(is_active)`,
   `CREATE INDEX IF NOT EXISTS idx_services_slug ON services(slug)`,
 
   // Bookings table indexes
   `CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id)`,
   `CREATE INDEX IF NOT EXISTS idx_bookings_provider ON bookings(provider_id)`,
   `CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_bookings_email ON bookings(customer_email)`,
   `CREATE INDEX IF NOT EXISTS idx_bookings_date ON bookings(job_date)`,
-  `CREATE INDEX IF NOT EXISTS idx_bookings_timer ON bookings(job_timer_status)`,
+  `CREATE INDEX IF NOT EXISTS idx_bookings_email ON bookings(customer_email)`,
   `CREATE INDEX IF NOT EXISTS idx_bookings_payment_intent ON bookings(payment_intent_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_bookings_payment_status ON bookings(payment_status)`,
 
   // Chat messages indexes
   `CREATE INDEX IF NOT EXISTS idx_chat_booking ON chat_messages(booking_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_chat_sender ON chat_messages(sender_id, sender_type)`,
   `CREATE INDEX IF NOT EXISTS idx_chat_created ON chat_messages(created_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages(is_read)`,
 
   // Booking photos indexes
   `CREATE INDEX IF NOT EXISTS idx_booking_photos_booking ON booking_photos(booking_id)`,
 
   // Booking status history indexes
   `CREATE INDEX IF NOT EXISTS idx_status_history_booking ON booking_status_history(booking_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_status_history_created ON booking_status_history(created_at)`,
 
   // Booking time logs indexes
   `CREATE INDEX IF NOT EXISTS idx_time_logs_booking ON booking_time_logs(booking_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_time_logs_timestamp ON booking_time_logs(timestamp)`,
 
   // Job photos indexes
   `CREATE INDEX IF NOT EXISTS idx_job_photos_booking ON job_photos(booking_id)`,
   `CREATE INDEX IF NOT EXISTS idx_job_photos_type ON job_photos(photo_type)`,
-  `CREATE INDEX IF NOT EXISTS idx_job_photos_uploaded_by ON job_photos(uploaded_by)`,
 
   // Provider reviews indexes
   `CREATE INDEX IF NOT EXISTS idx_reviews_provider ON provider_reviews(provider_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_reviews_customer ON provider_reviews(customer_id)`,
   `CREATE INDEX IF NOT EXISTS idx_reviews_booking ON provider_reviews(booking_id)`,
 
   // Invoices indexes
   `CREATE INDEX IF NOT EXISTS idx_invoices_booking ON invoices(booking_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_invoices_user ON invoices(user_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_invoices_provider ON invoices(provider_id)`,
   `CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number)`,
-  `CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`
+  `CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`,
+
+  // Provider payouts indexes
+  `CREATE INDEX IF NOT EXISTS idx_payouts_provider ON provider_payouts(provider_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_payouts_status ON provider_payouts(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_payouts_booking ON provider_payouts(booking_id)`
 ];
 
 // =====================================================
@@ -454,15 +467,13 @@ async function runMigration() {
     console.log(`   ✓ Connected to database\n`);
 
     // Step 3: Create tables
-    console.log('🏗️  Step 2: Creating tables...');
+    console.log('🏗️  Step 2: Creating 15 tables...');
     let createdCount = 0;
     const tableNames = [];
 
     for (const sql of tables) {
       try {
         await conn.execute(sql);
-        
-        // Extract table name for logging
         const match = sql.match(/CREATE TABLE.*?(\w+)/);
         if (match) {
           const tableName = match[1];
@@ -473,12 +484,13 @@ async function runMigration() {
       } catch (err) {
         if (err.code === 'ER_TABLE_EXISTS_ERROR') {
           console.log(`   ⊘ Table already exists (skipped)`);
+          createdCount++;
         } else {
           throw err;
         }
       }
     }
-    console.log(`   📊 Total tables created/verified: ${createdCount}/14\n`);
+    console.log(`   📊 Total tables created/verified: ${createdCount}/15\n`);
 
     // Step 4: Create indexes
     console.log('📊 Step 3: Creating indexes...');
@@ -488,7 +500,6 @@ async function runMigration() {
         await conn.execute(sql);
         indexCount++;
       } catch (err) {
-        // Ignore duplicate index errors
         if (!err.message.includes('Duplicate key name')) {
           console.log(`   ⚠ Warning: ${err.message.substring(0, 100)}`);
         }
@@ -506,29 +517,20 @@ async function runMigration() {
       console.log(`   ${(i+1).toString().padStart(2)}. ${name}`);
     });
 
-    // Step 6: Show table structures count
+    // Step 6: Show table structures
     console.log('\n📋 Step 5: Table column counts:');
     const tableQueries = [
       'users', 'service_categories', 'service_providers', 'services',
       'provider_documents', 'provider_bank_accounts', 'bookings',
       'chat_messages', 'booking_photos', 'booking_status_history',
-      'booking_time_logs', 'job_photos', 'provider_reviews', 'invoices'
+      'booking_time_logs', 'job_photos', 'provider_reviews', 'invoices',
+      'provider_payouts'
     ];
 
     for (const table of tableQueries) {
       try {
         const [columns] = await conn.query(`DESCRIBE ${table}`);
         console.log(`   • ${table.padEnd(22)}: ${columns.length} columns`);
-        
-        // Special check for authorized_amount in bookings
-        if (table === 'bookings') {
-          const hasAuthorizedAmount = columns.some(col => col.Field === 'authorized_amount');
-          if (hasAuthorizedAmount) {
-            console.log(`     ✅ authorized_amount field present`);
-          } else {
-            console.log(`     ❌ authorized_amount field MISSING!`);
-          }
-        }
       } catch (err) {
         console.log(`   • ${table.padEnd(22)}: not found`);
       }
@@ -539,20 +541,16 @@ async function runMigration() {
     console.log('✅ Migration completed successfully!');
     console.log('='.repeat(60));
     console.log(`   Database: ${DB_NAME}`);
-    console.log(`   Tables:   ${actualTables.length}/14`);
+    console.log(`   Tables:   ${actualTables.length}/15`);
     console.log(`   Indexes:  ${indexCount}`);
-    console.log('   ✨ New field added: authorized_amount in bookings table');
     console.log('='.repeat(60) + '\n');
 
   } catch (err) {
     console.error('\n❌ Error:', err.message);
     if (err.code === 'ER_ACCESS_DENIED_ERROR') {
       console.error('   🔑 Check database credentials in .env file');
-      console.error('   DB_HOST, DB_USER, DB_PASSWORD, DB_PORT');
     } else if (err.code === 'ECONNREFUSED') {
       console.error('   🔌 Make sure MySQL server is running');
-    } else if (err.code === 'ER_BAD_DB_ERROR') {
-      console.error('   📁 Database does not exist, but should be created automatically');
     }
     process.exit(1);
   } finally {

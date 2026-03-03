@@ -525,7 +525,7 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, amount, hasO
                 <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-xs font-semibold text-amber-800">⚠️ Overtime Available</p>
-                  <p className="text-xs text-amber-700 mt-0.5">Maximum 2 hours overtime allowed per job. You'll be paid at overtime rate for any extra time.</p>
+                  <p className="text-xs text-amber-700 mt-0.5">Maximum 2 hours overtime allowed per job. You&apos;ll be paid at overtime rate for any extra time.</p>
                 </div>
               </div>
             </div>
