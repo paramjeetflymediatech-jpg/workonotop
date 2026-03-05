@@ -56,8 +56,6 @@ export default function JobRequests() {
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
-  const [tradespeople, setTradespeople] = useState([])
-  const [updatingJob, setUpdatingJob] = useState(null)
   const [showSuccessMessage, setShowSuccessMessage] = useState('')
   const [showErrorMessage, setShowErrorMessage] = useState('')
   const [page, setPage] = useState(1)
@@ -71,7 +69,6 @@ export default function JobRequests() {
   useEffect(() => {
     checkAuth()
     loadJobs()
-    loadTradespeople()
   }, [])
 
   useEffect(() => { setPage(1) }, [filter, selectedCustomer])
@@ -94,15 +91,7 @@ export default function JobRequests() {
     }
   }
 
-  const loadTradespeople = async () => {
-    try {
-      const res = await fetch('/api/provider?status=active')
-      const data = await res.json()
-      if (data.success) setTradespeople(data.data || [])
-    } catch (error) {
-      console.error('Error loading tradespeople:', error)
-    }
-  }
+
 
   useEffect(() => {
     if (jobs.length > 0) {
@@ -133,28 +122,7 @@ export default function JobRequests() {
     }
   }
 
-  const assignProvider = async (jobId, providerId) => {
-    if (!providerId) return
-    setUpdatingJob(jobId)
-    try {
-      const res = await fetch(`/api/bookings?id=${jobId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider_id: providerId, status: 'matching' })
-      })
-      const data = await res.json()
-      if (data.success) {
-        showMessage('success', 'Provider assigned successfully')
-        loadJobs()
-      } else {
-        showMessage('error', data.message || 'Failed to assign provider')
-      }
-    } catch {
-      showMessage('error', 'Failed to assign provider')
-    } finally {
-      setUpdatingJob(null)
-    }
-  }
+
 
   const generateInvoice = async (bookingId) => {
     setGeneratingInvoice(bookingId)
@@ -381,11 +349,10 @@ export default function JobRequests() {
               {pagedJobs.map((job) => {
                 const cfg = getStatusConfig(job.status)
                 const hasOvertime = parseFloat(job.additional_price || 0) > 0
-                const isUpdating = updatingJob === job.id
 
                 return (
                   <div key={job.id}
-                    className={`group relative flex flex-col rounded-2xl border transition-all duration-200 ${isUpdating ? 'opacity-50 pointer-events-none' : ''} ${isDarkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-xl hover:shadow-black/30'
+                    className={`group relative flex flex-col rounded-2xl border transition-all duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-xl hover:shadow-black/30'
                       : 'bg-white border-slate-200 hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/5'
                       }`}
                   >
@@ -435,14 +402,7 @@ export default function JobRequests() {
                               {job.provider_name}
                             </div>
                           ) : (
-                            <select onClick={e => e.stopPropagation()} onChange={e => assignProvider(job.id, e.target.value)}
-                              defaultValue="" disabled={isUpdating}
-                              className={`text-xs rounded-lg px-2.5 py-1.5 border w-full focus:outline-none focus:ring-2 focus:ring-teal-500 transition ${isDarkMode ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-700 border-slate-200'}`}>
-                              <option value="" disabled>Assign provider…</option>
-                              {tradespeople.map(p => (
-                                <option key={p.id} value={p.id}>{p.name}{p.rating ? ` ★ ${p.rating}` : ''}</option>
-                              ))}
-                            </select>
+                            <div className={`text-xs italic ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unassigned</div>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0">
