@@ -6,5 +6,5 @@
    - Environments: .env
 
    Creating an optimized production build ...
- Γ£ô Compiled successfully
+ Γ$ô Compiled successfully
    Linting and checking validity of types ...
