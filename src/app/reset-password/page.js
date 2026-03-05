@@ -173,4 +173,8 @@ export default function ResetPasswordPage() {
             <ResetPasswordForm />
         </Suspense>
     );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 5c0827928d7651b085a949ae893107763ccb971a
