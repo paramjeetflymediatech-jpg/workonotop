@@ -24,6 +24,40 @@ function Toast({ toast, onDismiss }) {
   )
 }
 
+// ── Stripe Not Connected Modal ─────────────────────────────────────────────────
+function StripeRequiredModal({ isOpen, onClose }) {
+  if (!isOpen) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="p-6 text-center">
+          <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">💳</span>
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Stripe Not Connected</h3>
+          <p className="text-sm text-gray-500 mb-1">
+            You need to connect your Stripe account before you can accept jobs and receive payments.
+          </p>
+          <p className="text-xs text-gray-400 mb-5">
+            It only takes a few minutes to set up.
+          </p>
+          <div className="flex gap-3">
+            <button onClick={onClose}
+              className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl text-sm hover:bg-gray-50 transition">
+              Later
+            </button>
+            <Link href="/provider/onboarding?step=3"
+              className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition text-center">
+              Connect Stripe →
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Confirm Modal ─────────────────────────────────────────────────────────────
 function ConfirmModal({ isOpen, onClose, onConfirm, loading, amount, hasOvertime, baseEarnings, netOT }) {
   if (!isOpen) return null
@@ -105,11 +139,25 @@ export default function ProviderJobDetail({ params }) {
   const [loading, setLoading] = useState(true)
   const [accepting, setAccepting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [stripeConnected, setStripeConnected] = useState(true)
+  const [stripeModal, setStripeModal] = useState(false)
   const [toast, setToast] = useState(null)
 
   const showToast = (type, text) => setToast({ type, text })
 
-  useEffect(() => { loadJob() }, [id])
+  useEffect(() => { loadJob(); checkStripe() }, [id])
+
+  const checkStripe = async () => {
+    try {
+      const res = await fetch('/api/provider/me')
+      const data = await res.json()
+      if (data.success) {
+        setStripeConnected(data.provider?.stripe_onboarding_complete || false)
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   const loadJob = async () => {
     setLoading(true)
@@ -130,6 +178,7 @@ export default function ProviderJobDetail({ params }) {
   }
 
   const acceptJob = async () => {
+    // stripeConnected should already be true when called
     setAccepting(true)
     try {
       const res = await fetch('/api/provider/available-jobs', {
@@ -186,6 +235,7 @@ export default function ProviderJobDetail({ params }) {
   return (
     <div className="w-full pb-32">
       <Toast toast={toast} onDismiss={() => setToast(null)} />
+      <StripeRequiredModal isOpen={stripeModal} onClose={() => setStripeModal(false)} />
 
       <ConfirmModal
         isOpen={showConfirm}
@@ -394,7 +444,13 @@ export default function ProviderJobDetail({ params }) {
       {job.is_available && (
         <div className="fixed bottom-0 left-0 right-0 lg:left-60 z-30 p-4 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <div className="max-w-3xl mx-auto">
-            <button onClick={() => setShowConfirm(true)}
+            <button onClick={() => {
+                if (!stripeConnected) {
+                  setStripeModal(true)
+                } else {
+                  setShowConfirm(true)
+                }
+              }}
               className={`w-full py-4 text-white rounded-2xl font-bold text-base transition shadow-lg flex items-center justify-center gap-2 ${
                 hasOvertime
                   ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-95'

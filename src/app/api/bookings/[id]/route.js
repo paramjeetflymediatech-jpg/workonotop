@@ -1,123 +1,104 @@
-// app/api/bookings/[id]/route.js - FIXED WITH PAYMENT FIELDS
+// app/api/bookings/[id]/route.js
 import { NextResponse } from 'next/server'
-import { execute } from '@/lib/db'
+import { withConnection } from '@/lib/db'
 
 export async function GET(request, { params }) {
   try {
     const { id } = await params
 
-    const results = await execute(`
-      SELECT 
-        b.*,
-        s.name as service_name,
-        s.slug as service_slug,
-        s.image_url as service_image,
-        s.description as service_description,
-        s.duration_minutes as service_duration,
-        c.name as category_name,
-        c.icon as category_icon,
-        sp.name as provider_name,
-        sp.phone as provider_phone,
-        sp.email as provider_email,
-        sp.rating as provider_rating,
-        -- Customer upload photos (booking_photos table)
-        (
-          SELECT JSON_ARRAYAGG(photo_url)
-          FROM booking_photos 
-          WHERE booking_id = b.id
-        ) as photos_json,
-        -- Job before photos (job_photos table)
-        (
-          SELECT JSON_ARRAYAGG(JSON_OBJECT('url', jp.photo_url, 'uploaded_at', jp.uploaded_at))
-          FROM job_photos jp
-          WHERE jp.booking_id = b.id AND jp.photo_type = 'before'
-        ) as before_photos_json,
-        -- Job after photos (job_photos table)
-        (
-          SELECT JSON_ARRAYAGG(JSON_OBJECT('url', jp.photo_url, 'uploaded_at', jp.uploaded_at))
-          FROM job_photos jp
-          WHERE jp.booking_id = b.id AND jp.photo_type = 'after'
-        ) as after_photos_json,
-        -- Status history as JSON array
-        (
-          SELECT JSON_ARRAYAGG(
-            JSON_OBJECT(
-              'id', h.id,
-              'status', h.status,
-              'notes', h.notes,
-              'created_at', h.created_at
-            )
-          )
-          FROM booking_status_history h
-          WHERE h.booking_id = b.id
-          ORDER BY h.created_at DESC
-        ) as history_json
-      FROM bookings b
-      LEFT JOIN services s ON b.service_id = s.id
-      LEFT JOIN service_categories c ON s.category_id = c.id
-      LEFT JOIN service_providers sp ON b.provider_id = sp.id
-      WHERE b.id = ? OR b.booking_number = ?
-    `, [id, id])
+    return await withConnection(async (connection) => {
 
-    if (results.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Booking not found' },
-        { status: 404 }
-      )
-    }
+      // ── 1. Main booking ───────────────────────────────────────────────────
+      const [results] = await connection.execute(`
+        SELECT 
+          b.*,
+          s.name             AS service_name,
+          s.slug             AS service_slug,
+          s.image_url        AS service_image,
+          s.description      AS service_description,
+          s.duration_minutes AS service_duration,
+          c.name             AS category_name,
+          c.icon             AS category_icon,
+          sp.name            AS provider_name,
+          sp.phone           AS provider_phone,
+          sp.email           AS provider_email,
+          sp.rating          AS provider_rating
+        FROM bookings b
+        LEFT JOIN services           s  ON b.service_id  = s.id
+        LEFT JOIN service_categories c  ON s.category_id = c.id
+        LEFT JOIN service_providers  sp ON b.provider_id = sp.id
+        WHERE b.id = ? OR b.booking_number = ?
+        LIMIT 1
+      `, [id, id])
 
-    const booking = results[0]
+      if (results.length === 0) {
+        return NextResponse.json(
+          { success: false, message: 'Booking not found' },
+          { status: 404 }
+        )
+      }
 
-    // Parse time slots
-    if (booking.job_time_slot) {
-      booking.job_time_slot = booking.job_time_slot.split(',')
-    }
+      const booking = results[0]
+      const bookingId = booking.id
 
-    // Parse customer upload photos
-    try {
-      booking.photos = JSON.parse(booking.photos_json) || []
-    } catch {
-      booking.photos = []
-    }
-    delete booking.photos_json
+      // ── 2. All sub-queries in parallel (faster + same connection) ─────────
+      const [
+        [customerPhotos],
+        [beforePhotos],
+        [afterPhotos],
+        [history],
+      ] = await Promise.all([
+        connection.execute(
+          `SELECT photo_url FROM booking_photos 
+           WHERE booking_id = ? ORDER BY created_at ASC`,
+          [bookingId]
+        ),
+        connection.execute(
+          `SELECT photo_url, uploaded_at FROM job_photos 
+           WHERE booking_id = ? AND photo_type = 'before' 
+           ORDER BY uploaded_at ASC`,
+          [bookingId]
+        ),
+        connection.execute(
+          `SELECT photo_url, uploaded_at FROM job_photos 
+           WHERE booking_id = ? AND photo_type = 'after' 
+           ORDER BY uploaded_at ASC`,
+          [bookingId]
+        ),
+        connection.execute(
+          `SELECT id, status, notes, created_at 
+           FROM booking_status_history 
+           WHERE booking_id = ? ORDER BY created_at DESC`,
+          [bookingId]
+        ),
+      ])
 
-    // Parse before/after job photos
-    try {
-      booking.before_photos = JSON.parse(booking.before_photos_json) || []
-    } catch {
-      booking.before_photos = []
-    }
-    delete booking.before_photos_json
+      // ── 3. Attach results ─────────────────────────────────────────────────
+      booking.photos         = customerPhotos.map(p => p.photo_url)
+      booking.before_photos  = beforePhotos.map(p => ({ url: p.photo_url, uploaded_at: p.uploaded_at }))
+      booking.after_photos   = afterPhotos.map(p => ({ url: p.photo_url, uploaded_at: p.uploaded_at }))
+      booking.status_history = history
 
-    try {
-      booking.after_photos = JSON.parse(booking.after_photos_json) || []
-    } catch {
-      booking.after_photos = []
-    }
-    delete booking.after_photos_json
+      // ── 4. Parse time slots ───────────────────────────────────────────────
+      if (booking.job_time_slot) {
+        booking.job_time_slot = booking.job_time_slot.split(',')
+      }
 
-    // Parse history
-    try {
-      booking.status_history = JSON.parse(booking.history_json) || []
-    } catch {
-      booking.status_history = []
-    }
-    delete booking.history_json
+      // ── 5. Parse numerics ─────────────────────────────────────────────────
+      booking.service_price         = parseFloat(booking.service_price         || 0)
+      booking.additional_price      = parseFloat(booking.additional_price      || 0)
+      booking.provider_amount       = parseFloat(booking.provider_amount       || 0)
+      booking.overtime_earnings     = parseFloat(booking.overtime_earnings     || 0)
+      booking.authorized_amount     = booking.authorized_amount     != null ? parseFloat(booking.authorized_amount)     : null
+      booking.final_provider_amount = booking.final_provider_amount != null ? parseFloat(booking.final_provider_amount) : null
+      booking.commission_percent    = booking.commission_percent    != null ? parseFloat(booking.commission_percent)    : null
+      booking.duration_minutes      = booking.service_duration || 60
 
-    // Parse numeric values
-    booking.service_price = parseFloat(booking.service_price || 0)
-    booking.additional_price = parseFloat(booking.additional_price || 0)
-    booking.provider_amount = parseFloat(booking.provider_amount || 0)
-    booking.overtime_earnings = parseFloat(booking.overtime_earnings || 0)
-    booking.final_provider_amount = booking.final_provider_amount ? parseFloat(booking.final_provider_amount) : null
-    booking.commission_percent = booking.commission_percent ? parseFloat(booking.commission_percent) : null
-    booking.duration_minutes = booking.service_duration || 60
-
-    return NextResponse.json({ success: true, data: booking })
-
+      return NextResponse.json({ success: true, data: booking })
+    })
 
   } catch (error) {
-    console.error('Error fetching booking:', error)
+    console.error('Booking fetch error:', error)
     return NextResponse.json(
       { success: false, message: 'Failed to fetch booking: ' + error.message },
       { status: 500 }

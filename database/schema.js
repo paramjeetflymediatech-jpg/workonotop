@@ -22,7 +22,7 @@ const connect = async (withDb = false) => {
 };
 
 // =====================================================
-// Table creation SQL - All 15 tables with exact fields
+// Table creation SQL - All 16 tables with exact fields
 // =====================================================
 const tables = [
   // Table 1: users
@@ -377,6 +377,25 @@ const tables = [
     INDEX idx_status (status),
     INDEX idx_created_at (created_at),
     INDEX idx_booking (booking_id)
+  )`,
+
+  // Table 16: disputes (NEW)
+  `CREATE TABLE IF NOT EXISTS disputes (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    booking_id INT NOT NULL,
+    raised_by_user_id INT NOT NULL,
+    reason TEXT NOT NULL,
+    status ENUM('open', 'reviewing', 'resolved', 'closed') DEFAULT 'open',
+    admin_notes TEXT,
+    resolved_at DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    FOREIGN KEY (raised_by_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_booking (booking_id),
+    INDEX idx_raised_by (raised_by_user_id),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
   )`
 ];
 
@@ -388,20 +407,31 @@ const alterations = [
   // Fix service_providers.status ENUM to include 'suspended'
   {
     table: 'service_providers',
-    column: 'suspended_status_enum',
+    column: 'status',
     sql: `ALTER TABLE service_providers MODIFY COLUMN status ENUM('active', 'inactive', 'pending', 'rejected', 'suspended') DEFAULT 'pending'`
   },
   // Add forgot-password columns to users (customer accounts)
   {
     table: 'users',
     column: 'reset_token',
-    sql: `ALTER TABLE users ADD COLUMN reset_token VARCHAR(255) NULL`
+    sql: `ALTER TABLE users ADD COLUMN reset_token VARCHAR(255) NULL AFTER role`
   },
   {
     table: 'users',
     column: 'reset_token_expiry',
-    sql: `ALTER TABLE users ADD COLUMN reset_token_expiry DATETIME NULL`
+    sql: `ALTER TABLE users ADD COLUMN reset_token_expiry DATETIME NULL AFTER reset_token`
   },
+  // Add reset_token columns to service_providers if missing
+  {
+    table: 'service_providers',
+    column: 'reset_token',
+    sql: `ALTER TABLE service_providers ADD COLUMN reset_token VARCHAR(255) NULL`
+  },
+  {
+    table: 'service_providers',
+    column: 'reset_token_expiry',
+    sql: `ALTER TABLE service_providers ADD COLUMN reset_token_expiry DATETIME NULL`
+  }
 ];
 
 // =====================================================
@@ -467,7 +497,13 @@ const indexes = [
   // Provider payouts indexes
   `CREATE INDEX IF NOT EXISTS idx_payouts_provider ON provider_payouts(provider_id)`,
   `CREATE INDEX IF NOT EXISTS idx_payouts_status ON provider_payouts(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_payouts_booking ON provider_payouts(booking_id)`
+  `CREATE INDEX IF NOT EXISTS idx_payouts_booking ON provider_payouts(booking_id)`,
+
+  // Disputes table indexes (NEW)
+  `CREATE INDEX IF NOT EXISTS idx_disputes_booking ON disputes(booking_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_disputes_raised_by ON disputes(raised_by_user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_disputes_status ON disputes(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_disputes_created_at ON disputes(created_at)`
 ];
 
 // =====================================================
@@ -493,7 +529,7 @@ async function runMigration() {
     console.log(`   ✓ Connected to database\n`);
 
     // Step 3: Create tables
-    console.log('🏗️  Step 2: Creating 15 tables...');
+    console.log('🏗️  Step 2: Creating 16 tables...');
     let createdCount = 0;
     const tableNames = [];
 
@@ -516,7 +552,7 @@ async function runMigration() {
         }
       }
     }
-    console.log(`   📊 Total tables created/verified: ${createdCount}/15\n`);
+    console.log(`   📊 Total tables created/verified: ${createdCount}/16\n`);
 
     // Step 3.5: Run alterations (add missing columns to existing tables)
     console.log('🔧 Step 3.5: Applying column alterations...');
@@ -570,7 +606,7 @@ async function runMigration() {
       'provider_documents', 'provider_bank_accounts', 'bookings',
       'chat_messages', 'booking_photos', 'booking_status_history',
       'booking_time_logs', 'job_photos', 'provider_reviews', 'invoices',
-      'provider_payouts'
+      'provider_payouts', 'disputes'
     ];
 
     for (const table of tableQueries) {
@@ -587,7 +623,7 @@ async function runMigration() {
     console.log('✅ Migration completed successfully!');
     console.log('='.repeat(60));
     console.log(`   Database: ${DB_NAME}`);
-    console.log(`   Tables:   ${actualTables.length}/15`);
+    console.log(`   Tables:   ${actualTables.length}/16`);
     console.log(`   Indexes:  ${indexCount}`);
     console.log('='.repeat(60) + '\n');
 
