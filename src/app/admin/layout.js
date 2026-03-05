@@ -167,7 +167,7 @@ export default function AdminLayout({ children }) {
                 {/* Right: Actions */}
                 <div className="flex items-center gap-2 sm:gap-3">
                   {/* Theme Toggle */}
-                  {/* <button
+                  <button
                     onClick={toggleTheme}
                     className="p-2 rounded-lg transition-colors"
                     style={{
@@ -185,7 +185,7 @@ export default function AdminLayout({ children }) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                       </svg>
                     )}
-                  </button> */}
+                  </button>
 
                   {/* Admin Avatar */}
                   <div

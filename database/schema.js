@@ -36,6 +36,8 @@ const tables = [
     hear_about VARCHAR(255),
     receive_offers TINYINT(1) DEFAULT 0,
     role ENUM('user', 'admin') DEFAULT 'user',
+    reset_token VARCHAR(255) NULL,
+    reset_token_expiry DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_role (role)
@@ -75,7 +77,7 @@ const tables = [
     avatar_url VARCHAR(255),
     location VARCHAR(200),
     city VARCHAR(100),
-    status ENUM('active', 'inactive', 'pending', 'rejected') DEFAULT 'pending',
+    status ENUM('active', 'inactive', 'pending', 'rejected', 'suspended') DEFAULT 'pending',
     remember_token VARCHAR(100),
     last_login DATETIME,
     email_verified TINYINT(1) DEFAULT 0,
@@ -379,6 +381,30 @@ const tables = [
 ];
 
 // =====================================================
+// Alter table migrations — safely add missing columns
+// compatible with all MySQL versions
+// =====================================================
+const alterations = [
+  // Fix service_providers.status ENUM to include 'suspended'
+  {
+    table: 'service_providers',
+    column: 'suspended_status_enum',
+    sql: `ALTER TABLE service_providers MODIFY COLUMN status ENUM('active', 'inactive', 'pending', 'rejected', 'suspended') DEFAULT 'pending'`
+  },
+  // Add forgot-password columns to users (customer accounts)
+  {
+    table: 'users',
+    column: 'reset_token',
+    sql: `ALTER TABLE users ADD COLUMN reset_token VARCHAR(255) NULL`
+  },
+  {
+    table: 'users',
+    column: 'reset_token_expiry',
+    sql: `ALTER TABLE users ADD COLUMN reset_token_expiry DATETIME NULL`
+  },
+];
+
+// =====================================================
 // Indexes for performance
 // =====================================================
 const indexes = [
@@ -492,6 +518,26 @@ async function runMigration() {
     }
     console.log(`   📊 Total tables created/verified: ${createdCount}/15\n`);
 
+    // Step 3.5: Run alterations (add missing columns to existing tables)
+    console.log('🔧 Step 3.5: Applying column alterations...');
+    for (const alt of alterations) {
+      try {
+        const [cols] = await conn.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+          [DB_NAME, alt.table, alt.column]
+        );
+        if (cols.length === 0) {
+          await conn.execute(alt.sql);
+          console.log(`   ✓ Added column: ${alt.table}.${alt.column}`);
+        } else {
+          console.log(`   ⊘ Column already exists: ${alt.table}.${alt.column}`);
+        }
+      } catch (err) {
+        console.log(`   ⚠ Warning: ${err.message.substring(0, 120)}`);
+      }
+    }
+
     // Step 4: Create indexes
     console.log('📊 Step 3: Creating indexes...');
     let indexCount = 0;
@@ -511,10 +557,10 @@ async function runMigration() {
     console.log('🔍 Step 4: Verifying tables...');
     const [rows] = await conn.query('SHOW TABLES');
     const actualTables = rows.map(row => Object.values(row)[0]);
-    
+
     console.log(`   Found ${actualTables.length} tables in database:`);
     actualTables.sort().forEach((name, i) => {
-      console.log(`   ${(i+1).toString().padStart(2)}. ${name}`);
+      console.log(`   ${(i + 1).toString().padStart(2)}. ${name}`);
     });
 
     // Step 6: Show table structures

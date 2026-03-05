@@ -59,7 +59,7 @@ export async function PUT(request) {
     // Admin: status update only
     if (id) {
       const { status } = body
-      const allowed = ['active', 'inactive', 'suspended']
+      const allowed = ['active', 'inactive', 'suspended', 'pending', 'rejected']
       if (!status || !allowed.includes(status)) {
         return NextResponse.json({ success: false, message: 'Invalid status' }, { status: 400 })
       }
@@ -100,9 +100,9 @@ export async function PUT(request) {
         avatar_url = COALESCE(?, avatar_url), updated_at = NOW()
        WHERE id = ?`,
       [name, email, phone, specialty || null,
-       experience_years ? parseInt(experience_years) : null,
-       bio || null, location || null, city || null,
-       avatar_url || null, decoded.id]
+        experience_years ? parseInt(experience_years) : null,
+        bio || null, location || null, city || null,
+        avatar_url || null, decoded.id]
     )
 
     // ✅ Using execute()

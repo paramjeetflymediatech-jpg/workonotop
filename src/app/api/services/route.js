@@ -33,18 +33,18 @@ export async function GET(request) {
       sql += ' AND s.category_id = ?'
       params.push(categoryId)
     }
-    
+
     if (slug) {
       sql += ' AND s.slug = ?'
       params.push(slug)
     }
-    
+
     if (homepage === 'true') {
       sql += ' AND s.is_homepage = 1'
     }
 
     sql += ' ORDER BY sc.display_order, s.name'
-    
+
     if (limit) {
       sql += ' LIMIT ?'
       params.push(parseInt(limit))
@@ -52,17 +52,17 @@ export async function GET(request) {
 
     // ✅ Using execute()
     const services = await execute(sql, params)
-    
+
     if ((id || slug) && services.length === 1) {
-      return NextResponse.json({ 
-        success: true, 
-        data: services[0] 
+      return NextResponse.json({
+        success: true,
+        data: services[0]
       })
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data: services 
+    return NextResponse.json({
+      success: true,
+      data: services
     })
   } catch (error) {
     console.error('Error fetching services:', error)
@@ -76,7 +76,7 @@ export async function GET(request) {
 // POST (similar changes for all methods)
 export async function POST(request) {
   try {
-    const { 
+    const {
       category_id,
       name,
       slug,
@@ -123,10 +123,10 @@ export async function POST(request) {
       ]
     )
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Service created',
-      id: result.insertId 
+      id: result.insertId
     })
   } catch (error) {
     console.error('Error creating service:', error)
@@ -142,7 +142,7 @@ export async function POST(request) {
 // PUT update service
 export async function PUT(request) {
   try {
-    const { 
+    const {
       id,
       category_id,
       name,
@@ -167,7 +167,7 @@ export async function PUT(request) {
       )
     }
 
-    await query(
+    await execute(
       `UPDATE services 
        SET category_id = ?, name = ?, slug = ?, description = ?, short_description = ?, 
            base_price = ?, additional_price = ?, duration_minutes = ?, image_url = ?, 
@@ -215,7 +215,7 @@ export async function DELETE(request) {
       )
     }
 
-    await query('DELETE FROM services WHERE id = ?', [id])
+    await execute('DELETE FROM services WHERE id = ?', [id])
     return NextResponse.json({ success: true, message: 'Service deleted' })
   } catch (error) {
     console.error('Error deleting service:', error)

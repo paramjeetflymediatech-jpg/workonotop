@@ -341,7 +341,7 @@ export default function Sidebar() {
           }}
         >
           {/* Theme Toggle */}
-          <button
+          {/* <button
             onClick={toggleTheme}
             className="w-full flex items-center rounded-lg transition-all duration-200"
             style={{
@@ -376,7 +376,7 @@ export default function Sidebar() {
                 {!isCollapsed && <span className="flex-1 text-left font-medium">Dark Mode</span>}
               </>
             )}
-          </button>
+          </button> */}
 
           {/* Logout */}
           <button
@@ -385,7 +385,7 @@ export default function Sidebar() {
             style={{
               color: isDarkMode ? '#94a3b8' : '#475569',
               background: 'transparent',
-              padding: isCollapsed ? '12px' : '12px 16px',
+              padding: isCollapsed ? '12px' : '1px 13px',
               justifyContent: isCollapsed ? 'center' : 'flex-start',
               gap: isCollapsed ? '0' : '12px'
             }}
