@@ -20,7 +20,7 @@ export default function AdminPayouts() {
       .finally(() => setLoading(false))
   }, [])
 
-  const formatMoney = (amt) => `£${parseFloat(amt || 0).toFixed(2)}`
+  const formatMoney = (amt) => `$${parseFloat(amt || 0).toFixed(2)}`
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '—'
 
   const filteredPayouts = data?.payouts?.filter(p => {

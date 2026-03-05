@@ -92,7 +92,7 @@
 //       await connection.execute(
 //         `INSERT INTO booking_status_history (booking_id, status, notes, created_at) 
 //          VALUES (?, 'transfer_completed', ?, NOW())`,
-//         [transfer.metadata.booking_id, `💰 £${amount} transferred to provider`]
+//         [transfer.metadata.booking_id, `💰 $${amount} transferred to provider`]
 //       );
 //       console.log(`✅ Transfer ${transfer.id} paid for booking ${transfer.metadata.booking_id}`);
 //     }
@@ -363,7 +363,7 @@ async function handleTransferPaid(transfer) {
       await connection.execute(
         `INSERT INTO booking_status_history (booking_id, status, notes, created_at) 
          VALUES (?, 'transfer_completed', ?, NOW())`,
-        [bookingId, `💰 £${amount} transferred to provider and settled`]
+        [bookingId, `💰 $${amount} transferred to provider and settled`]
       );
       
       console.log(`✅ Transfer ${transfer.id} paid - Payout updated to 'paid' for booking ${bookingId}`);

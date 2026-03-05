@@ -55,7 +55,7 @@ export default function ProviderPayouts() {
     setTimeout(() => setToast(null), 4000)
   }
 
-  const formatMoney = (amt) => `£${parseFloat(amt || 0).toFixed(2)}`
+  const formatMoney = (amt) => `$${parseFloat(amt || 0).toFixed(2)}`
   
   const formatDate = (d) => {
     if (!d) return ''

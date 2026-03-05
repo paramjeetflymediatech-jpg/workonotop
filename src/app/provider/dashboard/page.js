@@ -985,7 +985,7 @@ export default function ProviderDashboard() {
     { label: 'Completed', value: stats.completedJobs, icon: CheckCircle, iconBg: 'bg-green-100', iconColor: 'text-green-600', href: '/provider/jobs?status=completed' },
     { label: 'In Progress', value: stats.inProgressJobs, icon: Clock, iconBg: 'bg-amber-100', iconColor: 'text-amber-600', href: '/provider/jobs?status=in_progress' },
     // ========== FIXED: Use actualTotalEarnings here ==========
-    { label: 'Total Earned', value: `£${formatAmount(actualTotalEarnings)}`, icon: DollarSign, iconBg: 'bg-purple-100', iconColor: 'text-purple-600', href: '/provider/payouts' },
+    { label: 'Total Earned', value: `$${formatAmount(actualTotalEarnings)}`, icon: DollarSign, iconBg: 'bg-purple-100', iconColor: 'text-purple-600', href: '/provider/payouts' },
     // =========================================================
     { label: 'Rating', value: stats.averageRating ? `${stats.averageRating.toFixed(1)} ★` : 'New', icon: Star, iconBg: 'bg-orange-100', iconColor: 'text-orange-600', href: '/provider/profile' },
   ];
@@ -993,7 +993,7 @@ export default function ProviderDashboard() {
   const quickActions = [
     { href: '/provider/available-jobs', icon: Briefcase, label: 'Browse Jobs', desc: `${availableJobsCount} new opportunities`, badge: availableJobsCount > 0 ? availableJobsCount : null, hoverColor: 'group-hover:text-blue-600' },
     // ========== FIXED: Change href to /provider/payouts instead of /provider/earnings ==========
-    { href: '/provider/payouts', icon: DollarSign, label: 'Payouts', desc: `Available: £${formatAmount(payoutData?.balances?.available_balance || 0)}`, hoverColor: 'group-hover:text-purple-600' },
+    { href: '/provider/payouts', icon: DollarSign, label: 'Payouts', desc: `Available: $${formatAmount(payoutData?.balances?.available_balance || 0)}`, hoverColor: 'group-hover:text-purple-600' },
     // =========================================================
   ];
 
@@ -1193,7 +1193,7 @@ export default function ProviderDashboard() {
                   </span>
                   <span className="flex items-center gap-1">
                     <DollarSign className="h-3 w-3" />
-                    £{formatAmount(job.provider_amount)}
+                    ${formatAmount(job.provider_amount)}
                   </span>
                 </div>
               </Link>

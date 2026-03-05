@@ -147,13 +147,13 @@
 
 //         // Capture the payment with calculated amount
 //         if (paymentIntent.status === 'requires_capture') {
-//           console.log(`🔄 Capturing £${finalAmount} from authorized £${paymentIntent.amount/100}`)
+//           console.log(`🔄 Capturing $${finalAmount} from authorized $${paymentIntent.amount/100}`)
           
 //           await stripe.paymentIntents.capture(booking.payment_intent_id, {
 //             amount_to_capture: totalCents
 //           })
           
-//           console.log(`✅ Captured £${finalAmount}`)
+//           console.log(`✅ Captured $${finalAmount}`)
 //         }
 
 //         // Update booking with final amounts
@@ -192,11 +192,11 @@
             
 //             let paymentNote = ''
 //             if (actualMinutes < standardMinutes) {
-//               paymentNote = `💰 Pro-rated: £${providerAmount} sent to ${booking.provider_name} (worked ${actualMinutes}min of ${standardMinutes}min)`
+//               paymentNote = `💰 Pro-rated: $${providerAmount} sent to ${booking.provider_name} (worked ${actualMinutes}min of ${standardMinutes}min)`
 //             } else if (actualMinutes > standardMinutes) {
-//               paymentNote = `💰 Overtime: £${providerAmount} sent to ${booking.provider_name} (${actualMinutes}min total)`
+//               paymentNote = `💰 Overtime: $${providerAmount} sent to ${booking.provider_name} (${actualMinutes}min total)`
 //             } else {
-//               paymentNote = `💰 £${providerAmount} sent to ${booking.provider_name}`
+//               paymentNote = `💰 $${providerAmount} sent to ${booking.provider_name}`
 //             }
             
 //             await connection.execute(
@@ -208,13 +208,13 @@
 //             console.error('❌ Transfer failed:', transferErr)
 //             await connection.execute(
 //               `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'payment_pending', ?)`,
-//               [id, `⚠️ MANUAL: Pay ${booking.provider_name} £${providerAmount} (worked ${actualMinutes}min)`]
+//               [id, `⚠️ MANUAL: Pay ${booking.provider_name} $${providerAmount} (worked ${actualMinutes}min)`]
 //             )
 //           }
 //         } else {
 //           await connection.execute(
 //             `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'payment_pending', ?)`,
-//             [id, `💰 Pay ${booking.provider_name} £${providerAmount} manually (worked ${actualMinutes}min)`]
+//             [id, `💰 Pay ${booking.provider_name} $${providerAmount} manually (worked ${actualMinutes}min)`]
 //           )
 //         }
 
@@ -238,13 +238,13 @@
 //             [providerAmount, providerAmount, providerAmount, booking.provider_id]
 //           );
           
-//           console.log(`✅ Payout recorded for provider ${booking.provider_id}: £${providerAmount}`);
+//           console.log(`✅ Payout recorded for provider ${booking.provider_id}: $${providerAmount}`);
 //         }
 //         // ========== END OF NEW CODE ==========
 
 //         await connection.execute(
 //           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'completed', ?)`,
-//           [id, `✅ Customer approved. Final payment: £${finalAmount} for ${actualMinutes}min work`]
+//           [id, `✅ Customer approved. Final payment: $${finalAmount} for ${actualMinutes}min work`]
 //         )
 
 //         await connection.query('COMMIT')
@@ -252,9 +252,9 @@
 //         // Create success message based on timing
 //         let successMessage = ''
 //         if (actualMinutes < standardMinutes) {
-//           successMessage = `✅ Payment released! You were charged £${finalAmount} for ${actualMinutes}min (pro-rated from £${basePrice} for ${standardMinutes}min)`
+//           successMessage = `✅ Payment released! You were charged $${finalAmount} for ${actualMinutes}min (pro-rated from $${basePrice} for ${standardMinutes}min)`
 //         } else if (actualMinutes > standardMinutes) {
-//           successMessage = `✅ Payment released! You were charged £${finalAmount} for ${actualMinutes}min (includes overtime)`
+//           successMessage = `✅ Payment released! You were charged $${finalAmount} for ${actualMinutes}min (includes overtime)`
 //         } else {
 //           successMessage = `✅ Payment released successfully!`
 //         }
@@ -403,7 +403,7 @@
 //       <tr>
 //         <td style="padding:20px;text-align:center;">
 //           <p style="margin:0 0 5px;font-size:14px;color:#64748b;">${amountLabel}</p>
-//           <p style="margin:0;font-size:36px;font-weight:bold;color:${isCustomer ? '#16a34a' : '#2563eb'};">£${amount.toFixed(2)}</p>
+//           <p style="margin:0;font-size:36px;font-weight:bold;color:${isCustomer ? '#16a34a' : '#2563eb'};">$${amount.toFixed(2)}</p>
 //         </td>
 //       </tr>
 //     </table>
@@ -603,13 +603,13 @@
 
 //         // Capture the payment with calculated amount
 //         if (paymentIntent.status === 'requires_capture') {
-//           console.log(`🔄 Capturing £${finalAmount} from authorized £${paymentIntent.amount/100}`)
+//           console.log(`🔄 Capturing $${finalAmount} from authorized $${paymentIntent.amount/100}`)
           
 //           await stripe.paymentIntents.capture(booking.payment_intent_id, {
 //             amount_to_capture: totalCents
 //           })
           
-//           console.log(`✅ Captured £${finalAmount}`)
+//           console.log(`✅ Captured $${finalAmount}`)
 //         }
 
 //         // Update booking with final amounts
@@ -648,11 +648,11 @@
             
 //             let paymentNote = ''
 //             if (actualMinutes < standardMinutes) {
-//               paymentNote = `💰 Pro-rated: £${providerAmount} sent to ${booking.provider_name} (worked ${actualMinutes}min of ${standardMinutes}min)`
+//               paymentNote = `💰 Pro-rated: $${providerAmount} sent to ${booking.provider_name} (worked ${actualMinutes}min of ${standardMinutes}min)`
 //             } else if (actualMinutes > standardMinutes) {
-//               paymentNote = `💰 Overtime: £${providerAmount} sent to ${booking.provider_name} (${actualMinutes}min total)`
+//               paymentNote = `💰 Overtime: $${providerAmount} sent to ${booking.provider_name} (${actualMinutes}min total)`
 //             } else {
-//               paymentNote = `💰 £${providerAmount} sent to ${booking.provider_name}`
+//               paymentNote = `💰 $${providerAmount} sent to ${booking.provider_name}`
 //             }
             
 //             await connection.execute(
@@ -664,13 +664,13 @@
 //             console.error('❌ Transfer failed:', transferErr)
 //             await connection.execute(
 //               `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'payment_pending', ?)`,
-//               [id, `⚠️ MANUAL: Pay ${booking.provider_name} £${providerAmount} (worked ${actualMinutes}min)`]
+//               [id, `⚠️ MANUAL: Pay ${booking.provider_name} $${providerAmount} (worked ${actualMinutes}min)`]
 //             )
 //           }
 //         } else {
 //           await connection.execute(
 //             `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'payment_pending', ?)`,
-//             [id, `💰 Pay ${booking.provider_name} £${providerAmount} manually (worked ${actualMinutes}min)`]
+//             [id, `💰 Pay ${booking.provider_name} $${providerAmount} manually (worked ${actualMinutes}min)`]
 //           )
 //         }
 
@@ -694,13 +694,13 @@
 //             [providerAmount, providerAmount, providerAmount, booking.provider_id]
 //           );
           
-//           console.log(`✅ Payout recorded for provider ${booking.provider_id}: £${providerAmount}`);
+//           console.log(`✅ Payout recorded for provider ${booking.provider_id}: $${providerAmount}`);
 //         }
 //         // ========== END OF NEW CODE ==========
 
 //         await connection.execute(
 //           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'completed', ?)`,
-//           [id, `✅ Customer approved. Final payment: £${finalAmount} for ${actualMinutes}min work`]
+//           [id, `✅ Customer approved. Final payment: $${finalAmount} for ${actualMinutes}min work`]
 //         )
 
 //         await connection.query('COMMIT')
@@ -737,7 +737,7 @@
 //               to: customerEmail,
 //               subject: `🧾 Your WorkOnTap Receipt - Booking #${booking.booking_number}`,
 //               html: getReceiptEmailHtml(receiptData, true),
-//               text: `Thank you for your payment of £${finalAmount.toFixed(2)} for booking #${booking.booking_number}`
+//               text: `Thank you for your payment of $${finalAmount.toFixed(2)} for booking #${booking.booking_number}`
 //             })
 //             console.log(`✅ Receipt email sent to customer: ${customerEmail}`)
 //           }
@@ -748,7 +748,7 @@
 //               to: booking.provider_email,
 //               subject: `💰 Payment Received - WorkOnTap Booking #${booking.booking_number}`,
 //               html: getReceiptEmailHtml(receiptData, false),
-//               text: `Payment of £${providerAmount.toFixed(2)} has been processed for booking #${booking.booking_number}`
+//               text: `Payment of $${providerAmount.toFixed(2)} has been processed for booking #${booking.booking_number}`
 //             })
 //             console.log(`✅ Receipt email sent to provider: ${booking.provider_email}`)
 //           }
@@ -760,9 +760,9 @@
 //         // Create success message based on timing
 //         let successMessage = ''
 //         if (actualMinutes < standardMinutes) {
-//           successMessage = `✅ Payment released! You were charged £${finalAmount} for ${actualMinutes}min (pro-rated from £${basePrice} for ${standardMinutes}min). Receipt sent to your email.`
+//           successMessage = `✅ Payment released! You were charged $${finalAmount} for ${actualMinutes}min (pro-rated from $${basePrice} for ${standardMinutes}min). Receipt sent to your email.`
 //         } else if (actualMinutes > standardMinutes) {
-//           successMessage = `✅ Payment released! You were charged £${finalAmount} for ${actualMinutes}min (includes overtime). Receipt sent to your email.`
+//           successMessage = `✅ Payment released! You were charged $${finalAmount} for ${actualMinutes}min (includes overtime). Receipt sent to your email.`
 //         } else {
 //           successMessage = `✅ Payment released successfully! Receipt sent to your email.`
 //         }
