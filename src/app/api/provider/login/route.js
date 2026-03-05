@@ -239,7 +239,7 @@
 //   console.log('='.repeat(80));
 //   console.log('🚀 LOGIN API CALLED at:', new Date().toISOString());
 //   console.log('='.repeat(80));
-  
+
 //   try {
 //     const body = await request.json();
 //     const { email, password } = body;
@@ -388,7 +388,7 @@ export async function POST(request) {
   console.log('='.repeat(80));
   console.log('🚀 LOGIN API CALLED at:', new Date().toISOString());
   console.log('='.repeat(80));
-  
+
   try {
     const body = await request.json();
     const { email, password } = body;
@@ -463,6 +463,7 @@ export async function POST(request) {
     const response = NextResponse.json({
       success: true,
       message: 'Login successful',
+      token,
       provider: {
         id: provider.id,
         name: provider.name,

@@ -41,7 +41,7 @@ const LoginScreen = ({ navigation }) => {
             const response = await apiService.post(endpoint, { email, password });
 
             if (response.success) {
-                login(response.user || response.provider);
+                login(response.user || response.provider, response.token);
             } else {
                 setError(response.message || 'Invalid credentials');
             }
