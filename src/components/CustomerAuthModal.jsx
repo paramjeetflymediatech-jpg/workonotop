@@ -407,6 +407,9 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
 
   const [submitting, setSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotStatus, setForgotStatus] = useState('idle'); // 'idle' | 'loading' | 'sent'
+  const [forgotError, setForgotError] = useState('');
 
   if (!isOpen) return null;
 
@@ -415,6 +418,7 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
     setPassword(''); setConfirmPassword(''); setHearAbout('');
     setReceiveOffers(false); setAuthError('');
     setShowPassword(false); setShowConfirmPassword(false); setShowLoginPassword(false);
+    setForgotEmail(''); setForgotStatus('idle'); setForgotError('');
   };
 
   const handleClose = () => {
@@ -499,6 +503,29 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotStatus('loading');
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setForgotStatus('sent');
+      } else {
+        setForgotError(data.message || 'Something went wrong. Please try again.');
+        setForgotStatus('idle');
+      }
+    } catch {
+      setForgotError('Network error. Please try again.');
+      setForgotStatus('idle');
+    }
+  };
+
   const EyeIcon = () => (
     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -521,12 +548,14 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-white">
-                {authMode === 'signup' ? 'Create Account' : 'Welcome Back'}
+                {authMode === 'signup' ? 'Create Account' : authMode === 'forgot' ? 'Forgot Password' : 'Welcome Back'}
               </h2>
               <p className="text-green-100 text-xs sm:text-sm mt-0.5">
                 {authMode === 'signup'
                   ? 'Join WorkOnTap to book trusted pros'
-                  : 'Log in to manage your bookings'}
+                  : authMode === 'forgot'
+                    ? 'We\'ll send a reset link to your email'
+                    : 'Log in to manage your bookings'}
               </p>
             </div>
             <button
@@ -551,29 +580,31 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
             </div>
           )}
 
-          {/* Tab switcher */}
-          <div className="flex rounded-xl overflow-hidden border-2 border-gray-200 mb-5">
-            <button
-              type="button"
-              onClick={() => { setAuthMode('login'); setAuthError(''); }}
-              className={`flex-1 py-2 text-sm font-semibold transition ${authMode === 'login'
+          {/* Tab switcher — hide when in forgot mode */}
+          {authMode !== 'forgot' && (
+            <div className="flex rounded-xl overflow-hidden border-2 border-gray-200 mb-5">
+              <button
+                type="button"
+                onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                className={`flex-1 py-2 text-sm font-semibold transition ${authMode === 'login'
                   ? 'bg-green-700 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
-                }`}
-            >
-              Log In
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAuthMode('signup'); setAuthError(''); }}
-              className={`flex-1 py-2 text-sm font-semibold transition ${authMode === 'signup'
+                  }`}
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('signup'); setAuthError(''); }}
+                className={`flex-1 py-2 text-sm font-semibold transition ${authMode === 'signup'
                   ? 'bg-green-700 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
-                }`}
-            >
-              Sign Up
-            </button>
-          </div>
+                  }`}
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
 
           {/* LOGIN FORM */}
           {authMode === 'login' && (
@@ -613,7 +644,81 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
                 className="w-full bg-gradient-to-r from-green-700 to-green-600 text-white py-3 rounded-xl font-bold text-sm sm:text-base shadow-lg hover:from-green-800 hover:to-green-700 transition disabled:opacity-50 mt-2">
                 {submitting ? 'Logging in...' : 'Log In'}
               </button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('forgot'); setAuthError(''); setForgotEmail(email); }}
+                  className="text-sm text-green-700 hover:underline font-medium"
+                >
+                  Forgot your password?
+                </button>
+              </div>
             </form>
+          )}
+
+          {/* FORGOT PASSWORD */}
+          {authMode === 'forgot' && (
+            <div>
+              {forgotStatus === 'sent' ? (
+                <div className="text-center py-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-bold text-gray-900 mb-1">Check your inbox</h3>
+                  <p className="text-sm text-gray-500 mb-5">
+                    If an account exists for <strong>{forgotEmail}</strong>, a reset link has been sent.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('login'); setForgotStatus('idle'); setForgotEmail(''); }}
+                    className="w-full bg-gradient-to-r from-green-700 to-green-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg hover:from-green-800 hover:to-green-700 transition"
+                  >
+                    Back to Log In
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  {forgotError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700 text-sm">
+                      <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {forgotError}
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email" required value={forgotEmail}
+                      onChange={e => setForgotEmail(e.target.value)}
+                      placeholder="you@email.com"
+                      className="w-full p-2.5 sm:p-3 text-sm border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition outline-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={forgotStatus === 'loading'}
+                    className="w-full bg-gradient-to-r from-green-700 to-green-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg hover:from-green-800 hover:to-green-700 transition disabled:opacity-50"
+                  >
+                    {forgotStatus === 'loading' ? 'Sending...' : 'Send Reset Link'}
+                  </button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMode('login'); setForgotError(''); setForgotStatus('idle'); }}
+                      className="text-sm text-gray-500 hover:text-gray-700"
+                    >
+                      ← Back to Log In
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           )}
 
           {/* SIGNUP FORM */}

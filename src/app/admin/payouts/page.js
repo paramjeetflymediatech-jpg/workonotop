@@ -39,11 +39,11 @@ export default function AdminPayouts() {
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 bg-slate-50">
+    <div className="min-h-screen p-4 sm:p-6 ">
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
-        <h1 className="text-2xl font-bold text-slate-900 mb-6">Payouts</h1>
+        <h1 className="text-2xl font-bold mb-6 dark:text-white">Payouts</h1>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">

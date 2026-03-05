@@ -1,6 +1,3 @@
-
-
-
 // app/api/bookings/[id]/route.js - FIXED WITH PAYMENT FIELDS
 import { NextResponse } from 'next/server'
 import { execute } from '@/lib/db'
@@ -23,12 +20,24 @@ export async function GET(request, { params }) {
         sp.phone as provider_phone,
         sp.email as provider_email,
         sp.rating as provider_rating,
-        -- Photos as JSON array
+        -- Customer upload photos (booking_photos table)
         (
           SELECT JSON_ARRAYAGG(photo_url)
           FROM booking_photos 
           WHERE booking_id = b.id
         ) as photos_json,
+        -- Job before photos (job_photos table)
+        (
+          SELECT JSON_ARRAYAGG(JSON_OBJECT('url', jp.photo_url, 'uploaded_at', jp.uploaded_at))
+          FROM job_photos jp
+          WHERE jp.booking_id = b.id AND jp.photo_type = 'before'
+        ) as before_photos_json,
+        -- Job after photos (job_photos table)
+        (
+          SELECT JSON_ARRAYAGG(JSON_OBJECT('url', jp.photo_url, 'uploaded_at', jp.uploaded_at))
+          FROM job_photos jp
+          WHERE jp.booking_id = b.id AND jp.photo_type = 'after'
+        ) as after_photos_json,
         -- Status history as JSON array
         (
           SELECT JSON_ARRAYAGG(
@@ -64,13 +73,28 @@ export async function GET(request, { params }) {
       booking.job_time_slot = booking.job_time_slot.split(',')
     }
 
-    // Parse photos
+    // Parse customer upload photos
     try {
       booking.photos = JSON.parse(booking.photos_json) || []
     } catch {
       booking.photos = []
     }
     delete booking.photos_json
+
+    // Parse before/after job photos
+    try {
+      booking.before_photos = JSON.parse(booking.before_photos_json) || []
+    } catch {
+      booking.before_photos = []
+    }
+    delete booking.before_photos_json
+
+    try {
+      booking.after_photos = JSON.parse(booking.after_photos_json) || []
+    } catch {
+      booking.after_photos = []
+    }
+    delete booking.after_photos_json
 
     // Parse history
     try {
@@ -90,6 +114,7 @@ export async function GET(request, { params }) {
     booking.duration_minutes = booking.service_duration || 60
 
     return NextResponse.json({ success: true, data: booking })
+
 
   } catch (error) {
     console.error('Error fetching booking:', error)

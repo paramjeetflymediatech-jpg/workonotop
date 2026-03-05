@@ -182,12 +182,8 @@ export async function GET(request) {
     const params = [];
 
     if (status && status !== 'all') {
-      if (status === 'pending') {
-        query += ` AND sp.status = 'inactive' AND sp.onboarding_completed = 1`;
-      } else {
-        query += ` AND sp.status = ?`;
-        params.push(status);
-      }
+      query += ` AND sp.status = ?`;
+      params.push(status);
     }
 
     if (search) {
@@ -200,15 +196,21 @@ export async function GET(request) {
 
     const providers = await execute(query, params);
 
-    // Calculate stats
+    // Always fetch all for stats (unfiltered)
+    const allProviders = status && status !== 'all'
+      ? await execute(`SELECT id, status FROM service_providers`, [])
+      : providers;
+
     const stats = {
-      total: providers.length,
-      active: providers.filter(p => p.status === 'active').length,
-      pending: providers.filter(p => p.status === 'inactive' && p.onboarding_completed === 1).length,
-      rejected: providers.filter(p => p.status === 'rejected').length,
-      onboarding_completed: providers.filter(p => p.onboarding_completed === 1).length,
-      stripe_connected: providers.filter(p => p.stripe_account_id).length,
-      docs_verified: providers.filter(p => p.documents_verified === 1).length
+      total: allProviders.length,
+      active: allProviders.filter(p => p.status === 'active').length,
+      pending: allProviders.filter(p => p.status === 'pending').length,
+      inactive: allProviders.filter(p => p.status === 'inactive').length,
+      rejected: allProviders.filter(p => p.status === 'rejected').length,
+      suspended: allProviders.filter(p => p.status === 'suspended').length,
+      onboarding_completed: allProviders.filter(p => p.onboarding_completed === 1).length,
+      stripe_connected: allProviders.filter(p => p.stripe_account_id).length,
+      docs_verified: allProviders.filter(p => p.documents_verified === 1).length
     };
 
     return NextResponse.json({
@@ -283,7 +285,7 @@ export async function PUT(request) {
     }
 
     // 🔴 STEP 3: Success response do (chahe email gayi ho ya nahi)
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: `Provider ${action}ed successfully. ${action === 'approve' ? 'Approved' : 'Rejected'}`
     });

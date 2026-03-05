@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminTheme } from '../layout'
+import Swal from 'sweetalert2'
 
 const PAGE_SIZE = 8
 
@@ -272,7 +273,21 @@ export default function Users() {
     } catch { showMessage('error', 'Failed to update customer') }
   }
 
-  const updateProviderStatus = async (providerId, newStatus) => {
+  const updateProviderStatus = async (providerId, newStatus, providerName) => {
+    const statusLabels = { active: 'Active', inactive: 'Inactive', suspended: 'Suspended', pending: 'Pending', rejected: 'Rejected' }
+    const statusColors = { active: '#10b981', inactive: '#f59e0b', suspended: '#ef4444', pending: '#6366f1', rejected: '#64748b' }
+    const result = await Swal.fire({
+      title: 'Change Provider Status?',
+      html: `Change <strong>${providerName}</strong>'s status to <strong>${statusLabels[newStatus] || newStatus}</strong>?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Change It',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: statusColors[newStatus] || '#14b8a6',
+      cancelButtonColor: '#64748b',
+      borderRadius: '16px',
+    })
+    if (!result.isConfirmed) return
     try {
       const res = await fetch(`/api/provider?id=${providerId}`, {
         method: 'PUT',
@@ -280,9 +295,15 @@ export default function Users() {
         body: JSON.stringify({ status: newStatus })
       })
       const data = await res.json()
-      if (data.success) { showMessage('success', 'Provider status updated'); loadAllUsers() }
-      else showMessage('error', data.message || 'Failed to update status')
-    } catch { showMessage('error', 'Failed to update provider status') }
+      if (data.success) {
+        Swal.fire({ title: 'Status Updated!', text: `${providerName} is now ${statusLabels[newStatus] || newStatus}.`, icon: 'success', confirmButtonColor: '#14b8a6', timer: 2000, showConfirmButton: false })
+        loadAllUsers()
+      } else {
+        Swal.fire({ title: 'Error', text: data.message || 'Failed to update status', icon: 'error', confirmButtonColor: '#14b8a6' })
+      }
+    } catch {
+      Swal.fire({ title: 'Error', text: 'Failed to update provider status', icon: 'error', confirmButtonColor: '#14b8a6' })
+    }
   }
 
   const search = (items, fields) => {
@@ -350,18 +371,9 @@ export default function Users() {
         <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm">✕ {showErrorMessage}</div>
       )}
 
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className={`text-3xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Users</h1>
-          <p className={isDarkMode ? 'text-slate-400' : 'text-gray-500'}>Manage all customers, admins, and providers</p>
-        </div>
-        <button onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold shadow-lg shadow-teal-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all whitespace-nowrap">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Create New User
-        </button>
+      <div className="mb-8">
+        <h1 className={`text-3xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Users</h1>
+        <p className={isDarkMode ? 'text-slate-400' : 'text-gray-500'}>Manage all customers, admins, and providers</p>
       </div>
 
       <div className="mb-6 flex border-b border-gray-200 dark:border-gray-700">
@@ -399,7 +411,7 @@ export default function Users() {
 
       {activeTab === 'providers' && (
         <div className="mb-4 flex flex-wrap gap-2">
-          {['all', 'active', 'inactive', 'suspended'].map(s => (
+          {['all', 'active', 'inactive', 'suspended', 'pending', 'rejected'].map(s => (
             <button key={s} onClick={() => setProviderFilter(s)}
               className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${providerFilter === s
                 ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white'
@@ -626,61 +638,135 @@ export default function Users() {
         </div>
       )}
 
-      {/* ── PROVIDERS GRID ── */}
+      {/* ── PROVIDERS LIST ── */}
       {activeTab === 'providers' && (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-            {pagedProviders.length > 0 ? pagedProviders.map(p => (
-              <div key={p.id} className={`${card} p-5 cursor-pointer hover:shadow-xl transition-all`} onClick={() => loadProviderDetails(p)}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'}`}>
-                      {p.name?.charAt(0) || '?'}
-                    </div>
-                    <div>
-                      <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
-                      <p className={subText}>{p.city || 'No city'}</p>
+        <div className={`${card} overflow-hidden`}>
+
+          {/* ── Mobile Card View ── */}
+          <div className="md:hidden">
+            {pagedProviders.length > 0 ? (
+              <div className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-100'}`}>
+                {pagedProviders.map(p => (
+                  <div key={p.id} className={`p-4 cursor-pointer transition-colors ${isDarkMode ? 'active:bg-slate-800' : 'active:bg-gray-50'}`}
+                    onClick={() => loadProviderDetails(p)}>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0 ${isDarkMode ? 'bg-teal-900/60 text-teal-300' : 'bg-teal-100 text-teal-700'}`}>
+                        {p.name?.charAt(0) || '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium border flex-shrink-0 ml-2 ${getStatusColor(p.status)}`}>{p.status}</span>
+                        </div>
+                        <p className={`text-xs truncate mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{p.email}</p>
+                        <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{p.city || 'No city'} • ⭐ {formatRating(p.rating)} • {p.total_jobs || 0} jobs</p>
+                        <div className="mt-2 flex gap-2" onClick={e => e.stopPropagation()}>
+                          <select value={p.status}
+                            onChange={e => updateProviderStatus(p.id, e.target.value, p.name)}
+                            className={`flex-1 px-2 py-1.5 rounded-lg text-xs border ${isDarkMode ? 'bg-slate-800 text-white border-slate-700' : 'bg-gray-50 text-gray-900 border-gray-200'} focus:outline-none`}>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="suspended">Suspended</option>
+                            <option value="pending">Pending</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                          <button onClick={e => { e.stopPropagation(); loadProviderDetails(p) }}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-teal-500 text-white hover:bg-teal-600 transition">
+                            Details
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(p.status)}`}>{p.status}</span>
-                </div>
-                <div className="space-y-1.5 mb-4">
-                  <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>{p.email}</p>
-                  <p className={subText}>{p.phone || 'No phone'}</p>
-                  <p className={subText}>{p.specialty || 'No specialty'}</p>
-                </div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <svg key={star} className={`w-3.5 h-3.5 ${star <= getRatingValue(p.rating) ? 'text-yellow-400' : isDarkMode ? 'text-slate-600' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                    <span className={`text-xs ml-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{formatRating(p.rating)}</span>
-                  </div>
-                  <span className={subText}>{p.total_jobs || 0} jobs</span>
-                </div>
-                <select value={p.status}
-                  onChange={e => { e.stopPropagation(); updateProviderStatus(p.id, e.target.value) }}
-                  onClick={e => e.stopPropagation()}
-                  className={`w-full px-3 py-2 rounded-lg text-sm border ${isDarkMode ? 'bg-slate-800 text-white border-slate-700' : 'bg-gray-50 text-gray-900 border-gray-200'} focus:outline-none focus:ring-2 focus:ring-teal-500`}>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="suspended">Suspended</option>
-                </select>
-                <button onClick={e => { e.stopPropagation(); loadProviderDetails(p) }}
-                  className="mt-3 w-full px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:opacity-90 transition">
-                  View Details
-                </button>
+                ))}
               </div>
-            )) : (
-              <div className="col-span-full py-16 text-center">
+            ) : (
+              <div className="py-12 text-center">
                 <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No providers match your search' : 'No providers found'}</p>
               </div>
             )}
           </div>
-          <Pagination total={filteredProviders.length} page={providerPage} setPage={setProviderPage} />
-        </>
+
+          {/* ── Desktop Table View ── */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
+              <thead className={isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}>
+                <tr>
+                  <th className={th}>Provider</th>
+                  <th className={th}>Contact</th>
+                  <th className={th}>Specialty</th>
+                  <th className={th}>Rating</th>
+                  <th className={th}>Jobs</th>
+                  <th className={th}>Status</th>
+                  <th className={`px-6 py-4 text-right text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>Actions</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-100'}`}>
+                {pagedProviders.length > 0 ? pagedProviders.map(p => (
+                  <tr key={p.id} className={`cursor-pointer transition-colors ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-50'}`}
+                    onClick={() => loadProviderDetails(p)}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isDarkMode ? 'bg-teal-900 text-teal-300' : 'bg-teal-100 text-teal-700'}`}>
+                          {p.name?.charAt(0) || '?'}
+                        </div>
+                        <div>
+                          <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
+                          <p className={subText}>{p.city || '—'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className={tdText}>{p.email}</p>
+                      <p className={subText}>{p.phone || '—'}</p>
+                    </td>
+                    <td className="px-6 py-4"><p className={subText}>{p.specialty || '—'}</p></td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <span className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>{formatRating(p.rating)}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4"><span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{p.total_jobs || 0}</span></td>
+                    <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                      <select value={p.status}
+                        onChange={e => updateProviderStatus(p.id, e.target.value, p.name)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer ${p.status === 'active' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30' :
+                            p.status === 'suspended' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30' :
+                              p.status === 'inactive' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30' :
+                              
+                                isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-gray-100 text-gray-700 border-gray-200'
+                          } focus:outline-none focus:ring-2 focus:ring-teal-500`}>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                        <option value="pending">Pending</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                      <div className="flex justify-end">
+                        <button onClick={() => loadProviderDetails(p)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:opacity-90 transition">
+                          View Details
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={7} className="py-16 text-center">
+                    <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No providers match your search' : 'No providers found'}</p>
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-4 pb-4">
+            <Pagination total={filteredProviders.length} page={providerPage} setPage={setProviderPage} />
+          </div>
+        </div>
       )}
 
       {/* ── PROVIDER DETAILS MODAL ── */}

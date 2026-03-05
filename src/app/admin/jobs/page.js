@@ -313,57 +313,54 @@ export default function JobRequests() {
         </div>
 
         {/* Filters Row */}
-        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="overflow-x-auto pb-1">
-            <div className={`flex gap-1.5 w-max sm:w-full p-1.5 rounded-2xl ${isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200 shadow-sm'}`}>
-              {filterTabs.map((s) => {
-                const cfg = getStatusConfig(s)
-                const active = filter === s
-                const count = statusCount(s)
-                return (
-                  <button key={s} onClick={() => setFilter(s)}
-                    className={`relative flex items-center gap-1y76 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${active ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20'
-                      : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                      }`}
-                  >
-                    {s !== 'all' && cfg && <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-white/70' : cfg.dot}`}></span>}
-                    <span className="capitalize">{s === 'in_progress' ? 'In Progress' : s === 'awaiting_approval' ? 'Awaiting' : s}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${active ? 'bg-white/20 text-white' : isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>{count}</span>
-                  </button>
-                )
-              })}
-            </div>
+        <div className="mb-6 flex flex-col gap-4">
+          <div className={`flex flex-wrap gap-1 md:gap-9 p-1.5 rounded-2xl ${isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200 shadow-sm'}`}>
+            {filterTabs.map((s) => {
+              const cfg = getStatusConfig(s)
+              const active = filter === s
+              const count = statusCount(s)
+              const label = s === 'in_progress' ? 'In Progress' : s === 'awaiting_approval' ? 'Awaiting' : s.charAt(0).toUpperCase() + s.slice(1)
+              return (
+                <button key={s} onClick={() => setFilter(s)}
+                  className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${active ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20'
+                    : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                >
+                  {s !== 'all' && cfg && <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${active ? 'bg-white/70' : cfg.dot}`}></span>}
+                  <span>{label}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${active ? 'bg-white/20 text-white' : isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>{count}</span>
+                </button>
+              )
+            })}
           </div>
 
-          <div>
-            <div className="flex justify-center md:justify-end ">
-              <select
-                value={selectedCustomer}
-                onChange={(e) => setSelectedCustomer(e.target.value)}
-                className={`w-full md:w-[350px] px-4 py-2.5 rounded-xl border ${isDarkMode
-                    ? 'bg-slate-900 border-slate-800 text-white'
-                    : 'bg-white border-slate-200 text-slate-900'
-                  } focus:outline-none focus:ring-2 focus:ring-teal-500 transition`}
-              >
-                <option value="all">All Customers</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.fullName || customer.email}{" "}
-                    {customer.email && `(${customer.email})`}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {selectedCustomer !== 'all' && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode ? 'bg-teal-900/30 text-teal-400' : 'bg-teal-50 text-teal-700'}`}>
-                  Filtering by: {customers.find(c => c.id === selectedCustomer)?.fullName || 'Selected customer'}
-                </span>
-                <button onClick={() => setSelectedCustomer('all')} className="text-xs text-red-600 hover:underline">Clear</button>
-              </div>
-            )}
+          <div className="flex justify-start md:justify-end">
+            <select
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+              className={`w-full md:w-[350px] px-4 py-2.5 rounded-xl border ${isDarkMode
+                ? 'bg-slate-900 border-slate-800 text-white'
+                : 'bg-white border-slate-200 text-slate-900'
+                } focus:outline-none focus:ring-2 focus:ring-teal-500 transition`}
+            >
+              <option value="all">All Customers</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.fullName || customer.email}{" "}
+                  {customer.email && `(${customer.email})`}
+                </option>
+              ))}
+            </select>
           </div>
+          {selectedCustomer !== 'all' && (
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode ? 'bg-teal-900/30 text-teal-400' : 'bg-teal-50 text-teal-700'}`}>
+                Filtering by: {customers.find(c => c.id === selectedCustomer)?.fullName || 'Selected customer'}
+              </span>
+              <button onClick={() => setSelectedCustomer('all')} className="text-xs text-red-600 hover:underline">Clear</button>
+            </div>
+          )}
         </div>
 
         <div className="mb-4">

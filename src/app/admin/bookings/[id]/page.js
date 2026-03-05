@@ -156,22 +156,22 @@ export default function BookingDetailsPage({ params }) {
   const formatDateTime = (d) => new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
   const statusColors = {
-    pending:            'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400',
-    matching:           'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400',
-    confirmed:          'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400',
-    in_progress:        'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400',
-    awaiting_approval:  'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400',
-    completed:          'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400',
-    disputed:           'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400',
-    cancelled:          'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400',
+    pending: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400',
+    matching: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400',
+    confirmed: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400',
+    in_progress: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400',
+    awaiting_approval: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400',
+    completed: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400',
+    disputed: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400',
+    cancelled: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400',
   }
 
   const paymentStatusColors = {
-    pending:    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+    pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
     authorized: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    paid:       'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    failed:     'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    refunded:   'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+    paid: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    failed: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    refunded: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
   }
 
   const card = isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
@@ -265,7 +265,7 @@ export default function BookingDetailsPage({ params }) {
           {/* PAYMENT INFORMATION */}
           <div className={`rounded-xl shadow-sm border p-5 ${card}`}>
             <SectionTitle icon="💳" label="Payment Information" valueCls={valueCls} />
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className={`text-sm ${labelCls}`}>Payment Status</span>
                 <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${paymentStatusColors[booking.payment_status] || 'bg-gray-100 text-gray-800'}`}>
@@ -273,10 +273,43 @@ export default function BookingDetailsPage({ params }) {
                 </span>
               </div>
 
+              {(booking.service_price > 0 || booking.additional_price > 0 || booking.final_provider_amount > 0) && (
+                <div className={`rounded-lg p-3 space-y-2 ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
+                  <div className="flex justify-between text-sm">
+                    <span className={labelCls}>Service Price</span>
+                    <span className={`font-semibold ${valueCls}`}>${parseFloat(booking.service_price || 0).toFixed(2)}</span>
+                  </div>
+                  {booking.additional_price > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className={labelCls}>Overtime Rate</span>
+                      <span className={`font-semibold ${valueCls}`}>${parseFloat(booking.additional_price || 0).toFixed(2)}/hr</span>
+                    </div>
+                  )}
+                  {booking.overtime_hours > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className={labelCls}>Overtime Hours</span>
+                      <span className={`font-semibold ${valueCls}`}>{booking.overtime_hours} hrs</span>
+                    </div>
+                  )}
+                  {booking.overtime_earnings > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className={labelCls}>Overtime Earnings</span>
+                      <span className={`font-semibold ${valueCls}`}>${parseFloat(booking.overtime_earnings).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {booking.final_provider_amount > 0 && (
+                    <div className={`flex justify-between text-sm pt-2 mt-2 border-t ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+                      <span className={`font-semibold ${labelCls}`}>Provider Earns</span>
+                      <span className="font-bold text-green-600">${parseFloat(booking.final_provider_amount).toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {booking.payment_intent_id && (
                 <div>
                   <p className={`text-xs ${labelCls} mb-1`}>Stripe Payment Intent ID</p>
-                  <p className={`text-sm font-mono ${valueCls} break-all bg-gray-50 dark:bg-slate-800 p-2 rounded-lg`}>
+                  <p className={`text-xs font-mono ${valueCls} break-all bg-gray-50 dark:bg-slate-800 p-2 rounded-lg`}>
                     {booking.payment_intent_id}
                   </p>
                 </div>
@@ -320,6 +353,100 @@ export default function BookingDetailsPage({ params }) {
               ))}
             </div>
           </div>
+
+          {/* JOB DESCRIPTION & NOTES */}
+          {(booking.description || booking.special_instructions || booking.additional_notes) && (
+            <div className={`rounded-xl shadow-sm border p-5 ${card}`}>
+              <SectionTitle icon="📝" label="Job Description & Notes" valueCls={valueCls} />
+              {booking.description && (
+                <div className="mb-3">
+                  <p className={`text-xs mb-1 ${labelCls}`}>Description</p>
+                  <p className={`text-sm ${valueCls} leading-relaxed`}>{booking.description}</p>
+                </div>
+              )}
+              {booking.special_instructions && (
+                <div className="mb-3">
+                  <p className={`text-xs mb-1 ${labelCls}`}>Special Instructions</p>
+                  <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-amber-900/20 border-amber-800 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-800'} text-sm`}>
+                    {booking.special_instructions}
+                  </div>
+                </div>
+              )}
+              {booking.additional_notes && (
+                <div>
+                  <p className={`text-xs mb-1 ${labelCls}`}>Additional Notes</p>
+                  <p className={`text-sm ${valueCls} leading-relaxed`}>{booking.additional_notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* BEFORE / AFTER PHOTOS */}
+          {(booking.before_photos?.length > 0 || booking.after_photos?.length > 0) && (
+            <div className={`rounded-xl shadow-sm border p-5 ${card}`}>
+              <SectionTitle icon="📷" label="Before & After Photos" valueCls={valueCls} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {/* BEFORE */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-orange-400 inline-block" />
+                    <p className={`text-xs font-bold uppercase tracking-wider ${labelCls}`}>Before ({booking.before_photos?.length || 0})</p>
+                  </div>
+                  {booking.before_photos?.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {booking.before_photos.map((p, i) => (
+                        <a key={i} href={p.url} target="_blank" rel="noopener noreferrer"
+                          className="block aspect-square rounded-xl overflow-hidden border border-orange-200 dark:border-orange-800 hover:opacity-90 transition shadow-sm">
+                          <img src={p.url} alt={`Before ${i + 1}`} className="w-full h-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={`flex flex-col items-center justify-center h-24 rounded-xl border-2 border-dashed ${isDarkMode ? 'border-slate-700 text-slate-500' : 'border-gray-200 text-gray-400'} text-xs`}>
+                      No before photos yet
+                    </div>
+                  )}
+                </div>
+                {/* AFTER */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" />
+                    <p className={`text-xs font-bold uppercase tracking-wider ${labelCls}`}>After ({booking.after_photos?.length || 0})</p>
+                  </div>
+                  {booking.after_photos?.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {booking.after_photos.map((p, i) => (
+                        <a key={i} href={p.url} target="_blank" rel="noopener noreferrer"
+                          className="block aspect-square rounded-xl overflow-hidden border border-green-200 dark:border-green-800 hover:opacity-90 transition shadow-sm">
+                          <img src={p.url} alt={`After ${i + 1}`} className="w-full h-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={`flex flex-col items-center justify-center h-24 rounded-xl border-2 border-dashed ${isDarkMode ? 'border-slate-700 text-slate-500' : 'border-gray-200 text-gray-400'} text-xs`}>
+                      No after photos yet
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CUSTOMER UPLOAD PHOTOS */}
+          {booking.photos?.length > 0 && (
+            <div className={`rounded-xl shadow-sm border p-5 ${card}`}>
+              <SectionTitle icon="🖼️" label={`Customer Photos (${booking.photos.length})`} valueCls={valueCls} />
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {booking.photos.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                    className="block aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 hover:opacity-90 transition shadow-sm">
+                    <img src={url} alt={`Customer photo ${i + 1}`} className="w-full h-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* RIGHT SIDEBAR */}
@@ -372,7 +499,7 @@ export default function BookingDetailsPage({ params }) {
                     {savingCommission ? '…' : 'Save'}
                   </button>
                 </div>
-                
+
                 {/* ✅ WARNING MESSAGE - Commission not set */}
                 {!commissionSet && (
                   <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
@@ -402,8 +529,35 @@ export default function BookingDetailsPage({ params }) {
             {booking.provider_name ? (
               <>
                 <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-xl border border-teal-200 dark:border-teal-800 mb-3">
-                  <p className={`text-sm font-semibold ${valueCls}`}>{booking.provider_name}</p>
-                  <p className={`text-xs mt-0.5 ${labelCls}`}>{booking.accepted_at ? `Accepted ${formatDateTime(booking.accepted_at)}` : 'Manually assigned'}</p>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white font-bold">
+                      {booking.provider_name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className={`text-sm font-semibold ${valueCls}`}>{booking.provider_name}</p>
+                      <p className={`text-xs mt-0.5 ${labelCls}`}>{booking.accepted_at ? `Accepted ${formatDateTime(booking.accepted_at)}` : 'Manually assigned'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-1.5 mt-2 pt-2 border-t border-teal-200 dark:border-teal-800">
+                    {booking.provider_email && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">📧</span>
+                        <span className={`text-xs ${labelCls} truncate`}>{booking.provider_email}</span>
+                      </div>
+                    )}
+                    {booking.provider_phone && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">📱</span>
+                        <span className={`text-xs ${labelCls}`}>{booking.provider_phone}</span>
+                      </div>
+                    )}
+                    {booking.provider_rating > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">⭐</span>
+                        <span className={`text-xs font-semibold ${valueCls}`}>{parseFloat(booking.provider_rating).toFixed(1)} rating</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             ) : (
@@ -411,7 +565,7 @@ export default function BookingDetailsPage({ params }) {
                 <p className={`text-xs ${labelCls}`}>
                   Providers can self-assign once commission is set, or manually assign below.
                 </p>
-                
+
                 {/* ✅ Commission warning in provider assignment card */}
                 {!commissionSet && (
                   <div className="p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
@@ -421,7 +575,7 @@ export default function BookingDetailsPage({ params }) {
                     </p>
                   </div>
                 )}
-                
+
                 <select
                   value={selectedProvider}
                   onChange={(e) => setSelectedProvider(e.target.value)}
@@ -435,13 +589,13 @@ export default function BookingDetailsPage({ params }) {
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
-                
+
                 <button
                   onClick={assignProvider}
                   disabled={!selectedProvider || updating || !commissionSet}
                   className={`w-full py-2.5 rounded-xl text-sm font-semibold transition 
-                    ${!commissionSet 
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                    ${!commissionSet
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-teal-600 text-white hover:bg-teal-700'
                     }`}
                 >
