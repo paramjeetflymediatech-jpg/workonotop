@@ -91,7 +91,7 @@ const WelcomeScreen = ({ onFinish }) => {
 
                 <Animated.View style={[styles.buttonWrapper, { opacity: buttonFadeAnim }]}>
                     <TouchableOpacity style={styles.button} onPress={onFinish}>
-                        <Text style={styles.buttonText}>Get Started Today</Text>
+                        <Text style={styles.buttonText}>Get Started</Text>
                     </TouchableOpacity>
                 </Animated.View>
             </View>
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#fff',
-        fontSize: moderateScale(18),
+        fontSize: moderateScale(23),
         fontWeight: '600',
     },
 });

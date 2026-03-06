@@ -12,6 +12,8 @@ import {
     Switch
 } from 'react-native';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
+import { apiService } from '../../services/api';
+import { Alert } from 'react-native';
 
 const CustomerSignupScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
@@ -24,10 +26,51 @@ const CustomerSignupScreen = ({ navigation }) => {
         referral: '',
     });
     const [isNewsletterEnabled, setIsNewsletterEnabled] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleSignup = () => {
-        // Logic for customer signup
-        console.log('Customer Signup:', { ...formData, newsletter: isNewsletterEnabled });
+    const handleSignup = async () => {
+        const { firstName, lastName, email, phone, password, confirmPassword, referral } = formData;
+
+        if (!firstName || !lastName || !email || !password || !phone) {
+            setError('Please fill in all required fields');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const response = await apiService.post('/api/auth/signup', {
+                first_name: firstName,
+                last_name: lastName,
+                email: email,
+                phone: phone,
+                password: password,
+                hear_about: referral,
+                receive_offers: isNewsletterEnabled
+            });
+
+            if (response.success) {
+                Alert.alert(
+                    "Success",
+                    "Account created successfully! Please log in.",
+                    [{ text: "OK", onPress: () => navigation.navigate('Login', { type: 'customer' }) }]
+                );
+            } else {
+                setError(response.message || 'Signup failed');
+            }
+        } catch (err) {
+            setError('Connection failed. Please try again.');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const isSmallDevice = SCREEN_HEIGHT < 750;
@@ -155,8 +198,16 @@ const CustomerSignupScreen = ({ navigation }) => {
                             </Text>
                         </View>
 
-                        <TouchableOpacity style={styles.submitButton} onPress={handleSignup}>
-                            <Text style={styles.submitButtonText}>Create Account</Text>
+                        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                        <TouchableOpacity
+                            style={[styles.submitButton, loading && styles.disabledButton]}
+                            onPress={handleSignup}
+                            disabled={loading}
+                        >
+                            <Text style={styles.submitButtonText}>
+                                {loading ? 'Creating Account...' : 'Create Account'}
+                            </Text>
                         </TouchableOpacity>
 
                         <Text style={styles.termsText}>
@@ -279,6 +330,16 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: moderateScale(18),
         fontWeight: 'bold',
+    },
+    disabledButton: {
+        opacity: 0.7,
+        backgroundColor: '#94a3b8',
+    },
+    errorText: {
+        color: '#ef4444',
+        fontSize: moderateScale(14),
+        textAlign: 'center',
+        marginBottom: verticalScale(10),
     },
     termsText: {
         fontSize: moderateScale(12),

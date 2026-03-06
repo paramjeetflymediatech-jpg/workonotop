@@ -12,6 +12,8 @@ import {
     Image
 } from 'react-native';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
+import { apiService } from '../../services/api';
+import { Alert } from 'react-native';
 
 const ProviderSignupScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
@@ -22,10 +24,49 @@ const ProviderSignupScreen = ({ navigation }) => {
         password: '',
         confirmPassword: ''
     });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleSignup = () => {
-        // Logic for provider signup
-        console.log('Provider Signup:', formData);
+    const handleSignup = async () => {
+        const { firstName, lastName, email, phone, password, confirmPassword } = formData;
+
+        if (!firstName || !lastName || !email || !phone || !password) {
+            setError('Please fill in all fields');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const response = await apiService.post('/api/provider/signup', {
+                firstName,
+                lastName,
+                email,
+                phone,
+                password
+            });
+
+            if (response.success) {
+                Alert.alert(
+                    "Account Created",
+                    "Please check your email to verify your account before logging in.",
+                    [{ text: "OK", onPress: () => navigation.navigate('Login', { type: 'pro' }) }]
+                );
+            } else {
+                setError(response.message || 'Signup failed');
+            }
+        } catch (err) {
+            setError('Connection failed. Please try again.');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const isSmallDevice = SCREEN_HEIGHT < 750;
@@ -133,8 +174,16 @@ const ProviderSignupScreen = ({ navigation }) => {
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.submitButton} onPress={handleSignup}>
-                            <Text style={styles.submitButtonText}>Create Account</Text>
+                        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                        <TouchableOpacity
+                            style={[styles.submitButton, loading && styles.disabledButton]}
+                            onPress={handleSignup}
+                            disabled={loading}
+                        >
+                            <Text style={styles.submitButtonText}>
+                                {loading ? 'Creating Account...' : 'Create Account'}
+                            </Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.footer} onPress={() => navigation.navigate('Login', { type: 'pro' })}>
@@ -236,6 +285,16 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: moderateScale(18),
         fontWeight: 'bold',
+    },
+    disabledButton: {
+        opacity: 0.7,
+        backgroundColor: '#94a3b8',
+    },
+    errorText: {
+        color: '#ef4444',
+        fontSize: moderateScale(14),
+        textAlign: 'center',
+        marginBottom: verticalScale(10),
     },
     footer: {
         marginTop: verticalScale(15),

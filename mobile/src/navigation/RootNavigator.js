@@ -1,39 +1,75 @@
 import React from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
-import HomeScreen from '../screens/HomeScreen';
-import DetailsScreen from '../screens/DetailsScreen';
-import LoginScreen from '../screens/auth/LoginScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import ServicesScreen from '../screens/ServicesScreen';
+
+// Auth screens
 import AuthChoiceScreen from '../screens/auth/AuthChoiceScreen';
+import LoginScreen from '../screens/auth/LoginScreen';
 import ProviderSignupScreen from '../screens/auth/ProviderSignupScreen';
 import CustomerSignupScreen from '../screens/auth/CustomerSignupScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 
+// Main
+import BottomTabNavigator from './BottomTabNavigator';
+import DetailsScreen from '../screens/DetailsScreen';
+
+// Contractor Onboarding
+import ProfileSetupScreen from '../screens/contractor/ProfileSetupScreen';
+import SkillsSelectionScreen from '../screens/contractor/SkillsSelectionScreen';
+import DocumentUploadScreen from '../screens/contractor/DocumentUploadScreen';
+import BankLinkScreen from '../screens/contractor/BankLinkScreen';
+import PendingApprovalScreen from '../screens/contractor/PendingApprovalScreen';
+
+// Contractor Job Screens
+import ContractorJobsScreen from '../screens/contractor/ContractorJobsScreen';
+import StartJobScreen from '../screens/contractor/StartJobScreen';
+import FinishJobScreen from '../screens/contractor/FinishJobScreen';
+
+// Customer Screens
+import JobReportScreen from '../screens/customer/JobReportScreen';
+
 const Stack = createNativeStackNavigator();
 
 const RootNavigator = () => {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
+
+    if (loading) {
+        return (
+            <View style={styles.loader}>
+                <ActivityIndicator size="large" color="#14b8a6" />
+            </View>
+        );
+    }
 
     return (
         <Stack.Navigator
             screenOptions={{
-                headerStyle: {
-                    backgroundColor: '#14b8a6',
-                },
+                headerStyle: { backgroundColor: '#14b8a6' },
                 headerTintColor: '#fff',
-                headerTitleStyle: {
-                    fontWeight: 'bold',
-                },
+                headerTitleStyle: { fontWeight: 'bold' },
             }}
         >
             {user ? (
                 <>
-                    <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'WorkOnTop' }} />
+                    {/* Main App */}
+                    <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
                     <Stack.Screen name="Details" component={DetailsScreen} />
-                    <Stack.Screen name="Profile" component={ProfileScreen} />
-                    <Stack.Screen name="Services" component={ServicesScreen} options={{ title: 'Our Services' }} />
+
+                    {/* Contractor Onboarding */}
+                    <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="SkillsSelection" component={SkillsSelectionScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
+
+                    {/* Contractor Job Flow */}
+                    <Stack.Screen name="ContractorJobs" component={ContractorJobsScreen} options={{ title: 'Jobs' }} />
+                    <Stack.Screen name="StartJob" component={StartJobScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="FinishJob" component={FinishJobScreen} options={{ headerShown: false }} />
+
+                    {/* Customer Screens */}
+                    <Stack.Screen name="JobReport" component={JobReportScreen} options={{ title: 'Job Report' }} />
                 </>
             ) : (
                 <>
@@ -47,5 +83,11 @@ const RootNavigator = () => {
         </Stack.Navigator>
     );
 };
+
+const styles = StyleSheet.create({
+    loader: {
+        flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff',
+    },
+});
 
 export default RootNavigator;
