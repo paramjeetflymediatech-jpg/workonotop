@@ -10,6 +10,9 @@ import AuthChoiceScreen from '../screens/auth/AuthChoiceScreen';
 import ProviderSignupScreen from '../screens/auth/ProviderSignupScreen';
 import CustomerSignupScreen from '../screens/auth/CustomerSignupScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import AdminDashboard from '../screens/AdminDashboard';
+import CustomerDashboard from '../screens/CustomerDashboard';
+import ProviderDashboard from '../screens/ProviderDashboard';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,7 +33,19 @@ const RootNavigator = () => {
         >
             {user ? (
                 <>
-                    <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'WorkOnTop' }} />
+                    <Stack.Screen
+                        name="Home"
+                        component={
+                            user.role === 'admin' ? AdminDashboard :
+                                user.role === 'provider' ? ProviderDashboard :
+                                    CustomerDashboard
+                        }
+                        options={{
+                            title: user.role === 'admin' ? 'Admin Panel' :
+                                user.role === 'provider' ? 'Pro Dashboard' :
+                                    'WorkOnTop'
+                        }}
+                    />
                     <Stack.Screen name="Details" component={DetailsScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                     <Stack.Screen name="Services" component={ServicesScreen} options={{ title: 'Our Services' }} />

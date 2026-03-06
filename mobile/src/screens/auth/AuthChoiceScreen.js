@@ -101,7 +101,13 @@ const AuthChoiceScreen = ({ navigation }) => {
         <SafeAreaView style={styles.container}>
             {/* Top Header */}
             <View style={styles.header}>
-                <Text style={styles.brandText}>WorkOn<Text style={styles.brandBold}>Top</Text></Text>
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onLongPress={() => navigation.navigate('Login', { type: 'admin' })}
+                    delayLongPress={5000}
+                >
+                    <Text style={styles.brandText}>WorkOn<Text style={styles.brandBold}>Top</Text></Text>
+                </TouchableOpacity>
             </View>
 
             {/* Center Illustration - New "Worker in Action" Image */}

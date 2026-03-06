@@ -35,11 +35,23 @@ const LoginScreen = ({ navigation }) => {
         setError('');
 
         try {
-            const endpoint = type === 'pro' ? '/api/provider/login' : '/api/auth/login';
+            let endpoint;
+            if (type === 'pro') endpoint = '/api/provider/login';
+            else if (type === 'admin') endpoint = '/api/admin/login';
+            else endpoint = '/api/auth/login';
+
             const response = await apiService.post(endpoint, { email, password });
 
             if (response.success) {
-                login(response.user || response.provider, response.token);
+                const userData = response.user || response.provider || {};
+
+                // Ensure role is set for the app to navigate correctly
+                if (type === 'admin') userData.role = 'admin';
+                else if (type === 'pro') userData.role = 'provider';
+                else if (!userData.role) userData.role = 'customer';
+                else if (userData.role === 'user') userData.role = 'customer';
+
+                login(userData, response.token);
             } else {
                 setError(response.message || 'Invalid credentials');
             }
@@ -80,7 +92,9 @@ const LoginScreen = ({ navigation }) => {
                                 resizeMode="contain"
                             />
                         )}
-                        <Text style={styles.title}>{type === 'pro' ? 'Pro Login' : 'Customer Login'}</Text>
+                        <Text style={styles.title}>
+                            {type === 'pro' ? 'Pro Login' : type === 'admin' ? 'Admin Login' : 'Customer Login'}
+                        </Text>
                         <Text style={styles.subtitle}>Welcome back to WorkOnTop</Text>
                     </View>
 
