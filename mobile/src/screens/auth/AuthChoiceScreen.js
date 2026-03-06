@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Dimensions,
     Image,
     SafeAreaView,
     Animated,
@@ -12,12 +11,11 @@ import {
     Platform,
     UIManager
 } from 'react-native';
+import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../../utils/responsive';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-
-const { width, height } = Dimensions.get('window');
 
 const AuthChoiceScreen = ({ navigation }) => {
     // 'initial' | 'login' | 'signup'
@@ -71,9 +69,9 @@ const AuthChoiceScreen = ({ navigation }) => {
                 <Text style={styles.roleButtonText}>Pro Login</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => changeView('initial')}>
+            {/* <TouchableOpacity onPress={() => changeView('initial')}>
                 <Text style={styles.backText}>← Back</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
         </View>
     );
 
@@ -93,9 +91,9 @@ const AuthChoiceScreen = ({ navigation }) => {
                 <Text style={styles.roleButtonText}>Become a Pro</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => changeView('initial')}>
+            {/* <TouchableOpacity onPress={() => changeView('initial')}>
                 <Text style={styles.backText}>← Back</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
         </View>
     );
 
@@ -137,10 +135,10 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginTop: 50,
+        marginTop: verticalScale(50),
     },
     brandText: {
-        fontSize: 24,
+        fontSize: moderateScale(24),
         color: '#0f172a',
         letterSpacing: 0.5,
     },
@@ -151,22 +149,22 @@ const styles = StyleSheet.create({
         flex: 1, // Takes up remaining space to push section to bottom
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 20,
+        paddingTop: verticalScale(20),
     },
     illustration: {
-        width: width * 0.85,
+        width: SCREEN_WIDTH * 0.85,
         height: '100%',
     },
     bottomSection: {
-        paddingHorizontal: 30,
-        paddingBottom: 40,
+        paddingHorizontal: scale(30),
+        paddingBottom: verticalScale(40),
         width: '100%',
     },
     title: {
-        fontSize: 28,
+        fontSize: moderateScale(28),
         fontWeight: '700',
         color: '#0f172a',
-        marginBottom: 24,
+        marginBottom: verticalScale(24),
         textAlign: 'center',
     },
     buttonGroup: {
@@ -174,10 +172,10 @@ const styles = StyleSheet.create({
     },
     primaryButton: {
         backgroundColor: '#115e59',
-        paddingVertical: 18,
-        borderRadius: 15,
+        paddingVertical: verticalScale(18),
+        borderRadius: moderateScale(15),
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: verticalScale(16),
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -186,43 +184,43 @@ const styles = StyleSheet.create({
     },
     primaryButtonText: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontWeight: '600',
     },
     secondaryButton: {
         backgroundColor: '#fff',
-        paddingVertical: 18,
-        borderRadius: 15,
+        paddingVertical: verticalScale(18),
+        borderRadius: moderateScale(15),
         alignItems: 'center',
         borderWidth: 2,
         borderColor: '#115e59',
     },
     secondaryButtonText: {
         color: '#115e59',
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontWeight: '600',
     },
     roleButton: {
         backgroundColor: '#f8fafc',
-        paddingVertical: 20,
-        borderRadius: 15,
+        paddingVertical: verticalScale(20),
+        borderRadius: moderateScale(15),
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: verticalScale(12),
         borderWidth: 1,
         borderColor: '#e2e8f0',
     },
     roleButtonText: {
         color: '#0f172a',
-        fontSize: 16,
+        fontSize: moderateScale(16),
         fontWeight: '600',
     },
-    backText: {
-        textAlign: 'center',
-        marginTop: 12,
-        color: '#64748b',
-        fontSize: 16,
-        fontWeight: '500',
-    }
+    // backText: {
+    //     textAlign: 'center',
+    //     marginTop: verticalScale(12),
+    //     color: '#64748b',
+    //     fontSize: moderateScale(16),
+    //     fontWeight: '500',
+    // }
 });
 
 export default AuthChoiceScreen;
