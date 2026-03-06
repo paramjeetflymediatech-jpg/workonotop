@@ -21,7 +21,7 @@ async function createAdmin() {
       (email, password_hash, first_name, last_name, role) 
       VALUES (?, ?, ?, ?, ?)`,
       [
-        'admin@workontap.com',
+        'adminworkontap@yopmail.com',
         hashedPassword,
         'Admin',
         'User',
