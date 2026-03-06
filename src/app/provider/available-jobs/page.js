@@ -444,9 +444,6 @@
 
 
 
-
-
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -485,9 +482,7 @@ function StripeRequiredModal({ isOpen, onClose }) {
           <p className="text-sm text-gray-500 mb-1">
             You need to connect your Stripe account before you can accept jobs and receive payments.
           </p>
-          <p className="text-xs text-gray-400 mb-5">
-            It only takes a few minutes to set up.
-          </p>
+          <p className="text-xs text-gray-400 mb-5">It only takes a few minutes to set up.</p>
           <div className="flex gap-3">
             <button onClick={onClose}
               className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl text-sm hover:bg-gray-50 transition">
@@ -517,8 +512,6 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, amount, hasO
           </div>
           <h3 className="text-lg font-bold text-gray-900 mb-1">{title}</h3>
           <p className="text-sm text-gray-500 mb-2">{message}</p>
-          
-          {/* Overtime Warning */}
           {hasOvertime && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3 text-left">
               <div className="flex items-start gap-2">
@@ -530,7 +523,6 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, amount, hasO
               </div>
             </div>
           )}
-          
           {amount && (
             <div className={`inline-flex items-center gap-1.5 ${hasOvertime ? 'bg-purple-50 border border-purple-100' : 'bg-green-50 border border-green-100'} text-${hasOvertime ? 'purple' : 'green'}-700 text-lg font-bold px-4 py-2 rounded-xl mt-1`}>
               You earn: {amount}
@@ -544,8 +536,8 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, amount, hasO
           </button>
           <button onClick={() => { onConfirm(); onClose(); }}
             className={`flex-1 py-2.5 text-white font-bold rounded-xl text-sm transition ${
-              hasOvertime 
-                ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
+              hasOvertime
+                ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
                 : 'bg-green-600 hover:bg-green-700'
             }`}>
             Accept Job
@@ -571,7 +563,6 @@ function formatDuration(m) {
   const h = Math.floor(m / 60), r = m % 60
   return r ? `${h}h ${r}m` : `${h} hour${h > 1 ? 's' : ''}`
 }
-
 function MetaBadge({ icon, text }) {
   return (
     <span className="inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-lg">
@@ -599,7 +590,6 @@ export default function ProviderAvailableJobs() {
   const loadJobs = async (silent = false) => {
     silent ? setRefreshing(true) : setLoading(true)
     try {
-      // Check stripe status alongside jobs
       const [jobsRes, provRes] = await Promise.all([
         fetch('/api/provider/available-jobs'),
         fetch('/api/provider/me')
@@ -610,7 +600,6 @@ export default function ProviderAvailableJobs() {
       if (provData.success) {
         setStripeConnected(provData.provider?.stripe_onboarding_complete || false)
       }
-
       if (data.success) {
         setJobs(data.data || [])
         if (data.provider_city) setProviderCity(data.provider_city)
@@ -626,12 +615,8 @@ export default function ProviderAvailableJobs() {
     }
   }
 
-  // Called when Accept button clicked — check Stripe first
   const handleAcceptClick = (jobId, amount, hasOvertime) => {
-    if (!stripeConnected) {
-      setStripeModal(true)
-      return
-    }
+    if (!stripeConnected) { setStripeModal(true); return }
     setConfirmModal({ open: true, jobId, amount, hasOvertime })
   }
 
@@ -646,9 +631,7 @@ export default function ProviderAvailableJobs() {
       if (data.success) {
         showToast('success', data.message)
         setJobs(prev => prev.filter(j => j.id !== jobId))
-        if (data.overtime_info) {
-          setTimeout(() => showToast('info', data.overtime_info.message), 1000)
-        }
+        if (data.overtime_info) setTimeout(() => showToast('info', data.overtime_info.message), 1000)
       } else {
         showToast('error', data.message || 'Failed to accept job')
         loadJobs(true)
@@ -675,12 +658,7 @@ export default function ProviderAvailableJobs() {
   return (
     <div className="w-full">
       <Toast toast={toast} onDismiss={() => setToast(null)} />
-
-      <StripeRequiredModal
-        isOpen={stripeModal}
-        onClose={() => setStripeModal(false)}
-      />
-
+      <StripeRequiredModal isOpen={stripeModal} onClose={() => setStripeModal(false)} />
       <ConfirmModal
         isOpen={confirmModal.open}
         onClose={() => setConfirmModal({ open: false, jobId: null, amount: null, hasOvertime: false })}
@@ -709,15 +687,14 @@ export default function ProviderAvailableJobs() {
         </button>
       </div>
 
-      {/* Stripe warning banner on available jobs page */}
+      {/* Stripe warning banner */}
       {!stripeConnected && !loading && (
         <div className="mb-5 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-3">
           <span className="text-xl">⚠️</span>
           <p className="text-sm text-amber-800 flex-1">
             <strong>Stripe not connected.</strong> You can view jobs but cannot accept them until you connect Stripe.
           </p>
-          <Link href="/provider/onboarding?step=3"
-            className="text-xs font-bold text-amber-700 underline whitespace-nowrap">
+          <Link href="/provider/onboarding?step=3" className="text-xs font-bold text-amber-700 underline whitespace-nowrap">
             Connect →
           </Link>
         </div>
@@ -728,12 +705,7 @@ export default function ProviderAvailableJobs() {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex gap-3 text-xs flex-wrap">
             <span className="text-gray-500">Total: <strong className="text-gray-900">{stats.total}</strong></span>
-            {stats.assigned > 0 && (
-              <>
-                <span className="text-gray-300">|</span>
-                <span className="text-blue-600">🎯 Assigned: <strong>{stats.assigned}</strong></span>
-              </>
-            )}
+            {stats.assigned > 0 && (<><span className="text-gray-300">|</span><span className="text-blue-600">🎯 Assigned: <strong>{stats.assigned}</strong></span></>)}
             <span className="text-gray-300">|</span>
             <span className="text-purple-600">+OT: <strong>{stats.overtime}</strong></span>
             <span className="text-gray-300">|</span>
@@ -784,17 +756,22 @@ export default function ProviderAvailableJobs() {
       ) : (
         <div className="space-y-3">
           {filteredJobs.map((job) => {
-            const dur = job.pricing?.duration_minutes || 60
-            const commPct = job.pricing?.commission_percent || 0
+            const dur         = job.pricing?.duration_minutes || 60
+            const commPct     = job.pricing?.commission_percent || 0
             const baseEarnings = job.pricing?.provider_base_earnings || 0
-            const otRate = job.pricing?.overtime_rate || 0
-            const netOT = otRate * (1 - commPct / 100)
+            const otRate      = job.pricing?.overtime_rate || 0
+            const netOT       = otRate * (1 - commPct / 100)
             const hasOvertime = job.pricing?.has_overtime
+
+            // ✅ FIX: Cast to boolean — prevents MySQL tinyint 0 rendering as "0" text in JSX
+            const hasParking  = !!job.parking_access
+            const hasElevator = !!job.elevator_access
+            const hasPets     = !!job.has_pets
 
             return (
               <div key={job.id} className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all overflow-hidden ${
-                job.is_admin_assigned ? 'border-blue-200 hover:border-blue-300' : 
-                hasOvertime ? 'border-purple-200 hover:border-purple-300 ring-1 ring-purple-100' : 
+                job.is_admin_assigned ? 'border-blue-200 hover:border-blue-300' :
+                hasOvertime ? 'border-purple-200 hover:border-purple-300 ring-1 ring-purple-100' :
                 'border-gray-100 hover:border-green-200'
               }`}>
 
@@ -805,7 +782,6 @@ export default function ProviderAvailableJobs() {
                   </div>
                 )}
 
-                {/* Overtime Highlight Banner */}
                 {hasOvertime && !job.is_admin_assigned && (
                   <div className="bg-gradient-to-r from-purple-500 to-blue-500 px-5 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -819,8 +795,8 @@ export default function ProviderAvailableJobs() {
                 <div className="flex items-start justify-between p-5 pb-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${
-                      job.is_admin_assigned ? 'bg-blue-50 border border-blue-100' : 
-                      hasOvertime ? 'bg-purple-50 border border-purple-100' : 
+                      job.is_admin_assigned ? 'bg-blue-50 border border-blue-100' :
+                      hasOvertime ? 'bg-purple-50 border border-purple-100' :
                       'bg-green-50 border border-green-100'
                     }`}>
                       {job.category_icon || '🔧'}
@@ -833,8 +809,8 @@ export default function ProviderAvailableJobs() {
                   <div className="text-right flex-shrink-0 ml-3">
                     <p className="text-[10px] text-gray-400 uppercase tracking-wide">You earn</p>
                     <p className={`text-2xl font-extrabold leading-tight ${
-                      job.is_admin_assigned ? 'text-blue-600' : 
-                      hasOvertime ? 'text-purple-600' : 
+                      job.is_admin_assigned ? 'text-blue-600' :
+                      hasOvertime ? 'text-purple-600' :
                       'text-green-600'
                     }`}>
                       {job.display_amount}
@@ -878,11 +854,12 @@ export default function ProviderAvailableJobs() {
                   <MetaBadge icon="📍" text={job.address_line1?.split(',')[0] || '—'} />
                 </div>
 
-                {(job.parking_access || job.elevator_access || job.has_pets) && (
+                {/* ✅ FIXED: boolean cast prevents tinyint 0 showing as "0" text */}
+                {(hasParking || hasElevator || hasPets) && (
                   <div className="flex gap-1.5 px-5 pb-3 flex-wrap">
-                    {job.parking_access && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 border border-green-200 text-green-700">🅿️ Parking</span>}
-                    {job.elevator_access && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 border border-green-200 text-green-700">🛗 Elevator</span>}
-                    {job.has_pets && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-amber-50 border border-amber-200 text-amber-700">🐕 Pets</span>}
+                    {hasParking  && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 border border-green-200 text-green-700">🅿️ Parking</span>}
+                    {hasElevator && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 border border-green-200 text-green-700">🛗 Elevator</span>}
+                    {hasPets     && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-amber-50 border border-amber-200 text-amber-700">🐕 Pets</span>}
                   </div>
                 )}
 
@@ -914,6 +891,7 @@ export default function ProviderAvailableJobs() {
                     )}
                   </button>
                 </div>
+
               </div>
             )
           })}
