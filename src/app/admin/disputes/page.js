@@ -584,7 +584,7 @@ export default function AdminDisputesPage() {
                   <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${
                     isDarkMode ? 'text-red-400' : 'text-red-700'
                   }`}>
-                    Customer's Dispute Reason
+                    Customer&apos;s Dispute Reason
                   </p>
                   <p className={`text-sm leading-relaxed ${
                     isDarkMode ? 'text-red-300' : 'text-red-800'
