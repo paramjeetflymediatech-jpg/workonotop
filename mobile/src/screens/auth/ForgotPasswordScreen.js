@@ -10,12 +10,10 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Image,
-    Dimensions
+    Image
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-
-const { width } = Dimensions.get('window');
+import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
 
 const ForgotPasswordScreen = ({ navigation }) => {
     const route = useRoute();
@@ -35,23 +33,35 @@ const ForgotPasswordScreen = ({ navigation }) => {
         }, 1500);
     };
 
+    const isSmallDevice = SCREEN_HEIGHT < 750;
+    const isVerySmallDevice = SCREEN_HEIGHT < 650;
+
     return (
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    bounces={false}
+                    showsVerticalScrollIndicator={false}
+                >
                     <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                         <Text style={styles.backIcon}>←</Text>
                     </TouchableOpacity>
 
                     <View style={styles.header}>
-                        <Image
-                            source={require('../../../assets/forgot_worker.png')}
-                            style={styles.miniIllustration}
-                            resizeMode="contain"
-                        />
+                        {!isVerySmallDevice && (
+                            <Image
+                                source={require('../../../assets/forgot_worker.png')}
+                                style={[
+                                    styles.miniIllustration,
+                                    isSmallDevice && { width: moderateScale(80), height: moderateScale(80) }
+                                ]}
+                                resizeMode="contain"
+                            />
+                        )}
                         <Text style={styles.title}>Forgot Password?</Text>
                         <Text style={styles.subtitle}>
                             {isSubmitted
@@ -118,71 +128,72 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     scrollContent: {
-        padding: 24,
-        paddingTop: 10,
+        paddingHorizontal: scale(24),
+        paddingVertical: verticalScale(10),
+        flexGrow: 1,
     },
     backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: moderateScale(40),
+        height: moderateScale(40),
+        borderRadius: moderateScale(20),
         backgroundColor: '#f8fafc',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: verticalScale(10),
     },
     backIcon: {
-        fontSize: 20,
+        fontSize: moderateScale(20),
         color: '#0f172a',
         fontWeight: 'bold',
     },
     header: {
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: verticalScale(20),
     },
     miniIllustration: {
-        width: 140,
-        height: 140,
-        marginBottom: 16,
+        width: moderateScale(120),
+        height: moderateScale(120),
+        marginBottom: verticalScale(10),
     },
     title: {
-        fontSize: 28,
+        fontSize: moderateScale(28),
         fontWeight: 'bold',
         color: '#0f172a',
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: moderateScale(15),
         color: '#64748b',
         textAlign: 'center',
-        marginTop: 8,
-        lineHeight: 24,
-        paddingHorizontal: 20,
+        marginTop: verticalScale(4),
+        lineHeight: moderateScale(22),
+        paddingHorizontal: scale(20),
     },
     form: {
         width: '100%',
     },
     inputContainer: {
-        marginBottom: 30,
+        marginBottom: verticalScale(20),
     },
     label: {
-        fontSize: 14,
+        fontSize: moderateScale(14),
         fontWeight: '600',
         color: '#475569',
-        marginBottom: 8,
+        marginBottom: verticalScale(8),
     },
     input: {
         backgroundColor: '#f8fafc',
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        borderRadius: 12,
-        padding: 16,
-        fontSize: 16,
+        borderRadius: moderateScale(12),
+        padding: moderateScale(16),
+        fontSize: moderateScale(16),
         color: '#0f172a',
     },
     button: {
         backgroundColor: '#115e59',
-        paddingVertical: 18,
-        borderRadius: 15,
+        paddingVertical: verticalScale(16),
+        borderRadius: moderateScale(15),
         alignItems: 'center',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
@@ -192,15 +203,15 @@ const styles = StyleSheet.create({
     },
     secondaryButton: {
         backgroundColor: '#fff',
-        paddingVertical: 18,
-        borderRadius: 15,
+        paddingVertical: verticalScale(16),
+        borderRadius: moderateScale(15),
         alignItems: 'center',
         borderWidth: 2,
         borderColor: '#115e59',
     },
     secondaryButtonText: {
         color: '#115e59',
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
     },
     buttonDisabled: {
@@ -208,15 +219,16 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
     },
     footer: {
-        marginTop: 40,
+        marginTop: verticalScale(30),
         alignItems: 'center',
+        marginBottom: verticalScale(20),
     },
     footerText: {
-        fontSize: 15,
+        fontSize: moderateScale(15),
         color: '#64748b',
     },
     footerLink: {
@@ -224,7 +236,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     successSection: {
-        marginTop: 20,
+        marginTop: verticalScale(10),
     }
 });
 

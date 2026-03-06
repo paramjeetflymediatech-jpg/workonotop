@@ -11,6 +11,7 @@ import {
     Platform,
     Image
 } from 'react-native';
+import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
 
 const ProviderSignupScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
@@ -27,46 +28,62 @@ const ProviderSignupScreen = ({ navigation }) => {
         console.log('Provider Signup:', formData);
     };
 
+    const isSmallDevice = SCREEN_HEIGHT < 750;
+    const isVerySmallDevice = SCREEN_HEIGHT < 650;
+
     return (
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    bounces={false}
+                    showsVerticalScrollIndicator={false}
+                >
                     <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                         <Text style={styles.backIcon}>←</Text>
                     </TouchableOpacity>
 
                     <View style={styles.header}>
-                        <Image
-                            source={require('../../../assets/workers.png')}
-                            style={styles.miniIllustration}
-                            resizeMode="contain"
-                        />
+                        {!isVerySmallDevice && (
+                            <Image
+                                source={require('../../../assets/workers.png')}
+                                style={[
+                                    styles.miniIllustration,
+                                    isSmallDevice && { height: verticalScale(40), width: verticalScale(40) }
+                                ]}
+                                resizeMode="contain"
+                            />
+                        )}
                         <Text style={styles.title}>Join as a Service Pro</Text>
-                        <Text style={styles.subtitle}>Start earning with flexible, high-paying jobs near you</Text>
+                        {!isSmallDevice && (
+                            <Text style={styles.subtitle}>Start earning with flexible, high-paying jobs near you</Text>
+                        )}
                     </View>
 
                     <View style={styles.form}>
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.label}>First Name</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="John"
-                                value={formData.firstName}
-                                onChangeText={(text) => setFormData({ ...formData, firstName: text })}
-                            />
-                        </View>
+                        <View style={styles.row}>
+                            <View style={[styles.inputContainer, { flex: 1, marginRight: scale(10) }]}>
+                                <Text style={styles.label}>First Name</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="John"
+                                    value={formData.firstName}
+                                    onChangeText={(text) => setFormData({ ...formData, firstName: text })}
+                                />
+                            </View>
 
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Last Name</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Doe"
-                                value={formData.lastName}
-                                onChangeText={(text) => setFormData({ ...formData, lastName: text })}
-                            />
+                            <View style={[styles.inputContainer, { flex: 1 }]}>
+                                <Text style={styles.label}>Last Name</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Doe"
+                                    value={formData.lastName}
+                                    onChangeText={(text) => setFormData({ ...formData, lastName: text })}
+                                />
+                            </View>
                         </View>
 
                         <View style={styles.inputContainer}>
@@ -92,26 +109,28 @@ const ProviderSignupScreen = ({ navigation }) => {
                             />
                         </View>
 
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Password</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="•••••••••"
-                                secureTextEntry
-                                value={formData.password}
-                                onChangeText={(text) => setFormData({ ...formData, password: text })}
-                            />
-                        </View>
+                        <View style={styles.row}>
+                            <View style={[styles.inputContainer, { flex: 1, marginRight: scale(10) }]}>
+                                <Text style={styles.label}>Password</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="•••••••••"
+                                    secureTextEntry
+                                    value={formData.password}
+                                    onChangeText={(text) => setFormData({ ...formData, password: text })}
+                                />
+                            </View>
 
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Confirm Password</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="••••••••"
-                                secureTextEntry
-                                value={formData.confirmPassword}
-                                onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
-                            />
+                            <View style={[styles.inputContainer, { flex: 1 }]}>
+                                <Text style={styles.label}>Confirm</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="••••••••"
+                                    secureTextEntry
+                                    value={formData.confirmPassword}
+                                    onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+                                />
+                            </View>
                         </View>
 
                         <TouchableOpacity style={styles.submitButton} onPress={handleSignup}>
@@ -136,72 +155,77 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     scrollContent: {
-        padding: 24,
-        paddingTop: 10,
+        paddingHorizontal: scale(24),
+        paddingVertical: verticalScale(10),
+        flexGrow: 1,
     },
     backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: moderateScale(40),
+        height: moderateScale(40),
+        borderRadius: moderateScale(20),
         backgroundColor: '#f8fafc',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: verticalScale(10),
     },
     backIcon: {
-        fontSize: 20,
+        fontSize: moderateScale(20),
         color: '#0f172a',
         fontWeight: 'bold',
     },
     header: {
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: verticalScale(15),
     },
     miniIllustration: {
-        width: 60,
-        height: 60,
-        marginBottom: 16,
+        width: moderateScale(60),
+        height: moderateScale(60),
+        marginBottom: verticalScale(10),
     },
     title: {
-        fontSize: 26,
+        fontSize: moderateScale(24),
         fontWeight: 'bold',
         color: '#0f172a',
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 15,
+        fontSize: moderateScale(14),
         color: '#64748b',
         textAlign: 'center',
-        marginTop: 8,
-        lineHeight: 22,
+        marginTop: verticalScale(4),
+        lineHeight: moderateScale(20),
     },
     form: {
         width: '100%',
     },
+    row: {
+        flexDirection: 'row',
+        width: '100%',
+    },
     inputContainer: {
-        marginBottom: 20,
+        marginBottom: verticalScale(12),
     },
     label: {
-        fontSize: 14,
+        fontSize: moderateScale(13),
         fontWeight: '600',
         color: '#475569',
-        marginBottom: 8,
+        marginBottom: verticalScale(6),
     },
     input: {
         backgroundColor: '#f8fafc',
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        borderRadius: 12,
-        padding: 16,
-        fontSize: 16,
+        borderRadius: moderateScale(12),
+        padding: moderateScale(12),
+        fontSize: moderateScale(15),
         color: '#0f172a',
     },
     submitButton: {
         backgroundColor: '#115e59',
-        paddingVertical: 18,
-        borderRadius: 15,
+        paddingVertical: verticalScale(16),
+        borderRadius: moderateScale(15),
         alignItems: 'center',
-        marginTop: 10,
+        marginTop: verticalScale(10),
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
@@ -210,16 +234,16 @@ const styles = StyleSheet.create({
     },
     submitButtonText: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
     },
     footer: {
-        marginTop: 24,
+        marginTop: verticalScale(15),
         alignItems: 'center',
-        marginBottom: 40,
+        marginBottom: verticalScale(20),
     },
     footerText: {
-        fontSize: 15,
+        fontSize: moderateScale(14),
         color: '#64748b',
     },
     footerLink: {

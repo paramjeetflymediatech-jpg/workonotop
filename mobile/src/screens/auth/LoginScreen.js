@@ -10,14 +10,12 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Image,
-    Dimensions
+    Image
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useRoute } from '@react-navigation/native';
 import { apiService } from '../../services/api';
-
-const { width } = Dimensions.get('window');
+import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
 
 const LoginScreen = ({ navigation }) => {
     const route = useRoute();
@@ -41,7 +39,7 @@ const LoginScreen = ({ navigation }) => {
             const response = await apiService.post(endpoint, { email, password });
 
             if (response.success) {
-                login(response.user || response.provider);
+                login(response.user || response.provider, response.token);
             } else {
                 setError(response.message || 'Invalid credentials');
             }
@@ -53,23 +51,35 @@ const LoginScreen = ({ navigation }) => {
         }
     };
 
+    const isSmallDevice = SCREEN_HEIGHT < 750;
+    const isVerySmallDevice = SCREEN_HEIGHT < 650;
+
     return (
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    bounces={false}
+                    showsVerticalScrollIndicator={false}
+                >
                     <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                         <Text style={styles.backIcon}>←</Text>
                     </TouchableOpacity>
 
                     <View style={styles.header}>
-                        <Image
-                            source={require('../../../assets/login_worker.png')}
-                            style={styles.miniIllustration}
-                            resizeMode="contain"
-                        />
+                        {!isVerySmallDevice && (
+                            <Image
+                                source={require('../../../assets/login_worker.png')}
+                                style={[
+                                    styles.miniIllustration,
+                                    isSmallDevice && { width: moderateScale(60), height: moderateScale(60) }
+                                ]}
+                                resizeMode="contain"
+                            />
+                        )}
                         <Text style={styles.title}>{type === 'pro' ? 'Pro Login' : 'Customer Login'}</Text>
                         <Text style={styles.subtitle}>Welcome back to WorkOnTop</Text>
                     </View>
@@ -141,87 +151,89 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     scrollContent: {
-        padding: 24,
-        paddingTop: 10,
+        paddingHorizontal: scale(24),
+        paddingVertical: verticalScale(10),
+        flexGrow: 1,
     },
     backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: moderateScale(40),
+        height: moderateScale(40),
+        borderRadius: moderateScale(20),
         backgroundColor: '#f8fafc',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: verticalScale(10),
     },
     backIcon: {
-        fontSize: 20,
+        fontSize: moderateScale(20),
         color: '#0f172a',
         fontWeight: 'bold',
     },
     header: {
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: verticalScale(20),
     },
     miniIllustration: {
-        width: 120,
-        height: 120,
-        marginBottom: 16,
+        width: moderateScale(100),
+        height: moderateScale(100),
+        marginBottom: verticalScale(10),
     },
     title: {
-        fontSize: 30,
+        fontSize: moderateScale(28),
         fontWeight: 'bold',
         color: '#0f172a',
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: moderateScale(15),
         color: '#64748b',
         textAlign: 'center',
-        marginTop: 4,
+        marginTop: verticalScale(4),
     },
     errorText: {
         color: '#ef4444',
         backgroundColor: '#fee2e2',
-        padding: 12,
-        borderRadius: 10,
-        marginBottom: 20,
+        padding: moderateScale(10),
+        borderRadius: moderateScale(10),
+        marginBottom: verticalScale(15),
         textAlign: 'center',
         fontWeight: '600',
+        fontSize: moderateScale(14),
     },
     form: {
         width: '100%',
     },
     inputContainer: {
-        marginBottom: 20,
+        marginBottom: verticalScale(15),
     },
     label: {
-        fontSize: 14,
+        fontSize: moderateScale(13),
         fontWeight: '600',
         color: '#475569',
-        marginBottom: 8,
+        marginBottom: verticalScale(6),
     },
     input: {
         backgroundColor: '#f8fafc',
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        borderRadius: 12,
-        padding: 16,
-        fontSize: 16,
+        borderRadius: moderateScale(12),
+        padding: moderateScale(14),
+        fontSize: moderateScale(16),
         color: '#0f172a',
     },
     forgotPassword: {
         alignItems: 'flex-end',
-        marginBottom: 24,
+        marginBottom: verticalScale(20),
     },
     forgotPasswordText: {
         color: '#115e59',
-        fontSize: 14,
+        fontSize: moderateScale(14),
         fontWeight: '600',
     },
     button: {
         backgroundColor: '#115e59',
-        paddingVertical: 18,
-        borderRadius: 15,
+        paddingVertical: verticalScale(16),
+        borderRadius: moderateScale(15),
         alignItems: 'center',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
@@ -234,16 +246,16 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
     },
     signupFooter: {
-        marginTop: 24,
+        marginTop: verticalScale(20),
         alignItems: 'center',
-        marginBottom: 40,
+        marginBottom: verticalScale(20),
     },
     signupText: {
-        fontSize: 15,
+        fontSize: moderateScale(15),
         color: '#64748b',
     },
     signupLink: {

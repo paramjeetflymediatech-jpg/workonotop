@@ -151,12 +151,12 @@ export async function POST(request) {
 
     // Generate JWT token
     const token = jwt.sign(
-      { 
-        id: user.id, 
-        email: user.email, 
+      {
+        id: user.id,
+        email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
-        role: 'user' 
+        role: 'user'
       },
       JWT_SECRET,
       { expiresIn: '7d' }
@@ -169,6 +169,7 @@ export async function POST(request) {
     const response = NextResponse.json({
       success: true,
       message: 'Login successful',
+      token,
       user: userData
     })
 

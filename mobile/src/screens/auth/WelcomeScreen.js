@@ -4,13 +4,11 @@ import {
     Text,
     StyleSheet,
     Animated,
-    Dimensions,
     TouchableOpacity,
     Image,
     SafeAreaView
 } from 'react-native';
-
-const { width, height } = Dimensions.get('window');
+import { scale, verticalScale, moderateScale, SCREEN_WIDTH, SCREEN_HEIGHT } from '../../utils/responsive';
 
 const WelcomeScreen = ({ onFinish }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -66,11 +64,6 @@ const WelcomeScreen = ({ onFinish }) => {
         <SafeAreaView style={styles.container}>
             <View style={styles.topSection}>
                 <Text style={styles.brandText}>WorkOn<Text style={styles.brandBold}>Top</Text></Text>
-                {/* <View style={styles.iconCircle}>
-                    <View style={styles.iconInner}>
-                        <Text style={styles.iconEmoji}>🛠️</Text>
-                    </View>
-                </View> */}
             </View>
 
             <Animated.View
@@ -109,67 +102,40 @@ const WelcomeScreen = ({ onFinish }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff', // White background like the reference
+        backgroundColor: '#fff',
     },
     topSection: {
         alignItems: 'center',
-        marginTop: 80,
+        marginTop: verticalScale(40),
     },
     brandText: {
-        fontSize: 30,
+        fontSize: moderateScale(30),
         color: '#0f172a',
         letterSpacing: 0.5,
     },
     brandBold: {
         fontWeight: 'bold',
     },
-
-    // iconCircle: {
-    //     marginTop: 20,
-    //     width: 70,
-    //     height: 70,
-    //     borderRadius: 35,
-    //     backgroundColor: '#f1f5f9',
-    //     justifyContent: 'center',
-    //     alignItems: 'center',
-    // },
-    // iconInner: {
-    //     width: 50,
-    //     height: 50,
-    //     borderRadius: 25,
-    //     backgroundColor: '#14b8a6',
-    //     justifyContent: 'center',
-    //     alignItems: 'center',
-    //     shadowColor: "#000",
-    //     shadowOffset: { width: 0, height: 2 },
-    //     shadowOpacity: 0.2,
-    //     shadowRadius: 3,
-    //     elevation: 4,
-    // },
-    // iconEmoji: {
-    //     fontSize: 24,
-    // },
-
     imageContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
     illustration: {
-        width: width * 0.9,
-        height: height * 0.4,
+        width: SCREEN_WIDTH * 0.9,
+        height: SCREEN_HEIGHT * 0.4,
     },
     bottomSection: {
-        paddingHorizontal: 40,
-        paddingBottom: 60,
+        paddingHorizontal: scale(40),
+        paddingBottom: verticalScale(60),
     },
     heading: {
-        fontSize: 32,
+        fontSize: moderateScale(32),
         fontWeight: '600',
         color: '#0f172a',
         textAlign: 'center',
-        lineHeight: 42,
-        marginBottom: 40,
+        lineHeight: moderateScale(42),
+        marginBottom: verticalScale(40),
     },
     italic: {
         fontStyle: 'italic',
@@ -179,9 +145,9 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     button: {
-        backgroundColor: '#115e59', // Dark teal like the reference button
-        paddingVertical: 18,
-        borderRadius: 18,
+        backgroundColor: '#115e59',
+        paddingVertical: verticalScale(18),
+        borderRadius: moderateScale(18),
         alignItems: 'center',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
@@ -191,7 +157,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontWeight: '600',
     },
 });
