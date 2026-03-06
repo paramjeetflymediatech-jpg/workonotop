@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,13 +6,88 @@ import {
     TouchableOpacity,
     ScrollView,
     SafeAreaView,
-    StatusBar
+    StatusBar,
+    ActivityIndicator,
+    RefreshControl
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../utils/responsive';
 
 const AdminDashboard = ({ navigation }) => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [stats, setStats] = useState({
+        totalRevenue: 0,
+        activeJobs: 0,
+        totalProviders: 0,
+        totalCustomers: 0
+    });
+    const [recentBookings, setRecentBookings] = useState([]);
+
+    const fetchDashboardData = async () => {
+        try {
+            const [bookingsRes, customersRes, providersRes] = await Promise.all([
+                api.get('/api/bookings'),
+                api.get('/api/customers'),
+                api.get('/api/admin/providers')
+            ]);
+
+            const bookings = bookingsRes.data || [];
+            const allUsers = customersRes.data || [];
+            const customers = allUsers.filter(u => u.role === 'user');
+            const providersStats = providersRes.data?.stats || { total: 0 };
+
+            const totalRevenue = bookings.reduce((sum, b) => {
+                const servicePrice = parseFloat(b.service_price || 0);
+                const additionalPrice = parseFloat(b.additional_price || 0);
+                return sum + servicePrice + additionalPrice;
+            }, 0);
+
+            setStats({
+                totalRevenue,
+                activeJobs: bookings.filter(b => b.status === 'confirmed' || b.status === 'in_progress').length,
+                totalProviders: providersStats.total,
+                totalCustomers: customers.length
+            });
+
+            setRecentBookings(bookings.slice(0, 5));
+        } catch (error) {
+            console.error('Error fetching admin data:', error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchDashboardData();
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+        }).format(amount);
+    };
+
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case 'pending': return { bg: '#fef3c7', text: '#d97706' };
+            case 'confirmed': return { bg: '#dbeafe', text: '#2563eb' };
+            case 'in_progress': return { bg: '#f3e8ff', text: '#9333ea' };
+            case 'completed': return { bg: '#dcfce7', text: '#16a34a' };
+            case 'cancelled': return { bg: '#fee2e2', text: '#dc2626' };
+            default: return { bg: '#f1f5f9', text: '#64748b' };
+        }
+    };
 
     const StatCard = ({ title, value, icon, color }) => (
         <View style={[styles.statCard, { borderLeftColor: color }]}>
@@ -34,10 +109,25 @@ const AdminDashboard = ({ navigation }) => {
         </TouchableOpacity>
     );
 
+    if (loading && !refreshing) {
+        return (
+            <View style={styles.loaderContainer}>
+                <ActivityIndicator size="large" color="#14b8a6" />
+                <Text style={styles.loaderText}>Loading Admin Data...</Text>
+            </View>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#14b8a6" />
+                }
+            >
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.welcomeText}>Admin Panel</Text>
@@ -51,10 +141,10 @@ const AdminDashboard = ({ navigation }) => {
                 </View>
 
                 <View style={styles.statsGrid}>
-                    <StatCard title="Total Earnings" value="$24,500" icon="💰" color="#10b981" />
-                    <StatCard title="Active Jobs" value="128" icon="🛠️" color="#3b82f6" />
-                    <StatCard title="Providers" value="45" icon="👷" color="#f59e0b" />
-                    <StatCard title="Customers" value="850" icon="👥" color="#8b5cf6" />
+                    <StatCard title="Total Revenue" value={formatCurrency(stats.totalRevenue)} icon="💰" color="#10b981" />
+                    <StatCard title="Active Jobs" value={stats.activeJobs.toString()} icon="🛠️" color="#3b82f6" />
+                    <StatCard title="Providers" value={stats.totalProviders.toString()} icon="👷" color="#f59e0b" />
+                    <StatCard title="Customers" value={stats.totalCustomers.toString()} icon="👥" color="#8b5cf6" />
                 </View>
 
                 <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -68,22 +158,34 @@ const AdminDashboard = ({ navigation }) => {
                 <View style={styles.recentSection}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Recent Bookings</Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.navigate('Services')}>
                             <Text style={styles.viewAllText}>View All</Text>
                         </TouchableOpacity>
                     </View>
 
-                    {[1, 2, 3].map((item) => (
-                        <View key={item} style={styles.bookingItem}>
-                            <View style={styles.bookingInfo}>
-                                <Text style={styles.bookingTitle}>Plumbing Repair</Text>
-                                <Text style={styles.bookingSubtitle}>Customer: John Doe • $85</Text>
-                            </View>
-                            <View style={styles.statusBadge}>
-                                <Text style={styles.statusText}>Pending</Text>
-                            </View>
-                        </View>
-                    ))}
+                    {recentBookings.length > 0 ? (
+                        recentBookings.map((booking) => {
+                            const status = getStatusStyle(booking.status);
+                            const amount = parseFloat(booking.service_price || 0) + parseFloat(booking.additional_price || 0);
+                            return (
+                                <View key={booking.id} style={styles.bookingItem}>
+                                    <View style={styles.bookingInfo}>
+                                        <Text style={styles.bookingTitle}>{booking.service_name}</Text>
+                                        <Text style={styles.bookingSubtitle}>
+                                            {booking.customer_first_name} {booking.customer_last_name} • {formatCurrency(amount)}
+                                        </Text>
+                                    </View>
+                                    <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+                                        <Text style={[styles.statusText, { color: status.text }]}>
+                                            {booking.status?.replace('_', ' ')}
+                                        </Text>
+                                    </View>
+                                </View>
+                            );
+                        })
+                    ) : (
+                        <Text style={styles.emptyText}>No recent bookings found.</Text>
+                    )}
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -94,6 +196,18 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f8fafc',
+    },
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+    },
+    loaderText: {
+        marginTop: verticalScale(12),
+        fontSize: moderateScale(14),
+        color: '#64748b',
+        fontWeight: '500',
     },
     scrollContent: {
         padding: moderateScale(20),
@@ -222,20 +336,27 @@ const styles = StyleSheet.create({
         color: '#0f172a',
     },
     bookingSubtitle: {
-        fontSize: moderateScale(14),
+        fontSize: moderateScale(13),
         color: '#64748b',
         marginTop: verticalScale(2),
     },
     statusBadge: {
-        backgroundColor: '#fef3c7',
         paddingHorizontal: moderateScale(10),
         paddingVertical: verticalScale(4),
         borderRadius: moderateScale(20),
+        minWidth: moderateScale(70),
+        alignItems: 'center',
     },
     statusText: {
-        fontSize: moderateScale(12),
-        color: '#d97706',
-        fontWeight: '600',
+        fontSize: moderateScale(11),
+        fontWeight: '700',
+        textTransform: 'capitalize',
+    },
+    emptyText: {
+        textAlign: 'center',
+        color: '#94a3b8',
+        marginVertical: verticalScale(10),
+        fontSize: moderateScale(14),
     }
 });
 

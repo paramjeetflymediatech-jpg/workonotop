@@ -12,7 +12,7 @@ import {
     Image
 } from 'react-native';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
-import apiService from '../../services/api';
+import { apiService } from '../../services/api';
 import { Alert } from 'react-native';
 
 const ProviderSignupScreen = ({ navigation }) => {
