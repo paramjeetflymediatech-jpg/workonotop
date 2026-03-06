@@ -660,9 +660,6 @@
 
 
 
-
-
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -732,6 +729,26 @@ function PhotoGrid({ photos, onOpen }) {
       })}
     </div>
   )
+}
+
+// ── Pro-rate calculation (mirrors backend calcFinalAmount) ────────────────────
+function calcFinalAmount(basePrice, standardMins, actualMins, overtimeRate = 0) {
+  if (actualMins <= 0) return basePrice
+
+  // Job took LESS time → pro-rate the charge
+  if (actualMins < standardMins) {
+    const percentageWorked = actualMins / standardMins
+    return Math.round((basePrice * percentageWorked) * 100) / 100
+  }
+
+  // Job took MORE time → add overtime (capped at 2hrs = 120 mins)
+  if (actualMins > standardMins && overtimeRate > 0) {
+    const overtimeMins = Math.min(actualMins - standardMins, 120)
+    return Math.round((basePrice + (overtimeRate * overtimeMins / 60)) * 100) / 100
+  }
+
+  // Exact time → full base price
+  return basePrice
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -878,16 +895,22 @@ export default function CustomerBookingDetails() {
     </>
   )
 
-  // ── Payment calculation ───────────────────────────────────────────────────
-  const basePrice      = booking.service_price
-  const overtimeEarnings = booking.overtime_earnings
-  const overtimeMinutes  = booking.overtime_minutes
-  const overtimeRate     = booking.additional_price
-  const actualMinutes    = booking.actual_duration_minutes
-  const standardMinutes  = booking.standard_duration_minutes || booking.service_duration || 60
-  const isOvertime       = overtimeMinutes > 0 && overtimeEarnings > 0
-  // Customer pays: base + overtime only (no pro-rating for customer)
-  const customerTotal    = basePrice + overtimeEarnings
+  // ── Payment calculation (pro-rated, matches backend) ──────────────────────
+  const basePrice      = parseFloat(booking.service_price || 0)
+  const overtimeRate   = parseFloat(booking.additional_price || 0)
+  const actualMinutes  = parseInt(booking.actual_duration_minutes || 0)
+  const standardMinutes = parseInt(booking.standard_duration_minutes || booking.service_duration || 60)
+
+  // Use same logic as backend calcFinalAmount
+  const customerTotal  = calcFinalAmount(basePrice, standardMinutes, actualMinutes, overtimeRate)
+
+  // Derived display flags
+  const isProrated     = actualMinutes > 0 && actualMinutes < standardMinutes
+  const isOvertime     = actualMinutes > standardMinutes && overtimeRate > 0
+  const overtimeMins   = isOvertime ? Math.min(actualMinutes - standardMinutes, 120) : 0
+  const overtimeCost   = isOvertime ? Math.round((overtimeRate * overtimeMins / 60) * 100) / 100 : 0
+  const percentWorked  = standardMinutes > 0 ? Math.round((actualMinutes / standardMinutes) * 100) : 100
+
   const authorizedAmount = booking.authorized_amount
 
   // All photos combined for photos tab
@@ -949,7 +972,7 @@ export default function CustomerBookingDetails() {
                   </div>
                   <div className="flex justify-between pt-2 border-t">
                     <span className="text-gray-500">Duration:</span>
-                    <span className={`font-bold ${isOvertime ? 'text-purple-600' : 'text-green-700'}`}>
+                    <span className={`font-bold ${isOvertime ? 'text-purple-600' : isProrated ? 'text-blue-600' : 'text-green-700'}`}>
                       {formatDuration(actualMinutes)}
                       <span className="text-xs text-gray-400 ml-2">(standard: {formatDuration(standardMinutes)})</span>
                     </span>
@@ -958,12 +981,20 @@ export default function CustomerBookingDetails() {
               )}
 
               {/* Amount box */}
-              <div className={`rounded-xl p-4 mb-5 border ${isOvertime ? 'bg-purple-50 border-purple-200' : 'bg-green-50 border-green-200'}`}>
+              <div className={`rounded-xl p-4 mb-5 border ${
+                isOvertime  ? 'bg-purple-50 border-purple-200' :
+                isProrated  ? 'bg-blue-50 border-blue-200' :
+                              'bg-green-50 border-green-200'
+              }`}>
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-sm font-medium text-gray-700">
-                    {isOvertime ? 'Final amount (with overtime):' : 'Final amount:'}
+                    {isOvertime ? 'Final amount (with overtime):' :
+                     isProrated ? 'Final amount (pro-rated):' :
+                                  'Final amount:'}
                   </span>
-                  <span className={`text-xl font-bold ${isOvertime ? 'text-purple-700' : 'text-green-700'}`}>
+                  <span className={`text-xl font-bold ${
+                    isOvertime ? 'text-purple-700' : isProrated ? 'text-blue-700' : 'text-green-700'
+                  }`}>
                     {fmt(customerTotal)}
                   </span>
                 </div>
@@ -972,15 +1003,23 @@ export default function CustomerBookingDetails() {
                     <span>Base price ({standardMinutes}min):</span>
                     <span>{fmt(basePrice)}</span>
                   </div>
+                  {isProrated && (
+                    <div className="flex justify-between text-blue-600">
+                      <span>Pro-rated ({actualMinutes}min worked = {percentWorked}% of standard):</span>
+                      <span>{fmt(customerTotal)}</span>
+                    </div>
+                  )}
                   {isOvertime && (
                     <div className="flex justify-between text-purple-600">
-                      <span>Overtime ({overtimeMinutes}min at {fmt(overtimeRate)}/hr):</span>
-                      <span>+{fmt(overtimeEarnings)}</span>
+                      <span>Overtime ({overtimeMins}min at {fmt(overtimeRate)}/hr):</span>
+                      <span>+{fmt(overtimeCost)}</span>
                     </div>
                   )}
                   <div className="flex justify-between font-bold pt-1 border-t">
                     <span>You pay:</span>
-                    <span className={isOvertime ? 'text-purple-700' : 'text-green-700'}>{fmt(customerTotal)}</span>
+                    <span className={
+                      isOvertime ? 'text-purple-700' : isProrated ? 'text-blue-700' : 'text-green-700'
+                    }>{fmt(customerTotal)}</span>
                   </div>
                 </div>
               </div>
@@ -1100,10 +1139,16 @@ export default function CustomerBookingDetails() {
                     <span className="text-gray-600">Base Price ({standardMinutes}min):</span>
                     <span className="font-medium">{fmt(basePrice)}</span>
                   </div>
+                  {isProrated && (
+                    <div className="flex justify-between text-sm text-blue-600">
+                      <span>Pro-rated ({actualMinutes}min = {percentWorked}% of standard):</span>
+                      <span className="font-medium">{fmt(customerTotal)}</span>
+                    </div>
+                  )}
                   {isOvertime && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Overtime ({overtimeMinutes}min at {fmt(overtimeRate)}/hr):</span>
-                      <span className="font-medium text-purple-600">+{fmt(overtimeEarnings)}</span>
+                      <span className="text-gray-600">Overtime ({overtimeMins}min at {fmt(overtimeRate)}/hr):</span>
+                      <span className="font-medium text-purple-600">+{fmt(overtimeCost)}</span>
                     </div>
                   )}
                   {authorizedAmount && (
@@ -1115,7 +1160,9 @@ export default function CustomerBookingDetails() {
                   <div className="border-t pt-3">
                     <div className="flex justify-between">
                       <span className="font-bold">Total</span>
-                      <span className={`font-bold text-lg ${isOvertime ? 'text-purple-600' : 'text-green-600'}`}>
+                      <span className={`font-bold text-lg ${
+                        isOvertime ? 'text-purple-600' : isProrated ? 'text-blue-600' : 'text-green-600'
+                      }`}>
                         {fmt(customerTotal)}
                       </span>
                     </div>
@@ -1210,20 +1257,32 @@ export default function CustomerBookingDetails() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm p-6">
             <h3 className="text-lg font-bold mb-4">Confirm Payment</h3>
-            <div className={`rounded-xl p-4 mb-4 border ${isOvertime ? 'bg-purple-50 border-purple-200' : 'bg-green-50 border-green-200'}`}>
+            <div className={`rounded-xl p-4 mb-4 border ${
+              isOvertime ? 'bg-purple-50 border-purple-200' :
+              isProrated ? 'bg-blue-50 border-blue-200' :
+                           'bg-green-50 border-green-200'
+            }`}>
               <div className="flex justify-between text-sm mb-2">
                 <span>Base price ({standardMinutes}min):</span>
                 <span className="font-medium">{fmt(basePrice)}</span>
               </div>
+              {isProrated && (
+                <div className="flex justify-between text-sm mb-2 text-blue-600">
+                  <span>Pro-rated ({actualMinutes}min = {percentWorked}%):</span>
+                  <span className="font-medium">{fmt(customerTotal)}</span>
+                </div>
+              )}
               {isOvertime && (
                 <div className="flex justify-between text-sm mb-2 text-purple-600">
-                  <span>Overtime ({overtimeMinutes}min):</span>
-                  <span className="font-medium">+{fmt(overtimeEarnings)}</span>
+                  <span>Overtime ({overtimeMins}min):</span>
+                  <span className="font-medium">+{fmt(overtimeCost)}</span>
                 </div>
               )}
               <div className="border-t pt-2 mt-2 flex justify-between">
                 <span className="font-bold">Total:</span>
-                <span className={`text-xl font-bold ${isOvertime ? 'text-purple-700' : 'text-green-700'}`}>{fmt(customerTotal)}</span>
+                <span className={`text-xl font-bold ${
+                  isOvertime ? 'text-purple-700' : isProrated ? 'text-blue-700' : 'text-green-700'
+                }`}>{fmt(customerTotal)}</span>
               </div>
             </div>
             <div className="flex gap-3">
@@ -1261,7 +1320,3 @@ export default function CustomerBookingDetails() {
     </>
   )
 }
-
-
-
-
