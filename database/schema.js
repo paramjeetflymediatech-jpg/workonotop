@@ -22,7 +22,7 @@ const connect = async (withDb = false) => {
 };
 
 // =====================================================
-// Table creation SQL - All 16 tables with exact fields
+// Table creation SQL - All 17 tables with exact fields
 // =====================================================
 const tables = [
   // Table 1: users
@@ -176,13 +176,14 @@ const tables = [
     INDEX idx_account_status (account_status)
   )`,
 
-  // Table 7: bookings (EXACT match with your database)
+  // Table 7: bookings - UPDATED with all your columns
   `CREATE TABLE IF NOT EXISTS bookings (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
     booking_number VARCHAR(50) UNIQUE NOT NULL,
     service_id INT NOT NULL,
     provider_id INT,
+    previous_provider_id INT,
     service_name VARCHAR(200),
     service_price DECIMAL(10,2) NOT NULL,
     additional_price DECIMAL(10,2) DEFAULT 0.00,
@@ -231,6 +232,7 @@ const tables = [
     FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE SET NULL,
     INDEX idx_user (user_id),
     INDEX idx_provider (provider_id),
+    INDEX idx_previous_provider (previous_provider_id),
     INDEX idx_status (status),
     INDEX idx_job_date (job_date),
     INDEX idx_customer_email (customer_email),
@@ -400,56 +402,40 @@ const tables = [
     INDEX idx_created_at (created_at)
   )`,
 
-  // Table 17: mobile_auth_users (Mobile app auth & push notification tokens)
+  // Table 17: mobile_auth_users
   `CREATE TABLE IF NOT EXISTS mobile_auth_users (
     id INT PRIMARY KEY AUTO_INCREMENT,
-
-    -- Link to either a customer or a provider (only one will be set)
     user_id INT DEFAULT NULL,
     provider_id INT DEFAULT NULL,
-
-    -- Discriminator: customer = users table, provider = service_providers table
     user_type ENUM('customer', 'provider') NOT NULL,
-
-    -- JWT refresh token for mobile sessions
     refresh_token VARCHAR(512) DEFAULT NULL,
     refresh_token_expires DATETIME DEFAULT NULL,
-
-    -- Expo push notification token
     push_token TEXT DEFAULT NULL,
     push_token_platform ENUM('ios', 'android', 'web') DEFAULT NULL,
     push_token_updated_at DATETIME DEFAULT NULL,
-
-    -- Device info
     device_id VARCHAR(255) DEFAULT NULL,
     device_name VARCHAR(255) DEFAULT NULL,
     device_platform ENUM('ios', 'android', 'web') DEFAULT NULL,
     os_version VARCHAR(50) DEFAULT NULL,
     app_version VARCHAR(50) DEFAULT NULL,
-
-    -- Status & session tracking
     is_active TINYINT(1) DEFAULT 1,
     last_login DATETIME DEFAULT NULL,
     logged_out_at DATETIME DEFAULT NULL,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
-
     INDEX idx_user_id (user_id),
     INDEX idx_provider_id (provider_id),
     INDEX idx_user_type (user_type),
     INDEX idx_push_token (push_token(255)),
     INDEX idx_device_id (device_id),
     INDEX idx_is_active (is_active),
-
-    -- One record per user/provider per device
     UNIQUE KEY uq_user_device (user_id, device_id),
     UNIQUE KEY uq_provider_device (provider_id, device_id)
   )`
 ];
+
 // =====================================================
 // Column alterations for existing databases
 // =====================================================
@@ -470,13 +456,11 @@ const alterations = [
   { table: 'service_providers', column: 'reset_token', sql: 'ALTER TABLE service_providers ADD COLUMN reset_token VARCHAR(255) AFTER updated_at' },
   { table: 'service_providers', column: 'reset_token_expiry', sql: 'ALTER TABLE service_providers ADD COLUMN reset_token_expiry DATETIME AFTER reset_token' },
 
-  // bookings table additions
-  { table: 'bookings', column: 'job_timer_status', sql: "ALTER TABLE bookings ADD COLUMN job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started' AFTER final_provider_amount" },
-  { table: 'bookings', column: 'before_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN before_photos_uploaded TINYINT(1) DEFAULT 0 AFTER job_timer_status' },
-  { table: 'bookings', column: 'after_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN after_photos_uploaded TINYINT(1) DEFAULT 0 AFTER before_photos_uploaded' },
-  { table: 'bookings', column: 'work_summary', sql: 'ALTER TABLE bookings ADD COLUMN work_summary TEXT AFTER after_photos_uploaded' },
-  { table: 'bookings', column: 'recommendations', sql: 'ALTER TABLE bookings ADD COLUMN recommendations TEXT AFTER work_summary' },
-  { table: 'bookings', column: 'photo_upload_deadline', sql: 'ALTER TABLE bookings ADD COLUMN photo_upload_deadline TIMESTAMP NULL AFTER stripe_customer_id' }
+  // Bookings table - previous_provider_id
+  { table: 'bookings', column: 'previous_provider_id', sql: 'ALTER TABLE bookings ADD COLUMN previous_provider_id INT AFTER provider_id' },
+
+  // Index for previous_provider_id
+  { table: 'bookings', column: 'idx_previous_provider', sql: 'CREATE INDEX idx_previous_provider ON bookings(previous_provider_id)' }
 ];
 
 // =====================================================
@@ -529,16 +513,33 @@ async function runMigration() {
     console.log('🔧 Step 3: Applying column alterations...');
     for (const alt of alterations) {
       try {
-        const [cols] = await conn.query(
-          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
-          [DB_NAME, alt.table, alt.column]
-        );
-        if (cols.length === 0) {
-          await conn.execute(alt.sql);
-          console.log(`   ✓ Added column: ${alt.table}.${alt.column}`);
+        // Check if it's an INDEX or COLUMN
+        if (alt.sql.startsWith('CREATE INDEX')) {
+          // Handle index creation
+          const [indexExists] = await conn.query(
+            `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?`,
+            [DB_NAME, alt.table, alt.column]
+          );
+          if (indexExists.length === 0) {
+            await conn.execute(alt.sql);
+            console.log(`   ✓ Added index: ${alt.table}.${alt.column}`);
+          } else {
+            console.log(`   ⊘ Index already exists: ${alt.table}.${alt.column}`);
+          }
         } else {
-          console.log(`   ⊘ Column already exists: ${alt.table}.${alt.column}`);
+          // Handle column addition
+          const [cols] = await conn.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+            [DB_NAME, alt.table, alt.column]
+          );
+          if (cols.length === 0) {
+            await conn.execute(alt.sql);
+            console.log(`   ✓ Added column: ${alt.table}.${alt.column}`);
+          } else {
+            console.log(`   ⊘ Column already exists: ${alt.table}.${alt.column}`);
+          }
         }
       } catch (err) {
         console.log(`   ⚠ Warning: ${err.message.substring(0, 120)}`);
@@ -554,8 +555,8 @@ async function runMigration() {
       // Check for specific columns
       const columnNames = columns.map(c => c.Field);
       const requiredColumns = [
-        'work_summary', 'recommendations', 'job_timer_status',
-        'before_photos_uploaded', 'after_photos_uploaded'
+        'previous_provider_id', 'work_summary', 'recommendations', 
+        'job_timer_status', 'before_photos_uploaded', 'after_photos_uploaded'
       ];
 
       requiredColumns.forEach(col => {
@@ -590,7 +591,7 @@ async function runMigration() {
         if (table === 'bookings') {
           const columnNames = columns.map(c => c.Field);
           const requiredColumns = [
-            'job_timer_status', 'before_photos_uploaded',
+            'previous_provider_id', 'job_timer_status', 'before_photos_uploaded',
             'after_photos_uploaded', 'work_summary', 'recommendations'
           ];
 
@@ -612,7 +613,7 @@ async function runMigration() {
     console.log('✅ Migration completed successfully!');
     console.log('='.repeat(60));
     console.log(`   Database: ${DB_NAME}`);
-    console.log(`   Tables:   ${tableQueries.length}/16`);
+    console.log(`   Tables:   ${tableQueries.length}/17`);
     console.log(`   Total Columns: ${totalColumns}`);
     console.log('='.repeat(60) + '\n');
 
