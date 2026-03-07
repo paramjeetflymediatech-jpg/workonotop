@@ -55,7 +55,7 @@ const PendingApprovalScreen = ({ navigation }) => {
                     icon: '🎉', color: '#10b981', bgColor: '#f0fdf4',
                     title: "You're Approved!", borderColor: '#10b981',
                     desc: 'Congratulations! Your application has been approved. You can now start accepting jobs.',
-                    actionText: 'Go to Dashboard', action: () => navigation.replace('Main'),
+                    actionText: 'Go to Dashboard', action: () => { /* RootNavigator will handle this via state update */ },
                 };
             case 'rejected':
                 return {

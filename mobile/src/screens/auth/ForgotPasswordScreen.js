@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
+import { api } from '../../utils/api';
+import { Alert } from 'react-native';
 
 const ForgotPasswordScreen = ({ navigation }) => {
     const route = useRoute();
@@ -23,14 +25,39 @@ const ForgotPasswordScreen = ({ navigation }) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
 
     const handleReset = async () => {
-        if (!email) return;
+        if (!email) {
+            Alert.alert('Error', 'Please enter your email address.');
+            return;
+        }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            Alert.alert('Error', 'Please enter a valid email address.');
+            return;
+        }
+
         setLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
-            setIsSubmitted(true);
+        try {
+            // Determine endpoint based on account type
+            const endpoint = type === 'pro'
+                ? '/api/provider/forgot-password'
+                : '/api/auth/forgot-password';
+
+            const res = await api.post(endpoint, { email });
+
+            if (res.success) {
+                setIsSubmitted(true);
+            } else {
+                Alert.alert('Error', res.message || 'Failed to send reset link.');
+            }
+        } catch (err) {
+            console.error('Forgot password error:', err);
+            Alert.alert('Error', 'Something went wrong. Please try again later.');
+        } finally {
             setLoading(false);
-        }, 1500);
+        }
     };
 
     const isSmallDevice = SCREEN_HEIGHT < 750;

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, SafeAreaView, Alert, Image, ActivityIndicator
+    ScrollView, SafeAreaView, Alert, Image, ActivityIndicator,
+    Platform
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../utils/api';
@@ -10,9 +11,9 @@ import { moderateScale, verticalScale } from '../../utils/responsive';
 const DocumentUploadScreen = ({ navigation, route }) => {
     const { profile, profilePhoto, skills } = route.params || {};
     const [documents, setDocuments] = useState({
-        idPhoto: null,
-        licensePhoto: null,
-        insuranceDoc: null,
+        id_proof: null,
+        trade_license: null,
+        insurance: null,
     });
     const [loading, setLoading] = useState(false);
 
@@ -31,11 +32,7 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             });
             formData.append('type', type);
 
-            const res = await api.post('/api/provider/onboarding/upload-document', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
+            const res = await api.post('/api/provider/onboarding/upload-document', formData);
 
             if (res.success) {
                 setDocuments(prev => ({ ...prev, [type]: res.fileUrl || uri }));
@@ -58,7 +55,7 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaType.Images,
             allowsEditing: false,
             quality: 0.8,
         });
@@ -74,6 +71,7 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             return;
         }
         const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaType.Images,
             allowsEditing: false,
             quality: 0.8,
         });
@@ -132,7 +130,7 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
 
                 <Text style={styles.title}>Upload Documents</Text>
-                <Text style={styles.subtitle}>Step 4 of 5 — We need to verify your identity</Text>
+                <Text style={styles.subtitle}>Step 2 of 4 — We need to verify your identity</Text>
 
                 <View style={styles.infoBox}>
                     <Text style={styles.infoText}>🔒 Your documents are encrypted and only used for verification. They are never shared publicly.</Text>

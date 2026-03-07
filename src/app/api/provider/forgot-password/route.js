@@ -9,9 +9,9 @@ export async function POST(request) {
     const { email } = await request.json()
 
     if (!email) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Email is required' 
+      return NextResponse.json({
+        success: false,
+        message: 'Email is required'
       }, { status: 400 })
     }
 
@@ -27,9 +27,9 @@ export async function POST(request) {
       console.log('📊 Database query result:', providers.length > 0 ? 'Provider found' : 'Provider not found')
     } catch (dbError) {
       console.error('❌ Database error:', dbError)
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Database error occurred' 
+      return NextResponse.json({
+        success: false,
+        message: 'Database error occurred'
       }, { status: 500 })
     }
 
@@ -37,9 +37,9 @@ export async function POST(request) {
     // But we'll still log it
     if (providers.length === 0) {
       console.log('ℹ️ No provider found with email:', email)
-      return NextResponse.json({ 
-        success: true, 
-        message: 'If an account exists, you will receive a reset email' 
+      return NextResponse.json({
+        success: true,
+        message: 'If an account exists, you will receive a reset email'
       })
     }
 
@@ -57,23 +57,24 @@ export async function POST(request) {
     try {
       await execute(
         `UPDATE service_providers 
-         SET reset_token = ?, reset_token_expiry = ? 
+         SET reset_token = ?, 
+             reset_token_expiry = DATE_ADD(NOW(), INTERVAL 1 HOUR) 
          WHERE id = ?`,
-        [resetToken, tokenExpiry, provider.id]
+        [resetToken, provider.id]
       )
       console.log('💾 Token saved to database')
     } catch (updateError) {
       console.error('❌ Failed to save token:', updateError)
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Failed to process request' 
+      return NextResponse.json({
+        success: false,
+        message: 'Failed to process request'
       }, { status: 500 })
     }
 
     // Send reset email
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const resetUrl = `${baseUrl}/provider/reset-password?token=${resetToken}`
-    
+
     const emailHtml = getResetPasswordEmailHtml(provider.name || 'Provider', resetUrl)
     const emailText = `Reset your WorkOnTap password: ${resetUrl}`
 
@@ -87,9 +88,9 @@ export async function POST(request) {
         html: emailHtml,
         text: emailText
       })
-      
+
       console.log('📨 Email send result:', emailResult)
-      
+
       if (!emailResult.success) {
         console.error('❌ Email sending failed:', emailResult.error)
         // Don't return error to user for security, but log it
@@ -99,16 +100,16 @@ export async function POST(request) {
       // Don't return error to user for security, but log it
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'If an account exists, you will receive a reset email' 
+    return NextResponse.json({
+      success: true,
+      message: 'If an account exists, you will receive a reset email'
     })
 
   } catch (error) {
     console.error('🔥 Forgot password error:', error)
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Failed to process request' 
+    return NextResponse.json({
+      success: false,
+      message: 'Failed to process request'
     }, { status: 500 })
   }
 }

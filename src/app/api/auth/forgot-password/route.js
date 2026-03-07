@@ -4,60 +4,60 @@ import { randomBytes } from 'crypto'
 import { sendEmail } from '@/lib/email'
 
 export async function POST(request) {
-    try {
-        const { email } = await request.json()
+  try {
+    const { email } = await request.json()
 
-        if (!email) {
-            return NextResponse.json({ success: false, message: 'Email is required' }, { status: 400 })
-        }
-
-        // Check if customer exists
-        const users = await query(
-            `SELECT id, first_name, last_name, email FROM users WHERE email = ? AND role = 'user'`,
-            [email]
-        )
-
-        // Always return success (security: don't reveal if email exists)
-        if (users.length === 0) {
-            return NextResponse.json({ success: true, message: 'If an account exists, you will receive a reset email' })
-        }
-
-        const user = users[0]
-
-        // Generate reset token (1 hour expiry)
-        const resetToken = randomBytes(32).toString('hex')
-        const tokenExpiry = new Date()
-        tokenExpiry.setHours(tokenExpiry.getHours() + 1)
-
-        // Store token
-        await query(
-            `UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?`,
-            [resetToken, tokenExpiry, user.id]
-        )
-
-        // Build reset URL
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-        const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`
-        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Customer'
-
-        // Send email
-        await sendEmail({
-            to: user.email,
-            subject: 'Reset Your WorkOnTap Password',
-            html: getResetEmailHtml(name, resetUrl),
-            text: `Reset your WorkOnTap password: ${resetUrl}`
-        })
-
-        return NextResponse.json({ success: true, message: 'If an account exists, you will receive a reset email' })
-
-    } catch (error) {
-        console.error('Customer forgot-password error:', error)
-        return NextResponse.json({ success: false, message: 'Failed to process request' }, { status: 500 })
+    if (!email) {
+      return NextResponse.json({ success: false, message: 'Email is required' }, { status: 400 })
     }
+
+    // Check if customer exists
+    const users = await query(
+      `SELECT id, first_name, last_name, email FROM users WHERE email = ? AND role = 'user'`,
+      [email]
+    )
+
+    // Always return success (security: don't reveal if email exists)
+    if (users.length === 0) {
+      return NextResponse.json({ success: true, message: 'If an account exists, you will receive a reset email' })
+    }
+
+    const user = users[0]
+
+    // Generate reset token (1 hour expiry)
+    const resetToken = randomBytes(32).toString('hex')
+    const tokenExpiry = new Date()
+    tokenExpiry.setHours(tokenExpiry.getHours() + 1)
+
+    // Store token
+    await query(
+      `UPDATE users SET reset_token = ?, reset_token_expiry = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = ?`,
+      [resetToken, user.id]
+    )
+
+    // Build reset URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`
+    const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Customer'
+
+    // Send email
+    await sendEmail({
+      to: user.email,
+      subject: 'Reset Your WorkOnTap Password',
+      html: getResetEmailHtml(name, resetUrl),
+      text: `Reset your WorkOnTap password: ${resetUrl}`
+    })
+
+    return NextResponse.json({ success: true, message: 'If an account exists, you will receive a reset email' })
+
+  } catch (error) {
+    console.error('Customer forgot-password error:', error)
+    return NextResponse.json({ success: false, message: 'Failed to process request' }, { status: 500 })
+  }
 }
 
 function getResetEmailHtml(name, resetUrl) {
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">

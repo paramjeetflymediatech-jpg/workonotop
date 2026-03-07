@@ -56,17 +56,9 @@ const LoginScreen = ({ navigation }) => {
                 // Initial navigation/state setup
                 login(userData, response.token);
 
-                // Handle detailed navigation for Providers
-                if (userData.role === 'provider') {
-                    if (!userData.onboarding_completed) {
-                        navigation.replace('ProviderOnboarding');
-                    } else if (userData.status === 'pending') {
-                        navigation.replace('PendingApproval');
-                    } else if (userData.status === 'rejected') {
-                        // Optionally show rejection reason or onboarding again
-                        navigation.replace('PendingApproval', { rejected: true, reason: userData.rejection_reason });
-                    }
-                }
+                // No manual navigation here! 
+                // RootNavigator.js will detect the new 'user' state
+                // and automatically switch to the Onboarding or Dashboard stack.
             } else {
                 setError(response.message || 'Invalid credentials');
             }

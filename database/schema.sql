@@ -16,9 +16,12 @@ CREATE TABLE IF NOT EXISTS users (
     hear_about VARCHAR(255),
     receive_offers TINYINT(1) DEFAULT 0,
     role ENUM('user', 'admin') DEFAULT 'user',
+    reset_token VARCHAR(255),
+    reset_token_expiry DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_role (role)
+    INDEX idx_role (role),
+    INDEX idx_reset_token (reset_token)
 );
 
 -- -----------------------------------------------------
