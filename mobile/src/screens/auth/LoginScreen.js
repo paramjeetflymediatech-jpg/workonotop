@@ -16,6 +16,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useRoute } from '@react-navigation/native';
 import { apiService } from '../../services/api';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
+import PasswordInput from '../../components/PasswordInput';
 
 const LoginScreen = ({ navigation }) => {
     const route = useRoute();
@@ -50,8 +51,22 @@ const LoginScreen = ({ navigation }) => {
                 else if (type === 'pro') userData.role = 'provider';
                 else if (!userData.role) userData.role = 'customer';
                 else if (userData.role === 'user') userData.role = 'customer';
+                else if (userData.role === 'customer') userData.role = 'customer';
 
+                // Initial navigation/state setup
                 login(userData, response.token);
+
+                // Handle detailed navigation for Providers
+                if (userData.role === 'provider') {
+                    if (!userData.onboarding_completed) {
+                        navigation.replace('ProviderOnboarding');
+                    } else if (userData.status === 'pending') {
+                        navigation.replace('PendingApproval');
+                    } else if (userData.status === 'rejected') {
+                        // Optionally show rejection reason or onboarding again
+                        navigation.replace('PendingApproval', { rejected: true, reason: userData.rejection_reason });
+                    }
+                }
             } else {
                 setError(response.message || 'Invalid credentials');
             }
@@ -114,14 +129,12 @@ const LoginScreen = ({ navigation }) => {
                         </View>
 
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Password</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="•••••••••"
+                            <PasswordInput
+                                label="Password"
                                 value={password}
                                 onChangeText={setPassword}
-                                secureTextEntry
-                                placeholderTextColor="#94a3b8"
+                                placeholder="•••••••••"
+                                inputStyle={styles.passwordInputInner}
                             />
                         </View>
 

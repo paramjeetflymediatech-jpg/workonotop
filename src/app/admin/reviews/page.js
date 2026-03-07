@@ -20,8 +20,8 @@ export default function AdminReviews() {
   }, [router])
 
   const text = isDarkMode ? 'text-white' : 'text-gray-900'
-  const sub  = isDarkMode ? 'text-slate-400' : 'text-gray-500'
-  const row  = isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
+  const sub = isDarkMode ? 'text-slate-400' : 'text-gray-500'
+  const row = isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -48,7 +48,7 @@ export default function AdminReviews() {
               </p>
               <span className="text-yellow-400 text-sm">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
             </div>
-            {r.review && <p className={`text-sm ${sub}`}>"{r.review}"</p>}
+            {r.review && <p className={`text-sm ${sub}`}>&quot;{r.review}&quot;</p>}
             <p className={`text-xs mt-1 ${sub}`}>
               {r.service_name} · #{r.booking_number} · {new Date(r.created_at).toLocaleDateString()}
             </p>

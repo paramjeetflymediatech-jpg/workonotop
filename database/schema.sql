@@ -329,6 +329,58 @@ CREATE TABLE IF NOT EXISTS invoices (
     INDEX idx_status (status)
 );
 
+-- -----------------------------------------------------
+-- Table: mobile_auth_users (Mobile app auth & push tokens)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS mobile_auth_users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+
+    -- Link to either a customer or a provider (one will be set)
+    user_id INT DEFAULT NULL,
+    provider_id INT DEFAULT NULL,
+
+    -- Discriminator
+    user_type ENUM('customer', 'provider') NOT NULL,
+
+    -- JWT / session refresh token
+    refresh_token VARCHAR(512) DEFAULT NULL,
+    refresh_token_expires DATETIME DEFAULT NULL,
+
+    -- Expo push notification token
+    push_token TEXT DEFAULT NULL,
+    push_token_platform ENUM('ios', 'android', 'web') DEFAULT NULL,
+    push_token_updated_at DATETIME DEFAULT NULL,
+
+    -- Device info
+    device_id VARCHAR(255) DEFAULT NULL,
+    device_name VARCHAR(255) DEFAULT NULL,
+    device_platform ENUM('ios', 'android', 'web') DEFAULT NULL,
+    os_version VARCHAR(50) DEFAULT NULL,
+    app_version VARCHAR(50) DEFAULT NULL,
+
+    -- Status & session tracking
+    is_active TINYINT(1) DEFAULT 1,
+    last_login DATETIME DEFAULT NULL,
+    logged_out_at DATETIME DEFAULT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
+
+    INDEX idx_user_id (user_id),
+    INDEX idx_provider_id (provider_id),
+    INDEX idx_user_type (user_type),
+    INDEX idx_push_token (push_token(255)),
+    INDEX idx_device_id (device_id),
+    INDEX idx_is_active (is_active),
+
+    -- One record per user/provider per device
+    UNIQUE KEY uq_user_device (user_id, device_id),
+    UNIQUE KEY uq_provider_device (provider_id, device_id)
+);
+
 -- =====================================================
 -- SAMPLE DATA (Optional)
 -- =====================================================

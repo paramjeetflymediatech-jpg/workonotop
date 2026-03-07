@@ -14,6 +14,7 @@ import {
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
 import { apiService } from '../../services/api';
 import { Alert } from 'react-native';
+import PasswordInput from '../../components/PasswordInput';
 
 const ProviderSignupScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
@@ -152,24 +153,22 @@ const ProviderSignupScreen = ({ navigation }) => {
 
                         <View style={styles.row}>
                             <View style={[styles.inputContainer, { flex: 1, marginRight: scale(10) }]}>
-                                <Text style={styles.label}>Password</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="•••••••••"
-                                    secureTextEntry
+                                <PasswordInput
+                                    label="Password"
                                     value={formData.password}
                                     onChangeText={(text) => setFormData({ ...formData, password: text })}
+                                    placeholder="•••••••••"
+                                    inputStyle={styles.passwordInputInner}
                                 />
                             </View>
 
                             <View style={[styles.inputContainer, { flex: 1 }]}>
-                                <Text style={styles.label}>Confirm</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="••••••••"
-                                    secureTextEntry
+                                <PasswordInput
+                                    label="Confirm"
                                     value={formData.confirmPassword}
                                     onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+                                    placeholder="••••••••"
+                                    inputStyle={styles.passwordInputInner}
                                 />
                             </View>
                         </View>

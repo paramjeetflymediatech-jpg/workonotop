@@ -16,6 +16,41 @@ const DocumentUploadScreen = ({ navigation, route }) => {
     });
     const [loading, setLoading] = useState(false);
 
+    const uploadFile = async (uri, type, label) => {
+        setLoading(true);
+        try {
+            const formData = new FormData();
+            const filename = uri.split('/').pop();
+            const match = /\.(\w+)$/.exec(filename);
+            const ext = match ? `image/${match[1]}` : 'image';
+
+            formData.append('file', {
+                uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
+                name: filename,
+                type: ext === 'image/pdf' ? 'application/pdf' : 'image/jpeg',
+            });
+            formData.append('type', type);
+
+            const res = await api.post('/api/provider/onboarding/upload-document', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (res.success) {
+                setDocuments(prev => ({ ...prev, [type]: res.fileUrl || uri }));
+                Alert.alert('Success', `${label} uploaded successfully.`);
+            } else {
+                throw new Error(res.message || 'Upload failed');
+            }
+        } catch (err) {
+            console.error(`Upload error (${type}):`, err);
+            Alert.alert('Upload Failed', err.message || 'Something went wrong while uploading.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const pickDocument = async (key, label) => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
@@ -25,14 +60,14 @@ const DocumentUploadScreen = ({ navigation, route }) => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false,
-            quality: 0.9,
+            quality: 0.8,
         });
         if (!result.canceled) {
-            setDocuments(prev => ({ ...prev, [key]: result.assets[0].uri }));
+            await uploadFile(result.assets[0].uri, key, label);
         }
     };
 
-    const takePhoto = async (key) => {
+    const takePhoto = async (key, label) => {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
             Alert.alert('Permission Required', 'Please allow camera access.');
@@ -40,23 +75,23 @@ const DocumentUploadScreen = ({ navigation, route }) => {
         }
         const result = await ImagePicker.launchCameraAsync({
             allowsEditing: false,
-            quality: 0.9,
+            quality: 0.8,
         });
         if (!result.canceled) {
-            setDocuments(prev => ({ ...prev, [key]: result.assets[0].uri }));
+            await uploadFile(result.assets[0].uri, key, label);
         }
     };
 
     const showPickOptions = (key, label) => {
         Alert.alert(`Upload ${label}`, 'Choose source', [
-            { text: 'Camera', onPress: () => takePhoto(key) },
+            { text: 'Camera', onPress: () => takePhoto(key, label) },
             { text: 'Gallery', onPress: () => pickDocument(key, label) },
             { text: 'Cancel', style: 'cancel' },
         ]);
     };
 
     const handleNext = () => {
-        if (!documents.idPhoto || !documents.licensePhoto) {
+        if (!documents.id_proof || !documents.trade_license) {
             Alert.alert('Required Documents', 'Please upload your ID and License photo.');
             return;
         }
@@ -104,7 +139,7 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                 </View>
 
                 <DocUploadCard
-                    docKey="idPhoto"
+                    docKey="id_proof"
                     label="Government-Issued ID"
                     icon="🪪"
                     description="Driver's license, passport, or state ID"
@@ -112,7 +147,7 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                 />
 
                 <DocUploadCard
-                    docKey="licensePhoto"
+                    docKey="trade_license"
                     label="Trade License / Certification"
                     icon="📜"
                     description="Professional license or trade certificate"
@@ -120,7 +155,7 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                 />
 
                 <DocUploadCard
-                    docKey="insuranceDoc"
+                    docKey="insurance"
                     label="Insurance Document"
                     icon="🛡️"
                     description="Liability insurance (optional but recommended)"
