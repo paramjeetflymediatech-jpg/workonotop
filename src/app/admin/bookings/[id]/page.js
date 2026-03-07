@@ -904,13 +904,13 @@ export default function BookingDetailsPage({ params }) {
                 {booking.job_description && (
                   <div>
                     <p className={`text-xs font-medium mb-1 ${lbl}`}>Description</p>
-                    <div className={`p-3 rounded-xl border ${divCls} ${muted} text-sm ${val} leading-relaxed`}>{booking.job_description}</div>
+                    <div className={`p-3 break-all rounded-xl border ${divCls} ${muted} text-sm ${val} leading-relaxed`}>{booking.job_description}</div>
                   </div>
                 )}
                 {booking.timing_constraints && (
                   <div>
                     <p className={`text-xs font-medium mb-1 ${lbl}`}>Timing Constraints</p>
-                    <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-800 dark:text-amber-300 flex gap-2">
+                    <div className="p-3 rounded-xl break-all border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-800 dark:text-amber-300 flex gap-2">
                       <span>⏰</span><span>{booking.timing_constraints}</span>
                     </div>
                   </div>
