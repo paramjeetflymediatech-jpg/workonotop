@@ -97,3 +97,7 @@
 .animate-slide-down {
   animation: slide-down 0.3s ease-out;
 }
+
+div,p{
+  word-break: break-all!important;
+}
