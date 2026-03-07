@@ -1479,7 +1479,7 @@ function disputeAdminHtml({ bookingNumber, serviceName, customerName, providerNa
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;margin-bottom:20px;">
           <tr><td style="padding:20px;">
             <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#92400e;">Dispute Reason:</p>
-            <p style="margin:0;font-size:14px;color:#78350f;">${reason}</p>
+            <p style="margin:0;font-size:14px;color:#78350f; word-break: break-word; break-all;">${reason}</p>
           </td></tr>
         </table>
         <p style="margin:0;font-size:14px;color:#64748b;">Please review this dispute in the admin dashboard and take appropriate action within 24 hours.</p>
@@ -1515,7 +1515,7 @@ function disputeProviderHtml({ bookingNumber, serviceName, customerName, provide
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid #f97316;border-radius:8px;margin-bottom:24px;">
           <tr><td style="padding:18px 20px;">
             <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#c2410c;text-transform:uppercase;letter-spacing:0.5px;">Customer's Reason</p>
-            <p style="margin:0;font-size:14px;color:#7c2d12;line-height:1.7;">${reason}</p>
+            <p style="margin:0;font-size:14px;color:#7c2d12;line-height:1.7;word-break: break-word; break-all;">${reason}</p>
           </td></tr>
         </table>
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;margin-bottom:24px;">

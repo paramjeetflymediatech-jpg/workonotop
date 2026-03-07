@@ -586,7 +586,7 @@ export default function AdminDisputesPage() {
                   }`}>
                     Customer&apos;s Dispute Reason
                   </p>
-                  <p className={`text-sm leading-relaxed ${
+                  <p className={`text-sm leading-relaxed break-word break-all ${
                     isDarkMode ? 'text-red-300' : 'text-red-800'
                   }`}>
                     {selected.reason}
