@@ -49,9 +49,9 @@ export default function ProviderRatings() {
     return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
-  const avgRating  = parseFloat(data?.stats?.average_rating || 0).toFixed(1)
+  const avgRating = parseFloat(data?.stats?.average_rating || 0).toFixed(1)
   const totalReviews = data?.stats?.total_reviews || 0
-  const dist       = data?.stats?.distribution || { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
+  const dist = data?.stats?.distribution || { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
 
   const filtered = (data?.reviews || []).filter(r =>
     filter === 'all' ? true : r.rating === Number(filter)
@@ -133,7 +133,7 @@ export default function ProviderRatings() {
             <div className="text-center">
               <p className="text-5xl font-bold text-gray-900">{avgRating}</p>
               <div className="flex items-center justify-center gap-0.5 my-2">
-                {[1,2,3,4,5].map(s => (
+                {[1, 2, 3, 4, 5].map(s => (
                   <Star key={s} className={`w-4 h-4 ${s <= Math.round(Number(avgRating)) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}`} />
                 ))}
               </div>
@@ -141,9 +141,9 @@ export default function ProviderRatings() {
             </div>
 
             <div className="flex-1 space-y-2">
-              {[5,4,3,2,1].map(star => {
+              {[5, 4, 3, 2, 1].map(star => {
                 const count = dist[star] || 0
-                const pct   = totalReviews > 0 ? (count / totalReviews) * 100 : 0
+                const pct = totalReviews > 0 ? (count / totalReviews) * 100 : 0
                 return (
                   <div key={star} className="flex items-center gap-2">
                     <span className="text-xs text-gray-500 w-4">{star}</span>
@@ -169,7 +169,7 @@ export default function ProviderRatings() {
 
             {/* Filter */}
             <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-              {['all','5','4','3','2','1'].map(f => (
+              {['all', '5', '4', '3', '2', '1'].map(f => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
@@ -202,7 +202,7 @@ export default function ProviderRatings() {
                       </div>
 
                       <div className="flex items-center gap-0.5 flex-shrink-0">
-                        {[1,2,3,4,5].map(s => (
+                        {[1, 2, 3, 4, 5].map(s => (
                           <Star key={s} className={`w-3.5 h-3.5 ${s <= r.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}`} />
                         ))}
                       </div>
@@ -213,7 +213,7 @@ export default function ProviderRatings() {
                     )}
 
                     {r.review ? (
-                      <p className="text-sm text-gray-600 leading-relaxed">"{r.review}"</p>
+                      <p className="text-sm text-gray-600 leading-relaxed">&quot;{r.review}&quot;</p>
                     ) : (
                       <p className="text-xs text-gray-400 italic">No written review</p>
                     )}
