@@ -20,7 +20,7 @@ export default function BookingDetailsPage() {
   const [address, setAddress] = useState('123 8 Avenue Southwest, Suite 504, Calgary AB');
   const fileInputRef = useRef(null);
 
-  const maxDescriptionLength = 50;
+  const maxDescriptionLength = 500;
   const maxFileSize = 10 * 1024 * 1024;
   const maxPhotos = 5;
 
