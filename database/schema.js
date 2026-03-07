@@ -450,6 +450,34 @@ const tables = [
     UNIQUE KEY uq_provider_device (provider_id, device_id)
   )`
 ];
+// =====================================================
+// Column alterations for existing databases
+// =====================================================
+const alterations = [
+  // service_providers table additions
+  { table: 'service_providers', column: 'email_verified', sql: 'ALTER TABLE service_providers ADD COLUMN email_verified TINYINT(1) DEFAULT 0 AFTER last_login' },
+  { table: 'service_providers', column: 'email_verification_token', sql: 'ALTER TABLE service_providers ADD COLUMN email_verification_token VARCHAR(255) AFTER email_verified' },
+  { table: 'service_providers', column: 'email_verification_expires', sql: 'ALTER TABLE service_providers ADD COLUMN email_verification_expires DATETIME AFTER email_verification_token' },
+  { table: 'service_providers', column: 'onboarding_step', sql: 'ALTER TABLE service_providers ADD COLUMN onboarding_step INT DEFAULT 1 AFTER email_verification_expires' },
+  { table: 'service_providers', column: 'onboarding_completed', sql: 'ALTER TABLE service_providers ADD COLUMN onboarding_completed TINYINT(1) DEFAULT 0 AFTER onboarding_step' },
+  { table: 'service_providers', column: 'documents_uploaded', sql: 'ALTER TABLE service_providers ADD COLUMN documents_uploaded TINYINT(1) DEFAULT 0 AFTER onboarding_completed' },
+  { table: 'service_providers', column: 'documents_verified', sql: 'ALTER TABLE service_providers ADD COLUMN documents_verified TINYINT(1) DEFAULT 0 AFTER documents_uploaded' },
+  { table: 'service_providers', column: 'stripe_account_id', sql: 'ALTER TABLE service_providers ADD COLUMN stripe_account_id VARCHAR(255) AFTER documents_verified' },
+  { table: 'service_providers', column: 'stripe_onboarding_complete', sql: 'ALTER TABLE service_providers ADD COLUMN stripe_onboarding_complete TINYINT(1) DEFAULT 0 AFTER stripe_account_id' },
+  { table: 'service_providers', column: 'rejection_reason', sql: 'ALTER TABLE service_providers ADD COLUMN rejection_reason TEXT AFTER approved_at' },
+  { table: 'service_providers', column: 'service_areas', sql: 'ALTER TABLE service_providers ADD COLUMN service_areas JSON AFTER rejection_reason' },
+  { table: 'service_providers', column: 'skills', sql: 'ALTER TABLE service_providers ADD COLUMN skills JSON AFTER service_areas' },
+  { table: 'service_providers', column: 'reset_token', sql: 'ALTER TABLE service_providers ADD COLUMN reset_token VARCHAR(255) AFTER updated_at' },
+  { table: 'service_providers', column: 'reset_token_expiry', sql: 'ALTER TABLE service_providers ADD COLUMN reset_token_expiry DATETIME AFTER reset_token' },
+
+  // bookings table additions
+  { table: 'bookings', column: 'job_timer_status', sql: "ALTER TABLE bookings ADD COLUMN job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started' AFTER final_provider_amount" },
+  { table: 'bookings', column: 'before_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN before_photos_uploaded TINYINT(1) DEFAULT 0 AFTER job_timer_status' },
+  { table: 'bookings', column: 'after_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN after_photos_uploaded TINYINT(1) DEFAULT 0 AFTER before_photos_uploaded' },
+  { table: 'bookings', column: 'work_summary', sql: 'ALTER TABLE bookings ADD COLUMN work_summary TEXT AFTER after_photos_uploaded' },
+  { table: 'bookings', column: 'recommendations', sql: 'ALTER TABLE bookings ADD COLUMN recommendations TEXT AFTER work_summary' },
+  { table: 'bookings', column: 'photo_upload_deadline', sql: 'ALTER TABLE bookings ADD COLUMN photo_upload_deadline TIMESTAMP NULL AFTER stripe_customer_id' }
+];
 
 // =====================================================
 // Main migration function
@@ -480,14 +508,14 @@ async function runMigration() {
     for (const sql of tables) {
       try {
         await conn.execute(sql);
-        const match = sql.match(/CREATE TABLE.*?(\w+)/);
+        const match = sql.match(/CREATE TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/i);
         if (match) {
           console.log(`   ✓ Created: ${match[1]}`);
           createdCount++;
         }
       } catch (err) {
         if (err.code === 'ER_TABLE_EXISTS_ERROR') {
-          const match = sql.match(/CREATE TABLE.*?(\w+)/);
+          const match = sql.match(/CREATE TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/i);
           console.log(`   ⊘ Table already exists: ${match[1]}`);
           createdCount++;
         } else {
@@ -522,14 +550,14 @@ async function runMigration() {
     try {
       const [columns] = await conn.query(`DESCRIBE bookings`);
       console.log(`   📋 Bookings table has ${columns.length} columns`);
-      
+
       // Check for specific columns
       const columnNames = columns.map(c => c.Field);
       const requiredColumns = [
         'work_summary', 'recommendations', 'job_timer_status',
         'before_photos_uploaded', 'after_photos_uploaded'
       ];
-      
+
       requiredColumns.forEach(col => {
         if (columnNames.includes(col)) {
           console.log(`   ✓ Found column: ${col}`);
@@ -557,15 +585,15 @@ async function runMigration() {
         const [columns] = await conn.query(`DESCRIBE ${table}`);
         console.log(`   • ${table.padEnd(22)}: ${columns.length} columns`);
         totalColumns += columns.length;
-        
+
         // Special verification for bookings table
         if (table === 'bookings') {
           const columnNames = columns.map(c => c.Field);
           const requiredColumns = [
-            'job_timer_status', 'before_photos_uploaded', 
+            'job_timer_status', 'before_photos_uploaded',
             'after_photos_uploaded', 'work_summary', 'recommendations'
           ];
-          
+
           const missing = requiredColumns.filter(col => !columnNames.includes(col));
           if (missing.length === 0) {
             console.log('     ✓ All required columns present');
