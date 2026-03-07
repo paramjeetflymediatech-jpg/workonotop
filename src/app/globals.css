@@ -4,8 +4,7 @@
 
 @layer base {
   * {
-    @apply border-gray-200 dark:border-slate-800;
-    @apply overflow-wrap: break-word !important;
+    @apply border-gray-200 dark:border-slate-800; 
 
 
   }
