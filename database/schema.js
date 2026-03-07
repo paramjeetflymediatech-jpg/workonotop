@@ -36,8 +36,8 @@ const tables = [
     hear_about VARCHAR(255),
     receive_offers TINYINT(1) DEFAULT 0,
     role ENUM('user', 'admin') DEFAULT 'user',
-    reset_token VARCHAR(255) NULL,
-    reset_token_expiry DATETIME NULL,
+    reset_token VARCHAR(255),
+    reset_token_expiry DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_role (role)
@@ -176,7 +176,7 @@ const tables = [
     INDEX idx_account_status (account_status)
   )`,
 
-  // Table 7: bookings (FIXED to match your exact schema)
+  // Table 7: bookings (EXACT match with your database)
   `CREATE TABLE IF NOT EXISTS bookings (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
@@ -213,17 +213,17 @@ const tables = [
     overtime_minutes INT DEFAULT 0,
     overtime_earnings DECIMAL(10,2) DEFAULT 0.00,
     final_provider_amount DECIMAL(10,2),
-    work_summary TEXT,
-    recommendations TEXT,
+    job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started',
     before_photos_uploaded TINYINT(1) DEFAULT 0,
     after_photos_uploaded TINYINT(1) DEFAULT 0,
+    work_summary TEXT,
+    recommendations TEXT,
     payment_intent_id VARCHAR(255),
     authorized_amount DECIMAL(10,2),
     payment_status ENUM('pending', 'authorized', 'paid', 'failed', 'refunded') DEFAULT 'pending',
     payment_method VARCHAR(50),
     stripe_customer_id VARCHAR(255),
     photo_upload_deadline TIMESTAMP NULL,
-    job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
@@ -452,51 +452,6 @@ const tables = [
 ];
 
 // =====================================================
-// Alter table migrations — safely add missing columns
-// =====================================================
-const alterations = [
-  // Fix service_providers.status ENUM to include 'suspended'
-  {
-    table: 'service_providers',
-    column: 'status',
-    sql: `ALTER TABLE service_providers MODIFY COLUMN status ENUM('active', 'inactive', 'pending', 'rejected', 'suspended') DEFAULT 'pending'`
-  },
-  // Add work_summary and recommendations to bookings if missing
-  {
-    table: 'bookings',
-    column: 'work_summary',
-    sql: `ALTER TABLE bookings ADD COLUMN work_summary TEXT AFTER final_provider_amount`
-  },
-  {
-    table: 'bookings',
-    column: 'recommendations',
-    sql: `ALTER TABLE bookings ADD COLUMN recommendations TEXT AFTER work_summary`
-  },
-  // Add forgot-password columns to users
-  {
-    table: 'users',
-    column: 'reset_token',
-    sql: `ALTER TABLE users ADD COLUMN reset_token VARCHAR(255) NULL AFTER role`
-  },
-  {
-    table: 'users',
-    column: 'reset_token_expiry',
-    sql: `ALTER TABLE users ADD COLUMN reset_token_expiry DATETIME NULL AFTER reset_token`
-  },
-  // Add reset_token columns to service_providers if missing
-  {
-    table: 'service_providers',
-    column: 'reset_token',
-    sql: `ALTER TABLE service_providers ADD COLUMN reset_token VARCHAR(255) NULL`
-  },
-  {
-    table: 'service_providers',
-    column: 'reset_token_expiry',
-    sql: `ALTER TABLE service_providers ADD COLUMN reset_token_expiry DATETIME NULL`
-  }
-];
-
-// =====================================================
 // Main migration function
 // =====================================================
 async function runMigration() {
@@ -521,21 +476,19 @@ async function runMigration() {
     // Step 3: Create tables
     console.log('🏗️  Step 2: Creating 17 tables...');
     let createdCount = 0;
-    const tableNames = [];
 
     for (const sql of tables) {
       try {
         await conn.execute(sql);
         const match = sql.match(/CREATE TABLE.*?(\w+)/);
         if (match) {
-          const tableName = match[1];
-          tableNames.push(tableName);
-          console.log(`   ✓ Created: ${tableName}`);
+          console.log(`   ✓ Created: ${match[1]}`);
           createdCount++;
         }
       } catch (err) {
         if (err.code === 'ER_TABLE_EXISTS_ERROR') {
-          console.log(`   ⊘ Table already exists (skipped)`);
+          const match = sql.match(/CREATE TABLE.*?(\w+)/);
+          console.log(`   ⊘ Table already exists: ${match[1]}`);
           createdCount++;
         } else {
           throw err;
@@ -569,14 +522,14 @@ async function runMigration() {
     try {
       const [columns] = await conn.query(`DESCRIBE bookings`);
       console.log(`   📋 Bookings table has ${columns.length} columns`);
-
+      
       // Check for specific columns
       const columnNames = columns.map(c => c.Field);
       const requiredColumns = [
         'work_summary', 'recommendations', 'job_timer_status',
         'before_photos_uploaded', 'after_photos_uploaded'
       ];
-
+      
       requiredColumns.forEach(col => {
         if (columnNames.includes(col)) {
           console.log(`   ✓ Found column: ${col}`);
@@ -604,6 +557,22 @@ async function runMigration() {
         const [columns] = await conn.query(`DESCRIBE ${table}`);
         console.log(`   • ${table.padEnd(22)}: ${columns.length} columns`);
         totalColumns += columns.length;
+        
+        // Special verification for bookings table
+        if (table === 'bookings') {
+          const columnNames = columns.map(c => c.Field);
+          const requiredColumns = [
+            'job_timer_status', 'before_photos_uploaded', 
+            'after_photos_uploaded', 'work_summary', 'recommendations'
+          ];
+          
+          const missing = requiredColumns.filter(col => !columnNames.includes(col));
+          if (missing.length === 0) {
+            console.log('     ✓ All required columns present');
+          } else {
+            console.log('     ❌ Missing columns:', missing.join(', '));
+          }
+        }
       } catch (err) {
         console.log(`   • ${table.padEnd(22)}: not found`);
       }
@@ -615,35 +584,19 @@ async function runMigration() {
     console.log('✅ Migration completed successfully!');
     console.log('='.repeat(60));
     console.log(`   Database: ${DB_NAME}`);
-    console.log(`   Tables:   ${tableQueries.length}/17`);
+    console.log(`   Tables:   ${tableQueries.length}/16`);
     console.log(`   Total Columns: ${totalColumns}`);
     console.log('='.repeat(60) + '\n');
-
-    // Print bookings table structure for reference
-    console.log('📊 Bookings Table Structure (for reference):');
-    console.log('-'.repeat(60));
-    try {
-      const [columns] = await conn.query(`DESCRIBE bookings`);
-      columns.forEach(col => {
-        console.log(`   ${col.Field.padEnd(25)}: ${col.Type}`);
-      });
-    } catch (err) {
-      console.log('   Could not retrieve bookings structure');
-    }
-    console.log('-'.repeat(60) + '\n');
 
   } catch (err) {
     console.error('\n❌ Error:', err.message);
     if (err.code === 'ER_ACCESS_DENIED_ERROR') {
-      console.error('   🔑 Check database credentials in .env file');
-      console.error('   Current settings:');
-      console.error(`      Host: ${process.env.DB_HOST || 'localhost'}`);
-      console.error(`      User: ${process.env.DB_USER || 'root'}`);
-      console.error(`      Password: ${process.env.DB_PASSWORD ? '****' : 'not set'}`);
-      console.error(`      Port: ${process.env.DB_PORT || '3306'}`);
+      console.error('   🔑 Please update database credentials in .env file:');
+      console.error(`      DB_HOST=${process.env.DB_HOST || 'localhost'}`);
+      console.error(`      DB_USER=${process.env.DB_USER || 'root'}`);
+      console.error(`      DB_PASSWORD=${process.env.DB_PASSWORD ? '****' : 'not set'}`);
     } else if (err.code === 'ECONNREFUSED') {
-      console.error('   🔌 Make sure MySQL server is running');
-      console.error('   💡 Try: sudo systemctl start mysql (Linux) or start MySQL service');
+      console.error('   🔌 MySQL server is not running. Please start MySQL first.');
     }
     process.exit(1);
   } finally {

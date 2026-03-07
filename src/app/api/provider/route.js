@@ -56,16 +56,44 @@ export async function PUT(request) {
     const id = searchParams.get('id')
     const body = await request.json()
 
-    // Admin: status update only
+    // Admin: status update or full provider edit
     if (id) {
-      const { status } = body
-      const allowed = ['active', 'inactive', 'suspended', 'pending', 'rejected']
-      if (!status || !allowed.includes(status)) {
-        return NextResponse.json({ success: false, message: 'Invalid status' }, { status: 400 })
+      // if only status provided, treat as status change
+      if (body.status && Object.keys(body).length === 1) {
+        const { status } = body
+        const allowed = ['active', 'inactive', 'suspended', 'pending', 'rejected']
+        if (!status || !allowed.includes(status)) {
+          return NextResponse.json({ success: false, message: 'Invalid status' }, { status: 400 })
+        }
+        await execute(`UPDATE service_providers SET status = ?, updated_at = NOW() WHERE id = ?`, [status, id])
+        return NextResponse.json({ success: true, message: 'Status updated' })
       }
-      // ✅ Using execute()
-      await execute(`UPDATE service_providers SET status = ?, updated_at = NOW() WHERE id = ?`, [status, id])
-      return NextResponse.json({ success: true, message: 'Status updated' })
+      // otherwise admin is updating provider profile fields
+      const { name, email, phone, specialty, city, rating, total_jobs, bio, location } = body
+      if (!name || !email || !phone) {
+        return NextResponse.json({ success: false, message: 'Name, email and phone are required' }, { status: 400 })
+      }
+      // prevent duplicate email
+      const existing = await execute(
+        'SELECT id FROM service_providers WHERE email = ? AND id != ?',
+        [email, id]
+      )
+      if (existing.length > 0) {
+        return NextResponse.json({ success: false, message: 'Email already in use' }, { status: 400 })
+      }
+      await execute(
+        `UPDATE service_providers SET
+           name = ?, email = ?, phone = ?, specialty = ?,
+           city = ?, rating = COALESCE(?, rating),
+           total_jobs = COALESCE(?, total_jobs),
+           bio = ?, location = ?, updated_at = NOW()
+         WHERE id = ?`,
+        [name, email, phone, specialty || null, city || null,
+         rating != null ? parseFloat(rating) : null,
+         total_jobs != null ? parseInt(total_jobs) : null,
+         bio || null, location || null, id]
+      )
+      return NextResponse.json({ success: true, message: 'Provider updated' })
     }
 
     // Provider: own profile update
@@ -123,16 +151,97 @@ export async function PUT(request) {
 
 // DELETE
 export async function DELETE(request) {
+  const { getConnection } = await import('@/lib/db')
+  let connection
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ success: false, message: 'ID required' }, { status: 400 })
 
-    // ✅ Using execute()
-    await execute('DELETE FROM service_providers WHERE id = ?', [id])
-    return NextResponse.json({ success: true, message: 'Provider deleted' })
+    connection = await getConnection()
+    await connection.beginTransaction()
+
+    // verify provider exists
+    const [provRows] = await connection.execute(
+      'SELECT id FROM service_providers WHERE id = ?',
+      [id]
+    )
+    if (provRows.length === 0) {
+      await connection.rollback()
+      return NextResponse.json({ success: false, message: 'Provider not found' }, { status: 404 })
+    }
+
+    // find bookings for this provider
+    const [bookingRows] = await connection.execute(
+      'SELECT id FROM bookings WHERE provider_id = ?',
+      [id]
+    )
+    const bookingIds = bookingRows.map(b => b.id)
+
+    if (bookingIds.length > 0) {
+      const placeholders = bookingIds.map(() => '?').join(',')
+
+      await connection.execute(
+        `DELETE FROM chat_messages WHERE booking_id IN (${placeholders})`,
+        bookingIds
+      )
+      await connection.execute(
+        `DELETE FROM booking_photos WHERE booking_id IN (${placeholders})`,
+        bookingIds
+      )
+      await connection.execute(
+        `DELETE FROM booking_status_history WHERE booking_id IN (${placeholders})`,
+        bookingIds
+      )
+      await connection.execute(
+        `DELETE FROM booking_time_logs WHERE booking_id IN (${placeholders})`,
+        bookingIds
+      )
+      await connection.execute(
+        `DELETE FROM job_photos WHERE booking_id IN (${placeholders})`,
+        bookingIds
+      )
+      await connection.execute(
+        `DELETE FROM invoices WHERE booking_id IN (${placeholders})`,
+        bookingIds
+      )
+      await connection.execute(
+        `DELETE FROM provider_reviews WHERE booking_id IN (${placeholders})`,
+        bookingIds
+      )
+
+      await connection.execute(
+        `DELETE FROM bookings WHERE id IN (${placeholders})`,
+        bookingIds
+      )
+    }
+
+    // remove any remaining reviews or invoices tied to provider
+    await connection.execute(
+      `DELETE FROM provider_reviews WHERE provider_id = ?`,
+      [id]
+    )
+    await connection.execute(
+      `DELETE FROM invoices WHERE provider_id = ?`,
+      [id]
+    )
+
+    // finally delete provider
+    const [provResult] = await connection.execute(
+      'DELETE FROM service_providers WHERE id = ?',
+      [id]
+    )
+
+    await connection.commit()
+
+    return NextResponse.json({
+      success: true,
+      message: 'Provider and all associated data deleted successfully',
+      deleted: { provider: provResult.affectedRows }
+    })
 
   } catch (error) {
+    if (connection) await connection.rollback()
     console.error('Error deleting provider:', error)
     return NextResponse.json({ success: false, message: 'Failed to delete provider' }, { status: 500 })
   }
