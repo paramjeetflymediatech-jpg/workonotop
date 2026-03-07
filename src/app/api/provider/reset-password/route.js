@@ -7,20 +7,20 @@ export async function POST(request) {
   let connection
   try {
     const { token, password } = await request.json()
-    
+
     console.log('🔍 Reset password attempt with token:', token ? 'Token provided' : 'No token')
 
     if (!token || !password) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Token and password required' 
+      return NextResponse.json({
+        success: false,
+        message: 'Token and password required'
       }, { status: 400 })
     }
 
     if (password.length < 6) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Password must be at least 6 characters' 
+      return NextResponse.json({
+        success: false,
+        message: 'Password must be at least 6 characters'
       }, { status: 400 })
     }
 
@@ -32,8 +32,7 @@ export async function POST(request) {
       const [providers] = await connection.execute(
         `SELECT id, email FROM service_providers 
          WHERE reset_token = ? 
-         AND reset_token_expiry > NOW() 
-         AND status = 'active'`,
+         AND reset_token_expiry > NOW()`,
         [token]
       )
 
@@ -41,9 +40,9 @@ export async function POST(request) {
 
       if (providers.length === 0) {
         await connection.query('ROLLBACK')
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Invalid or expired token' 
+        return NextResponse.json({
+          success: false,
+          message: 'Invalid or expired token'
         }, { status: 400 })
       }
 
@@ -87,9 +86,9 @@ export async function POST(request) {
       await connection.query('COMMIT')
       console.log('💾 Password updated successfully')
 
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Password reset successfully' 
+      return NextResponse.json({
+        success: true,
+        message: 'Password reset successfully'
       })
 
     } catch (err) {
@@ -102,9 +101,9 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('🔥 Reset password error:', error)
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Failed to reset password' 
+    return NextResponse.json({
+      success: false,
+      message: 'Failed to reset password'
     }, { status: 500 })
   }
 }

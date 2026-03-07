@@ -9,8 +9,10 @@ import {
     ScrollView
 } from 'react-native';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
+import { useAuth } from '../../context/AuthContext';
 
 const OnboardingIntroScreen = ({ navigation }) => {
+    const { logout } = useAuth();
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -22,7 +24,7 @@ const OnboardingIntroScreen = ({ navigation }) => {
                     />
                     <Text style={styles.title}>Join Our Pro Network</Text>
                     <Text style={styles.subtitle}>
-                        Complete these 3 simple steps to start earning with WorkOnTop
+                        Complete these 4 simple steps to start earning with WorkOnTop
                     </Text>
                 </View>
 
@@ -42,8 +44,8 @@ const OnboardingIntroScreen = ({ navigation }) => {
                             <Text style={styles.stepNumberText}>2</Text>
                         </View>
                         <View style={styles.stepInfo}>
-                            <Text style={styles.stepTitle}>Document Verification</Text>
-                            <Text style={styles.stepDesc}>Upload ID proof and necessary certifications</Text>
+                            <Text style={styles.stepTitle}>Documents</Text>
+                            <Text style={styles.stepDesc}>Upload ID proof and trade certifications</Text>
                         </View>
                     </View>
 
@@ -52,8 +54,18 @@ const OnboardingIntroScreen = ({ navigation }) => {
                             <Text style={styles.stepNumberText}>3</Text>
                         </View>
                         <View style={styles.stepInfo}>
-                            <Text style={styles.stepTitle}>Admin Approval</Text>
-                            <Text style={styles.stepDesc}>Our team will review your application within 24-48 hours</Text>
+                            <Text style={styles.stepTitle}>Payment</Text>
+                            <Text style={styles.stepDesc}>Link your bank account via Stripe</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.stepRow}>
+                        <View style={styles.stepNumber}>
+                            <Text style={styles.stepNumberText}>4</Text>
+                        </View>
+                        <View style={styles.stepInfo}>
+                            <Text style={styles.stepTitle}>Review</Text>
+                            <Text style={styles.stepDesc}>Our team will verify your application</Text>
                         </View>
                     </View>
                 </View>
@@ -67,7 +79,7 @@ const OnboardingIntroScreen = ({ navigation }) => {
 
                 <TouchableOpacity
                     style={styles.laterButton}
-                    onPress={() => navigation.goBack()}
+                    onPress={logout}
                 >
                     <Text style={styles.laterText}>Logout & Do it later</Text>
                 </TouchableOpacity>

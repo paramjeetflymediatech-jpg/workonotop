@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, SafeAreaView, Alert, ActivityIndicator
+    ScrollView, SafeAreaView, Alert, ActivityIndicator,
+    Platform
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'react-native';
@@ -18,6 +19,36 @@ const ProfileSetupScreen = ({ navigation }) => {
     const [profilePhoto, setProfilePhoto] = useState(null);
     const [loading, setLoading] = useState(false);
 
+    const uploadProfilePhoto = async (uri) => {
+        setLoading(true);
+        try {
+            const formData = new FormData();
+            const filename = uri.split('/').pop();
+            const match = /\.(\w+)$/.exec(filename);
+            const ext = match ? `image/${match[1]}` : 'image/jpeg';
+
+            formData.append('file', {
+                uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
+                name: filename,
+                type: ext,
+            });
+            formData.append('type', 'profile_photo');
+
+            const res = await api.post('/api/provider/onboarding/upload-document', formData);
+
+            if (res.success) {
+                setProfilePhoto(res.fileUrl || uri);
+            } else {
+                throw new Error(res.message || 'Upload failed');
+            }
+        } catch (err) {
+            console.error('Profile photo upload error:', err);
+            Alert.alert('Upload Failed', 'Failed to upload profile photo.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const pickProfilePhoto = async () => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
@@ -25,13 +56,13 @@ const ProfileSetupScreen = ({ navigation }) => {
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaType.Images,
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.8,
         });
         if (!result.canceled) {
-            setProfilePhoto(result.assets[0].uri);
+            await uploadProfilePhoto(result.assets[0].uri);
         }
     };
 
@@ -46,12 +77,14 @@ const ProfileSetupScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backIcon}>←</Text>
-                </TouchableOpacity>
+                {navigation.canGoBack() && (
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                        <Text style={styles.backIcon}>←</Text>
+                    </TouchableOpacity>
+                )}
 
                 <Text style={styles.title}>Setup Your Profile</Text>
-                <Text style={styles.subtitle}>Step 2 of 5 — Tell us about yourself</Text>
+                <Text style={styles.subtitle}>Step 1 of 4 — Tell us about yourself</Text>
 
                 {/* Profile Photo */}
                 <TouchableOpacity style={styles.photoPicker} onPress={pickProfilePhoto}>

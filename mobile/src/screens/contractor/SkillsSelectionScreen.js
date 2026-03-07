@@ -64,7 +64,7 @@ const SkillsSelectionScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
 
                 <Text style={styles.title}>Select Your Skills</Text>
-                <Text style={styles.subtitle}>Step 3 of 5 — Choose all that apply</Text>
+                <Text style={styles.subtitle}>Step 1 of 4 — Choose all that apply</Text>
 
                 <View style={styles.grid}>
                     {skills.map((skill) => {

@@ -11,18 +11,20 @@ const getAuthToken = async () => {
 
 const request = async (endpoint, options = {}) => {
     const token = await getAuthToken();
+    const isFormData = options.body instanceof FormData;
 
     const headers = {
-        'Content-Type': 'application/json',
         ...options.headers,
     };
 
+    // Only set application/json if not FormData
+    if (!isFormData && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+    }
+
     if (token) {
-        // Many backends use Bearer token, website uses cookie. 
-        // We'll pass it in headers as standard for mobile.
         headers['Authorization'] = `Bearer ${token}`;
-        // Also adding it to cookies manually if needed by the backend Next.js API
-        // since Next.js API routes often look at cookies.
+        // Standardize cookie names for Next.js consistency
         headers['Cookie'] = `token=${token}; provider_token=${token}; admin_token=${token}`;
     }
 
@@ -33,7 +35,15 @@ const request = async (endpoint, options = {}) => {
 
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-        const data = await response.json();
+
+        // Handle empty responses or errors that return non-JSON
+        const contentType = response.headers.get('content-type');
+        let data;
+        if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            data = { message: await response.text() };
+        }
 
         if (!response.ok) {
             throw new Error(data.message || 'Something went wrong');
@@ -48,7 +58,21 @@ const request = async (endpoint, options = {}) => {
 
 export const api = {
     get: (endpoint, options) => request(endpoint, { ...options, method: 'GET' }),
-    post: (endpoint, body, options) => request(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
-    put: (endpoint, body, options) => request(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+    post: (endpoint, body, options) => {
+        const isFormData = body instanceof FormData;
+        return request(endpoint, {
+            ...options,
+            method: 'POST',
+            body: isFormData ? body : JSON.stringify(body)
+        });
+    },
+    put: (endpoint, body, options) => {
+        const isFormData = body instanceof FormData;
+        return request(endpoint, {
+            ...options,
+            method: 'PUT',
+            body: isFormData ? body : JSON.stringify(body)
+        });
+    },
     delete: (endpoint, options) => request(endpoint, { ...options, method: 'DELETE' }),
 };

@@ -73,7 +73,8 @@ const BankLinkScreen = ({ navigation, route }) => {
                 if (updateUser) {
                     await updateUser({ onboarding_completed: 1, status: 'pending' });
                 }
-                navigation.replace('PendingApproval');
+                // No manual navigation here!
+                // RootNavigator.js will switch to the 'pending' stack automatically.
             } else {
                 throw new Error(res.message || 'Completion failed');
             }
@@ -126,7 +127,7 @@ const BankLinkScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
 
                 <Text style={styles.title}>Link Your Bank Account</Text>
-                <Text style={styles.subtitle}>Step 5 of 5 — Get paid directly to your account</Text>
+                <Text style={styles.subtitle}>Step 3 of 4 — Get paid directly to your account</Text>
 
                 {connected ? (
                     <View style={styles.successCard}>

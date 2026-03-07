@@ -140,16 +140,16 @@ export async function POST(request) {
     );
 
     // Check if all required docs are uploaded
-    const requiredDocs = ['profile_photo', 'id_proof', 'insurance'];
+    const requiredDocs = ['profile_photo', 'id_proof', 'trade_license'];
     const docs = await execute(
       `SELECT document_type FROM provider_documents 
        WHERE provider_id = ? AND document_type IN (?, ?, ?)`,
-      [providerId, 'profile_photo', 'id_proof', 'insurance']
+      [providerId, 'profile_photo', 'id_proof', 'trade_license']
     );
-    
+
     const uploadedTypes = docs.map(d => d.document_type);
     const allRequiredUploaded = requiredDocs.every(type => uploadedTypes.includes(type));
-    
+
     if (allRequiredUploaded) {
       await execute(
         `UPDATE service_providers SET documents_uploaded = 1 WHERE id = ?`,

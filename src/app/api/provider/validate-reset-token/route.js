@@ -15,12 +15,11 @@ export async function GET(request) {
     const providers = await execute(
       `SELECT id FROM service_providers 
        WHERE reset_token = ? 
-       AND reset_token_expiry > NOW() 
-       AND status = 'active'`,
+       AND reset_token_expiry > NOW()`,
       [token]
     )
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: providers.length > 0
     })
 
