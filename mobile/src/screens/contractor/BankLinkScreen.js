@@ -5,10 +5,12 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { api } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
 import { moderateScale, verticalScale } from '../../utils/responsive';
 
 const BankLinkScreen = ({ navigation, route }) => {
     const { profile, profilePhoto, skills, documents } = route.params || {};
+    const { updateUser } = useAuth();
     const [stripeUrl, setStripeUrl] = useState(null);
     const [loading, setLoading] = useState(false);
     const [webLoading, setWebLoading] = useState(true);
@@ -52,20 +54,32 @@ const BankLinkScreen = ({ navigation, route }) => {
     const submitApplication = async () => {
         setLoading(true);
         try {
-            // Submit the contractor profile to backend
-            const formData = new FormData();
-            formData.append('name', profile?.name || '');
-            formData.append('phone', profile?.phone || '');
-            formData.append('serviceArea', profile?.serviceArea || '');
-            formData.append('bio', profile?.bio || '');
-            formData.append('skills', JSON.stringify(skills || []));
+            // 1. Submit Profile Data (Bio, specialty, etc)
+            await api.post('/api/provider/onboarding/profile', {
+                bio: profile?.bio || '',
+                specialty: profile?.serviceArea || '', // Reusing serviceArea field as specialty for now or mapping it
+                experience_years: 1, // Default or could be added to UI
+                city: profile?.serviceArea || '',
+                location: profile?.serviceArea || '',
+                service_areas: [profile?.serviceArea || ''],
+                skills: skills || []
+            });
 
-            const res = await api.post('/api/provider/complete-profile', formData);
-            navigation.navigate('PendingApproval');
+            // 2. Submit completion
+            const res = await api.post('/api/provider/onboarding/complete');
+
+            if (res.success) {
+                // Update local auth context so RootNavigator reflects the change
+                if (updateUser) {
+                    await updateUser({ onboarding_completed: 1, status: 'pending' });
+                }
+                navigation.replace('PendingApproval');
+            } else {
+                throw new Error(res.message || 'Completion failed');
+            }
         } catch (err) {
             console.error('Profile submission error:', err);
-            // Still navigate to pending screen for now
-            navigation.navigate('PendingApproval');
+            Alert.alert('Error', err.message || 'Failed to complete onboarding. Please try again.');
         } finally {
             setLoading(false);
         }

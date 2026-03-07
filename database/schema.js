@@ -398,6 +398,56 @@ const tables = [
     INDEX idx_raised_by (raised_by_user_id),
     INDEX idx_status (status),
     INDEX idx_created_at (created_at)
+  )`,
+
+  // Table 17: mobile_auth_users (Mobile app auth & push notification tokens)
+  `CREATE TABLE IF NOT EXISTS mobile_auth_users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+
+    -- Link to either a customer or a provider (only one will be set)
+    user_id INT DEFAULT NULL,
+    provider_id INT DEFAULT NULL,
+
+    -- Discriminator: customer = users table, provider = service_providers table
+    user_type ENUM('customer', 'provider') NOT NULL,
+
+    -- JWT refresh token for mobile sessions
+    refresh_token VARCHAR(512) DEFAULT NULL,
+    refresh_token_expires DATETIME DEFAULT NULL,
+
+    -- Expo push notification token
+    push_token TEXT DEFAULT NULL,
+    push_token_platform ENUM('ios', 'android', 'web') DEFAULT NULL,
+    push_token_updated_at DATETIME DEFAULT NULL,
+
+    -- Device info
+    device_id VARCHAR(255) DEFAULT NULL,
+    device_name VARCHAR(255) DEFAULT NULL,
+    device_platform ENUM('ios', 'android', 'web') DEFAULT NULL,
+    os_version VARCHAR(50) DEFAULT NULL,
+    app_version VARCHAR(50) DEFAULT NULL,
+
+    -- Status & session tracking
+    is_active TINYINT(1) DEFAULT 1,
+    last_login DATETIME DEFAULT NULL,
+    logged_out_at DATETIME DEFAULT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
+
+    INDEX idx_user_id (user_id),
+    INDEX idx_provider_id (provider_id),
+    INDEX idx_user_type (user_type),
+    INDEX idx_push_token (push_token(255)),
+    INDEX idx_device_id (device_id),
+    INDEX idx_is_active (is_active),
+
+    -- One record per user/provider per device
+    UNIQUE KEY uq_user_device (user_id, device_id),
+    UNIQUE KEY uq_provider_device (provider_id, device_id)
   )`
 ];
 
@@ -469,7 +519,7 @@ async function runMigration() {
     console.log(`   ✓ Connected to database\n`);
 
     // Step 3: Create tables
-    console.log('🏗️  Step 2: Creating 16 tables...');
+    console.log('🏗️  Step 2: Creating 17 tables...');
     let createdCount = 0;
     const tableNames = [];
 
@@ -492,7 +542,7 @@ async function runMigration() {
         }
       }
     }
-    console.log(`   📊 Total tables created/verified: ${createdCount}/16\n`);
+    console.log(`   📊 Total tables created/verified: ${createdCount}/17\n`);
 
     // Step 4: Run alterations (add missing columns)
     console.log('🔧 Step 3: Applying column alterations...');
@@ -519,14 +569,14 @@ async function runMigration() {
     try {
       const [columns] = await conn.query(`DESCRIBE bookings`);
       console.log(`   📋 Bookings table has ${columns.length} columns`);
-      
+
       // Check for specific columns
       const columnNames = columns.map(c => c.Field);
       const requiredColumns = [
         'work_summary', 'recommendations', 'job_timer_status',
         'before_photos_uploaded', 'after_photos_uploaded'
       ];
-      
+
       requiredColumns.forEach(col => {
         if (columnNames.includes(col)) {
           console.log(`   ✓ Found column: ${col}`);
@@ -545,7 +595,7 @@ async function runMigration() {
       'provider_documents', 'provider_bank_accounts', 'bookings',
       'chat_messages', 'booking_photos', 'booking_status_history',
       'booking_time_logs', 'job_photos', 'provider_reviews', 'invoices',
-      'provider_payouts', 'disputes'
+      'provider_payouts', 'disputes', 'mobile_auth_users'
     ];
 
     let totalColumns = 0;
@@ -565,7 +615,7 @@ async function runMigration() {
     console.log('✅ Migration completed successfully!');
     console.log('='.repeat(60));
     console.log(`   Database: ${DB_NAME}`);
-    console.log(`   Tables:   ${tableQueries.length}/16`);
+    console.log(`   Tables:   ${tableQueries.length}/17`);
     console.log(`   Total Columns: ${totalColumns}`);
     console.log('='.repeat(60) + '\n');
 

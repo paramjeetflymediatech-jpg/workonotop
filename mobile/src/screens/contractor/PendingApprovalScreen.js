@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { moderateScale, verticalScale } from '../../utils/responsive';
 
 const PendingApprovalScreen = ({ navigation }) => {
-    const { logout } = useAuth();
+    const { logout, updateUser } = useAuth();
     const [status, setStatus] = useState('pending');
     const [loading, setLoading] = useState(true);
     const [checkingCount, setCheckingCount] = useState(0);
@@ -16,8 +16,15 @@ const PendingApprovalScreen = ({ navigation }) => {
     const checkStatus = async () => {
         try {
             const res = await api.get('/api/provider/status');
-            const providerStatus = res.status || res.data?.status || 'pending';
-            setStatus(providerStatus.toLowerCase());
+            const providerStatus = (res.status || res.data?.status || 'pending').toLowerCase();
+
+            if (providerStatus !== status) {
+                setStatus(providerStatus);
+                // If they are now approved, update AuthContext to allow access to Main
+                if (providerStatus === 'approved' && updateUser) {
+                    await updateUser({ status: 'approved' });
+                }
+            }
         } catch (err) {
             console.error('Status check failed:', err);
             setStatus('pending');
