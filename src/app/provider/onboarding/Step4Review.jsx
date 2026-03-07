@@ -197,7 +197,7 @@ export default function Step4Review({ formData, onBack, providerId, onComplete }
           </div>
           <div className="col-span-2">
             <dt className="text-xs text-gray-500">Bio</dt>
-            <dd className="text-sm">{formData?.bio || provider?.bio || 'Not provided'}</dd>
+            <dd className="text-sm whitespace-pre-wrap break-words">{formData?.bio || provider?.bio || 'Not provided'}</dd>
           </div>
           <div className="col-span-2">
             <dt className="text-xs text-gray-500">Location</dt>

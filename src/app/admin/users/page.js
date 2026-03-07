@@ -84,7 +84,6 @@ export default function Users() {
   const [showSuccessMessage, setShowSuccessMessage] = useState('')
   const [showErrorMessage, setShowErrorMessage] = useState('')
 
-  // Pagination state
   const [customerPage, setCustomerPage] = useState(1)
   const [adminPage, setAdminPage] = useState(1)
   const [providerPage, setProviderPage] = useState(1)
@@ -97,13 +96,14 @@ export default function Users() {
     totalEarnings: 0, avgRating: 0, totalHoursWorked: 0, completionRate: 0,
     topServices: [], monthlyEarnings: []
   })
+  const [isEditProviderOpen, setIsEditProviderOpen] = useState(false)
+  const [providerForm, setProviderForm] = useState({ name: '', email: '', phone: '', specialty: '', city: '', status: 'pending' })
 
   useEffect(() => {
     checkAuth()
     loadAllUsers()
   }, [])
 
-  // Reset pages on search
   useEffect(() => {
     setCustomerPage(1)
     setAdminPage(1)
@@ -189,7 +189,10 @@ export default function Users() {
     const completed = jobs.filter(j => j.status === 'completed')
     const pending = jobs.filter(j => ['pending', 'matching', 'confirmed'].includes(j.status))
     const cancelled = jobs.filter(j => j.status === 'cancelled')
-    const totalEarnings = completed.reduce((sum, job) => sum + parseFloat(job.final_provider_amount || job.provider_amount || 0), 0)
+    let totalEarnings = completed.reduce((sum, job) => sum + parseFloat(job.final_provider_amount || job.provider_amount || 0), 0)
+    if (!totalEarnings && provider.total_earnings) {
+      totalEarnings = parseFloat(provider.total_earnings) || 0
+    }
     const totalMinutes = completed.reduce((sum, job) => sum + (parseInt(job.actual_duration_minutes) || 0), 0)
     const serviceCount = {}
     jobs.forEach(job => { serviceCount[job.service_name] = (serviceCount[job.service_name] || 0) + 1 })
@@ -208,12 +211,17 @@ export default function Users() {
       monthlyEarnings.push({ month: monthName, earnings: monthEarnings })
     }
     return {
-      totalJobs: jobs.length, completedJobs: completed.length,
-      pendingJobs: pending.length, cancelledJobs: cancelled.length,
-      totalEarnings, avgRating: parseFloat(provider.rating) || 0,
+      totalJobs: Math.max(jobs.length, provider.total_jobs || 0),
+      completedJobs: completed.length,
+      pendingJobs: pending.length,
+      cancelledJobs: cancelled.length,
+      totalEarnings,
+      // ✅ FIX: use avg_rating (updated by reviews) not rating (always 0)
+      avgRating: parseFloat(provider.avg_rating) || parseFloat(provider.rating) || 0,
       totalHoursWorked: Math.round((totalMinutes / 60) * 10) / 10,
       completionRate: jobs.length ? Math.round((completed.length / jobs.length) * 100) : 0,
-      topServices, monthlyEarnings
+      topServices,
+      monthlyEarnings
     }
   }
 
@@ -243,12 +251,24 @@ export default function Users() {
   }
 
   const deleteCustomer = async (customerId) => {
-    if (!confirm('⚠️ WARNING: This will permanently delete this user and ALL their data from the platform including:\n\n• All bookings & job history\n• Chat messages\n• Reviews & ratings\n• Invoices\n• Photos & uploads\n\nThis action CANNOT be undone. Continue?')) return
+    const result = await Swal.fire({
+      title: 'Delete Customer? ⚠️',
+      html: `This will permanently remove the customer and <strong>all related data</strong> including bookings, messages, reviews, invoices and uploads. This action <strong>cannot be undone</strong>.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      reverseButtons: true,
+      focusCancel: true,
+    })
+    if (!result.isConfirmed) return
     try {
       const res = await fetch(`/api/customers?id=${customerId}`, { method: 'DELETE' })
       const data = await res.json()
       if (data.success) {
-        showMessage('success', `User deleted successfully (${data.deleted?.bookings || 0} bookings removed)`)
+        Swal.fire({ title: 'Deleted', text: 'Customer removed', icon: 'success', timer: 2000, showConfirmButton: false })
         loadAllUsers()
         setIsModalOpen(false)
       } else showMessage('error', data.message || 'Failed to delete user')
@@ -285,7 +305,6 @@ export default function Users() {
       cancelButtonText: 'Cancel',
       confirmButtonColor: statusColors[newStatus] || '#14b8a6',
       cancelButtonColor: '#64748b',
-      borderRadius: '16px',
     })
     if (!result.isConfirmed) return
     try {
@@ -306,6 +325,66 @@ export default function Users() {
     }
   }
 
+  const deleteProvider = async (providerId) => {
+    const result = await Swal.fire({
+      title: 'Delete Provider? ⚠️',
+      html: `Removing this provider will delete <strong>all associated jobs, reviews, earnings, and uploads</strong>. This cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      reverseButtons: true,
+      focusCancel: true,
+    })
+    if (!result.isConfirmed) return
+    try {
+      const res = await fetch(`/api/provider?id=${providerId}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        Swal.fire({ title: 'Deleted', text: 'Provider removed', icon: 'success', timer: 2000, showConfirmButton: false })
+        loadAllUsers()
+        setIsProviderDetailsOpen(false)
+      } else showMessage('error', data.message || 'Failed to delete provider')
+    } catch {
+      showMessage('error', 'Failed to delete provider')
+    }
+  }
+
+  const openEditProvider = () => {
+    if (!selectedProvider) return
+    setProviderForm({
+      name: selectedProvider.name || '',
+      email: selectedProvider.email || '',
+      phone: selectedProvider.phone || '',
+      specialty: selectedProvider.specialty || '',
+      city: selectedProvider.city || '',
+      status: selectedProvider.status || 'pending'
+    })
+    setIsEditProviderOpen(true)
+  }
+
+  const updateProvider = async (e) => {
+    e.preventDefault()
+    try {
+      const res = await fetch(`/api/provider?id=${selectedProvider.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(providerForm)
+      })
+      const data = await res.json()
+      if (data.success) {
+        setIsEditProviderOpen(false)
+        setIsProviderDetailsOpen(false)
+        loadAllUsers()
+        showMessage('success', 'Provider updated successfully')
+      } else showMessage('error', data.message || 'Failed to update provider')
+    } catch {
+      showMessage('error', 'Failed to update provider')
+    }
+  }
+
   const search = (items, fields) => {
     if (!searchTerm) return items
     const q = searchTerm.toLowerCase()
@@ -319,7 +398,6 @@ export default function Users() {
     ['name', 'email', 'phone', 'city']
   )
 
-  // Paginated slices
   const pagedCustomers = filteredCustomers.slice((customerPage - 1) * PAGE_SIZE, customerPage * PAGE_SIZE)
   const pagedAdmins = filteredAdmins.slice((adminPage - 1) * PAGE_SIZE, adminPage * PAGE_SIZE)
   const pagedProviders = filteredProviders.slice((providerPage - 1) * PAGE_SIZE, providerPage * PAGE_SIZE)
@@ -435,7 +513,6 @@ export default function Users() {
       {/* ── CUSTOMERS ── */}
       {activeTab === 'customers' && (
         <div className={`${card} overflow-hidden`}>
-          {/* ── Mobile Card View ── */}
           <div className="md:hidden">
             {pagedCustomers.length > 0 ? (
               <div className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-100'}`}>
@@ -449,31 +526,22 @@ export default function Users() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {c.first_name} {c.last_name}
-                          </p>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${c.booking_count > 0 ? 'bg-green-500/20 text-green-600 dark:text-green-400' : isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'
-                            }`}>
+                          <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{c.first_name} {c.last_name}</p>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${c.booking_count > 0 ? 'bg-green-500/20 text-green-600 dark:text-green-400' : isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
                             {c.booking_count} booking{c.booking_count !== 1 ? 's' : ''}
                           </span>
                         </div>
                         <p className={`text-xs truncate mb-1.5 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{c.email}</p>
                         <div className="flex items-center justify-between">
-                          <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-                            {c.phone || 'No phone'} • {formatDate(c.created_at)}
-                          </p>
+                          <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{c.phone || 'No phone'} • {formatDate(c.created_at)}</p>
                           <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                             <button onClick={e => { e.stopPropagation(); setSelectedUser({ ...c, type: 'customer' }); setIsEditModalOpen(true) }}
                               className={`p-1.5 rounded-lg ${isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             </button>
                             <button onClick={e => { e.stopPropagation(); deleteCustomer(c.id) }}
                               className={`p-1.5 rounded-lg ${isDarkMode ? 'text-slate-400 hover:text-red-400 hover:bg-slate-700' : 'text-gray-400 hover:text-red-600 hover:bg-red-50'}`}>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
                           </div>
                         </div>
@@ -483,13 +551,10 @@ export default function Users() {
                 ))}
               </div>
             ) : (
-              <div className="py-12 text-center">
-                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No customers match your search' : 'No customers yet'}</p>
-              </div>
+              <div className="py-12 text-center"><p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No customers match your search' : 'No customers yet'}</p></div>
             )}
           </div>
 
-          {/* ── Desktop Table View ── */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className={isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}>
@@ -518,10 +583,7 @@ export default function Users() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className={tdText}>{c.email}</p>
-                      <p className={subText}>{c.phone || '—'}</p>
-                    </td>
+                    <td className="px-6 py-4"><p className={tdText}>{c.email}</p><p className={subText}>{c.phone || '—'}</p></td>
                     <td className="px-6 py-4"><p className={subText}>{c.hear_about || '—'}</p></td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${c.booking_count > 0 ? 'bg-green-500/20 text-green-600 dark:text-green-400' : 'bg-gray-500/20 text-gray-500'}`}>
@@ -536,74 +598,33 @@ export default function Users() {
                       <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                         <button onClick={e => { e.stopPropagation(); setSelectedUser({ ...c, type: 'customer' }); setIsEditModalOpen(true) }}
                           className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500'}`}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                         </button>
                         <button onClick={e => { e.stopPropagation(); deleteCustomer(c.id) }}
                           className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-red-400' : 'hover:bg-red-50 text-gray-500 hover:text-red-600'}`}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
                       </div>
                     </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={7} className="py-16 text-center">
-                    <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No customers match your search' : 'No customers yet'}</p>
-                  </td></tr>
+                  <tr><td colSpan={7} className="py-16 text-center"><p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No customers match your search' : 'No customers yet'}</p></td></tr>
                 )}
               </tbody>
             </table>
           </div>
-          <div className="px-4 pb-4">
-            <Pagination total={filteredCustomers.length} page={customerPage} setPage={setCustomerPage} />
-          </div>
+          <div className="px-4 pb-4"><Pagination total={filteredCustomers.length} page={customerPage} setPage={setCustomerPage} /></div>
         </div>
       )}
 
       {/* ── ADMINS ── */}
       {activeTab === 'admins' && (
         <div className={`${card} overflow-hidden`}>
-          {/* ── Mobile Card View ── */}
-          <div className="md:hidden">
-            {pagedAdmins.length > 0 ? (
-              <div className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-100'}`}>
-                {pagedAdmins.map(a => (
-                  <div key={a.id} className={`p-4 transition-colors ${isDarkMode ? 'active:bg-slate-800' : 'active:bg-gray-50'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isDarkMode ? 'bg-purple-900/60 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
-                        {`${a.first_name?.charAt(0) || ''}${a.last_name?.charAt(0) || ''}`.toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{a.first_name} {a.last_name}</p>
-                          <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full flex-shrink-0">Admin</span>
-                        </div>
-                        <p className={`text-xs truncate mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{a.email}</p>
-                        <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{a.phone || 'No phone'} • Joined {formatDate(a.created_at)}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-12 text-center">
-                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No admins match your search' : 'No admins found'}</p>
-              </div>
-            )}
-          </div>
-
-          {/* ── Desktop Table View ── */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className={isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}>
                 <tr>
-                  <th className={th}>Admin</th>
-                  <th className={th}>Email</th>
-                  <th className={th}>Phone</th>
-                  <th className={th}>Joined</th>
+                  <th className={th}>Admin</th><th className={th}>Email</th><th className={th}>Phone</th><th className={th}>Joined</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
@@ -611,7 +632,7 @@ export default function Users() {
                   <tr key={a.id} className={isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-50'}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isDarkMode ? 'bg-purple-900 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${isDarkMode ? 'bg-purple-900 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
                           {`${a.first_name?.charAt(0) || ''}${a.last_name?.charAt(0) || ''}`.toUpperCase()}
                         </div>
                         <div>
@@ -625,30 +646,23 @@ export default function Users() {
                     <td className="px-6 py-4"><p className={subText}>{formatDate(a.created_at)}</p></td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={4} className="py-16 text-center">
-                    <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No admins match your search' : 'No admins found'}</p>
-                  </td></tr>
+                  <tr><td colSpan={4} className="py-16 text-center"><p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>No admins found</p></td></tr>
                 )}
               </tbody>
             </table>
           </div>
-          <div className="px-4 pb-4">
-            <Pagination total={filteredAdmins.length} page={adminPage} setPage={setAdminPage} />
-          </div>
+          <div className="px-4 pb-4"><Pagination total={filteredAdmins.length} page={adminPage} setPage={setAdminPage} /></div>
         </div>
       )}
 
-      {/* ── PROVIDERS LIST ── */}
+      {/* ── PROVIDERS ── */}
       {activeTab === 'providers' && (
         <div className={`${card} overflow-hidden`}>
-
-          {/* ── Mobile Card View ── */}
           <div className="md:hidden">
             {pagedProviders.length > 0 ? (
               <div className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-100'}`}>
                 {pagedProviders.map(p => (
-                  <div key={p.id} className={`p-4 cursor-pointer transition-colors ${isDarkMode ? 'active:bg-slate-800' : 'active:bg-gray-50'}`}
-                    onClick={() => loadProviderDetails(p)}>
+                  <div key={p.id} className={`p-4 cursor-pointer transition-colors ${isDarkMode ? 'active:bg-slate-800' : 'active:bg-gray-50'}`} onClick={() => loadProviderDetails(p)}>
                     <div className="flex items-start gap-3">
                       <div className={`w-11 h-11 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0 ${isDarkMode ? 'bg-teal-900/60 text-teal-300' : 'bg-teal-100 text-teal-700'}`}>
                         {p.name?.charAt(0) || '?'}
@@ -659,52 +673,31 @@ export default function Users() {
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium border flex-shrink-0 ml-2 ${getStatusColor(p.status)}`}>{p.status}</span>
                         </div>
                         <p className={`text-xs truncate mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{p.email}</p>
-                        <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{p.city || 'No city'} • ⭐ {formatRating(p.rating)} • {p.total_jobs || 0} jobs</p>
-                        <div className="mt-2 flex gap-2" onClick={e => e.stopPropagation()}>
-                          <select value={p.status}
-                            onChange={e => updateProviderStatus(p.id, e.target.value, p.name)}
-                            className={`flex-1 px-2 py-1.5 rounded-lg text-xs border ${isDarkMode ? 'bg-slate-800 text-white border-slate-700' : 'bg-gray-50 text-gray-900 border-gray-200'} focus:outline-none`}>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="suspended">Suspended</option>
-                            <option value="pending">Pending</option>
-                            <option value="rejected">Rejected</option>
-                          </select>
-                          <button onClick={e => { e.stopPropagation(); loadProviderDetails(p) }}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-teal-500 text-white hover:bg-teal-600 transition">
-                            Details
-                          </button>
-                        </div>
+                        <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
+                          {p.city || 'No city'} · ⭐ {formatRating(p.avg_rating || p.rating)} · {p.total_jobs || 0} jobs
+                        </p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="py-12 text-center">
-                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No providers match your search' : 'No providers found'}</p>
-              </div>
+              <div className="py-12 text-center"><p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>No providers found</p></div>
             )}
           </div>
 
-          {/* ── Desktop Table View ── */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className={isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}>
                 <tr>
-                  <th className={th}>Provider</th>
-                  <th className={th}>Contact</th>
-                  <th className={th}>Specialty</th>
-                  <th className={th}>Rating</th>
-                  <th className={th}>Jobs</th>
-                  <th className={th}>Status</th>
+                  <th className={th}>Provider</th><th className={th}>Contact</th><th className={th}>Specialty</th>
+                  <th className={th}>Rating</th><th className={th}>Jobs</th><th className={th}>Status</th>
                   <th className={`px-6 py-4 text-right text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>Actions</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-100'}`}>
                 {pagedProviders.length > 0 ? pagedProviders.map(p => (
-                  <tr key={p.id} className={`cursor-pointer transition-colors ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-50'}`}
-                    onClick={() => loadProviderDetails(p)}>
+                  <tr key={p.id} className={`cursor-pointer transition-colors ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-50'}`} onClick={() => loadProviderDetails(p)}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isDarkMode ? 'bg-teal-900 text-teal-300' : 'bg-teal-100 text-teal-700'}`}>
@@ -716,29 +709,25 @@ export default function Users() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className={tdText}>{p.email}</p>
-                      <p className={subText}>{p.phone || '—'}</p>
-                    </td>
+                    <td className="px-6 py-4"><p className={tdText}>{p.email}</p><p className={subText}>{p.phone || '—'}</p></td>
                     <td className="px-6 py-4"><p className={subText}>{p.specialty || '—'}</p></td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1">
                         <svg className="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
-                        <span className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>{formatRating(p.rating)}</span>
+                        {/* ✅ FIX: show avg_rating not rating */}
+                        <span className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>{formatRating(p.avg_rating || p.rating)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4"><span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{p.total_jobs || 0}</span></td>
                     <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
-                      <select value={p.status}
-                        onChange={e => updateProviderStatus(p.id, e.target.value, p.name)}
+                      <select value={p.status} onChange={e => updateProviderStatus(p.id, e.target.value, p.name)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer ${p.status === 'active' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30' :
-                            p.status === 'suspended' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30' :
-                              p.status === 'inactive' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30' :
-                              
-                                isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-gray-100 text-gray-700 border-gray-200'
-                          } focus:outline-none focus:ring-2 focus:ring-teal-500`}>
+                          p.status === 'suspended' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30' :
+                          p.status === 'inactive' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30' :
+                          isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-gray-100 text-gray-700 border-gray-200'
+                        } focus:outline-none focus:ring-2 focus:ring-teal-500`}>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
                         <option value="suspended">Suspended</option>
@@ -748,24 +737,19 @@ export default function Users() {
                     </td>
                     <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
                       <div className="flex justify-end">
-                        <button onClick={() => loadProviderDetails(p)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:opacity-90 transition">
+                        <button onClick={() => loadProviderDetails(p)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:opacity-90 transition">
                           View Details
                         </button>
                       </div>
                     </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={7} className="py-16 text-center">
-                    <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{searchTerm ? 'No providers match your search' : 'No providers found'}</p>
-                  </td></tr>
+                  <tr><td colSpan={7} className="py-16 text-center"><p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>No providers found</p></td></tr>
                 )}
               </tbody>
             </table>
           </div>
-          <div className="px-4 pb-4">
-            <Pagination total={filteredProviders.length} page={providerPage} setPage={setProviderPage} />
-          </div>
+          <div className="px-4 pb-4"><Pagination total={filteredProviders.length} page={providerPage} setPage={setProviderPage} /></div>
         </div>
       )}
 
@@ -788,19 +772,54 @@ export default function Users() {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => setIsProviderDetailsOpen(false)} className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={openEditProvider} className="px-3 py-1 rounded-lg text-xs font-medium bg-blue-500 text-white hover:opacity-90 transition">Edit</button>
+                  <button onClick={() => deleteProvider(selectedProvider.id)} className="px-3 py-1 rounded-lg text-xs font-medium bg-red-500 text-white hover:opacity-90 transition">Delete</button>
+                  <button onClick={() => setIsProviderDetailsOpen(false)} className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
               </div>
             </div>
 
             <div className="p-6">
-              {loadingBookings ? (
-                <div className="flex justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent" />
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {[
+                  { label: 'Email', value: selectedProvider.email || '—' },
+                  { label: 'Phone', value: selectedProvider.phone || '—' },
+                  { label: 'Specialty', value: selectedProvider.specialty || '—' },
+                  { label: 'City', value: selectedProvider.city || '—' }
+                ].map(item => (
+                  <div key={item.label} className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
+                    <p className={subText}>{item.label}</p>
+                    <p className={`text-sm font-medium mt-0.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{item.value}</p>
+                  </div>
+                ))}
+                {selectedProvider.bio && (
+                  <div className={`col-span-2 p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
+                    <p className={subText}>Bio</p>
+                    <p className={`text-sm font-medium mt-0.5 ${isDarkMode ? 'text-white' : 'text-gray-900'} whitespace-pre-wrap break-words`}>{selectedProvider.bio}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
+                  <p className={subText}>Available Balance</p>
+                  <p className={`text-sm font-medium mt-0.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>${(parseFloat(selectedProvider.available_balance) || 0).toFixed(2)}</p>
                 </div>
+                <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
+                  <p className={subText}>Pending Balance</p>
+                  <p className={`text-sm font-medium mt-0.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>${(parseFloat(selectedProvider.pending_balance) || 0).toFixed(2)}</p>
+                </div>
+                <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
+                  <p className={subText}>Lifetime Earnings</p>
+                  <p className={`text-sm font-medium mt-0.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>${(parseFloat(selectedProvider.total_earnings) || 0).toFixed(2)}</p>
+                </div>
+              </div>
+
+              {loadingBookings ? (
+                <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent" /></div>
               ) : (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -816,6 +835,7 @@ export default function Users() {
                       </div>
                     ))}
                   </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
                       <p className={subText}>Total Earnings</p>
@@ -830,7 +850,7 @@ export default function Users() {
                       <div className="flex items-center gap-2 mt-1">
                         <p className="text-2xl font-bold text-yellow-500">{formatRating(providerStats.avgRating)}</p>
                         <div className="flex items-center gap-0.5">
-                          {[1, 2, 3, 4, 5].map(star => (
+                          {[1,2,3,4,5].map(star => (
                             <svg key={star} className={`w-4 h-4 ${star <= getRatingValue(providerStats.avgRating) ? 'text-yellow-400' : isDarkMode ? 'text-slate-600' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
@@ -839,12 +859,13 @@ export default function Users() {
                       </div>
                     </div>
                   </div>
+
                   {providerStats.topServices.length > 0 && (
                     <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
                       <p className={`font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Top Services</p>
                       <div className="space-y-2">
-                        {providerStats.topServices.map((service, index) => (
-                          <div key={index} className="flex items-center justify-between">
+                        {providerStats.topServices.map((service, i) => (
+                          <div key={i} className="flex items-center justify-between">
                             <span className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>{service.name}</span>
                             <span className="text-sm font-medium text-teal-500">{service.count} jobs</span>
                           </div>
@@ -852,12 +873,13 @@ export default function Users() {
                       </div>
                     </div>
                   )}
+
                   {providerStats.monthlyEarnings.length > 0 && (
                     <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
                       <p className={`font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Monthly Earnings (Last 6 Months)</p>
                       <div className="space-y-2">
-                        {providerStats.monthlyEarnings.map((month, index) => (
-                          <div key={index} className="flex items-center gap-3">
+                        {providerStats.monthlyEarnings.map((month, i) => (
+                          <div key={i} className="flex items-center gap-3">
                             <span className={`text-xs w-12 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{month.month}</span>
                             <div className="flex-1 h-6 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                               <div className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full"
@@ -869,6 +891,7 @@ export default function Users() {
                       </div>
                     </div>
                   )}
+
                   <div className={`border-t pt-5 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
                     <h5 className={`font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Job History ({providerJobs.length})</h5>
                     {providerJobs.length > 0 ? (
@@ -889,19 +912,12 @@ export default function Users() {
                             {providerJobs.map(job => (
                               <tr key={job.id}>
                                 <td className="px-4 py-3 font-mono text-xs">{job.booking_number}</td>
-                                <td className="px-4 py-3">
-                                  <p className="font-medium">{job.service_name}</p>
-                                  <p className={`text-xs ${subText}`}>{job.category_name || '—'}</p>
-                                </td>
+                                <td className="px-4 py-3"><p className="font-medium">{job.service_name}</p><p className={`text-xs ${subText}`}>{job.category_name || '—'}</p></td>
                                 <td className="px-4 py-3">{job.customer_first_name} {job.customer_last_name}</td>
                                 <td className="px-4 py-3 text-xs">{formatDateTime(job.job_date)}</td>
-                                <td className="px-4 py-3">
-                                  <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(job.status)}`}>{job.status?.replace('_', ' ')}</span>
-                                </td>
+                                <td className="px-4 py-3"><span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(job.status)}`}>{job.status?.replace('_', ' ')}</span></td>
                                 <td className="px-4 py-3 text-right font-medium">${calculateTotal(job)}</td>
-                                <td className="px-4 py-3 text-right font-medium text-green-600">
-                                  ${(parseFloat(job.final_provider_amount) || parseFloat(job.provider_amount) || 0).toFixed(2)}
-                                </td>
+                                <td className="px-4 py-3 text-right font-medium text-green-600">${(parseFloat(job.final_provider_amount) || parseFloat(job.provider_amount) || 0).toFixed(2)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -917,7 +933,7 @@ export default function Users() {
 
             <div className={`p-5 border-t flex justify-end gap-3 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
               <select value={selectedProvider.status}
-                onChange={e => { updateProviderStatus(selectedProvider.id, e.target.value); setSelectedProvider({ ...selectedProvider, status: e.target.value }) }}
+                onChange={e => { updateProviderStatus(selectedProvider.id, e.target.value, selectedProvider.name); setSelectedProvider({ ...selectedProvider, status: e.target.value }) }}
                 className={`px-3 py-2 rounded-lg text-sm border ${isDarkMode ? 'bg-slate-800 text-white border-slate-700' : 'bg-gray-50 text-gray-900 border-gray-200'} focus:outline-none focus:ring-2 focus:ring-teal-500`}>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -941,9 +957,7 @@ export default function Users() {
               <div className="flex items-center justify-between">
                 <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Customer Details</h3>
                 <button onClick={() => setIsModalOpen(false)} className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
             </div>
@@ -994,9 +1008,7 @@ export default function Users() {
                             <td className="px-4 py-3">{b.service_name}</td>
                             <td className="px-4 py-3">{b.provider_name || '—'}</td>
                             <td className="px-4 py-3 text-xs">{formatDate(b.job_date)}</td>
-                            <td className="px-4 py-3">
-                              <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(b.status)}`}>{b.status?.replace('_', ' ')}</span>
-                            </td>
+                            <td className="px-4 py-3"><span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(b.status)}`}>{b.status?.replace('_', ' ')}</span></td>
                             <td className="px-4 py-3 text-right font-medium">${calculateTotal(b)}</td>
                           </tr>
                         ))}
@@ -1009,14 +1021,8 @@ export default function Users() {
               </div>
             </div>
             <div className={`p-5 border-t flex justify-end gap-3 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-              <button onClick={() => { setIsModalOpen(false); setIsEditModalOpen(true) }}
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium hover:opacity-90">
-                Edit Customer
-              </button>
-              <button onClick={() => setIsModalOpen(false)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                Close
-              </button>
+              <button onClick={() => { setIsModalOpen(false); setIsEditModalOpen(true) }} className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium hover:opacity-90">Edit Customer</button>
+              <button onClick={() => setIsModalOpen(false)} className={`px-4 py-2 rounded-lg text-sm font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Close</button>
             </div>
           </div>
         </div>
@@ -1031,9 +1037,7 @@ export default function Users() {
               <div className="flex items-center justify-between">
                 <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Edit Customer</h3>
                 <button onClick={() => setIsEditModalOpen(false)} className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
             </div>
@@ -1045,119 +1049,82 @@ export default function Users() {
                   { label: 'Phone', key: 'phone', type: 'tel', required: false },
                 ].map(field => (
                   <div key={field.key}>
-                    <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>
-                      {field.label} {field.required && <span className="text-red-500">*</span>}
-                    </label>
+                    <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>{field.label} {field.required && <span className="text-red-500">*</span>}</label>
                     <input type={field.type} required={field.required} value={selectedUser[field.key] || ''}
                       onChange={e => setSelectedUser({ ...selectedUser, [field.key]: e.target.value })}
-                      className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                    />
+                      className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`} />
                   </div>
                 ))}
                 <div>
                   <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Email</label>
                   <input type="email" value={selectedUser.email || ''} disabled
-                    className={`w-full px-4 py-2.5 rounded-lg border text-sm cursor-not-allowed ${isDarkMode ? 'bg-slate-800/50 border-slate-700 text-slate-500' : 'bg-gray-100 border-gray-200 text-gray-400'}`}
-                  />
+                    className={`w-full px-4 py-2.5 rounded-lg border text-sm cursor-not-allowed ${isDarkMode ? 'bg-slate-800/50 border-slate-700 text-slate-500' : 'bg-gray-100 border-gray-200 text-gray-400'}`} />
                   <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-600' : 'text-gray-400'}`}>Email cannot be changed</p>
                 </div>
                 <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input type="checkbox"
-                    checked={selectedUser.receive_offers === 1 || selectedUser.receive_offers === true}
+                  <input type="checkbox" checked={selectedUser.receive_offers === 1 || selectedUser.receive_offers === true}
                     onChange={e => setSelectedUser({ ...selectedUser, receive_offers: e.target.checked })}
-                    className="w-4 h-4 text-teal-600 rounded border-gray-300"
-                  />
+                    className="w-4 h-4 text-teal-600 rounded border-gray-300" />
                   <span className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>Subscribed to newsletter</span>
                 </label>
               </div>
               <div className={`p-5 border-t flex justify-end gap-3 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-                <button type="button" onClick={() => setIsEditModalOpen(false)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                  Cancel
-                </button>
-                <button type="submit"
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium hover:opacity-90">
-                  Save Changes
-                </button>
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className={`px-4 py-2 rounded-lg text-sm font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium hover:opacity-90">Save Changes</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* ── CREATE USER MODAL ── */}
-      {isCreateModalOpen && (
+      {/* ── EDIT PROVIDER MODAL ── */}
+      {isEditProviderOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsEditProviderOpen(false)} />
           <div className={`relative rounded-2xl shadow-2xl w-full max-w-md ${isDarkMode ? 'bg-slate-900' : 'bg-white'}`}>
             <div className={`p-6 border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
               <div className="flex items-center justify-between">
-                <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Create New User</h3>
-                <button onClick={() => setIsCreateModalOpen(false)} className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Edit Provider</h3>
+                <button onClick={() => setIsEditProviderOpen(false)} className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
             </div>
-            <form onSubmit={handleCreateUser}>
-              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>First Name <span className="text-red-500">*</span></label>
-                    <input type="text" required value={newUser.first_name}
-                      onChange={e => setNewUser({ ...newUser, first_name: e.target.value })}
-                      className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                    />
+            <form onSubmit={updateProvider}>
+              <div className="p-6 space-y-4">
+                {[
+                  { label: 'Name', key: 'name', type: 'text', required: true },
+                  { label: 'Phone', key: 'phone', type: 'tel', required: false },
+                  { label: 'Specialty', key: 'specialty', type: 'text', required: false },
+                  { label: 'City', key: 'city', type: 'text', required: false }
+                ].map(field => (
+                  <div key={field.key}>
+                    <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>{field.label}{field.required && <span className="text-red-500">*</span>}</label>
+                    <input type={field.type} required={field.required} value={providerForm[field.key] || ''}
+                      onChange={e => setProviderForm({ ...providerForm, [field.key]: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`} />
                   </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Last Name <span className="text-red-500">*</span></label>
-                    <input type="text" required value={newUser.last_name}
-                      onChange={e => setNewUser({ ...newUser, last_name: e.target.value })}
-                      className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                    />
-                  </div>
+                ))}
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Email</label>
+                  <input type="email" value={providerForm.email || ''} disabled
+                    className={`w-full px-4 py-2.5 rounded-lg border text-sm cursor-not-allowed ${isDarkMode ? 'bg-slate-800/50 border-slate-700 text-slate-500' : 'bg-gray-100 border-gray-200 text-gray-400'}`} />
                 </div>
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Email <span className="text-red-500">*</span></label>
-                  <input type="email" required value={newUser.email}
-                    onChange={e => setNewUser({ ...newUser, email: e.target.value })}
-                    className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Phone</label>
-                  <input type="tel" value={newUser.phone}
-                    onChange={e => setNewUser({ ...newUser, phone: e.target.value })}
-                    className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Password <span className="text-red-500">*</span></label>
-                  <input type="password" required value={newUser.password}
-                    onChange={e => setNewUser({ ...newUser, password: e.target.value })}
-                    className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Role</label>
-                  <select value={newUser.role}
-                    onChange={e => setNewUser({ ...newUser, role: e.target.value })}
+                  <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>Status</label>
+                  <select value={providerForm.status} onChange={e => setProviderForm({ ...providerForm, status: e.target.value })}
                     className={`w-full px-4 py-2.5 rounded-lg border text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}>
-                    <option value="user">Customer</option>
-                    <option value="provider">Provider</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="pending">Pending</option>
+                    <option value="rejected">Rejected</option>
                   </select>
                 </div>
               </div>
               <div className={`p-5 border-t flex justify-end gap-3 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-                <button type="button" onClick={() => setIsCreateModalOpen(false)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={loading}
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium hover:opacity-90 disabled:opacity-50">
-                  {loading ? 'Creating...' : 'Create User'}
-                </button>
+                <button type="button" onClick={() => setIsEditProviderOpen(false)} className={`px-4 py-2 rounded-lg text-sm font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium hover:opacity-90">Save Changes</button>
               </div>
             </form>
           </div>

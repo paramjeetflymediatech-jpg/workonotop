@@ -24,6 +24,18 @@ export async function POST(request) {
     const body = await request.json();
     const { bio, specialty, experience_years, city, location, service_areas, skills } = body;
 
+    // server-side validation
+    if (!bio || typeof bio !== 'string' || !bio.trim()) {
+      return NextResponse.json({ success: false, message: 'Bio is required' }, { status: 400 });
+    }
+    const trimmed = bio.trim();
+    if (trimmed.length < 50) {
+      return NextResponse.json({ success: false, message: 'Bio must be at least 50 characters' }, { status: 400 });
+    }
+    if (trimmed.length > 500) {
+      return NextResponse.json({ success: false, message: 'Bio cannot exceed 500 characters' }, { status: 400 });
+    }
+
     await execute(
       `UPDATE service_providers 
        SET bio = ?, specialty = ?, experience_years = ?,

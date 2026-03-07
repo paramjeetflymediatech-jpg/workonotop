@@ -14,6 +14,11 @@ export default function ProviderJobDetail({ params }) {
 
   const [job, setJob] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // helper flags (avoid showing 0/1 from tinyint)
+  const hasParking = job ? !!job.parking_access : false
+  const hasElevator = job ? !!job.elevator_access : false
+  const hasPets = job ? !!job.has_pets : false
   const [photos, setPhotos] = useState({ before: [], after: [] })
   const [toast, setToast] = useState(null)
   const [mounted, setMounted] = useState(false)
@@ -452,11 +457,11 @@ function JobDetailsCard({ job, showContact, setShowContact }) {
             {job.address_line2 && <p className="text-gray-500">{job.address_line2}</p>}
             {job.city && <p className="text-gray-500">{job.city} {job.postal_code}</p>}
           </div>
-          {(job.parking_access || job.elevator_access || job.has_pets) && (
+          {(hasParking || hasElevator || hasPets) && (
             <div className="flex flex-wrap gap-2">
-              {job.parking_access && <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-200">Parking</span>}
-              {job.elevator_access && <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-200">Elevator</span>}
-              {job.has_pets && <span className="text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full border border-amber-200">Pets on site</span>}
+              {hasParking && <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-200">Parking</span>}
+              {hasElevator && <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-200">Elevator</span>}
+              {hasPets && <span className="text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full border border-amber-200">Pets on site</span>}
             </div>
           )}
           {job.job_description && (
