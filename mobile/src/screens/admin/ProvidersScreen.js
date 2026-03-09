@@ -10,7 +10,9 @@ import {
     RefreshControl,
     StatusBar,
     Alert,
-    Image
+    Image,
+    Modal,
+    ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
@@ -21,6 +23,8 @@ const ProvidersScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedProvider, setSelectedProvider] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
 
     const statuses = [
         { id: 'all', label: 'All' },
@@ -90,11 +94,19 @@ const ProvidersScreen = ({ navigation }) => {
         }
     };
 
+    const openProviderDetails = (provider) => {
+        setSelectedProvider(provider);
+        setModalVisible(true);
+    };
+
     const renderProviderItem = ({ item }) => {
         const statusStyle = getStatusStyle(item.status);
 
         return (
-            <View style={styles.card}>
+            <TouchableOpacity
+                style={styles.card}
+                onPress={() => openProviderDetails(item)}
+            >
                 <View style={styles.cardHeader}>
                     <View style={styles.providerAvatar}>
                         <Text style={styles.avatarText}>{item.name?.[0]}</Text>
@@ -125,7 +137,7 @@ const ProvidersScreen = ({ navigation }) => {
                     </View>
                 </View>
 
-                {item.status === 'pending' || (item.status === 'inactive' && item.onboarding_completed === 1) ? (
+                {(item.status === 'pending' || (item.status === 'inactive' && item.onboarding_completed === 1)) && (
                     <View style={styles.actionRow}>
                         <TouchableOpacity
                             style={[styles.actionBtn, styles.approveBtn]}
@@ -142,13 +154,16 @@ const ProvidersScreen = ({ navigation }) => {
                             <Text style={styles.actionBtnText}>Reject</Text>
                         </TouchableOpacity>
                     </View>
-                ) : (
-                    <TouchableOpacity style={styles.viewProfileBtn}>
-                        <Text style={styles.viewProfileText}>View Full Profile</Text>
-                        <Ionicons name="chevron-forward" size={moderateScale(16)} color="#64748b" />
-                    </TouchableOpacity>
                 )}
-            </View>
+
+                <TouchableOpacity
+                    style={styles.viewProfileBtn}
+                    onPress={() => openProviderDetails(item)}
+                >
+                    <Text style={styles.viewProfileText}>View Full Profile</Text>
+                    <Ionicons name="chevron-forward" size={moderateScale(16)} color="#64748b" />
+                </TouchableOpacity>
+            </TouchableOpacity>
         );
     };
 
@@ -212,6 +227,126 @@ const ProvidersScreen = ({ navigation }) => {
                     }
                 />
             )}
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Provider Details</Text>
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Ionicons name="close" size={moderateScale(24)} color="#0f172a" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedProvider && (
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View style={styles.modalProfileHeader}>
+                                    <View style={styles.largeAvatar}>
+                                        <Text style={styles.largeAvatarText}>
+                                            {selectedProvider.name?.[0]}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.modalUserName}>
+                                        {selectedProvider.name}
+                                    </Text>
+                                    <View style={[styles.statusBadge, { backgroundColor: getStatusStyle(selectedProvider.status).bg, marginTop: verticalScale(10) }]}>
+                                        <Text style={[styles.statusText, { color: getStatusStyle(selectedProvider.status).text }]}>
+                                            {selectedProvider.status}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.detailSection}>
+                                    <Text style={styles.sectionTitle}>Contact Information</Text>
+                                    <View style={styles.detailItem}>
+                                        <Ionicons name="mail-outline" size={moderateScale(20)} color="#115e59" />
+                                        <View style={styles.detailInfo}>
+                                            <Text style={styles.detailLabel}>Email Address</Text>
+                                            <Text style={styles.detailValue}>{selectedProvider.email}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.detailItem}>
+                                        <Ionicons name="call-outline" size={moderateScale(20)} color="#115e59" />
+                                        <View style={styles.detailInfo}>
+                                            <Text style={styles.detailLabel}>Phone Number</Text>
+                                            <Text style={styles.detailValue}>{selectedProvider.phone || 'Not provided'}</Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View style={styles.detailSection}>
+                                    <Text style={styles.sectionTitle}>Performance & Stats</Text>
+                                    <View style={styles.statsRowModal}>
+                                        <View style={styles.statBox}>
+                                            <Text style={styles.statNumber}>{parseFloat(selectedProvider.avg_rating || 0).toFixed(1)}</Text>
+                                            <Text style={styles.statLabel}>Rating ⭐</Text>
+                                        </View>
+                                        <View style={styles.statBox}>
+                                            <Text style={styles.statNumber}>{selectedProvider.total_reviews || 0}</Text>
+                                            <Text style={styles.statLabel}>Total Jobs</Text>
+                                        </View>
+                                        <View style={styles.statBox}>
+                                            <Text style={styles.statNumber}>{selectedProvider.approved_docs || 0}</Text>
+                                            <Text style={styles.statLabel}>Docs ✅</Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View style={styles.detailSection}>
+                                    <Text style={styles.sectionTitle}>Business Info</Text>
+                                    <View style={styles.detailItem}>
+                                        <Ionicons name="business-outline" size={moderateScale(20)} color="#115e59" />
+                                        <View style={styles.detailInfo}>
+                                            <Text style={styles.detailLabel}>Account Type</Text>
+                                            <Text style={styles.detailValue}>Service Provider</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.detailItem}>
+                                        <Ionicons name="calendar-outline" size={moderateScale(20)} color="#115e59" />
+                                        <View style={styles.detailInfo}>
+                                            <Text style={styles.detailLabel}>Provider Since</Text>
+                                            <Text style={styles.detailValue}>
+                                                {new Date(selectedProvider.created_at).toLocaleDateString()}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                {selectedProvider.status === 'pending' && (
+                                    <View style={styles.modalActionRow}>
+                                        <TouchableOpacity
+                                            style={[styles.modalActionBtn, styles.approveBtn]}
+                                            onPress={() => {
+                                                setModalVisible(false);
+                                                handleAction(selectedProvider.id, 'approve');
+                                            }}
+                                        >
+                                            <Text style={styles.actionBtnText}>Approve Provider</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.modalActionBtn, styles.rejectBtn]}
+                                            onPress={() => {
+                                                setModalVisible(false);
+                                                handleAction(selectedProvider.id, 'reject');
+                                            }}
+                                        >
+                                            <Text style={styles.actionBtnText}>Reject</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                            </ScrollView>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -316,6 +451,122 @@ const styles = StyleSheet.create({
     viewProfileText: { fontSize: moderateScale(14), color: '#64748b', fontWeight: '600', marginRight: scale(4) },
     emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: verticalScale(100) },
     emptyText: { fontSize: moderateScale(16), color: '#94a3b8', marginTop: verticalScale(20) },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: moderateScale(25),
+        borderTopRightRadius: moderateScale(25),
+        paddingHorizontal: scale(20),
+        paddingBottom: verticalScale(40),
+        maxHeight: '90%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: verticalScale(20),
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    modalTitle: {
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
+    closeButton: {
+        padding: scale(5),
+    },
+    modalProfileHeader: {
+        alignItems: 'center',
+        marginVertical: verticalScale(25),
+    },
+    largeAvatar: {
+        width: moderateScale(90),
+        height: moderateScale(90),
+        borderRadius: moderateScale(45),
+        backgroundColor: '#f0fdfa',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#115e59',
+        marginBottom: verticalScale(15),
+    },
+    largeAvatarText: {
+        color: '#115e59',
+        fontSize: moderateScale(32),
+        fontWeight: 'bold',
+    },
+    modalUserName: {
+        fontSize: moderateScale(22),
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
+    detailSection: {
+        marginBottom: verticalScale(25),
+    },
+    sectionTitle: {
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        marginBottom: verticalScale(15),
+        letterSpacing: 1,
+    },
+    detailItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        padding: scale(15),
+        borderRadius: moderateScale(15),
+        marginBottom: verticalScale(10),
+    },
+    detailInfo: {
+        marginLeft: scale(15),
+    },
+    detailLabel: {
+        fontSize: moderateScale(11),
+        color: '#64748b',
+        marginBottom: verticalScale(2),
+    },
+    detailValue: {
+        fontSize: moderateScale(15),
+        fontWeight: '600',
+        color: '#0f172a',
+    },
+    statsRowModal: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    statBox: {
+        flex: 1,
+        backgroundColor: '#f8fafc',
+        padding: scale(15),
+        borderRadius: moderateScale(15),
+        alignItems: 'center',
+        marginHorizontal: scale(5),
+    },
+    statNumber: {
+        fontSize: moderateScale(20),
+        fontWeight: 'bold',
+        color: '#115e59',
+        marginBottom: verticalScale(5),
+    },
+    modalActionRow: {
+        flexDirection: 'row',
+        gap: scale(10),
+        marginTop: verticalScale(10),
+    },
+    modalActionBtn: {
+        flex: 1,
+        height: verticalScale(50),
+        borderRadius: moderateScale(12),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 });
 
 export default ProvidersScreen;
