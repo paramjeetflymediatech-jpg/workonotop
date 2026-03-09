@@ -1,6 +1,21 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // import { NextResponse } from 'next/server'
 // import { query } from '@/lib/db'
 // import bcrypt from 'bcryptjs'
@@ -13,7 +28,7 @@
 //     const { 
 //       first_name, 
 //       last_name, 
-//       email, 
+//       email,   
 //       phone, 
 //       password,
 //       hear_about,
@@ -75,12 +90,25 @@
 //       { expiresIn: '7d' }
 //     )
 
-//     return NextResponse.json({
+//     // Create response with cookie
+//     const response = NextResponse.json({
 //       success: true,
 //       message: 'Account created successfully',
-//       token,
 //       user: newUser[0]
 //     })
+
+//     // Set HTTP-only cookie
+//     response.cookies.set({
+//       name: 'customer_token',
+//       value: token,
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === 'production',
+//       sameSite: 'lax',
+//       path: '/',
+//       maxAge: 7 * 24 * 60 * 60 // 7 days
+//     })
+
+//     return response
 
 //   } catch (error) {
 //     console.error('Signup error:', error)
@@ -90,11 +118,6 @@
 //     )
 //   }
 // }
-
-
-
-
-
 
 
 
@@ -150,6 +173,17 @@ export async function POST(request) {
         { success: false, message: 'Email already registered' },
         { status: 400 }
       )
+    }
+
+    // Check if phone already exists
+    if (phone) {
+      const existingPhone = await query('SELECT id FROM users WHERE phone = ?', [phone])
+      if (existingPhone.length > 0) {
+        return NextResponse.json(
+          { success: false, message: 'Phone number already registered' },
+          { status: 400 }
+        )
+      }
     }
 
     // Hash password

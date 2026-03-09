@@ -558,6 +558,111 @@ export async function POST(request) {
   }
 }
 
+// export async function PUT(request) {
+//   let connection
+//   try {
+//     const { searchParams } = new URL(request.url)
+//     const id = searchParams.get('id')
+//     const body = await request.json()
+//     const { status, provider_id, notes, job_time_slot, commission_percent, payment_status } = body
+
+//     if (!id) return NextResponse.json({ success: false, message: 'Booking ID required' }, { status: 400 })
+
+//     connection = await getConnection()
+//     await connection.query('START TRANSACTION')
+
+//     try {
+//       const [[current]] = await connection.execute(
+//         'SELECT service_price, additional_price, commission_percent, provider_amount FROM bookings WHERE id = ?',
+//         [id]
+//       )
+
+//       if (!current) {
+//         await connection.query('ROLLBACK')
+//         return NextResponse.json({ success: false, message: 'Booking not found' }, { status: 404 })
+//       }
+
+//       const updateFields = []
+//       const updateParams = []
+
+//       if (commission_percent !== undefined) {
+//         const providerAmt = calcProviderAmount(current.service_price, commission_percent)
+//         updateFields.push('commission_percent = ?', 'provider_amount = ?')
+//         updateParams.push(commission_percent, providerAmt)
+//       }
+//       if (status) { updateFields.push('status = ?'); updateParams.push(status) }
+//       if (provider_id) {
+//         updateFields.push('provider_id = ?')
+//         updateParams.push(provider_id)
+//         if (!status) { updateFields.push('status = ?'); updateParams.push('matching') }
+//       }
+//       if (job_time_slot) {
+//         const slots = Array.isArray(job_time_slot) ? job_time_slot : [job_time_slot]
+//         updateFields.push('job_time_slot = ?')
+//         updateParams.push(slots.join(','))
+//       }
+//       if (payment_status) {
+//         updateFields.push('payment_status = ?')
+//         updateParams.push(payment_status)
+//       }
+
+//       if (updateFields.length === 0) {
+//         await connection.query('ROLLBACK')
+//         return NextResponse.json({ success: false, message: 'No fields to update' }, { status: 400 })
+//       }
+
+//       updateParams.push(id)
+//       await connection.execute(
+//         `UPDATE bookings SET ${updateFields.join(', ')}, updated_at = NOW() WHERE id = ?`,
+//         updateParams
+//       )
+
+//       if (status) {
+//         await connection.execute(
+//           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, ?, ?)`,
+//           [id, status, notes || `Status updated to ${status}`]
+//         )
+//       }
+//       if (provider_id && !status) {
+//         await connection.execute(
+//           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'matching', 'Provider assigned')`,
+//           [id]
+//         )
+//       }
+//       if (commission_percent !== undefined) {
+//         const providerAmt = calcProviderAmount(current.service_price, commission_percent)
+//         const commissionAmount = parseFloat(current.service_price) * (parseFloat(commission_percent) / 100)
+//         await connection.execute(
+//           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, ?, ?)`,
+//           [id, status || 'pending',
+//             `Commission set to ${commission_percent}% (Admin: $${commissionAmount.toFixed(2)}, Provider: $${providerAmt.toFixed(2)})`]
+//         )
+//       }
+
+//       await connection.query('COMMIT')
+//       return NextResponse.json({ success: true, message: 'Booking updated successfully' })
+//     } catch (err) {
+//       await connection.query('ROLLBACK')
+//       throw err
+//     }
+//   } catch (error) {
+//     console.error('Error updating booking:', error)
+//     return NextResponse.json({ success: false, message: 'Failed to update booking: ' + error.message }, { status: 500 })
+//   } finally {
+//     if (connection) connection.release()
+//   }
+// }
+
+
+
+
+
+
+// In your PUT handler in /app/api/bookings/route.js
+// ONLY the PUT function changes — replace it with this:
+
+
+
 export async function PUT(request) {
   let connection
   try {
@@ -573,7 +678,7 @@ export async function PUT(request) {
 
     try {
       const [[current]] = await connection.execute(
-        'SELECT service_price, additional_price, commission_percent, provider_amount FROM bookings WHERE id = ?',
+        'SELECT service_price, additional_price, commission_percent, provider_amount, provider_id as current_provider FROM bookings WHERE id = ?',
         [id]
       )
 
@@ -590,17 +695,54 @@ export async function PUT(request) {
         updateFields.push('commission_percent = ?', 'provider_amount = ?')
         updateParams.push(commission_percent, providerAmt)
       }
-      if (status) { updateFields.push('status = ?'); updateParams.push(status) }
-      if (provider_id) {
-        updateFields.push('provider_id = ?')
-        updateParams.push(provider_id)
-        if (!status) { updateFields.push('status = ?'); updateParams.push('matching') }
+
+      if (status) {
+        updateFields.push('status = ?')
+        updateParams.push(status)
       }
+
+      // ── provider_id: supports null (restart) and a real id (assign/reassign) ──
+      if ('provider_id' in body) {
+        if (body.provider_id === null) {
+          // RESTART: clear provider, reset job fields, reset photos & timer
+          updateFields.push(
+            'provider_id = NULL',
+            'previous_provider_id = ?',
+            'accepted_at = NULL',
+            'start_time = NULL',
+            'end_time = NULL',
+            'job_timer_status = ?',
+            'before_photos_uploaded = 0',
+            'after_photos_uploaded = 0',
+            'actual_duration_minutes = NULL',
+            'overtime_minutes = 0',
+            'overtime_earnings = 0',
+            'final_provider_amount = NULL'
+          )
+          updateParams.push(current.current_provider || null, 'not_started')
+
+          // Delete old photos and time logs so provider starts fresh
+          await connection.execute(`DELETE FROM job_photos WHERE booking_id = ?`, [id])
+          await connection.execute(`DELETE FROM booking_time_logs WHERE booking_id = ?`, [id])
+
+        } else {
+          // ASSIGN / REASSIGN: set new provider
+          updateFields.push('provider_id = ?')
+          updateParams.push(body.provider_id)
+          // If no explicit status passed, set to matching
+          if (!status) {
+            updateFields.push('status = ?')
+            updateParams.push('matching')
+          }
+        }
+      }
+
       if (job_time_slot) {
         const slots = Array.isArray(job_time_slot) ? job_time_slot : [job_time_slot]
         updateFields.push('job_time_slot = ?')
         updateParams.push(slots.join(','))
       }
+
       if (payment_status) {
         updateFields.push('payment_status = ?')
         updateParams.push(payment_status)
@@ -617,24 +759,22 @@ export async function PUT(request) {
         updateParams
       )
 
-      if (status) {
+      // ── Status history ──────────────────────────────────────────────────────
+      const finalStatus = status || ('provider_id' in body && body.provider_id === null ? 'pending' : 'matching')
+
+      if (status || 'provider_id' in body) {
         await connection.execute(
           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, ?, ?)`,
-          [id, status, notes || `Status updated to ${status}`]
+          [id, finalStatus, notes || `Status updated to ${finalStatus}`]
         )
       }
-      if (provider_id && !status) {
-        await connection.execute(
-          `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'matching', 'Provider assigned')`,
-          [id]
-        )
-      }
+
       if (commission_percent !== undefined) {
         const providerAmt = calcProviderAmount(current.service_price, commission_percent)
         const commissionAmount = parseFloat(current.service_price) * (parseFloat(commission_percent) / 100)
         await connection.execute(
           `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, ?, ?)`,
-          [id, status || 'pending',
+          [id, finalStatus,
             `Commission set to ${commission_percent}% (Admin: $${commissionAmount.toFixed(2)}, Provider: $${providerAmt.toFixed(2)})`]
         )
       }
@@ -652,6 +792,17 @@ export async function PUT(request) {
     if (connection) connection.release()
   }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 export async function DELETE(request) {
   try {
