@@ -9,20 +9,47 @@ import {
     ActivityIndicator,
     RefreshControl,
     StatusBar,
-    Image,
-    TextInput
+    TextInput,
+    Modal,
+    ScrollView,
+    Switch,
+    Alert,
+    KeyboardAvoidingView,
+    Platform
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { api } from '../../utils/api';
 
 const ServicesListScreen = ({ navigation }) => {
-    const [services, setServices] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [services, setServices] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [newService, setNewService] = useState({
+        category_id: '',
+        name: '',
+        slug: '',
+        short_description: '',
+        description: '',
+        base_price: '',
+        additional_price: '',
+        duration_minutes: '',
+        image_url: '',
+        use_cases: '',
+        is_homepage: false,
+        is_trending: false,
+        is_popular: false,
+        is_active: true
+    });
 
     const fetchServices = async () => {
+        setLoading(true);
         try {
             const res = await api.get('/api/services');
             if (res.success) {
@@ -36,13 +63,107 @@ const ServicesListScreen = ({ navigation }) => {
         }
     };
 
+    const fetchCategories = async () => {
+        try {
+            const res = await api.get('/api/categories');
+            if (res.success) {
+                setCategories(res.data || []);
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        }
+    };
+
     useEffect(() => {
         fetchServices();
+        fetchCategories();
     }, []);
 
     const onRefresh = () => {
         setRefreshing(true);
         fetchServices();
+        fetchCategories();
+    };
+
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to make this work!');
+            return;
+        }
+
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            const selectedImage = result.assets[0];
+            setImagePreview(selectedImage.uri);
+            handleImageUpload(selectedImage);
+        }
+    };
+
+    const handleImageUpload = async (imageFile) => {
+        setUploading(true);
+        const formData = new FormData();
+        const uriParts = imageFile.uri.split('.');
+        const fileType = uriParts[uriParts.length - 1];
+
+        formData.append('file', {
+            uri: imageFile.uri,
+            name: `photo.${fileType}`,
+            type: `image/${fileType}`,
+        });
+
+        try {
+            const res = await api.post('/api/upload', formData);
+            if (res.success) {
+                setNewService(prev => ({ ...prev, image_url: res.url }));
+            } else {
+                Alert.alert('Upload Failed', res.message || 'Could not upload image');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            Alert.alert('Error', 'Image upload failed');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleAddService = async () => {
+        if (!newService.category_id || !newService.name || !newService.slug || !newService.base_price) {
+            Alert.alert('Missing Fields', 'Please fill in all required fields marked with *');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const res = await api.post('/api/services', newService);
+            if (res.success) {
+                Alert.alert('Success', 'Service added successfully');
+                setIsAddModalOpen(false);
+                setNewService({
+                    category_id: '', name: '', slug: '', description: '', short_description: '',
+                    base_price: '', additional_price: '', duration_minutes: '', image_url: '',
+                    use_cases: '', is_homepage: false, is_trending: false, is_popular: false,
+                    is_active: true
+                });
+                setImagePreview(null);
+                fetchServices();
+            }
+        } catch (error) {
+            Alert.alert('Error', error.message || 'Failed to add service');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleNameChange = (name) => {
+        const slug = name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
+        setNewService(prev => ({ ...prev, name, slug }));
     };
 
     const formatCurrency = (amount) => {
@@ -100,9 +221,14 @@ const ServicesListScreen = ({ navigation }) => {
                     <Ionicons name="menu-outline" size={moderateScale(28)} color="#0f172a" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Services</Text>
-                <TouchableOpacity onPress={onRefresh}>
-                    <Ionicons name="refresh-outline" size={moderateScale(24)} color="#0f172a" />
-                </TouchableOpacity>
+                <View style={styles.headerActions}>
+                    <TouchableOpacity onPress={() => setIsAddModalOpen(true)} style={styles.headerBtn}>
+                        <Ionicons name="add-outline" size={moderateScale(28)} color="#0f172a" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={onRefresh}>
+                        <Ionicons name="refresh-outline" size={moderateScale(24)} color="#0f172a" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={styles.searchContainer}>
@@ -139,6 +265,189 @@ const ServicesListScreen = ({ navigation }) => {
                     }
                 />
             )}
+
+            <Modal
+                visible={isAddModalOpen}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setIsAddModalOpen(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={styles.modalContent}
+                    >
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Add New Service</Text>
+                            <TouchableOpacity onPress={() => setIsAddModalOpen(false)}>
+                                <Ionicons name="close" size={moderateScale(24)} color="#0f172a" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={styles.modalForm} showsVerticalScrollIndicator={false}>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Category *</Text>
+                                <View style={styles.pickerContainer}>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                        {categories.map(cat => (
+                                            <TouchableOpacity
+                                                key={cat.id}
+                                                style={[
+                                                    styles.catPickerItem,
+                                                    newService.category_id === cat.id && styles.catPickerItemActive
+                                                ]}
+                                                onPress={() => setNewService({ ...newService, category_id: cat.id })}
+                                            >
+                                                <Text style={[
+                                                    styles.catPickerText,
+                                                    newService.category_id === cat.id && styles.catPickerTextActive
+                                                ]}>{cat.name}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Service Name *</Text>
+                                <TextInput
+                                    style={styles.modalInput}
+                                    placeholder="e.g., Appliance Installation"
+                                    value={newService.name}
+                                    onChangeText={handleNameChange}
+                                />
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Slug *</Text>
+                                <TextInput
+                                    style={styles.modalInput}
+                                    placeholder="e.g., appliance-installation"
+                                    value={newService.slug}
+                                    onChangeText={(slug) => setNewService({ ...newService, slug })}
+                                />
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Short Description</Text>
+                                <TextInput
+                                    style={[styles.modalInput, styles.textArea]}
+                                    placeholder="Brief description"
+                                    multiline
+                                    numberOfLines={2}
+                                    value={newService.short_description}
+                                    onChangeText={(val) => setNewService({ ...newService, short_description: val })}
+                                />
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Full Description</Text>
+                                <TextInput
+                                    style={[styles.modalInput, styles.textArea]}
+                                    placeholder="Detailed description..."
+                                    multiline
+                                    numberOfLines={4}
+                                    value={newService.description}
+                                    onChangeText={(val) => setNewService({ ...newService, description: val })}
+                                />
+                            </View>
+
+                            <View style={styles.rowInputs}>
+                                <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+                                    <Text style={styles.inputLabel}>Base Price ($) *</Text>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        placeholder="0.00"
+                                        keyboardType="numeric"
+                                        value={String(newService.base_price)}
+                                        onChangeText={(val) => setNewService({ ...newService, base_price: val })}
+                                    />
+                                </View>
+                                <View style={[styles.inputGroup, { flex: 1 }]}>
+                                    <Text style={styles.inputLabel}>Additional Price ($)</Text>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        placeholder="0.00"
+                                        keyboardType="numeric"
+                                        value={String(newService.additional_price)}
+                                        onChangeText={(val) => setNewService({ ...newService, additional_price: val })}
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Duration (minutes)</Text>
+                                <TextInput
+                                    style={styles.modalInput}
+                                    placeholder="e.g., 120"
+                                    keyboardType="numeric"
+                                    value={String(newService.duration_minutes)}
+                                    onChangeText={(val) => setNewService({ ...newService, duration_minutes: val })}
+                                />
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Service Image</Text>
+                                <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+                                    {imagePreview ? (
+                                        <Image source={{ uri: imagePreview }} style={styles.previewImage} />
+                                    ) : (
+                                        <View style={styles.imagePickerPlaceholder}>
+                                            <Ionicons name="camera-outline" size={moderateScale(30)} color="#115e59" />
+                                            <Text style={styles.uploadText}>{uploading ? 'Uploading...' : 'Choose Image'}</Text>
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                                <Text style={styles.imageNote}>Max 10MB. JPG, PNG, GIF, WebP</Text>
+                            </View>
+
+                            <View style={styles.switchSection}>
+                                <View style={styles.switchRow}>
+                                    <Text style={styles.switchLabel}>Homepage</Text>
+                                    <Switch
+                                        value={newService.is_homepage}
+                                        onValueChange={(val) => setNewService({ ...newService, is_homepage: val })}
+                                        trackColor={{ false: '#e2e8f0', true: '#115e59' }}
+                                    />
+                                </View>
+                                <View style={styles.switchRow}>
+                                    <Text style={styles.switchLabel}>Trending</Text>
+                                    <Switch
+                                        value={newService.is_trending}
+                                        onValueChange={(val) => setNewService({ ...newService, is_trending: val })}
+                                        trackColor={{ false: '#e2e8f0', true: '#115e59' }}
+                                    />
+                                </View>
+                                <View style={styles.switchRow}>
+                                    <Text style={styles.switchLabel}>Popular</Text>
+                                    <Switch
+                                        value={newService.is_popular}
+                                        onValueChange={(val) => setNewService({ ...newService, is_popular: val })}
+                                        trackColor={{ false: '#e2e8f0', true: '#115e59' }}
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Customers use this service for</Text>
+                                <TextInput
+                                    style={[styles.modalInput, styles.textArea]}
+                                    placeholder="Dishwasher Repair, Washer Repair, Dryer Repair..."
+                                    multiline
+                                    numberOfLines={3}
+                                    value={newService.use_cases}
+                                    onChangeText={(val) => setNewService({ ...newService, use_cases: val })}
+                                />
+                                <Text style={styles.imageNote}>Separate with commas.</Text>
+                            </View>
+
+                            <TouchableOpacity style={styles.submitBtn} onPress={handleAddService}>
+                                <Text style={styles.submitBtnText}>Add Service</Text>
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </KeyboardAvoidingView>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -273,6 +582,148 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(16),
         color: '#94a3b8',
         marginTop: verticalScale(20),
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    headerBtn: {
+        marginRight: scale(15),
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: moderateScale(25),
+        borderTopRightRadius: moderateScale(25),
+        paddingHorizontal: scale(20),
+        maxHeight: '90%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: verticalScale(20),
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    modalTitle: {
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
+    modalForm: {
+        paddingVertical: verticalScale(20),
+    },
+    inputGroup: {
+        marginBottom: verticalScale(20),
+    },
+    inputLabel: {
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        color: '#64748b',
+        marginBottom: verticalScale(8),
+    },
+    modalInput: {
+        backgroundColor: '#f8fafc',
+        borderRadius: moderateScale(12),
+        paddingHorizontal: scale(15),
+        paddingVertical: verticalScale(12),
+        fontSize: moderateScale(15),
+        color: '#0f172a',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    textArea: {
+        textAlignVertical: 'top',
+        minHeight: verticalScale(80),
+    },
+    rowInputs: {
+        flexDirection: 'row',
+    },
+    pickerContainer: {
+        flexDirection: 'row',
+    },
+    catPickerItem: {
+        paddingHorizontal: scale(15),
+        paddingVertical: verticalScale(8),
+        borderRadius: moderateScale(20),
+        backgroundColor: '#f1f5f9',
+        marginRight: scale(10),
+    },
+    catPickerItemActive: {
+        backgroundColor: '#115e59',
+    },
+    catPickerText: {
+        fontSize: moderateScale(13),
+        color: '#64748b',
+        fontWeight: '600',
+    },
+    catPickerTextActive: {
+        color: '#fff',
+    },
+    imagePicker: {
+        height: verticalScale(150),
+        backgroundColor: '#f8fafc',
+        borderRadius: moderateScale(15),
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: '#115e59',
+        overflow: 'hidden',
+    },
+    imagePickerPlaceholder: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    uploadText: {
+        fontSize: moderateScale(14),
+        color: '#115e59',
+        fontWeight: '600',
+        marginTop: verticalScale(5),
+    },
+    previewImage: {
+        width: '100%',
+        height: '100%',
+    },
+    imageNote: {
+        fontSize: moderateScale(11),
+        color: '#94a3b8',
+        marginTop: verticalScale(5),
+    },
+    switchSection: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: verticalScale(20),
+        backgroundColor: '#f8fafc',
+        padding: scale(15),
+        borderRadius: moderateScale(12),
+    },
+    switchRow: {
+        alignItems: 'center',
+    },
+    switchLabel: {
+        fontSize: moderateScale(12),
+        color: '#64748b',
+        fontWeight: 'bold',
+        marginBottom: verticalScale(5),
+    },
+    submitBtn: {
+        backgroundColor: '#115e59',
+        height: verticalScale(55),
+        borderRadius: moderateScale(15),
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: verticalScale(10),
+        marginBottom: verticalScale(30),
+    },
+    submitBtnText: {
+        color: '#fff',
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
     },
 });
 

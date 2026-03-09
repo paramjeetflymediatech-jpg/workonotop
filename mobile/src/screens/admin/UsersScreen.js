@@ -9,7 +9,9 @@ import {
     ActivityIndicator,
     RefreshControl,
     StatusBar,
-    TextInput
+    TextInput,
+    Modal,
+    ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
@@ -20,6 +22,8 @@ const UsersScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
 
     const fetchUsers = async () => {
         try {
@@ -52,8 +56,16 @@ const UsersScreen = ({ navigation }) => {
         user.email?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const openUserDetails = (user) => {
+        setSelectedUser(user);
+        setModalVisible(true);
+    };
+
     const renderUserItem = ({ item }) => (
-        <TouchableOpacity style={styles.card}>
+        <TouchableOpacity
+            style={styles.card}
+            onPress={() => openUserDetails(item)}
+        >
             <View style={styles.cardHeader}>
                 <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
@@ -135,6 +147,88 @@ const UsersScreen = ({ navigation }) => {
                     }
                 />
             )}
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>User Details</Text>
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Ionicons name="close" size={moderateScale(24)} color="#0f172a" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedUser && (
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View style={styles.modalProfileHeader}>
+                                    <View style={styles.largeAvatar}>
+                                        <Text style={styles.largeAvatarText}>
+                                            {selectedUser.first_name?.[0]}{selectedUser.last_name?.[0]}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.modalUserName}>
+                                        {selectedUser.first_name} {selectedUser.last_name}
+                                    </Text>
+                                    <View style={styles.roleBadge}>
+                                        <Text style={styles.roleText}>Customer</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.detailSection}>
+                                    <Text style={styles.sectionTitle}>Contact Information</Text>
+                                    <View style={styles.detailItem}>
+                                        <Ionicons name="mail-outline" size={moderateScale(20)} color="#115e59" />
+                                        <View style={styles.detailInfo}>
+                                            <Text style={styles.detailLabel}>Email Address</Text>
+                                            <Text style={styles.detailValue}>{selectedUser.email}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.detailItem}>
+                                        <Ionicons name="call-outline" size={moderateScale(20)} color="#115e59" />
+                                        <View style={styles.detailInfo}>
+                                            <Text style={styles.detailLabel}>Phone Number</Text>
+                                            <Text style={styles.detailValue}>{selectedUser.phone || 'Not provided'}</Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View style={styles.detailSection}>
+                                    <Text style={styles.sectionTitle}>Platform Activity</Text>
+                                    <View style={styles.statsRow}>
+                                        <View style={styles.statBox}>
+                                            <Text style={styles.statNumber}>{selectedUser.booking_count || 0}</Text>
+                                            <Text style={styles.statLabel}>Total Jobs</Text>
+                                        </View>
+                                        <View style={styles.statBox}>
+                                            <Ionicons name="calendar-outline" size={moderateScale(24)} color="#115e59" />
+                                            <Text style={styles.statLabel}>Joined Date</Text>
+                                            <Text style={styles.statDate}>
+                                                {new Date(selectedUser.created_at).toLocaleDateString()}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View style={styles.detailSection}>
+                                    <Text style={styles.sectionTitle}>Account Status</Text>
+                                    <View style={styles.statusRow}>
+                                        <View style={[styles.statusIndicator, { backgroundColor: '#10b981' }]} />
+                                        <Text style={styles.statusText}>Active Account</Text>
+                                    </View>
+                                </View>
+                            </ScrollView>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -267,6 +361,153 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(16),
         color: '#94a3b8',
         marginTop: verticalScale(20),
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: moderateScale(25),
+        borderTopRightRadius: moderateScale(25),
+        paddingHorizontal: scale(20),
+        paddingBottom: verticalScale(40),
+        maxHeight: '90%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: verticalScale(20),
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    modalTitle: {
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
+    closeButton: {
+        padding: scale(5),
+    },
+    modalProfileHeader: {
+        alignItems: 'center',
+        marginVertical: verticalScale(25),
+    },
+    largeAvatar: {
+        width: moderateScale(90),
+        height: moderateScale(90),
+        borderRadius: moderateScale(45),
+        backgroundColor: '#f0fdfa',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#115e59',
+        marginBottom: verticalScale(15),
+    },
+    largeAvatarText: {
+        color: '#115e59',
+        fontSize: moderateScale(32),
+        fontWeight: 'bold',
+    },
+    modalUserName: {
+        fontSize: moderateScale(22),
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
+    roleBadge: {
+        backgroundColor: '#f1f5f9',
+        paddingHorizontal: scale(12),
+        paddingVertical: verticalScale(4),
+        borderRadius: moderateScale(15),
+        marginTop: verticalScale(8),
+    },
+    roleText: {
+        fontSize: moderateScale(12),
+        color: '#64748b',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    },
+    detailSection: {
+        marginBottom: verticalScale(25),
+    },
+    sectionTitle: {
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        marginBottom: verticalScale(15),
+        letterSpacing: 1,
+    },
+    detailItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        padding: scale(15),
+        borderRadius: moderateScale(15),
+        marginBottom: verticalScale(10),
+    },
+    detailInfo: {
+        marginLeft: scale(15),
+    },
+    detailLabel: {
+        fontSize: moderateScale(11),
+        color: '#64748b',
+        marginBottom: verticalScale(2),
+    },
+    detailValue: {
+        fontSize: moderateScale(15),
+        fontWeight: '600',
+        color: '#0f172a',
+    },
+    statsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    statBox: {
+        flex: 1,
+        backgroundColor: '#f8fafc',
+        padding: scale(20),
+        borderRadius: moderateScale(15),
+        alignItems: 'center',
+        marginHorizontal: scale(5),
+    },
+    statNumber: {
+        fontSize: moderateScale(24),
+        fontWeight: 'bold',
+        color: '#115e59',
+        marginBottom: verticalScale(5),
+    },
+    statLabel: {
+        fontSize: moderateScale(11),
+        color: '#64748b',
+        fontWeight: '600',
+        textTransform: 'uppercase',
+    },
+    statDate: {
+        fontSize: moderateScale(14),
+        fontWeight: '600',
+        color: '#0f172a',
+        marginTop: verticalScale(5),
+    },
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f0fdf4',
+        padding: scale(15),
+        borderRadius: moderateScale(15),
+    },
+    statusIndicator: {
+        width: moderateScale(10),
+        height: moderateScale(10),
+        borderRadius: moderateScale(5),
+        marginRight: scale(10),
+    },
+    statusText: {
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        color: '#065f46',
     },
 });
 
