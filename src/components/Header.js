@@ -117,20 +117,20 @@ export default function Header() {
                             </div>
                             <div><p className="font-semibold">Dashboard</p><p className="text-xs text-gray-400">Your overview</p></div>
                           </Link>
-                          <Link href="/profile" onClick={() => setUserMenuOpen(false)}
+                          {/* <Link href="/profile" onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition">
                             <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
                               <User className="h-4 w-4 text-green-600" />
                             </div>
                             <div><p className="font-semibold">My Profile</p><p className="text-xs text-gray-400">View & edit info</p></div>
-                          </Link>
-                          <Link href="/my-bookings" onClick={() => setUserMenuOpen(false)}
+                          </Link> */}
+                          {/* <Link href="/my-bookings" onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition">
                             <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
                               <BookOpen className="h-4 w-4 text-emerald-600" />
                             </div>
                             <div><p className="font-semibold">My Bookings</p><p className="text-xs text-gray-400">Track your jobs</p></div>
-                          </Link>
+                          </Link> */}
                         </div>
                         <div className="border-t border-gray-100 p-1.5">
                           <button onClick={() => { setUserMenuOpen(false); setShowLogoutConfirm(true); }}
@@ -252,14 +252,14 @@ export default function Header() {
                         className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition">
                         <Home className="h-4 w-4 flex-shrink-0" /> Dashboard
                       </Link>
-                      <Link href="/profile" onClick={() => setMobileMenuOpen(false)}
+                      {/* <Link href="/profile" onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition">
                         <User className="h-4 w-4 flex-shrink-0" /> My Profile
                       </Link>
                       <Link href="/my-bookings" onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition">
                         <BookOpen className="h-4 w-4 flex-shrink-0" /> My Bookings
-                      </Link>
+                      </Link> */}
                     </>
                   )}
                   <button onClick={() => { setMobileMenuOpen(false); setShowLogoutConfirm(true); }}
