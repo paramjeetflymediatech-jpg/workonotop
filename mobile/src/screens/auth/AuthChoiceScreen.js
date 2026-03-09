@@ -17,18 +17,22 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const AuthChoiceScreen = ({ navigation }) => {
+const AuthChoiceScreen = ({ navigation, route }) => {
+    const { initialState } = route.params || {};
     // 'initial' | 'login' | 'signup'
-    const [viewState, setViewState] = useState('initial');
+    const [viewState, setViewState] = useState(initialState || 'initial');
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
+        if (initialState) {
+            setViewState(initialState);
+        }
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 500,
             useNativeDriver: true,
         }).start();
-    }, []);
+    }, [initialState]);
 
     const changeView = (state) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -39,7 +43,7 @@ const AuthChoiceScreen = ({ navigation }) => {
         <View style={styles.buttonGroup}>
             <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={() => changeView('login')}
+                onPress={() => navigation.navigate('Login')}
             >
                 <Text style={styles.primaryButtonText}>Login</Text>
             </TouchableOpacity>
@@ -53,27 +57,7 @@ const AuthChoiceScreen = ({ navigation }) => {
         </View>
     );
 
-    const renderLoginOptions = () => (
-        <View style={styles.buttonGroup}>
-            <TouchableOpacity
-                style={styles.roleButton}
-                onPress={() => navigation.navigate('Login', { type: 'customer' })}
-            >
-                <Text style={styles.roleButtonText}>Customer Login</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={styles.roleButton}
-                onPress={() => navigation.navigate('Login', { type: 'pro' })}
-            >
-                <Text style={styles.roleButtonText}>Pro Login</Text>
-            </TouchableOpacity>
-
-            {/* <TouchableOpacity onPress={() => changeView('initial')}>
-                <Text style={styles.backText}>← Back</Text>
-            </TouchableOpacity> */}
-        </View>
-    );
+    const renderLoginOptions = () => null; // Removed as it is now unified
 
     const renderSignUpOptions = () => (
         <View style={styles.buttonGroup}>
@@ -101,13 +85,7 @@ const AuthChoiceScreen = ({ navigation }) => {
         <SafeAreaView style={styles.container}>
             {/* Top Header */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    activeOpacity={1}
-                    onLongPress={() => navigation.navigate('Login', { type: 'admin' })}
-                    delayLongPress={5000}
-                >
-                    <Text style={styles.brandText}>WorkOn<Text style={styles.brandBold}>Top</Text></Text>
-                </TouchableOpacity>
+                <Text style={styles.brandText}>WorkOn<Text style={styles.brandBold}>Top</Text></Text>
             </View>
 
             {/* Center Illustration - New "Worker in Action" Image */}

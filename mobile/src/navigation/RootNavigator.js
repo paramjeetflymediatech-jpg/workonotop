@@ -9,9 +9,12 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import ProviderSignupScreen from '../screens/auth/ProviderSignupScreen';
 import CustomerSignupScreen from '../screens/auth/CustomerSignupScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import OtpVerificationScreen from '../screens/auth/OtpVerificationScreen';
+import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 
 // Main
 import BottomTabNavigator from './BottomTabNavigator';
+import AdminDrawerNavigator from './AdminDrawerNavigator';
 import DetailsScreen from '../screens/DetailsScreen';
 
 // Contractor Onboarding
@@ -77,7 +80,11 @@ const RootNavigator = () => {
                         </>
                     ) : (
                         <>
-                            <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
+                            {user.role === 'admin' ? (
+                                <Stack.Screen name="Main" component={AdminDrawerNavigator} options={{ headerShown: false }} />
+                            ) : (
+                                <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
+                            )}
                             <Stack.Screen name="Details" component={DetailsScreen} />
 
                             {/* Contractor Onboarding (Still registered for deep links or manual re-entry if allowed) */}
@@ -104,6 +111,8 @@ const RootNavigator = () => {
                     <Stack.Screen name="ProviderSignup" component={ProviderSignupScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="CustomerSignup" component={CustomerSignupScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
                 </>
             )}
         </Stack.Navigator>

@@ -10,12 +10,14 @@ import {
     ActivityIndicator,
     RefreshControl
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../utils/responsive';
 
 const ProviderDashboard = ({ navigation }) => {
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [dashboardData, setDashboardData] = useState({
@@ -177,6 +179,8 @@ const ProviderDashboard = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
+                {/* Bottom Space for Floating Tab Bar */}
+                <View style={{ height: verticalScale(100) + insets.bottom }} />
             </ScrollView>
         </SafeAreaView>
     );
@@ -206,7 +210,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: verticalScale(30),
+        marginBottom: verticalScale(25),
     },
     welcomeText: {
         fontSize: moderateScale(14),
@@ -214,7 +218,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     nameText: {
-        fontSize: moderateScale(28),
+        fontSize: moderateScale(24),
         fontWeight: 'bold',
         color: '#0f172a',
     },
@@ -242,7 +246,7 @@ const styles = StyleSheet.create({
     },
     onboardingBanner: {
         backgroundColor: '#fffbeb',
-        borderRadius: moderateScale(16),
+        borderRadius: moderateScale(20),
         padding: moderateScale(16),
         flexDirection: 'row',
         alignItems: 'center',
@@ -250,6 +254,11 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(20),
         borderWidth: 1,
         borderColor: '#fde68a',
+        elevation: 2,
+        shadowColor: '#f59e0b',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
     },
     onboardingLeft: {
         flexDirection: 'row',
@@ -267,40 +276,51 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(2),
     },
     onboardingSubtitle: {
-        fontSize: moderateScale(12),
+        fontSize: moderateScale(11),
         color: '#b45309',
         flexShrink: 1,
+        lineHeight: moderateScale(15),
     },
     onboardingArrow: {
-        fontSize: moderateScale(24),
+        fontSize: moderateScale(22),
         color: '#f59e0b',
         fontWeight: 'bold',
+        marginLeft: scale(8),
     },
     statsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: verticalScale(24),
+        marginBottom: verticalScale(20),
     },
     statBox: {
         width: (SCREEN_WIDTH - moderateScale(56)) / 2,
-        padding: moderateScale(20),
-        borderRadius: moderateScale(20),
+        padding: moderateScale(18),
+        borderRadius: moderateScale(18),
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.5)',
     },
     statValue: {
-        fontSize: moderateScale(24),
+        fontSize: moderateScale(22),
         fontWeight: 'bold',
     },
     statLabel: {
-        fontSize: moderateScale(12),
+        fontSize: moderateScale(11),
         marginTop: verticalScale(4),
-        fontWeight: '500',
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     jobsCard: {
-        backgroundColor: '#1e293b',
-        borderRadius: moderateScale(24),
-        padding: moderateScale(24),
-        marginBottom: verticalScale(30),
+        backgroundColor: '#115e59',
+        borderRadius: moderateScale(20),
+        padding: moderateScale(20),
+        marginBottom: verticalScale(25),
+        elevation: 8,
+        shadowColor: '#115e59',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
     },
     jobsTitle: {
         color: '#fff',
@@ -308,103 +328,114 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     jobsSubtitle: {
-        color: '#94a3b8',
-        fontSize: moderateScale(14),
-        marginTop: verticalScale(6),
-        marginBottom: verticalScale(20),
+        color: '#ccfbf1',
+        fontSize: moderateScale(13),
+        marginTop: verticalScale(4),
+        marginBottom: verticalScale(15),
+        lineHeight: moderateScale(18),
     },
     viewJobsButton: {
-        backgroundColor: '#14b8a6',
-        padding: moderateScale(14),
+        backgroundColor: '#fff',
+        padding: moderateScale(12),
         borderRadius: moderateScale(12),
         alignItems: 'center',
     },
     viewJobsText: {
-        color: '#fff',
+        color: '#115e59',
         fontWeight: 'bold',
-        fontSize: moderateScale(16),
+        fontSize: moderateScale(15),
     },
     sectionTitle: {
-        fontSize: moderateScale(20),
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
         color: '#0f172a',
-        marginBottom: verticalScale(16),
+        marginBottom: verticalScale(12),
     },
     scheduleItem: {
         backgroundColor: '#fff',
-        borderRadius: moderateScale(20),
-        padding: moderateScale(16),
+        borderRadius: moderateScale(16),
+        padding: moderateScale(14),
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: verticalScale(16),
-        elevation: 2,
+        marginBottom: verticalScale(12),
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+        elevation: 3,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
     },
     dateBox: {
-        backgroundColor: '#f1f5f9',
-        padding: moderateScale(10),
+        backgroundColor: '#f8fafc',
+        padding: moderateScale(8),
         borderRadius: moderateScale(12),
         alignItems: 'center',
-        width: moderateScale(60),
+        width: moderateScale(55),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
     },
     dateDay: {
-        fontSize: moderateScale(10),
+        fontSize: moderateScale(9),
         color: '#64748b',
-        fontWeight: 'bold',
+        fontWeight: '800',
+        textTransform: 'uppercase',
     },
     dateNum: {
-        fontSize: moderateScale(20),
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
         color: '#0f172a',
     },
     jobDetails: {
         flex: 1,
-        marginLeft: moderateScale(16),
+        marginLeft: moderateScale(14),
     },
     jobType: {
-        fontSize: moderateScale(16),
+        fontSize: moderateScale(15),
         fontWeight: 'bold',
         color: '#0f172a',
     },
     jobTime: {
-        fontSize: moderateScale(12),
-        color: '#14b8a6',
+        fontSize: moderateScale(11),
+        color: '#115e59',
         marginTop: verticalScale(2),
-        fontWeight: '600',
-        textTransform: 'capitalize',
+        fontWeight: '700',
+        textTransform: 'uppercase',
     },
     jobLocation: {
-        fontSize: moderateScale(12),
+        fontSize: moderateScale(11),
         color: '#64748b',
-        marginTop: verticalScale(4),
+        marginTop: verticalScale(2),
+    },
+    detailsIcon: {
+        padding: moderateScale(5),
     },
     toolsGrid: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: verticalScale(10),
+        marginTop: verticalScale(8),
     },
     toolCard: {
         backgroundColor: '#fff',
         width: (SCREEN_WIDTH - moderateScale(56)) / 2,
-        padding: moderateScale(20),
-        borderRadius: moderateScale(20),
+        padding: moderateScale(18),
+        borderRadius: moderateScale(18),
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
         elevation: 2,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
     },
     toolIcon: {
-        fontSize: moderateScale(28),
-        marginBottom: verticalScale(10),
+        fontSize: moderateScale(24),
+        marginBottom: verticalScale(8),
     },
     toolTitle: {
-        fontSize: moderateScale(14),
-        fontWeight: '600',
+        fontSize: moderateScale(13),
+        fontWeight: 'bold',
         color: '#475569',
     },
     emptyContainer: {
@@ -413,6 +444,9 @@ const styles = StyleSheet.create({
         borderRadius: moderateScale(20),
         alignItems: 'center',
         marginBottom: verticalScale(20),
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+        borderStyle: 'dashed',
     },
     emptyText: {
         color: '#94a3b8',
