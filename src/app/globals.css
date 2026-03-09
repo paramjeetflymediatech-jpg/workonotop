@@ -4,7 +4,9 @@
 
 @layer base {
   * {
-    @apply border-gray-200 dark:border-slate-800;
+    @apply border-gray-200 dark:border-slate-800; 
+
+
   }
 
   body {
@@ -110,9 +112,4 @@
 
 .animate-slide-down {
   animation: slide-down 0.3s ease-out;
-}
-
-div,
-p {
-  word-break: break-word!important;
 }
