@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     Text,
@@ -10,7 +10,9 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Image
+    Image,
+    Modal,
+    Animated
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
@@ -23,17 +25,52 @@ const ForgotPasswordScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [error, setError] = useState(null);
+    const modalFade = useRef(new Animated.Value(0)).current;
+    const modalScale = useRef(new Animated.Value(0.8)).current;
+
+    const showError = (msg) => {
+        setError(msg);
+        Animated.parallel([
+            Animated.timing(modalFade, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.spring(modalScale, {
+                toValue: 1,
+                friction: 8,
+                tension: 40,
+                useNativeDriver: true,
+            })
+        ]).start();
+    };
+
+    const hideError = () => {
+        Animated.parallel([
+            Animated.timing(modalFade, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+            Animated.timing(modalScale, {
+                toValue: 0.8,
+                duration: 200,
+                useNativeDriver: true,
+            })
+        ]).start(() => setError(null));
+    };
 
     const handleReset = async () => {
         if (!email) {
-            Alert.alert('Error', 'Please enter your email address.');
+            showError('Please enter your email address.');
             return;
         }
 
         // Basic email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            Alert.alert('Error', 'Please enter a valid email address.');
+            showError('Please enter a valid email address.');
             return;
         }
 
@@ -45,16 +82,17 @@ const ForgotPasswordScreen = ({ navigation }) => {
                 ? '/api/provider/forgot-password'
                 : '/api/auth/forgot-password';
 
-            const res = await api.post(endpoint, { email });
+            const res = await api.post(endpoint, { email, source: 'mobile' });
 
             if (res.success) {
-                setIsSubmitted(true);
+                // Navigate to OTP verification screen
+                navigation.navigate('OtpVerification', { email, type });
             } else {
-                Alert.alert('Error', res.message || 'Failed to send reset link.');
+                showError(res.message || 'Failed to send verification code.');
             }
         } catch (err) {
             console.error('Forgot password error:', err);
-            Alert.alert('Error', 'Something went wrong. Please try again later.');
+            showError('Something went wrong. Please try again later.');
         } finally {
             setLoading(false);
         }
@@ -63,8 +101,41 @@ const ForgotPasswordScreen = ({ navigation }) => {
     const isSmallDevice = SCREEN_HEIGHT < 750;
     const isVerySmallDevice = SCREEN_HEIGHT < 650;
 
+    const renderErrorModal = () => (
+        <Modal
+            transparent
+            visible={!!error}
+            animationType="none"
+            onRequestClose={hideError}
+        >
+            <View style={styles.modalOverlay}>
+                <Animated.View
+                    style={[
+                        styles.modalContent,
+                        {
+                            opacity: modalFade,
+                            transform: [{ scale: modalScale }]
+                        }
+                    ]}
+                >
+                    <View style={styles.errorIconContainer}>
+                        <View style={styles.errorCircle}>
+                            <Text style={styles.errorExclamation}>!</Text>
+                        </View>
+                    </View>
+                    <Text style={styles.modalTitle}>Uh oh!</Text>
+                    <Text style={styles.modalMessage}>{error}</Text>
+                    <TouchableOpacity style={styles.modalButton} onPress={hideError}>
+                        <Text style={styles.modalButtonText}>Try Again</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            </View>
+        </Modal>
+    );
+
     return (
         <SafeAreaView style={styles.container}>
+            {renderErrorModal()}
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
@@ -120,7 +191,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                                 {loading ? (
                                     <ActivityIndicator color="#fff" />
                                 ) : (
-                                    <Text style={styles.buttonText}>Send Reset Link</Text>
+                                    <Text style={styles.buttonText}>Send Verification Code</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -264,6 +335,69 @@ const styles = StyleSheet.create({
     },
     successSection: {
         marginTop: verticalScale(10),
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: scale(40),
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderRadius: moderateScale(24),
+        padding: moderateScale(30),
+        width: '100%',
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    errorIconContainer: {
+        marginBottom: verticalScale(20),
+    },
+    errorCircle: {
+        width: moderateScale(60),
+        height: moderateScale(60),
+        borderRadius: moderateScale(30),
+        backgroundColor: '#fee2e2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#ef4444',
+    },
+    errorExclamation: {
+        fontSize: moderateScale(36),
+        fontWeight: 'bold',
+        color: '#ef4444',
+    },
+    modalTitle: {
+        fontSize: moderateScale(22),
+        fontWeight: 'bold',
+        color: '#0f172a',
+        marginBottom: verticalScale(10),
+    },
+    modalMessage: {
+        fontSize: moderateScale(16),
+        color: '#64748b',
+        textAlign: 'center',
+        lineHeight: moderateScale(24),
+        marginBottom: verticalScale(24),
+    },
+    modalButton: {
+        backgroundColor: '#115e59',
+        paddingVertical: verticalScale(14),
+        paddingHorizontal: scale(40),
+        borderRadius: moderateScale(12),
+        width: '100%',
+        alignItems: 'center',
+    },
+    modalButtonText: {
+        color: '#fff',
+        fontSize: moderateScale(16),
+        fontWeight: 'bold',
     }
 });
 

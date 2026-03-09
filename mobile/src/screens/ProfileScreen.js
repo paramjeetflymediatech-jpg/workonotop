@@ -1,12 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
+import { verticalScale } from '../utils/responsive';
 
 const ProfileScreen = () => {
     const { user, logout } = useAuth();
+    const insets = useSafeAreaInsets();
 
     return (
-        <View style={styles.container}>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
                 <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
@@ -23,7 +26,10 @@ const ProfileScreen = () => {
             <TouchableOpacity style={styles.logoutButton} onPress={logout}>
                 <Text style={styles.logoutText}>Log Out</Text>
             </TouchableOpacity>
-        </View>
+
+            {/* Bottom Space for Floating Tab Bar */}
+            <View style={{ height: verticalScale(120) + insets.bottom }} />
+        </ScrollView>
     );
 };
 

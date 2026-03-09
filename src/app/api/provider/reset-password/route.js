@@ -6,14 +6,21 @@ import bcrypt from 'bcryptjs'
 export async function POST(request) {
   let connection
   try {
-    const { token, password } = await request.json()
+    const { token, email, otp, password } = await request.json()
 
-    console.log('🔍 Reset password attempt with token:', token ? 'Token provided' : 'No token')
+    console.log('🔍 Reset password attempt:', token ? 'via Link' : `for ${email} via OTP`)
 
-    if (!token || !password) {
+    if (!password) {
       return NextResponse.json({
         success: false,
-        message: 'Token and password required'
+        message: 'Password required'
+      }, { status: 400 })
+    }
+
+    if (!token && (!email || !otp)) {
+      return NextResponse.json({
+        success: false,
+        message: 'Valid token or Email/OTP required'
       }, { status: 400 })
     }
 
@@ -28,21 +35,36 @@ export async function POST(request) {
     await connection.query('START TRANSACTION')
 
     try {
-      // Find provider with valid token
-      const [providers] = await connection.execute(
-        `SELECT id, email FROM service_providers 
-         WHERE reset_token = ? 
-         AND reset_token_expiry > NOW()`,
-        [token]
-      )
+      // Find provider with valid token/OTP
+      let providers = [];
+      if (token) {
+        // Website flow (Token)
+        const [result] = await connection.execute(
+          `SELECT id, email FROM service_providers 
+           WHERE reset_token = ? 
+           AND reset_token_expiry > NOW()`,
+          [token]
+        )
+        providers = result;
+      } else {
+        // Mobile flow (Email + OTP)
+        const [result] = await connection.execute(
+          `SELECT id, email FROM service_providers 
+           WHERE email = ?
+           AND reset_token = ? 
+           AND reset_token_expiry > NOW()`,
+          [email, otp]
+        )
+        providers = result;
+      }
 
-      console.log('📊 Providers found with token:', providers.length)
+      console.log('📊 Providers found:', providers.length)
 
       if (providers.length === 0) {
         await connection.query('ROLLBACK')
         return NextResponse.json({
           success: false,
-          message: 'Invalid or expired token'
+          message: 'Invalid or expired reset credentials'
         }, { status: 400 })
       }
 

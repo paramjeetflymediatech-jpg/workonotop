@@ -1,11 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import CustomHeader from '../components/CustomHeader';
+import CustomTabBar from '../components/CustomTabBar';
 
 // Screens
-import AdminDashboard from '../screens/AdminDashboard';
 import CustomerDashboard from '../screens/CustomerDashboard';
 import ProviderDashboard from '../screens/ProviderDashboard';
 import ServicesScreen from '../screens/ServicesScreen';
@@ -16,63 +15,46 @@ const Tab = createBottomTabNavigator();
 const BottomTabNavigator = () => {
     const { user } = useAuth();
 
-    // Determine which dashboard to show based on user role
-    const getDashboardComponent = () => {
-        switch (user?.role) {
-            case 'admin':
-                return AdminDashboard;
-            case 'provider':
-                return ProviderDashboard;
-            default:
-                return CustomerDashboard;
-        }
-    };
-
     return (
         <Tab.Navigator
-            screenOptions={({ route }) => ({
-                header: ({ options }) => <CustomHeader title={options.title || route.name} />,
-                tabBarIcon: ({ focused, color, size }) => {
-                    let iconName;
-
-                    if (route.name === 'Dashboard') {
-                        iconName = focused ? 'grid' : 'grid-outline';
-                    } else if (route.name === 'Services') {
-                        iconName = focused ? 'construct' : 'construct-outline';
-                    } else if (route.name === 'Profile') {
-                        iconName = focused ? 'person' : 'person-outline';
-                    }
-
-                    return <Ionicons name={iconName} size={size} color={color} />;
-                },
-                tabBarActiveTintColor: '#14b8a6',
-                tabBarInactiveTintColor: 'gray',
-                tabBarStyle: {
-                    paddingBottom: 5,
-                    height: 60,
-                    borderTopWidth: 1,
-                    borderTopColor: '#e5e7eb',
-                },
-            })}
+            tabBar={(props) => <CustomTabBar {...props} role={user?.role} />}
+            screenOptions={{
+                headerShown: false, // Changed: Let screens handle their own headers or use the drawer header
+            }}
         >
+            {/* Common first tab, but component changes by role */}
             <Tab.Screen
                 name="Dashboard"
-                component={getDashboardComponent()}
+                component={
+                    user?.role === 'provider' ? ProviderDashboard :
+                        CustomerDashboard
+                }
                 options={{
-                    title: user?.role === 'admin' ? 'Admin Panel' :
-                        user?.role === 'provider' ? 'Pro Dashboard' :
-                            'WorkOnTop'
+                    title: user?.role === 'provider' ? 'Pro Dashboard' :
+                        'WorkOnTop'
                 }}
             />
-            <Tab.Screen
-                name="Services"
-                component={ServicesScreen}
-                options={{ title: 'Our Services' }}
-            />
+
+            {/* Role-specific middle tab */}
+            {user?.role === 'provider' ? (
+                <Tab.Screen
+                    name="Jobs"
+                    component={ServicesScreen} // Placeholder for Provider Jobs
+                    options={{ title: 'My Jobs' }}
+                />
+            ) : (
+                <Tab.Screen
+                    name="Services"
+                    component={ServicesScreen}
+                    options={{ title: 'Services' }}
+                />
+            )}
+
+            {/* Common last tab */}
             <Tab.Screen
                 name="Profile"
                 component={ProfileScreen}
-                options={{ title: 'My Profile' }}
+                options={{ title: 'Profile' }}
             />
         </Tab.Navigator>
     );

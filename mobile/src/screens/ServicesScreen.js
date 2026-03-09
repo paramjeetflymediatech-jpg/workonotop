@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scale, verticalScale, moderateScale } from '../utils/responsive';
 import { apiService } from '../services/api';
 
 const ServicesScreen = () => {
+    const insets = useSafeAreaInsets();
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -69,6 +72,9 @@ const ServicesScreen = () => {
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={
                     <Text style={styles.emptyText}>No services found</Text>
+                }
+                ListFooterComponent={
+                    <View style={{ height: verticalScale(100) + insets.bottom }} />
                 }
             />
         </View>

@@ -8,14 +8,17 @@ import {
     SafeAreaView,
     StatusBar,
     ActivityIndicator,
-    RefreshControl
+    RefreshControl,
+    Dimensions
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../utils/responsive';
 
 const CustomerDashboard = ({ navigation }) => {
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [categories, setCategories] = useState([]);
@@ -142,7 +145,6 @@ const CustomerDashboard = ({ navigation }) => {
                         ))
                     )}
                 </View>
-
                 <View style={styles.recentBookings}>
                     <Text style={styles.sectionTitle}>My Active Bookings</Text>
                     {bookings.length > 0 ? (
@@ -153,6 +155,7 @@ const CustomerDashboard = ({ navigation }) => {
                                     key={booking.id}
                                     style={styles.bookingCard}
                                     onPress={() => navigation.navigate('Details', { bookingId: booking.id })}
+                                    activeOpacity={0.7}
                                 >
                                     <View style={styles.bookingHeader}>
                                         <Text style={styles.bookingService}>{booking.service_name}</Text>
@@ -162,24 +165,29 @@ const CustomerDashboard = ({ navigation }) => {
                                             </Text>
                                         </View>
                                     </View>
-                                    <Text style={styles.bookingDate}>
-                                        📅 {new Date(booking.job_date).toLocaleDateString()}
-                                    </Text>
-                                    <Text style={styles.bookingProvider}>
-                                        👤 {booking.provider_name || 'Finding Provider...'}
-                                    </Text>
+                                    <View style={styles.bookingFooter}>
+                                        <Text style={styles.bookingDate}>
+                                            📅 {new Date(booking.job_date).toLocaleDateString()}
+                                        </Text>
+                                        <Text style={styles.bookingProvider}>
+                                            👤 {booking.provider_name || 'Finding Pro...'}
+                                        </Text>
+                                    </View>
                                 </TouchableOpacity>
                             );
                         })
                     ) : (
                         <View style={styles.emptyBookings}>
-                            <Text style={styles.emptyText}>You have no active bookings.</Text>
+                            <Text style={styles.emptyText}>You have no active bookings yet.</Text>
                             <TouchableOpacity style={styles.bookNowButton} onPress={() => navigation.navigate('Services')}>
                                 <Text style={styles.bookNowText}>Book a Service</Text>
                             </TouchableOpacity>
                         </View>
                     )}
                 </View>
+
+                {/* Bottom Space to prevent overlap with floating tab bar */}
+                <View style={{ height: verticalScale(100) + insets.bottom }} />
             </ScrollView>
         </SafeAreaView>
     );
@@ -203,142 +211,156 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: moderateScale(20),
-        paddingTop: verticalScale(20),
+        paddingTop: verticalScale(10),
         paddingBottom: verticalScale(10),
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
     welcomeText: {
-        fontSize: moderateScale(16),
+        fontSize: moderateScale(14),
         color: '#64748b',
+        fontWeight: '500',
     },
     nameText: {
-        fontSize: moderateScale(28),
+        fontSize: moderateScale(24),
         fontWeight: 'bold',
         color: '#0f172a',
     },
     avatar: {
-        width: moderateScale(50),
-        height: moderateScale(50),
-        borderRadius: moderateScale(25),
-        backgroundColor: '#14b8a6',
+        width: moderateScale(45),
+        height: moderateScale(45),
+        borderRadius: moderateScale(22.5),
+        backgroundColor: '#115e59',
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#f1f5f9',
     },
     avatarText: {
         color: '#fff',
-        fontSize: moderateScale(20),
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
     },
     searchBar: {
         marginHorizontal: moderateScale(20),
-        marginVertical: verticalScale(20),
-        backgroundColor: '#f1f5f9',
-        padding: moderateScale(15),
-        borderRadius: moderateScale(15),
+        marginVertical: verticalScale(15),
+        backgroundColor: '#f8fafc',
+        padding: moderateScale(14),
+        borderRadius: moderateScale(14),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
     },
     searchPlaceholder: {
         color: '#94a3b8',
-        fontSize: moderateScale(16),
+        fontSize: moderateScale(14),
     },
     promoCard: {
         marginHorizontal: moderateScale(20),
         backgroundColor: '#115e59',
-        borderRadius: moderateScale(24),
-        padding: moderateScale(24),
+        borderRadius: moderateScale(20),
+        padding: moderateScale(20),
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: verticalScale(30),
+        marginBottom: verticalScale(25),
+        elevation: 8,
+        shadowColor: '#115e59',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
     },
     promoContent: {
         flex: 1,
     },
     promoTitle: {
         color: '#fff',
-        fontSize: moderateScale(24),
+        fontSize: moderateScale(22),
         fontWeight: 'bold',
     },
     promoSubtitle: {
         color: '#ccfbf1',
-        fontSize: moderateScale(14),
+        fontSize: moderateScale(13),
         marginTop: verticalScale(4),
-        marginBottom: verticalScale(16),
+        marginBottom: verticalScale(12),
+        lineHeight: moderateScale(18),
     },
     promoButton: {
         backgroundColor: '#fff',
-        paddingHorizontal: moderateScale(20),
-        paddingVertical: verticalScale(10),
-        borderRadius: moderateScale(12),
+        paddingHorizontal: moderateScale(16),
+        paddingVertical: verticalScale(8),
+        borderRadius: moderateScale(10),
         alignSelf: 'flex-start',
     },
     promoButtonText: {
         color: '#115e59',
         fontWeight: 'bold',
-        fontSize: moderateScale(14),
+        fontSize: moderateScale(13),
     },
     promoExtra: {
-        fontSize: moderateScale(60),
+        fontSize: moderateScale(50),
+        marginLeft: scale(10),
     },
     sectionHeader: {
         paddingHorizontal: moderateScale(20),
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: verticalScale(16),
+        marginBottom: verticalScale(12),
     },
     sectionTitle: {
-        fontSize: moderateScale(20),
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
         color: '#0f172a',
     },
     viewAllText: {
-        color: '#14b8a6',
+        color: '#115e59',
         fontWeight: '600',
+        fontSize: moderateScale(13),
     },
     categoriesGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        paddingHorizontal: moderateScale(10),
-        marginBottom: verticalScale(20),
+        paddingHorizontal: moderateScale(15),
+        marginBottom: verticalScale(15),
     },
     categoryItem: {
-        width: (SCREEN_WIDTH - moderateScale(20)) / 3,
+        width: (SCREEN_WIDTH - moderateScale(30)) / 3,
         alignItems: 'center',
-        marginBottom: verticalScale(20),
+        marginBottom: verticalScale(15),
     },
     categoryIcon: {
-        width: moderateScale(65),
-        height: moderateScale(65),
-        borderRadius: moderateScale(20),
+        width: moderateScale(60),
+        height: moderateScale(60),
+        borderRadius: moderateScale(15),
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: verticalScale(8),
+        marginBottom: verticalScale(6),
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
     },
     categoryTitle: {
-        fontSize: moderateScale(13),
-        fontWeight: '500',
+        fontSize: moderateScale(12),
+        fontWeight: '600',
         color: '#475569',
         textAlign: 'center',
-        paddingHorizontal: 4,
     },
     recentBookings: {
         paddingHorizontal: moderateScale(20),
-        marginBottom: verticalScale(30),
+        marginBottom: verticalScale(20),
     },
     bookingCard: {
         backgroundColor: '#fff',
-        borderRadius: moderateScale(20),
+        borderRadius: moderateScale(16),
         padding: moderateScale(16),
-        marginTop: verticalScale(12),
+        marginTop: verticalScale(10),
         borderWidth: 1,
-        borderColor: '#e2e8f0',
-        elevation: 2,
+        borderColor: '#f1f5f9',
+        elevation: 3,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
     },
     bookingHeader: {
         flexDirection: 'row',
@@ -352,48 +374,49 @@ const styles = StyleSheet.create({
         color: '#0f172a',
     },
     statusBadge: {
-        paddingHorizontal: moderateScale(10),
+        paddingHorizontal: moderateScale(8),
         paddingVertical: verticalScale(4),
-        borderRadius: moderateScale(20),
+        borderRadius: moderateScale(8),
     },
     statusText: {
         fontSize: moderateScale(10),
-        fontWeight: '700',
+        fontWeight: '800',
         textTransform: 'uppercase',
     },
     bookingDate: {
-        fontSize: moderateScale(13),
+        fontSize: moderateScale(12),
         color: '#64748b',
         marginBottom: verticalScale(4),
     },
     bookingProvider: {
-        fontSize: moderateScale(13),
+        fontSize: moderateScale(12),
         color: '#64748b',
     },
     emptyBookings: {
         backgroundColor: '#f8fafc',
-        borderRadius: moderateScale(20),
-        padding: moderateScale(30),
+        borderRadius: moderateScale(16),
+        padding: moderateScale(24),
         alignItems: 'center',
-        marginTop: verticalScale(12),
+        marginTop: verticalScale(10),
         borderWidth: 1,
         borderColor: '#e2e8f0',
         borderStyle: 'dashed',
     },
     emptyText: {
         color: '#94a3b8',
-        fontSize: moderateScale(16),
-        marginBottom: verticalScale(16),
+        fontSize: moderateScale(14),
+        marginBottom: verticalScale(12),
     },
     bookNowButton: {
-        backgroundColor: '#14b8a6',
-        paddingHorizontal: moderateScale(24),
-        paddingVertical: verticalScale(12),
-        borderRadius: moderateScale(12),
+        backgroundColor: '#115e59',
+        paddingHorizontal: moderateScale(20),
+        paddingVertical: verticalScale(10),
+        borderRadius: moderateScale(10),
     },
     bookNowText: {
         color: '#fff',
         fontWeight: 'bold',
+        fontSize: moderateScale(14),
     }
 });
 

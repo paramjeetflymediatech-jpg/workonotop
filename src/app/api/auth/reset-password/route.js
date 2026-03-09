@@ -4,24 +4,38 @@ import bcrypt from 'bcryptjs'
 
 export async function POST(request) {
     try {
-        const { token, newPassword } = await request.json()
+        const { token, email, otp, newPassword } = await request.json()
 
-        if (!token || !newPassword) {
-            return NextResponse.json({ success: false, message: 'Token and new password are required' }, { status: 400 })
+        if (!newPassword) {
+            return NextResponse.json({ success: false, message: 'New password is required' }, { status: 400 })
+        }
+
+        if (!token && (!email || !otp)) {
+            return NextResponse.json({ success: false, message: 'Valid token or Email/OTP required' }, { status: 400 })
         }
 
         if (newPassword.length < 8) {
             return NextResponse.json({ success: false, message: 'Password must be at least 8 characters' }, { status: 400 })
         }
 
-        // Find user with matching valid token
-        const users = await query(
-            `SELECT id FROM users WHERE reset_token = ? AND reset_token_expiry > NOW() AND role = 'user'`,
-            [token]
-        )
+        // Find user with matching valid token/OTP
+        let users;
+        if (token) {
+            // Website flow (Token)
+            users = await query(
+                `SELECT id FROM users WHERE reset_token = ? AND reset_token_expiry > NOW() AND role = 'user'`,
+                [token]
+            )
+        } else {
+            // Mobile flow (Email + OTP)
+            users = await query(
+                `SELECT id FROM users WHERE email = ? AND reset_token = ? AND reset_token_expiry > NOW() AND role = 'user'`,
+                [email, otp]
+            )
+        }
 
-        if (users.length === 0) {
-            return NextResponse.json({ success: false, message: 'Reset link is invalid or has expired' }, { status: 400 })
+        if (!users || users.length === 0) {
+            return NextResponse.json({ success: false, message: 'Invalid or expired reset credentials' }, { status: 400 })
         }
 
         const user = users[0]

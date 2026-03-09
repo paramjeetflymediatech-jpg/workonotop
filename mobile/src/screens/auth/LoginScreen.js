@@ -36,29 +36,18 @@ const LoginScreen = ({ navigation }) => {
         setError('');
 
         try {
-            let endpoint;
-            if (type === 'pro') endpoint = '/api/provider/login';
-            else if (type === 'admin') endpoint = '/api/admin/login';
-            else endpoint = '/api/auth/login';
+            // Unified endpoint for all roles (customer, provider, admin)
+            const endpoint = '/api/auth/login';
 
             const response = await apiService.post(endpoint, { email, password });
 
             if (response.success) {
-                const userData = response.user || response.provider || {};
+                const userData = response.user || {};
 
-                // Ensure role is set for the app to navigate correctly
-                if (type === 'admin') userData.role = 'admin';
-                else if (type === 'pro') userData.role = 'provider';
-                else if (!userData.role) userData.role = 'customer';
-                else if (userData.role === 'user') userData.role = 'customer';
-                else if (userData.role === 'customer') userData.role = 'customer';
+                // Standardize role for the app
+                if (userData.role === 'user') userData.role = 'customer';
 
-                // Initial navigation/state setup
                 login(userData, response.token);
-
-                // No manual navigation here! 
-                // RootNavigator.js will detect the new 'user' state
-                // and automatically switch to the Onboarding or Dashboard stack.
             } else {
                 setError(response.message || 'Invalid credentials');
             }
@@ -99,10 +88,8 @@ const LoginScreen = ({ navigation }) => {
                                 resizeMode="contain"
                             />
                         )}
-                        <Text style={styles.title}>
-                            {type === 'pro' ? 'Pro Login' : type === 'admin' ? 'Admin Login' : 'Customer Login'}
-                        </Text>
-                        <Text style={styles.subtitle}>Welcome back to WorkOnTop</Text>
+                        <Text style={styles.title}>Welcome Back</Text>
+                        <Text style={styles.subtitle}>Sign in to your WorkOnTop account</Text>
                     </View>
 
                     <View style={styles.form}>
@@ -151,7 +138,9 @@ const LoginScreen = ({ navigation }) => {
 
                         <TouchableOpacity
                             style={styles.signupFooter}
-                            onPress={() => navigation.navigate(type === 'pro' ? 'ProviderSignup' : 'CustomerSignup')}
+                            onPress={() => {
+                                navigation.navigate('AuthChoice', { initialState: 'signup' });
+                            }}
                         >
                             <Text style={styles.signupText}>
                                 Don't have an account? <Text style={styles.signupLink}>Sign Up</Text>
