@@ -8,22 +8,22 @@ const STATUS_CONFIG = {
   open: {
     label: 'Open',
     light: { color: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-500' },
-    dark:  { color: 'bg-red-500/20 text-red-400 border-red-500/30', dot: 'bg-red-400' }
+    dark: { color: 'bg-red-500/20 text-red-400 border-red-500/30', dot: 'bg-red-400' }
   },
   reviewing: {
     label: 'Reviewing',
     light: { color: 'bg-amber-100 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
-    dark:  { color: 'bg-amber-500/20 text-amber-400 border-amber-500/30', dot: 'bg-amber-400' }
+    dark: { color: 'bg-amber-500/20 text-amber-400 border-amber-500/30', dot: 'bg-amber-400' }
   },
   resolved: {
     label: 'Resolved',
     light: { color: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500' },
-    dark:  { color: 'bg-green-500/20 text-green-400 border-green-500/30', dot: 'bg-green-400' }
+    dark: { color: 'bg-green-500/20 text-green-400 border-green-500/30', dot: 'bg-green-400' }
   },
   closed: {
     label: 'Closed',
     light: { color: 'bg-gray-100 text-gray-600 border-gray-200', dot: 'bg-gray-400' },
-    dark:  { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', dot: 'bg-gray-400' }
+    dark: { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', dot: 'bg-gray-400' }
   },
 }
 
@@ -106,7 +106,7 @@ export default function AdminDisputesPage() {
   const fmtDate = (d) => d ? new Date(d).toLocaleString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
   }) : '—'
-  
+
   const fmtShortDate = (d) => d ? new Date(d).toLocaleString('en-US', {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   }) : '—'
@@ -138,7 +138,7 @@ export default function AdminDisputesPage() {
   return (
     <div className={`min-h-screen ${dm ? 'bg-slate-950' : 'bg-gray-50'}`}>
       <div className="px-4 sm:px-5 md:px-6 lg:px-7 xl:px-8 py-4 sm:py-5 md:py-6 lg:py-7 xl:py-8 max-w-7xl mx-auto">
-        
+
         {/* Toast Notification */}
         {toast && (
           <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-xl text-white text-sm 
@@ -184,7 +184,7 @@ export default function AdminDisputesPage() {
                 </svg>
               </button>
             </div>
-            
+
             {/* Filter Button - Hidden on larger screens */}
             <button onClick={() => setShowMobileFilter(!showMobileFilter)}
               className={`lg:hidden flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-colors
@@ -193,7 +193,7 @@ export default function AdminDisputesPage() {
               Filter
               <ChevronDown className={`w-4 h-4 transition-transform ${showMobileFilter ? 'rotate-180' : ''}`} />
             </button>
-            
+
             {/* Refresh Button */}
             <button onClick={loadData}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-colors
@@ -225,20 +225,28 @@ export default function AdminDisputesPage() {
         {/* Stats Cards - Responsive Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
           {[
-            { label: 'Open', value: s.open_count, icon: '🚨', 
-              light: 'bg-red-50 border-red-200', dark: 'bg-red-500/10 border-red-500/20', 
-              tl: 'text-red-600', td: 'text-red-400' },
-            { label: 'Reviewing', value: s.reviewing_count, icon: '🔍', 
-              light: 'bg-amber-50 border-amber-200', dark: 'bg-amber-500/10 border-amber-500/20', 
-              tl: 'text-amber-600', td: 'text-amber-400' },
-            { label: 'Resolved', value: s.resolved_count, icon: '✅', 
-              light: 'bg-green-50 border-green-200', dark: 'bg-green-500/10 border-green-500/20', 
-              tl: 'text-green-600', td: 'text-green-400' },
-            { label: 'Closed', value: s.closed_count, icon: '🔒', 
-              light: 'bg-gray-50 border-gray-200', dark: 'bg-gray-500/10 border-gray-500/20', 
-              tl: 'text-gray-600', td: 'text-gray-400' },
+            {
+              label: 'Open', value: s.open_count, icon: '🚨',
+              light: 'bg-red-50 border-red-200', dark: 'bg-red-500/10 border-red-500/20',
+              tl: 'text-red-600', td: 'text-red-400'
+            },
+            {
+              label: 'Reviewing', value: s.reviewing_count, icon: '🔍',
+              light: 'bg-amber-50 border-amber-200', dark: 'bg-amber-500/10 border-amber-500/20',
+              tl: 'text-amber-600', td: 'text-amber-400'
+            },
+            {
+              label: 'Resolved', value: s.resolved_count, icon: '✅',
+              light: 'bg-green-50 border-green-200', dark: 'bg-green-500/10 border-green-500/20',
+              tl: 'text-green-600', td: 'text-green-400'
+            },
+            {
+              label: 'Closed', value: s.closed_count, icon: '🔒',
+              light: 'bg-gray-50 border-gray-200', dark: 'bg-gray-500/10 border-gray-500/20',
+              tl: 'text-gray-600', td: 'text-gray-400'
+            },
           ].map(stat => (
-            <div key={stat.label} 
+            <div key={stat.label}
               className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 border ${dm ? stat.dark : stat.light}
                 transform transition-transform hover:scale-[1.02] active:scale-[0.98]`}>
               <div className="text-xl sm:text-2xl mb-1 sm:mb-2">{stat.icon}</div>
@@ -280,18 +288,18 @@ export default function AdminDisputesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {filtered.length === 0 ? (
                 <div className="col-span-full">
-                  <EmptyState dm={dm} />
+                  <EmptyState dm={dm} filter={filter} />
                 </div>
               ) : (
                 filtered.map(d => {
                   const cfg = STATUS_CONFIG[d.status] || STATUS_CONFIG.open
                   const ss = dm ? cfg.dark : cfg.light
-                  
+
                   return (
-                    <div key={d.id} 
+                    <div key={d.id}
                       className={`${card} overflow-hidden hover:shadow-lg transition-all duration-200 
                         ${d.status === 'open' ? (dm ? 'ring-1 ring-red-500/20' : 'ring-1 ring-red-200') : ''}`}>
-                      
+
                       <div className="p-4">
                         {/* Header */}
                         <div className="flex items-start justify-between gap-2 mb-3">
@@ -366,7 +374,7 @@ export default function AdminDisputesPage() {
           {(getViewMode() === 'table') && (
             <div className={`rounded-xl lg:rounded-2xl border overflow-hidden ${dm ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`}>
               {filtered.length === 0 ? (
-                <EmptyState dm={dm} desktop />
+                <EmptyState dm={dm} filter={filter} desktop />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -451,11 +459,11 @@ export default function AdminDisputesPage() {
         {selected && (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-            
+
             <div className={`relative rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl
               max-h-[90vh] sm:max-h-[85vh] overflow-y-auto animate-slide-up sm:animate-fade-in
               ${dm ? 'bg-slate-900' : 'bg-white'}`}>
-              
+
               {/* Modal Header */}
               <div className="sticky top-0 z-10 bg-gradient-to-r from-red-600 to-orange-600 p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-3">
@@ -511,7 +519,7 @@ export default function AdminDisputesPage() {
                 {/* Dispute Reason */}
                 <div className={`border-l-4 border-l-red-500 rounded-xl p-4 sm:p-5 ${dm ? 'bg-red-500/10' : 'bg-red-50'}`}>
                   <p className={`text-xs sm:text-sm font-bold uppercase tracking-wide mb-2 ${dm ? 'text-red-400' : 'text-red-700'}`}>
-                    Customer's Dispute Reason
+                    Customer&apos;s Dispute Reason
                   </p>
                   <p className={`text-sm sm:text-base leading-relaxed ${dm ? 'text-red-300' : 'text-red-800'}`}>
                     {selected.reason}
@@ -585,7 +593,7 @@ export default function AdminDisputesPage() {
                       : 'Add internal notes about this dispute...'}
                     className={`w-full border rounded-xl p-3 sm:p-4 text-sm sm:text-base outline-none resize-none transition-colors
                       ${dm ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:border-slate-600'
-                            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-gray-400'}`}
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-gray-400'}`}
                   />
                 </div>
 
@@ -659,7 +667,7 @@ export default function AdminDisputesPage() {
   )
 }
 
-function EmptyState({ dm, desktop }) {
+function EmptyState({ dm, desktop, filter }) {
   return (
     <div className={`${desktop ? 'rounded-2xl p-8 sm:p-12' : 'rounded-xl p-6 sm:p-8'} text-center border
       ${dm ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`}>
