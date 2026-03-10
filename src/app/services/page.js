@@ -230,6 +230,16 @@ export default function ServicesPage() {
                   className="w-full pl-14 pr-6 py-4 sm:py-5 text-gray-800 bg-white rounded-2xl shadow-2xl outline-none placeholder:text-gray-700 placeholder:font-medium placeholder:text-lg sm:placeholder:text-xl md:placeholder:text-2xl text-base sm:text-lg md:text-xl border-2 border-transparent focus:border-green-300 transition-all duration-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onClick={(e) => {
+                    setTimeout(() => {
+                      window.scrollTo({ top: 300, behavior: 'smooth' });
+                    }, 100);
+                  }}
+                  onFocus={(e) => {
+                    setTimeout(() => {
+                      window.scrollTo({ top: 300, behavior: 'smooth' });
+                    }, 100);
+                  }}
                 />
               </div>
             </div>
@@ -404,3 +414,8 @@ export default function ServicesPage() {
     </div>
   );
 }
+
+
+
+
+
