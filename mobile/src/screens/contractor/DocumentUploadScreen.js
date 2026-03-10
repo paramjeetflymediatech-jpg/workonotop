@@ -6,10 +6,10 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../utils/api';
-import { moderateScale, verticalScale } from '../../utils/responsive';
+import { moderateScale, verticalScale, scale } from '../../utils/responsive';
 
 const DocumentUploadScreen = ({ navigation, route }) => {
-    const { profile, profilePhoto, skills } = route.params || {};
+    const { profile } = route.params || {};
     const [documents, setDocuments] = useState({
         id_proof: null,
         trade_license: null,
@@ -93,8 +93,40 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             Alert.alert('Required Documents', 'Please upload your ID and License photo.');
             return;
         }
-        navigation.navigate('BankLink', { profile, profilePhoto, skills, documents });
+        navigation.navigate('BankLink', { profile, documents });
     };
+
+    const Stepper = () => (
+        <View style={styles.stepperContainer}>
+            <View style={styles.stepGroup}>
+                <View style={[styles.stepCircle, styles.stepCompleted]}>
+                    <Text style={styles.stepTextActive}>✓</Text>
+                </View>
+                <Text style={styles.stepLabelActive}>Profile</Text>
+            </View>
+            <View style={[styles.stepLine, styles.stepLineActive]} />
+            <View style={styles.stepGroup}>
+                <View style={[styles.stepCircle, styles.stepActive]}>
+                    <Text style={styles.stepTextActive}>2</Text>
+                </View>
+                <Text style={styles.stepLabelActive}>Documents</Text>
+            </View>
+            <View style={styles.stepLine} />
+            <View style={styles.stepGroup}>
+                <View style={styles.stepCircle}>
+                    <Text style={styles.stepText}>3</Text>
+                </View>
+                <Text style={styles.stepLabel}>Payment</Text>
+            </View>
+            <View style={styles.stepLine} />
+            <View style={styles.stepGroup}>
+                <View style={styles.stepCircle}>
+                    <Text style={styles.stepText}>4</Text>
+                </View>
+                <Text style={styles.stepLabel}>Review</Text>
+            </View>
+        </View>
+    );
 
     const DocUploadCard = ({ docKey, label, icon, description, required }) => (
         <TouchableOpacity
@@ -103,6 +135,7 @@ const DocumentUploadScreen = ({ navigation, route }) => {
         >
             {documents[docKey] ? (
                 <>
+
                     <Image source={{ uri: documents[docKey] }} style={styles.docPreview} />
                     <View style={styles.docCardOverlay}>
                         <Text style={styles.docCardLabel}>{label}</Text>
@@ -125,71 +158,115 @@ const DocumentUploadScreen = ({ navigation, route }) => {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backIcon}>←</Text>
-                </TouchableOpacity>
+                <Stepper />
 
-                <Text style={styles.title}>Upload Documents</Text>
-                <Text style={styles.subtitle}>Step 2 of 4 — We need to verify your identity</Text>
+                <View style={styles.contentCard}>
+                    <Text style={styles.mainTitle}>Upload Documents</Text>
+                    <Text style={styles.subtitle}>Our team needs these to verify your identity</Text>
 
-                <View style={styles.infoBox}>
-                    <Text style={styles.infoText}>🔒 Your documents are encrypted and only used for verification. They are never shared publicly.</Text>
+                    <View style={styles.infoBox}>
+                        <Text style={styles.infoText}>🔒 Your documents are encrypted and only used for verification. They are never shared publicly.</Text>
+                    </View>
+
+                    <DocUploadCard
+                        docKey="id_proof"
+                        label="Government-Issued ID"
+                        icon="🪪"
+                        description="Driver's license, passport, or state ID"
+                        required
+                    />
+
+                    <DocUploadCard
+                        docKey="trade_license"
+                        label="Trade License / Certification"
+                        icon="📜"
+                        description="Professional license or trade certificate"
+                        required
+                    />
+
+                    <DocUploadCard
+                        docKey="insurance"
+                        label="Insurance Document"
+                        icon="🛡️"
+                        description="Liability insurance (optional)"
+                        required={false}
+                    />
+
+                    <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
+                        <Text style={styles.nextBtnText}>Continue to Bank Link</Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.stepFooter}>Step 2 of 4</Text>
                 </View>
-
-                <DocUploadCard
-                    docKey="id_proof"
-                    label="Government-Issued ID"
-                    icon="🪪"
-                    description="Driver's license, passport, or state ID"
-                    required
-                />
-
-                <DocUploadCard
-                    docKey="trade_license"
-                    label="Trade License / Certification"
-                    icon="📜"
-                    description="Professional license or trade certificate"
-                    required
-                />
-
-                <DocUploadCard
-                    docKey="insurance"
-                    label="Insurance Document"
-                    icon="🛡️"
-                    description="Liability insurance (optional but recommended)"
-                    required={false}
-                />
-
-                <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-                    <Text style={styles.nextBtnText}>Next: Bank Linking →</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.skipText}>Insurance is optional — you can add it later</Text>
             </ScrollView>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
-    scroll: { padding: moderateScale(24), paddingBottom: 40 },
-    backBtn: {
-        width: moderateScale(40), height: moderateScale(40),
-        borderRadius: moderateScale(20), backgroundColor: '#f1f5f9',
-        justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(16),
+    container: { flex: 1, backgroundColor: '#f1f5f9' },
+    scroll: { padding: moderateScale(15) },
+
+    /* Stepper */
+    stepperContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: verticalScale(20),
+        marginBottom: verticalScale(10),
     },
-    backIcon: { fontSize: moderateScale(20), color: '#0f172a', fontWeight: 'bold' },
-    title: { fontSize: moderateScale(28), fontWeight: 'bold', color: '#0f172a' },
-    subtitle: { fontSize: moderateScale(14), color: '#64748b', marginTop: verticalScale(4), marginBottom: verticalScale(20) },
+    stepGroup: { alignItems: 'center', width: scale(70) },
+    stepCircle: {
+        width: moderateScale(30),
+        height: moderateScale(30),
+        borderRadius: moderateScale(15),
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: verticalScale(5),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    stepActive: { backgroundColor: '#0d9488', borderColor: '#0d9488' },
+    stepCompleted: { backgroundColor: '#0d9488', borderColor: '#0d9488' },
+    stepText: { color: '#64748b', fontSize: moderateScale(12), fontWeight: 'bold' },
+    stepTextActive: { color: '#fff', fontSize: moderateScale(12), fontWeight: 'bold' },
+    stepLabel: { fontSize: moderateScale(10), color: '#64748b' },
+    stepLabelActive: { fontSize: moderateScale(10), color: '#0d9488', fontWeight: 'bold' },
+    stepLine: { width: scale(40), height: 1, backgroundColor: '#e2e8f0', marginHorizontal: -scale(10), zIndex: -1, alignSelf: 'center', marginTop: -verticalScale(20) },
+    stepLineActive: { backgroundColor: '#0d9488' },
+
+    /* Content Card */
+    contentCard: {
+        backgroundColor: '#fff',
+        borderRadius: moderateScale(12),
+        padding: moderateScale(20),
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+    },
+    mainTitle: {
+        fontSize: moderateScale(22),
+        fontWeight: 'bold',
+        color: '#0f172a',
+        marginBottom: verticalScale(8),
+    },
+    subtitle: {
+        fontSize: moderateScale(14),
+        color: '#64748b',
+        marginBottom: verticalScale(20),
+    },
     infoBox: {
-        backgroundColor: '#f0fdfa', borderRadius: moderateScale(12),
+        backgroundColor: '#f0fdfa', borderRadius: moderateScale(10),
         padding: moderateScale(14), marginBottom: verticalScale(20),
-        borderLeftWidth: 4, borderLeftColor: '#14b8a6',
+        borderLeftWidth: 4, borderLeftColor: '#0d9488',
     },
     infoText: { color: '#0f766e', fontSize: moderateScale(13), lineHeight: 20 },
     docCard: {
-        borderWidth: 2, borderColor: '#e2e8f0', borderStyle: 'dashed',
-        borderRadius: moderateScale(16), marginBottom: verticalScale(16),
+        borderWidth: 1, borderColor: '#e2e8f0',
+        borderRadius: moderateScale(12), marginBottom: verticalScale(16),
         overflow: 'hidden', minHeight: verticalScale(110),
     },
     docCardInner: { padding: moderateScale(20), alignItems: 'center' },
@@ -210,11 +287,16 @@ const styles = StyleSheet.create({
     },
     uploadBtnText: { color: '#475569', fontWeight: '600', fontSize: moderateScale(14) },
     nextBtn: {
-        backgroundColor: '#14b8a6', padding: moderateScale(18),
-        borderRadius: moderateScale(16), alignItems: 'center', marginTop: verticalScale(8),
+        backgroundColor: '#0d9488', padding: moderateScale(15),
+        borderRadius: moderateScale(8), alignItems: 'center', marginTop: verticalScale(8),
     },
-    nextBtnText: { color: '#fff', fontSize: moderateScale(17), fontWeight: 'bold' },
-    skipText: { textAlign: 'center', color: '#94a3b8', fontSize: moderateScale(13), marginTop: verticalScale(12) },
+    nextBtnText: { color: '#fff', fontSize: moderateScale(15), fontWeight: 'bold' },
+    stepFooter: {
+        textAlign: 'center',
+        color: '#94a3b8',
+        fontSize: moderateScale(12),
+        marginTop: verticalScale(20),
+    }
 });
 
 export default DocumentUploadScreen;

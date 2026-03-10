@@ -31,8 +31,40 @@ const ProviderSignupScreen = ({ navigation }) => {
     const handleSignup = async () => {
         const { firstName, lastName, email, phone, password, confirmPassword } = formData;
 
+        // Basic presence check
         if (!firstName || !lastName || !email || !phone || !password) {
             setError('Please fill in all fields');
+            return;
+        }
+
+        // Name validation (min 2, max 15, letters only)
+        const nameRegex = /^[A-Za-z\s]{2,15}$/;
+        if (!nameRegex.test(firstName.trim())) {
+            setError('First name must be 2-15 characters and contain only letters.');
+            return;
+        }
+        if (!nameRegex.test(lastName.trim())) {
+            setError('Last name must be 2-15 characters and contain only letters.');
+            return;
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.toLowerCase().trim())) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+
+        // Phone validation (10-15 digits)
+        const phoneRegex = /^\+?[\d\s-]{10,15}$/;
+        if (!phoneRegex.test(phone.trim())) {
+            setError('Phone number must be between 10 and 15 digits.');
+            return;
+        }
+
+        // Password validation (min 6 chars)
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters.');
             return;
         }
 
@@ -46,10 +78,10 @@ const ProviderSignupScreen = ({ navigation }) => {
 
         try {
             const response = await apiService.post('/api/provider/signup', {
-                firstName,
-                lastName,
-                email,
-                phone,
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                email: email.toLowerCase().trim(),
+                phone: phone.trim(),
                 password
             });
 
