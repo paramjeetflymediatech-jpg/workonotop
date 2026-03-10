@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+# .env
+tmp
+tests
+e2e
+mobile
+database
+playwright-report
+    .log
