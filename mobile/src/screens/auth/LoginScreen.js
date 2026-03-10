@@ -36,8 +36,8 @@ const LoginScreen = ({ navigation }) => {
         setError('');
 
         try {
-            // Unified endpoint for all roles (customer, provider, admin)
-            const endpoint = '/api/auth/login';
+            // Dedicated mobile endpoint for multi-role support
+            const endpoint = '/api/auth/mobile/login';
 
             const response = await apiService.post(endpoint, { email, password });
 
@@ -98,7 +98,7 @@ const LoginScreen = ({ navigation }) => {
                             <Text style={styles.label}>Email Address</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="test@yopmail.com"
+                                placeholder="Enter your email address"
                                 value={email}
                                 onChangeText={setEmail}
                                 autoCapitalize="none"
