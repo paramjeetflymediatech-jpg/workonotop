@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Image,
     ScrollView,
     SafeAreaView
 } from 'react-native';
@@ -54,16 +53,15 @@ const CustomDrawerContent = (props) => {
             <View style={styles.headerContainer}>
                 <View style={styles.profileSection}>
                     <View style={styles.avatarContainer}>
-                        <Image
-                            source={{ uri: 'https://i.pravatar.cc/150?u=admin' }}
-                            style={styles.avatar}
-                        />
+                        <Text style={styles.avatarInitial}>
+                            {(user?.name || user?.email || 'A')[0].toUpperCase()}
+                        </Text>
                     </View>
                     <View style={styles.userInfo}>
-                        <Text style={styles.userName}>{user?.name || 'Bradon Lee'}</Text>
-                        <TouchableOpacity onPress={() => props.navigation.navigate('Profile')}>
-                            <Text style={styles.viewProfile}>View profile</Text>
-                        </TouchableOpacity>
+                        <Text style={styles.userName} numberOfLines={1}>
+                            {user?.name || user?.email?.split('@')[0] || 'Admin'}
+                        </Text>
+                        <Text style={styles.userRole}>Administrator</Text>
                     </View>
                 </View>
             </View>
@@ -104,16 +102,19 @@ const styles = StyleSheet.create({
         marginTop: verticalScale(10),
     },
     avatarContainer: {
-        width: moderateScale(60),
-        height: moderateScale(60),
-        borderRadius: moderateScale(30),
-        overflow: 'hidden',
+        width: moderateScale(58),
+        height: moderateScale(58),
+        borderRadius: moderateScale(29),
+        backgroundColor: '#115e59',
+        justifyContent: 'center',
+        alignItems: 'center',
         borderWidth: 2,
-        borderColor: '#115e59',
+        borderColor: '#0f766e',
     },
-    avatar: {
-        width: '100%',
-        height: '100%',
+    avatarInitial: {
+        fontSize: moderateScale(24),
+        fontWeight: 'bold',
+        color: '#fff',
     },
     userInfo: {
         marginLeft: scale(15),
@@ -123,10 +124,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#0f172a',
     },
-    viewProfile: {
-        fontSize: moderateScale(14),
+    userRole: {
+        fontSize: moderateScale(12),
         color: '#64748b',
-        marginTop: verticalScale(2),
+        marginTop: verticalScale(3),
+        fontWeight: '500',
     },
     drawerContent: {
         paddingTop: 0,
