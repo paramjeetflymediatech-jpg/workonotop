@@ -324,9 +324,12 @@ export default function HomePage() {
       <section className="py-12 md:py-16 lg:py-20 bg-green-50/50">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto mb-8 md:mb-12 lg:mb-14">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-2 md:mb-4">
+            {/* <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-2 md:mb-4">
               What people in Calgary are doing now
-            </h2>
+            </h2> */}
+<h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-2 md:mb-4 max-w-2xl mx-auto leading-tight text-center px-4">
+  What people in Calgary are doing now
+</h2>
             <p className="text-base md:text-lg text-gray-600">Trending services — book in under 2 minutes</p>
           </div>
           
