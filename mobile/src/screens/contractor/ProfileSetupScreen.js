@@ -2,184 +2,325 @@ import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ScrollView, SafeAreaView, Alert, ActivityIndicator,
-    Platform
+    Platform, Dimensions
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { Image } from 'react-native';
-import { api } from '../../utils/api';
+import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale, scale } from '../../utils/responsive';
+
+const SERVICE_AREAS = [
+    'Calgary NW', 'Calgary NE', 'Calgary SW', 'Calgary SE',
+    'Airdrie', 'Chestermere', 'Cochrane', 'Okotoks'
+];
+
+const SKILLS = [
+    'Plumbing', 'Painting', 'Electrical', 'HVAC',
+    'Cleaning', 'Drywall', 'Appliance Repair', 'Moving',
+    'Carpentry', 'Flooring', 'Landscaping', 'Handyman'
+];
 
 const ProfileSetupScreen = ({ navigation }) => {
     const [profile, setProfile] = useState({
-        name: '',
-        phone: '',
-        serviceArea: '',
         bio: '',
+        primarySpecialty: '',
+        yearsExperience: '',
+        businessAddress: '',
+        city: '',
+        serviceAreas: [],
+        skills: []
     });
-    const [profilePhoto, setProfilePhoto] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const uploadProfilePhoto = async (uri) => {
-        setLoading(true);
-        try {
-            const formData = new FormData();
-            const filename = uri.split('/').pop();
-            const match = /\.(\w+)$/.exec(filename);
-            const ext = match ? `image/${match[1]}` : 'image/jpeg';
-
-            formData.append('file', {
-                uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
-                name: filename,
-                type: ext,
-            });
-            formData.append('type', 'profile_photo');
-
-            const res = await api.post('/api/provider/onboarding/upload-document', formData);
-
-            if (res.success) {
-                setProfilePhoto(res.fileUrl || uri);
-            } else {
-                throw new Error(res.message || 'Upload failed');
-            }
-        } catch (err) {
-            console.error('Profile photo upload error:', err);
-            Alert.alert('Upload Failed', 'Failed to upload profile photo.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const pickProfilePhoto = async () => {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permission.granted) {
-            Alert.alert('Permission Required', 'Please allow access to your photo library.');
-            return;
-        }
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaType.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
+    const toggleSelection = (key, value) => {
+        setProfile(prev => {
+            const current = prev[key];
+            const updated = current.includes(value)
+                ? current.filter(item => item !== value)
+                : [...current, value];
+            return { ...prev, [key]: updated };
         });
-        if (!result.canceled) {
-            await uploadProfilePhoto(result.assets[0].uri);
-        }
     };
 
     const handleNext = () => {
-        if (!profile.name || !profile.phone || !profile.serviceArea) {
-            Alert.alert('Missing Info', 'Please fill in Name, Phone, and Service Area.');
+        if (!profile.bio || !profile.primarySpecialty || !profile.yearsExperience || !profile.businessAddress || !profile.city || profile.skills.length === 0) {
+            Alert.alert('Missing Info', 'Please fill in all required fields and select at least one skill.');
             return;
         }
-        navigation.navigate('SkillsSelection', { profile, profilePhoto });
+        navigation.navigate('DocumentUpload', { profile });
     };
+
+    const Stepper = () => (
+        <View style={styles.stepperContainer}>
+            <View style={styles.stepGroup}>
+                <View style={[styles.stepCircle, styles.stepActive]}>
+                    <Text style={styles.stepTextActive}>1</Text>
+                </View>
+                <Text style={styles.stepLabelActive}>Profile</Text>
+            </View>
+            <View style={styles.stepLine} />
+            <View style={styles.stepGroup}>
+                <View style={styles.stepCircle}>
+                    <Text style={styles.stepText}>2</Text>
+                </View>
+                <Text style={styles.stepLabel}>Documents</Text>
+            </View>
+            <View style={styles.stepLine} />
+            <View style={styles.stepGroup}>
+                <View style={styles.stepCircle}>
+                    <Text style={styles.stepText}>3</Text>
+                </View>
+                <Text style={styles.stepLabel}>Payment</Text>
+            </View>
+            <View style={styles.stepLine} />
+            <View style={styles.stepGroup}>
+                <View style={styles.stepCircle}>
+                    <Text style={styles.stepText}>4</Text>
+                </View>
+                <Text style={styles.stepLabel}>Review</Text>
+            </View>
+        </View>
+    );
 
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                {navigation.canGoBack() && (
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <Text style={styles.backIcon}>←</Text>
-                    </TouchableOpacity>
-                )}
+                <Stepper />
 
-                <Text style={styles.title}>Setup Your Profile</Text>
-                <Text style={styles.subtitle}>Step 1 of 4 — Tell us about yourself</Text>
+                <View style={styles.contentCard}>
+                    <Text style={styles.mainTitle}>Profile Information</Text>
 
-                {/* Profile Photo */}
-                <TouchableOpacity style={styles.photoPicker} onPress={pickProfilePhoto}>
-                    {profilePhoto ? (
-                        <Image source={{ uri: profilePhoto }} style={styles.profilePhoto} />
-                    ) : (
-                        <View style={styles.photoPlaceholder}>
-                            <Text style={styles.photoIcon}>📷</Text>
-                            <Text style={styles.photoText}>Upload Photo</Text>
+                    {/* Bio */}
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Professional Bio <Text style={styles.req}>*</Text></Text>
+                        <TextInput
+                            style={[styles.input, styles.textArea]}
+                            multiline
+                            maxLength={500}
+                            placeholder="Tell us about your experience..."
+                            placeholderTextColor="#94a3b8"
+                            value={profile.bio}
+                            onChangeText={(t) => setProfile({ ...profile, bio: t })}
+                        />
+                        <Text style={styles.charCount}>{profile.bio.length}/500 characters</Text>
+                    </View>
+
+                    {/* Specialty & Experience */}
+                    <View style={styles.row}>
+                        <View style={[styles.inputGroup, { flex: 1, marginRight: scale(10) }]}>
+                            <Text style={styles.label}>Primary Specialty <Text style={styles.req}>*</Text></Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="plumber"
+                                placeholderTextColor="#94a3b8"
+                                value={profile.primarySpecialty}
+                                onChangeText={(t) => setProfile({ ...profile, primarySpecialty: t })}
+                            />
                         </View>
-                    )}
-                </TouchableOpacity>
+                        <View style={[styles.inputGroup, { width: scale(150) }]}>
+                            <Text style={styles.label}>Experience <Text style={styles.req}>*</Text></Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder=""
+                                placeholderTextColor="#94a3b8"
+                                keyboardType="numeric"
+                                value={profile.yearsExperience}
+                                onChangeText={(t) => setProfile({ ...profile, yearsExperience: t })}
+                            />
+                        </View>
+                    </View>
 
-                <View style={styles.form}>
-                    <Text style={styles.label}>Full Name</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="John Doe"
-                        value={profile.name}
-                        onChangeText={(t) => setProfile({ ...profile, name: t })}
-                    />
+                    {/* Business Address */}
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Business Address <Text style={styles.req}>*</Text></Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder=""
+                            placeholderTextColor="#94a3b8"
+                            value={profile.businessAddress}
+                            onChangeText={(t) => setProfile({ ...profile, businessAddress: t })}
+                        />
+                    </View>
 
-                    <Text style={styles.label}>Phone Number</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="+1 (555) 000-0000"
-                        keyboardType="phone-pad"
-                        value={profile.phone}
-                        onChangeText={(t) => setProfile({ ...profile, phone: t })}
-                    />
+                    {/* City */}
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>City <Text style={styles.req}>*</Text></Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Calgary"
+                            placeholderTextColor="#94a3b8"
+                            value={profile.city}
+                            onChangeText={(t) => setProfile({ ...profile, city: t })}
+                        />
+                        <Text style={styles.inputHint}>Enter the city where your business is located - this helps customers find you in local searches</Text>
+                    </View>
 
-                    <Text style={styles.label}>Service Area (City/Zip)</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="e.g. New York, NY 10001"
-                        value={profile.serviceArea}
-                        onChangeText={(t) => setProfile({ ...profile, serviceArea: t })}
-                    />
+                    {/* Service Areas */}
+                    <View style={styles.selectionSection}>
+                        <Text style={styles.label}>Service Areas <Text style={styles.req}>*</Text></Text>
+                        <View style={styles.checkboxGrid}>
+                            {SERVICE_AREAS.map(area => {
+                                const isSelected = profile.serviceAreas.includes(area);
+                                return (
+                                    <TouchableOpacity
+                                        key={area}
+                                        style={styles.checkboxItem}
+                                        onPress={() => toggleSelection('serviceAreas', area)}
+                                    >
+                                        <Ionicons
+                                            name={isSelected ? "checkbox" : "square-outline"}
+                                            size={moderateScale(20)}
+                                            color={isSelected ? "#0d9488" : "#94a3b8"}
+                                        />
+                                        <Text style={styles.checkboxLabel}>{area}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
 
-                    <Text style={styles.label}>Short Bio (Optional)</Text>
-                    <TextInput
-                        style={[styles.input, styles.textArea]}
-                        placeholder="Tell customers about your experience..."
-                        multiline
-                        numberOfLines={4}
-                        value={profile.bio}
-                        onChangeText={(t) => setProfile({ ...profile, bio: t })}
-                    />
+                    {/* Skills */}
+                    <View style={styles.selectionSection}>
+                        <Text style={styles.label}>Skills <Text style={styles.req}>*</Text></Text>
+                        <View style={styles.checkboxGrid}>
+                            {SKILLS.map(skill => {
+                                const isSelected = profile.skills.includes(skill);
+                                return (
+                                    <TouchableOpacity
+                                        key={skill}
+                                        style={styles.checkboxItem}
+                                        onPress={() => toggleSelection('skills', skill)}
+                                    >
+                                        <Ionicons
+                                            name={isSelected ? "checkbox" : "square-outline"}
+                                            size={moderateScale(20)}
+                                            color={isSelected ? "#0d9488" : "#94a3b8"}
+                                        />
+                                        <Text style={styles.checkboxLabel}>{skill}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+
+                    <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
+                        <Text style={styles.nextBtnText}>Continue to Documents</Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.stepFooter}>Step 1 of 4</Text>
                 </View>
-
-                <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-                    <Text style={styles.nextBtnText}>Next: Select Skills →</Text>
-                </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
-    scroll: { padding: moderateScale(24) },
-    backBtn: {
-        width: moderateScale(40), height: moderateScale(40),
-        borderRadius: moderateScale(20), backgroundColor: '#f1f5f9',
-        justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(16),
+    container: { flex: 1, backgroundColor: '#f1f5f9' },
+    scroll: { padding: moderateScale(15) },
+
+    /* Stepper */
+    stepperContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: verticalScale(20),
+        marginBottom: verticalScale(10),
     },
-    backIcon: { fontSize: moderateScale(20), color: '#0f172a', fontWeight: 'bold' },
-    title: { fontSize: moderateScale(28), fontWeight: 'bold', color: '#0f172a' },
-    subtitle: { fontSize: moderateScale(14), color: '#64748b', marginTop: verticalScale(4), marginBottom: verticalScale(24) },
-    photoPicker: { alignSelf: 'center', marginBottom: verticalScale(24) },
-    profilePhoto: {
-        width: moderateScale(100), height: moderateScale(100),
-        borderRadius: moderateScale(50), borderWidth: 3, borderColor: '#14b8a6',
+    stepGroup: { alignItems: 'center', width: scale(70) },
+    stepCircle: {
+        width: moderateScale(30),
+        height: moderateScale(30),
+        borderRadius: moderateScale(15),
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: verticalScale(5),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
     },
-    photoPlaceholder: {
-        width: moderateScale(100), height: moderateScale(100),
-        borderRadius: moderateScale(50), backgroundColor: '#f1f5f9',
-        justifyContent: 'center', alignItems: 'center',
-        borderWidth: 2, borderColor: '#e2e8f0', borderStyle: 'dashed',
+    stepActive: { backgroundColor: '#0d9488', borderColor: '#0d9488' },
+    stepText: { color: '#64748b', fontSize: moderateScale(12), fontWeight: 'bold' },
+    stepTextActive: { color: '#fff', fontSize: moderateScale(12), fontWeight: 'bold' },
+    stepLabel: { fontSize: moderateScale(10), color: '#64748b' },
+    stepLabelActive: { fontSize: moderateScale(10), color: '#0d9488', fontWeight: 'bold' },
+    stepLine: { width: scale(40), height: 1, backgroundColor: '#e2e8f0', marginHorizontal: -scale(10), zIndex: -1, alignSelf: 'center', marginTop: -verticalScale(20) },
+
+    /* Content Card */
+    contentCard: {
+        backgroundColor: '#fff',
+        borderRadius: moderateScale(12),
+        padding: moderateScale(20),
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
-    photoIcon: { fontSize: moderateScale(28) },
-    photoText: { fontSize: moderateScale(11), color: '#64748b', marginTop: 4 },
-    form: { width: '100%' },
-    label: { fontSize: moderateScale(13), fontWeight: '600', color: '#475569', marginBottom: verticalScale(6), marginTop: verticalScale(12) },
+    mainTitle: {
+        fontSize: moderateScale(22),
+        fontWeight: 'bold',
+        color: '#0f172a',
+        marginBottom: verticalScale(20),
+    },
+    inputGroup: { marginBottom: verticalScale(15) },
+    row: { flexDirection: 'row', marginBottom: verticalScale(5) },
+    label: {
+        fontSize: moderateScale(13),
+        fontWeight: 'bold',
+        color: '#334155',
+        marginBottom: verticalScale(8),
+    },
+    req: { color: '#ef4444' },
     input: {
-        backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0',
-        borderRadius: moderateScale(12), padding: moderateScale(14),
-        fontSize: moderateScale(15), color: '#0f172a',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: moderateScale(8),
+        padding: moderateScale(12),
+        fontSize: moderateScale(14),
+        color: '#0f172a',
     },
-    textArea: { height: verticalScale(100), textAlignVertical: 'top' },
+    textArea: { height: verticalScale(120), textAlignVertical: 'top' },
+    charCount: {
+        textAlign: 'right',
+        fontSize: moderateScale(11),
+        color: '#94a3b8',
+        marginTop: verticalScale(4),
+    },
+    inputHint: {
+        fontSize: moderateScale(11),
+        color: '#94a3b8',
+        marginTop: verticalScale(4),
+        lineHeight: moderateScale(16),
+    },
+    selectionSection: { marginBottom: verticalScale(20) },
+    checkboxGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    checkboxItem: {
+        width: '50%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: verticalScale(12),
+        paddingRight: scale(5),
+    },
+    checkboxLabel: {
+        fontSize: moderateScale(12),
+        color: '#475569',
+        marginLeft: scale(8),
+    },
     nextBtn: {
-        backgroundColor: '#14b8a6', padding: moderateScale(18),
-        borderRadius: moderateScale(16), alignItems: 'center', marginTop: verticalScale(32),
+        backgroundColor: '#0d9488',
+        padding: moderateScale(15),
+        borderRadius: moderateScale(8),
+        alignItems: 'center',
+        marginTop: verticalScale(10),
     },
-    nextBtnText: { color: '#fff', fontSize: moderateScale(17), fontWeight: 'bold' },
+    nextBtnText: { color: '#fff', fontSize: moderateScale(15), fontWeight: 'bold' },
+    stepFooter: {
+        textAlign: 'center',
+        color: '#94a3b8',
+        fontSize: moderateScale(12),
+        marginTop: verticalScale(20),
+    }
 });
 
 export default ProfileSetupScreen;

@@ -1,8 +1,8 @@
-export const APP_CONFIG = {
-    APP_NAME: 'WorkOnTop Mobile',
-    API_URL: 'https://api.workontop.com',
-    VERSION: '1.0.0',
-};
+// export const APP_CONFIG = {
+//     APP_NAME: 'WorkOnTop Mobile',
+//     API_URL: 'https://api.workontop.com',
+//     VERSION: '1.0.0',
+// };
 
 
 

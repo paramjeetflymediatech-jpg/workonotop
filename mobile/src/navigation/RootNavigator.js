@@ -20,7 +20,6 @@ import DetailsScreen from '../screens/DetailsScreen';
 // Contractor Onboarding
 import OnboardingIntroScreen from '../screens/contractor/OnboardingIntroScreen';
 import ProfileSetupScreen from '../screens/contractor/ProfileSetupScreen';
-import SkillsSelectionScreen from '../screens/contractor/SkillsSelectionScreen';
 import DocumentUploadScreen from '../screens/contractor/DocumentUploadScreen';
 import BankLinkScreen from '../screens/contractor/BankLinkScreen';
 import PendingApprovalScreen from '../screens/contractor/PendingApprovalScreen';
@@ -62,7 +61,6 @@ const RootNavigator = () => {
                         <>
                             <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="SkillsSelection" component={SkillsSelectionScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
@@ -74,7 +72,6 @@ const RootNavigator = () => {
                             <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
                             <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="SkillsSelection" component={SkillsSelectionScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
                         </>
@@ -90,7 +87,6 @@ const RootNavigator = () => {
                             {/* Contractor Onboarding (Still registered for deep links or manual re-entry if allowed) */}
                             <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="SkillsSelection" component={SkillsSelectionScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />

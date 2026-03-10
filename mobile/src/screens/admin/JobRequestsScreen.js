@@ -8,7 +8,9 @@ import {
     FlatList,
     ActivityIndicator,
     RefreshControl,
-    StatusBar
+    StatusBar,
+    Modal,
+    ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
@@ -19,6 +21,8 @@ const JobRequestsScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedBooking, setSelectedBooking] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
 
     const statuses = [
         { id: 'all', label: 'All' },
@@ -67,8 +71,13 @@ const JobRequestsScreen = ({ navigation }) => {
         return new Intl.NumberFormat('en-GB', {
             style: 'currency',
             currency: 'GBP',
-            minimumFractionDigits: 0,
+            minimumFractionDigits: 2,
         }).format(amount);
+    };
+
+    const openBookingDetails = (booking) => {
+        setSelectedBooking(booking);
+        setModalVisible(true);
     };
 
     const filteredBookings = statusFilter === 'all'
@@ -82,7 +91,7 @@ const JobRequestsScreen = ({ navigation }) => {
         return (
             <TouchableOpacity
                 style={styles.card}
-                onPress={() => { /* Navigate to Details */ }}
+                onPress={() => openBookingDetails(item)}
             >
                 <View style={styles.cardHeader}>
                     <View>
@@ -113,7 +122,10 @@ const JobRequestsScreen = ({ navigation }) => {
 
                 <View style={styles.cardFooter}>
                     <Text style={styles.amountText}>{formatCurrency(amount)}</Text>
-                    <TouchableOpacity style={styles.detailsBtn}>
+                    <TouchableOpacity
+                        style={styles.detailsBtn}
+                        onPress={() => openBookingDetails(item)}
+                    >
                         <Text style={styles.detailsBtnText}>View Details</Text>
                         <Ionicons name="chevron-forward" size={moderateScale(14)} color="#115e59" />
                     </TouchableOpacity>
@@ -182,6 +194,96 @@ const JobRequestsScreen = ({ navigation }) => {
                     }
                 />
             )}
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Booking Details</Text>
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Ionicons name="close" size={moderateScale(24)} color="#0f172a" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedBooking && (
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View style={styles.modalBody}>
+                                    <View style={styles.detailHeader}>
+                                        <Text style={styles.modalServiceName}>{selectedBooking.service_name}</Text>
+                                        <View style={[styles.statusBadge, { backgroundColor: getStatusStyle(selectedBooking.status).bg }]}>
+                                            <Text style={[styles.statusText, { color: getStatusStyle(selectedBooking.status).text }]}>
+                                                {selectedBooking.status?.replace('_', ' ')}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.detailSection}>
+                                        <Text style={styles.sectionTitle}>Customer Information</Text>
+                                        <View style={styles.detailItem}>
+                                            <Ionicons name="person-outline" size={moderateScale(20)} color="#115e59" />
+                                            <View style={styles.detailInfo}>
+                                                <Text style={styles.detailLabel}>Full Name</Text>
+                                                <Text style={styles.detailValue}>{selectedBooking.customer_first_name} {selectedBooking.customer_last_name}</Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.detailItem}>
+                                            <Ionicons name="call-outline" size={moderateScale(20)} color="#115e59" />
+                                            <View style={styles.detailInfo}>
+                                                <Text style={styles.detailLabel}>Phone Number</Text>
+                                                <Text style={styles.detailValue}>{selectedBooking.customer_phone || 'Not provided'}</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.detailSection}>
+                                        <Text style={styles.sectionTitle}>Job Details</Text>
+                                        <View style={styles.detailItem}>
+                                            <Ionicons name="calendar-outline" size={moderateScale(20)} color="#115e59" />
+                                            <View style={styles.detailInfo}>
+                                                <Text style={styles.detailLabel}>Date</Text>
+                                                <Text style={styles.detailValue}>{new Date(selectedBooking.job_date).toLocaleDateString()}</Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.detailItem}>
+                                            <Ionicons name="location-outline" size={moderateScale(20)} color="#115e59" />
+                                            <View style={styles.detailInfo}>
+                                                <Text style={styles.detailLabel}>Address</Text>
+                                                <Text style={styles.detailValue}>{selectedBooking.address_line1}, {selectedBooking.city}</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.detailSection}>
+                                        <Text style={styles.sectionTitle}>Pricing Information</Text>
+                                        <View style={styles.pricingRow}>
+                                            <Text style={styles.pricingLabel}>Service Price</Text>
+                                            <Text style={styles.pricingValue}>{formatCurrency(selectedBooking.service_price || 0)}</Text>
+                                        </View>
+                                        <View style={styles.pricingRow}>
+                                            <Text style={styles.pricingLabel}>Additional Price</Text>
+                                            <Text style={styles.pricingValue}>{formatCurrency(selectedBooking.additional_price || 0)}</Text>
+                                        </View>
+                                        <View style={[styles.pricingRow, styles.totalRow]}>
+                                            <Text style={styles.totalLabel}>Total Amount</Text>
+                                            <Text style={styles.totalValue}>
+                                                {formatCurrency(parseFloat(selectedBooking.service_price || 0) + parseFloat(selectedBooking.additional_price || 0))}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </ScrollView>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -316,6 +418,113 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(16),
         color: '#94a3b8',
         marginTop: verticalScale(20),
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: moderateScale(25),
+        borderTopRightRadius: moderateScale(25),
+        paddingHorizontal: scale(20),
+        paddingBottom: verticalScale(40),
+        maxHeight: '90%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: verticalScale(20),
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    modalTitle: {
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
+    closeButton: {
+        padding: scale(5),
+    },
+    modalBody: {
+        paddingVertical: verticalScale(20),
+    },
+    detailHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: verticalScale(25),
+    },
+    modalServiceName: {
+        fontSize: moderateScale(20),
+        fontWeight: 'bold',
+        color: '#0f172a',
+        flex: 1,
+        marginRight: scale(10),
+    },
+    detailSection: {
+        marginBottom: verticalScale(25),
+    },
+    sectionTitle: {
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        marginBottom: verticalScale(15),
+        letterSpacing: 1,
+    },
+    detailItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        padding: scale(15),
+        borderRadius: moderateScale(15),
+        marginBottom: verticalScale(10),
+    },
+    detailInfo: {
+        marginLeft: scale(15),
+    },
+    detailLabel: {
+        fontSize: moderateScale(11),
+        color: '#64748b',
+        marginBottom: verticalScale(2),
+    },
+    detailValue: {
+        fontSize: moderateScale(15),
+        fontWeight: '600',
+        color: '#0f172a',
+    },
+    pricingRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: verticalScale(10),
+    },
+    pricingLabel: {
+        fontSize: moderateScale(14),
+        color: '#64748b',
+    },
+    pricingValue: {
+        fontSize: moderateScale(14),
+        color: '#0f172a',
+        fontWeight: '600',
+    },
+    totalRow: {
+        marginTop: verticalScale(10),
+        paddingTop: verticalScale(10),
+        borderTopWidth: 1,
+        borderTopColor: '#f1f5f9',
+    },
+    totalLabel: {
+        fontSize: moderateScale(16),
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
+    totalValue: {
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+        color: '#115e59',
     },
 });
 
