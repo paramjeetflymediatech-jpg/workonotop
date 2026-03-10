@@ -2,20 +2,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // import { NextResponse } from 'next/server'
 // import { query } from '@/lib/db'
 // import bcrypt from 'bcryptjs'
@@ -50,6 +36,17 @@
 //         { success: false, message: 'Email already registered' },
 //         { status: 400 }
 //       )
+//     }
+
+//     // Check if phone already exists
+//     if (phone) {
+//       const existingPhone = await query('SELECT id FROM users WHERE phone = ?', [phone])
+//       if (existingPhone.length > 0) {
+//         return NextResponse.json(
+//           { success: false, message: 'Phone number already registered' },
+//           { status: 400 }
+//         )
+//       }
 //     }
 
 //     // Hash password
@@ -136,9 +133,6 @@
 
 
 
-
-
-
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import bcrypt from 'bcryptjs'
@@ -158,7 +152,6 @@ export async function POST(request) {
       receive_offers 
     } = await request.json()
 
-    // Validation
     if (!first_name || !last_name || !email || !password) {
       return NextResponse.json(
         { success: false, message: 'All required fields must be filled' },
@@ -166,11 +159,23 @@ export async function POST(request) {
       )
     }
 
-    // Check if email already exists
+    // Check if email exists in users table
     const existing = await query('SELECT id FROM users WHERE email = ?', [email])
     if (existing.length > 0) {
       return NextResponse.json(
         { success: false, message: 'Email already registered' },
+        { status: 400 }
+      )
+    }
+
+    // ✅ Check if email exists in service_providers table
+    const existingProvider = await query(
+      'SELECT id FROM service_providers WHERE email = ?', 
+      [email]
+    )
+    if (existingProvider.length > 0) {
+      return NextResponse.json(
+        { success: false, message: 'This email is already registered . Please use a different email.' },
         { status: 400 }
       )
     }
@@ -186,10 +191,8 @@ export async function POST(request) {
       }
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Create new customer
     const result = await query(
       `INSERT INTO users 
        (first_name, last_name, email, phone, password_hash, hear_about, receive_offers, role) 
@@ -197,7 +200,7 @@ export async function POST(request) {
       [
         first_name, 
         last_name, 
-        email, 
+        email.toLowerCase().trim(), 
         phone || null, 
         hashedPassword, 
         hear_about || null, 
@@ -205,13 +208,11 @@ export async function POST(request) {
       ]
     )
 
-    // Get the created user
     const newUser = await query(
       'SELECT id, email, first_name, last_name, phone, role, created_at FROM users WHERE id = ?',
       [result.insertId]
     )
 
-    // Generate JWT token
     const token = jwt.sign(
       { 
         id: newUser[0].id, 
@@ -224,14 +225,12 @@ export async function POST(request) {
       { expiresIn: '7d' }
     )
 
-    // Create response with cookie
     const response = NextResponse.json({
       success: true,
       message: 'Account created successfully',
       user: newUser[0]
     })
 
-    // Set HTTP-only cookie
     response.cookies.set({
       name: 'customer_token',
       value: token,
@@ -239,7 +238,7 @@ export async function POST(request) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 7 * 24 * 60 * 60 // 7 days
+      maxAge: 7 * 24 * 60 * 60
     })
 
     return response

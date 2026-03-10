@@ -25,14 +25,14 @@ const connect = async (withDb = false) => {
 // Table creation SQL - All 17 tables with exact fields
 // =====================================================
 const tables = [
-  // Table 1: users
+  // Table 1: users - UPDATED with UNIQUE constraint on phone
   `CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    phone VARCHAR(50),
+    phone VARCHAR(50) UNIQUE,
     hear_about VARCHAR(255),
     receive_offers TINYINT(1) DEFAULT 0,
     role ENUM('user', 'admin') DEFAULT 'user',
@@ -440,6 +440,14 @@ const tables = [
 // Column alterations for existing databases
 // =====================================================
 const alterations = [
+  // Add UNIQUE constraint to users.phone if it doesn't exist
+  { 
+    table: 'users', 
+    column: 'phone_unique', 
+    sql: 'ALTER TABLE users ADD UNIQUE INDEX phone_unique (phone)',
+    type: 'unique'
+  },
+  
   // service_providers table additions
   { table: 'service_providers', column: 'email_verified', sql: 'ALTER TABLE service_providers ADD COLUMN email_verified TINYINT(1) DEFAULT 0 AFTER last_login' },
   { table: 'service_providers', column: 'email_verification_token', sql: 'ALTER TABLE service_providers ADD COLUMN email_verification_token VARCHAR(255) AFTER email_verified' },
@@ -460,7 +468,14 @@ const alterations = [
   { table: 'bookings', column: 'previous_provider_id', sql: 'ALTER TABLE bookings ADD COLUMN previous_provider_id INT AFTER provider_id' },
 
   // Index for previous_provider_id
-  { table: 'bookings', column: 'idx_previous_provider', sql: 'CREATE INDEX idx_previous_provider ON bookings(previous_provider_id)' }
+  { table: 'bookings', column: 'idx_previous_provider', sql: 'CREATE INDEX idx_previous_provider ON bookings(previous_provider_id)' },
+
+  // Additional missing columns for bookings table
+  { table: 'bookings', column: 'job_timer_status', sql: "ALTER TABLE bookings ADD COLUMN job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started'" },
+  { table: 'bookings', column: 'before_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN before_photos_uploaded TINYINT(1) DEFAULT 0' },
+  { table: 'bookings', column: 'after_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN after_photos_uploaded TINYINT(1) DEFAULT 0' },
+  { table: 'bookings', column: 'work_summary', sql: 'ALTER TABLE bookings ADD COLUMN work_summary TEXT' },
+  { table: 'bookings', column: 'recommendations', sql: 'ALTER TABLE bookings ADD COLUMN recommendations TEXT' }
 ];
 
 // =====================================================
@@ -509,11 +524,11 @@ async function runMigration() {
     }
     console.log(`   📊 Total tables created/verified: ${createdCount}/17\n`);
 
-    // Step 4: Run alterations (add missing columns)
-    console.log('🔧 Step 3: Applying column alterations...');
+    // Step 4: Run alterations (add missing columns and constraints)
+    console.log('🔧 Step 3: Applying column alterations and constraints...');
     for (const alt of alterations) {
       try {
-        // Check if it's an INDEX or COLUMN
+        // Check if it's an INDEX, UNIQUE, or COLUMN
         if (alt.sql.startsWith('CREATE INDEX')) {
           // Handle index creation
           const [indexExists] = await conn.query(
@@ -526,6 +541,18 @@ async function runMigration() {
             console.log(`   ✓ Added index: ${alt.table}.${alt.column}`);
           } else {
             console.log(`   ⊘ Index already exists: ${alt.table}.${alt.column}`);
+          }
+        } else if (alt.type === 'unique') {
+          // Handle UNIQUE constraint
+          try {
+            await conn.execute(alt.sql);
+            console.log(`   ✓ Added UNIQUE constraint: ${alt.table}.${alt.column}`);
+          } catch (err) {
+            if (err.code === 'ER_DUP_INDEX' || err.message.includes('Duplicate key name')) {
+              console.log(`   ⊘ UNIQUE constraint already exists: ${alt.table}.${alt.column}`);
+            } else {
+              throw err;
+            }
           }
         } else {
           // Handle column addition
@@ -570,8 +597,36 @@ async function runMigration() {
       console.log(`   ⚠ Could not verify bookings table: ${err.message}`);
     }
 
-    // Step 6: Show all table structures
-    console.log('\n📋 Step 5: All table column counts:');
+    // Step 6: Verify users table structure and UNIQUE constraint
+    console.log('\n🔍 Step 5: Verifying users table structure...');
+    try {
+      const [columns] = await conn.query(`DESCRIBE users`);
+      console.log(`   📋 Users table has ${columns.length} columns`);
+      
+      // Check for UNIQUE constraint on phone
+      const [constraints] = await conn.query(
+        `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'phone' AND CONSTRAINT_NAME != 'PRIMARY'`,
+        [DB_NAME]
+      );
+      
+      if (constraints.length > 0) {
+        console.log(`   ✓ UNIQUE constraint exists on phone column`);
+      } else {
+        console.log(`   ❌ UNIQUE constraint missing on phone column - trying to add it...`);
+        try {
+          await conn.execute('ALTER TABLE users ADD UNIQUE INDEX phone_unique (phone)');
+          console.log(`   ✓ Added UNIQUE constraint on phone column`);
+        } catch (err) {
+          console.log(`   ⚠ Could not add UNIQUE constraint: ${err.message}`);
+        }
+      }
+    } catch (err) {
+      console.log(`   ⚠ Could not verify users table: ${err.message}`);
+    }
+
+    // Step 7: Show all table structures
+    console.log('\n📋 Step 6: All table column counts:');
     const tableQueries = [
       'users', 'service_categories', 'service_providers', 'services',
       'provider_documents', 'provider_bank_accounts', 'bookings',
@@ -615,6 +670,7 @@ async function runMigration() {
     console.log(`   Database: ${DB_NAME}`);
     console.log(`   Tables:   ${tableQueries.length}/17`);
     console.log(`   Total Columns: ${totalColumns}`);
+    console.log('   ✓ UNIQUE constraint added to users.phone column');
     console.log('='.repeat(60) + '\n');
 
   } catch (err) {
@@ -626,6 +682,9 @@ async function runMigration() {
       console.error(`      DB_PASSWORD=${process.env.DB_PASSWORD ? '****' : 'not set'}`);
     } else if (err.code === 'ECONNREFUSED') {
       console.error('   🔌 MySQL server is not running. Please start MySQL first.');
+    } else if (err.code === 'ER_DUP_ENTRY') {
+      console.error('   ⚠ Duplicate entries found in users.phone column. Please clean up duplicates first:');
+      console.error('      Run: SELECT phone, COUNT(*) FROM users GROUP BY phone HAVING COUNT(*) > 1;');
     }
     process.exit(1);
   } finally {
