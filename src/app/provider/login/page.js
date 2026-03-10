@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 export default function ProviderLogin() {
   const router = useRouter();
@@ -47,6 +49,8 @@ export default function ProviderLogin() {
   };
 
   return (
+    <>
+    <Header/>
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-teal-50 flex">
       {/* Left panel - branding */}
       <div className="hidden lg:flex flex-col justify-between w-2/5 bg-gradient-to-br from-green-700 to-teal-700 p-12 text-white">
@@ -157,5 +161,8 @@ export default function ProviderLogin() {
         </div>
       </div>
     </div>
+    <Footer/>
+    
+    </>
   );
 }

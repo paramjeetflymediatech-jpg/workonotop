@@ -1,4 +1,12 @@
-// // app/booking/schedule/page.js
+
+
+
+
+
+
+
+
+// // app/booking/schedule/page.js - FIXED PROGRESS BAR
 // 'use client';
 
 // import { Suspense } from 'react';
@@ -118,45 +126,20 @@
 //     setSelectedDate(null);
 //   };
 
-//   // const handleContinue = () => {
-//   //   const scheduleData = {
-//   //     service_id: service.id,
-//   //     service_name: service.name,
-//   //     service_price: service.base_price,
-//   //     additional_price: service.additional_price,
-//   //     job_date: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`,
-//   //     job_time_slot: selectedTimes[0],
-//   //     timing_constraints: timingConstraints
-//   //   };
+//   const handleContinue = () => {
+//     const scheduleData = {
+//       service_id: service.id,
+//       service_name: service.name,
+//       service_price: service.base_price,
+//       additional_price: service.additional_price,
+//       job_date: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`,
+//       job_time_slot: selectedTimes, // Store ALL selected times as array
+//       timing_constraints: timingConstraints
+//     };
     
-//   //   sessionStorage.setItem('bookingSchedule', JSON.stringify(scheduleData));
-//   //   router.push('/booking/details');
-//   // };
-
-
-
-
-//   // Find this function in your ScheduleContent component
-// const handleContinue = () => {
-//   const scheduleData = {
-//     service_id: service.id,
-//     service_name: service.name,
-//     service_price: service.base_price,
-//     additional_price: service.additional_price,
-//     job_date: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`,
-//     job_time_slot: selectedTimes, // Store ALL selected times as array
-//     timing_constraints: timingConstraints
+//     sessionStorage.setItem('bookingSchedule', JSON.stringify(scheduleData));
+//     router.push('/booking/details');
 //   };
-  
-//   sessionStorage.setItem('bookingSchedule', JSON.stringify(scheduleData));
-//   router.push('/booking/details');
-// };
-
-
-
-
-
-
 
 //   if (loading) {
 //     return (
@@ -200,7 +183,7 @@
 //       <div className="container mx-auto px-4 py-8 md:py-12">
 //         <div className="max-w-6xl mx-auto">
           
-//           {/* Progress Tracker */}
+//           {/* ✅ FIXED Progress Tracker - Step 1 of 3 */}
 //           <div className="mb-10 md:mb-12">
 //             <div className="flex items-center justify-between mb-3">
 //               <span className="text-sm md:text-base font-bold text-green-700 bg-green-100 px-4 py-1.5 rounded-full">STEP 1 OF 3</span>
@@ -213,7 +196,7 @@
 //               <div className="flex justify-between mt-2">
 //                 <div className="flex flex-col items-start">
 //                   <div className="flex items-center">
-//                     <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">✓</div>
+//                     <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
 //                     <span className="ml-2 text-sm font-semibold text-green-700">Schedule</span>
 //                   </div>
 //                 </div>
@@ -543,31 +526,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // app/booking/schedule/page.js - FIXED PROGRESS BAR
 'use client';
 
@@ -695,7 +653,7 @@ function ScheduleContent() {
       service_price: service.base_price,
       additional_price: service.additional_price,
       job_date: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`,
-      job_time_slot: selectedTimes, // Store ALL selected times as array
+      job_time_slot: selectedTimes,
       timing_constraints: timingConstraints
     };
     
@@ -745,7 +703,7 @@ function ScheduleContent() {
       <div className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-6xl mx-auto">
           
-          {/* ✅ FIXED Progress Tracker - Step 1 of 3 */}
+          {/* Progress Tracker - Step 1 of 3 */}
           <div className="mb-10 md:mb-12">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm md:text-base font-bold text-green-700 bg-green-100 px-4 py-1.5 rounded-full">STEP 1 OF 3</span>
@@ -926,7 +884,7 @@ function ScheduleContent() {
 
               {/* Navigation Buttons */}
               <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4">
-                <Link href={`/services/${service.slug}`} className="sm:order-1">
+                <Link href={`/services/${service.slug}`}>
                   <button className="w-full sm:w-auto px-8 py-4 border-2 border-gray-300 rounded-xl hover:bg-gray-100 hover:border-gray-400 transition font-medium text-gray-700 flex items-center justify-center">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
