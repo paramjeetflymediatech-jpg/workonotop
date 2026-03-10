@@ -1391,7 +1391,7 @@ import { withConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
 import { sendEmail } from '@/lib/email'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock')
 
 // ── Helper: calculate final customer charge ───────────────────────────────────
 function calcFinalAmount(basePrice, standardMins, actualMins, overtimeRate = 0) {
