@@ -144,7 +144,7 @@ export default function AdminLogin() {
                 </div>
                 <input
                   type="email"
-                  placeholder="admin@workontap.com"
+                  placeholder="Enter your email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
