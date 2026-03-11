@@ -134,10 +134,7 @@ export default function ProviderPending() {
                 <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
                 {checking ? 'Checking...' : 'Refresh Status'}
               </button>
-              <Link href="/provider/support"
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition">
-                <Mail className="h-4 w-4" /> Support
-              </Link>
+             
             </div>
 
             <p className="text-xs text-center text-gray-400">

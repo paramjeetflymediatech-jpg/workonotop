@@ -13,7 +13,7 @@ async function createAdmin() {
       database: process.env.DB_NAME || 'workontap_db'
     })
 
-    const password = 'admin123' // 👈 change if needed
+    const password ='workontap@7310' // 👈 change if needed
     const hashedPassword = await bcrypt.hash(password, 10)
 
     await connection.execute(

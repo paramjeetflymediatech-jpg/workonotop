@@ -272,10 +272,14 @@ export default function BookingDetailsPage({ params }) {
                 )}
                 {booking.timing_constraints && (
                   <div>
-                    <p className={`text-xs font-medium mb-1 ${lbl}`}>Timing Constraints</p>
-                    <div className="p-3 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800 flex gap-2 break-words">
-                      <span className="flex-shrink-0">⏰</span><span>{booking.timing_constraints}</span>
-                    </div>
+                   <p className={`text-xs font-medium mb-1 ${lbl}`}>Timing Constraints</p>
+
+<div className="p-3 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800 flex gap-2">
+  <span className="flex-shrink-0">⏰</span>
+  <span className="break-words min-w-0">
+    {booking.timing_constraints}
+  </span>
+</div>
                   </div>
                 )}
                 {booking.instructions && (
