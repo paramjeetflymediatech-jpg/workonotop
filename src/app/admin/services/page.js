@@ -25,16 +25,39 @@ export default function Services() {
     use_cases: '', is_homepage: false, is_trending: false, is_popular: false, is_active: true
   })
 
-  useEffect(() => {
-    checkAuth()
-    loadServices()
-    loadCategories()
-  }, [])
+  // useEffect(() => {
+  //   checkAuth()
+  //   loadServices()
+  //   loadCategories()
+  // }, [])
 
-  const checkAuth = () => {
-    const auth = localStorage.getItem('adminAuth')
-    if (!auth) router.push('/')
+  // const checkAuth = () => {
+  //   const auth = localStorage.getItem('adminAuth')
+  //   if (!auth) router.push('/')
+  // }
+
+
+
+useEffect(() => {
+  checkAuth()
+}, [])
+
+const checkAuth = async () => {
+  try {
+    const res = await fetch('/api/admin/me')
+    if (!res.ok) {
+      router.push('/admin/login')
+      return
+    }
+    loadServices()   // ✅ auth pass hone ke baad
+    loadCategories()
+  } catch {
+    router.push('/admin/login')
   }
+}
+
+
+
 
   const loadServices = async () => {
     setLoading(true)

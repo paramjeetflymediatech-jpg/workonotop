@@ -11,13 +11,32 @@ export default function AdminReviews() {
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // useEffect(() => {
+  //   if (localStorage.getItem('adminAuth') !== 'loggedin') router.push('/admin/login')
+  //   fetch('/api/reviews', { cache: 'no-store' })
+  //     .then(r => r.json())
+  //     .then(d => { if (d.success) setReviews(Array.isArray(d.data) ? d.data : []) })
+  //     .finally(() => setLoading(false))
+  // }, [router])
+
+
+
+
   useEffect(() => {
-    if (localStorage.getItem('adminAuth') !== 'loggedin') router.push('/admin/login')
-    fetch('/api/reviews', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => { if (d.success) setReviews(Array.isArray(d.data) ? d.data : []) })
-      .finally(() => setLoading(false))
-  }, [router])
+  fetch('/api/admin/me')
+    .then(res => {
+      if (!res.ok) { router.push('/admin/login'); return }
+      fetch('/api/reviews', { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => { if (d.success) setReviews(Array.isArray(d.data) ? d.data : []) })
+        .finally(() => setLoading(false))
+    })
+    .catch(() => router.push('/admin/login'))
+}, [router])
+
+
+
+
 
   const text = isDarkMode ? 'text-white' : 'text-gray-900'
   const sub = isDarkMode ? 'text-slate-400' : 'text-gray-500'

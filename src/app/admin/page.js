@@ -34,13 +34,15 @@ export default function AdminDashboard() {
     loadDashboardData()
   }, [])
 
-  const checkAuth = () => {
-    if (typeof window === 'undefined') return
-    const auth = localStorage.getItem('adminAuth')
-    if (!auth) {
-      router.push('/admin/login')
-    }
+
+const checkAuth = async () => {
+  try {
+    const res = await fetch('/api/admin/me')
+    if (!res.ok) router.push('/admin/login')
+  } catch {
+    router.push('/admin/login')
   }
+}
 
   const loadDashboardData = async () => {
     if (typeof window === 'undefined') return
