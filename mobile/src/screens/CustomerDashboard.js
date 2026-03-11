@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -22,6 +22,17 @@ const PRIMARY_LIGHT = '#14b8a6'; // Teal
 const ACCENT = '#f59e0b'; // Amber
 const BG_COLOR = '#f8fafc';
 
+const getStatusStyle = (status) => {
+    switch (status) {
+        case 'pending': return { bg: '#fef3c7', text: '#d97706', label: 'Pending' };
+        case 'confirmed': return { bg: '#dbeafe', text: '#2563eb', label: 'Confirmed' };
+        case 'in_progress': return { bg: '#f3e8ff', text: '#9333ea', label: 'In Progress' };
+        case 'completed': return { bg: '#dcfce7', text: '#16a34a', label: 'Completed' };
+        case 'cancelled': return { bg: '#fee2e2', text: '#dc2626', label: 'Cancelled' };
+        default: return { bg: '#f1f5f9', text: '#64748b', label: status };
+    }
+};
+
 const CustomerDashboard = ({ navigation }) => {
     const { user } = useAuth();
     const insets = useSafeAreaInsets();
@@ -30,7 +41,7 @@ const CustomerDashboard = ({ navigation }) => {
     const [categories, setCategories] = useState([]);
     const [bookings, setBookings] = useState([]);
 
-    const fetchCustomerData = async () => {
+    const fetchCustomerData = useCallback(async () => {
         try {
             const [categoriesRes, bookingsRes] = await Promise.all([
                 api.get('/api/categories'),
@@ -45,7 +56,7 @@ const CustomerDashboard = ({ navigation }) => {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [user?.id]);
 
     useEffect(() => {
         if (user?.id) {
@@ -58,16 +69,6 @@ const CustomerDashboard = ({ navigation }) => {
         fetchCustomerData();
     };
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case 'pending': return { bg: '#fef3c7', text: '#d97706', label: 'Pending' };
-            case 'confirmed': return { bg: '#dbeafe', text: '#2563eb', label: 'Confirmed' };
-            case 'in_progress': return { bg: '#f3e8ff', text: '#9333ea', label: 'In Progress' };
-            case 'completed': return { bg: '#dcfce7', text: '#16a34a', label: 'Completed' };
-            case 'cancelled': return { bg: '#fee2e2', text: '#dc2626', label: 'Cancelled' };
-            default: return { bg: '#f1f5f9', text: '#64748b', label: status };
-        }
-    };
 
     if (loading && !refreshing) {
         return (

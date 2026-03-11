@@ -122,9 +122,8 @@ const OtpVerificationScreen = ({ navigation, route }) => {
 
         setLoading(true);
         try {
-            const endpoint = type === 'pro'
-                ? '/api/provider/forgot-password'
-                : '/api/auth/forgot-password';
+            // Use unified mobile endpoint for resending as well
+            const endpoint = '/api/auth/mobile/forgot-password';
 
             const res = await api.post(endpoint, { email, source: 'mobile' });
 

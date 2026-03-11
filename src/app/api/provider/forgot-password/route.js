@@ -7,6 +7,7 @@ import { sendEmail } from '@/lib/email'
 export async function POST(request) {
   try {
     const { email, source } = await request.json()
+    console.log(`🔍 [Provider Forget Password] Request received - Source: ${source}, Email: ${email}`);
     const isMobile = source === 'mobile'
 
     if (!email) {
@@ -100,22 +101,21 @@ export async function POST(request) {
     console.log('📧 Attempting to send email to:', provider.email)
 
     try {
+      console.log(`🔢 Sending ${isMobile ? 'OTP' : 'Reset Link'} email to ${provider.email}...`);
       const emailResult = await sendEmail({
         to: provider.email,
-        subject: 'Reset Your WorkOnTap Password',
+        subject: isMobile ? 'Your WorkOnTap Verification Code' : 'Reset Your WorkOnTap Password',
         html: emailHtml,
         text: emailText
       })
 
-      console.log('📨 Email send result:', emailResult)
+      console.log(`📨 Email result for ${provider.email}:`, emailResult.success ? 'SUCCESS' : `FAILURE (${emailResult.error})`);
 
       if (!emailResult.success) {
         console.error('❌ Email sending failed:', emailResult.error)
-        // Don't return error to user for security, but log it
       }
     } catch (emailError) {
       console.error('❌ Email sending exception:', emailError)
-      // Don't return error to user for security, but log it
     }
 
     return NextResponse.json({

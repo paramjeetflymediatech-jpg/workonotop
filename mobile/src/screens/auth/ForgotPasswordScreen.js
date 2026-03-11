@@ -77,18 +77,18 @@ const ForgotPasswordScreen = ({ navigation }) => {
         setLoading(true);
 
         try {
-            // Determine endpoint based on account type
-            const endpoint = type === 'pro'
-                ? '/api/provider/forgot-password'
-                : '/api/auth/forgot-password';
+            // Use unified mobile endpoint which handles both roles
+            const endpoint = '/api/auth/mobile/forgot-password';
 
             const res = await api.post(endpoint, { email, source: 'mobile' });
 
             if (res.success) {
-                // Navigate to OTP verification screen
-                navigation.navigate('OtpVerification', { email, type });
+                setIsSubmitted(true);
+                // Use the type returned by the server if available, fallback to existing type
+                const userType = res.type || type;
+                navigation.navigate('OtpVerification', { email, type: userType });
             } else {
-                showError(res.message || 'Failed to send verification code.');
+                setError(res.message || 'Something went wrong. Please try again.');
             }
         } catch (err) {
             console.error('Forgot password error:', err);

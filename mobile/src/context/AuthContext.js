@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
      * Dynamically loads expo-notifications and registers the push token.
      * Skipped silently in Expo Go (SDK 53+ removed remote push support).
      */
-    const registerPushToken = async (userData) => {
+    const registerPushToken = useCallback(async (userData) => {
         // Skip in Expo Go — remote push notifications removed in SDK 53+
         if (isExpoGo) {
             console.log('[PushToken] Skipped: running in Expo Go. Use a dev build for push tokens.');
@@ -115,9 +115,9 @@ export const AuthProvider = ({ children }) => {
             // Non-fatal — never block the login flow
             console.warn('[PushToken] Registration failed (non-fatal):', err.message);
         }
-    };
+    }, []);
 
-    const login = async (userData, userToken) => {
+    const login = useCallback(async (userData, userToken) => {
         try {
             setUser(userData);
             setToken(userToken);
@@ -127,9 +127,9 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Failed to save auth data:', error);
         }
-    };
+    }, [registerPushToken]);
 
-    const logout = async () => {
+    const logout = useCallback(async () => {
         try {
             setUser(null);
             setToken(null);
@@ -138,21 +138,32 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Failed to clear auth data:', error);
         }
-    };
+    }, []);
 
-    const updateUser = async (updatedData) => {
+    const updateUser = useCallback(async (updatedData) => {
         try {
-            const newUser = { ...user, ...updatedData };
-            setUser(newUser);
-            await AsyncStorage.setItem('user', JSON.stringify(newUser));
+            setUser(curr => {
+                const newUser = { ...curr, ...updatedData };
+                AsyncStorage.setItem('user', JSON.stringify(newUser));
+                return newUser;
+            });
             console.log('[AuthContext] User data updated locally ✅');
         } catch (error) {
             console.error('Failed to update user auth data:', error);
         }
-    };
+    }, []);
+
+    const value = useMemo(() => ({
+        user,
+        token,
+        loading,
+        login,
+        logout,
+        updateUser
+    }), [user, token, loading, login, logout, updateUser]);
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
