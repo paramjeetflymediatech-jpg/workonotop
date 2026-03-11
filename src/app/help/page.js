@@ -51,9 +51,9 @@ export default function HelpPage() {
         </div>
       </div>
 
-      {/* Quick Links Grid - 4 buttons */}
+      {/* Quick Links Grid - 2 buttons */}
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
           <Link
             href="/help/booking"
             className="bg-gray-50 hover:bg-green-50 border border-gray-200 rounded-xl p-4 text-center transition group"
@@ -68,22 +68,6 @@ export default function HelpPage() {
           >
             <div className="text-3xl mb-2 group-hover:scale-110 transition">💰</div>
             <div className="font-medium text-gray-700">Payment Help</div>
-          </Link>
-          
-          <Link
-            href="/help/safety"
-            className="bg-gray-50 hover:bg-green-50 border border-gray-200 rounded-xl p-4 text-center transition group"
-          >
-            <div className="text-3xl mb-2 group-hover:scale-110 transition">🛡️</div>
-            <div className="font-medium text-gray-700">Safety & Trust</div>
-          </Link>
-          
-          <Link
-            href="/help/report"
-            className="bg-gray-50 hover:bg-green-50 border border-gray-200 rounded-xl p-4 text-center transition group"
-          >
-            <div className="text-3xl mb-2 group-hover:scale-110 transition">⚠️</div>
-            <div className="font-medium text-gray-700">Report an Issue</div>
           </Link>
         </div>
       </div>
@@ -115,8 +99,6 @@ export default function HelpPage() {
             </div>
           ))}
         </div>
-
-     
       </div>
 
       <Footer />
