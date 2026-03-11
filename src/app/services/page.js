@@ -670,24 +670,31 @@ export default function ServicesPage() {
                   <svg className="w-6 h-6 text-emerald-500 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
+                  <input
+                    type="text"
+                    placeholder={placeholder || 'What do you need?'}
+                    className="w-full bg-transparent border-none outline-none text-slate-800 placeholder:text-slate-400 text-lg md:text-xl font-medium"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onClick={(e) => {
+                      setTimeout(() => {
+                        window.scrollTo({ top: 300, behavior: 'smooth' });
+                      }, 100);
+                    }}
+                    onFocus={(e) => {
+                      setTimeout(() => {
+                        window.scrollTo({ top: 300, behavior: 'smooth' });
+                      }, 100);
+                    }}
+                  />
                 </div>
-                <input
-                  type="text"
-                  placeholder={placeholder || 'mount tv on wall'}
-                  className="w-full pl-14 pr-6 py-4 sm:py-5 text-gray-800 bg-white rounded-2xl shadow-2xl outline-none placeholder:text-gray-700 placeholder:font-medium placeholder:text-lg sm:placeholder:text-xl md:placeholder:text-2xl text-base sm:text-lg md:text-xl border-2 border-transparent focus:border-green-300 transition-all duration-300"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onClick={(e) => {
-                    setTimeout(() => {
-                      window.scrollTo({ top: 300, behavior: 'smooth' });
-                    }, 100);
-                  }}
-                  onFocus={(e) => {
-                    setTimeout(() => {
-                      window.scrollTo({ top: 300, behavior: 'smooth' });
-                    }, 100);
-                  }}
-                />
+                <div className="hidden sm:block h-10 w-px bg-slate-100 mx-2"></div>
+                <button
+                  onClick={handleSearchClick}
+                  className="hidden sm:block bg-slate-900 text-white font-bold px-8 py-4 rounded-2xl hover:bg-emerald-600 transition-all active:scale-95"
+                >
+                  Find Pros
+                </button>
               </div>
             </div>
           </div>
