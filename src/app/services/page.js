@@ -801,7 +801,7 @@ export default function ServicesPage() {
             <div className="text-center py-32 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
               <div className="text-6xl mb-6 animate-bounce">🔍</div>
               <h3 className="text-3xl font-bold text-slate-900 mb-4">No services found</h3>
-              <p className="text-slate-500 text-lg mb-10 max-w-md mx-auto">We couldn't find any results matching your search. Try a different term or clear filters.</p>
+              <p className="text-slate-500 text-lg mb-10 max-w-md mx-auto">We couldn&apos;t find any results matching your search. Try a different term or clear filters.</p>
               <button
                 onClick={() => { setActiveCategory('all'); setSearchTerm(''); }}
                 className="bg-emerald-500 text-white font-bold px-10 py-5 rounded-2xl hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 active:scale-95"
