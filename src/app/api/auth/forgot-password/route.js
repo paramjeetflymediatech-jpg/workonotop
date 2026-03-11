@@ -6,6 +6,7 @@ import { sendEmail } from '@/lib/email'
 export async function POST(request) {
   try {
     const { email, source } = await request.json()
+    console.log(`🔍 [Customer Forget Password] Request received - Source: ${source}, Email: ${email}`);
     const isMobile = source === 'mobile'
 
     if (!email) {
@@ -49,23 +50,27 @@ export async function POST(request) {
 
     if (isMobile) {
       // Send OTP email
-      await sendEmail({
+      console.log('🔢 Sending OTP email...');
+      const result = await sendEmail({
         to: user.email,
         subject: 'Your WorkOnTap Verification Code',
         html: getOtpEmailHtml(name, resetToken),
         text: `Your WorkOnTap verification code is: ${resetToken}`
       })
+      console.log(`📨 OTP Email result for ${user.email}:`, result.success ? 'SUCCESS' : `FAILURE (${result.error})`);
     } else {
       // Send Reset Link email
+      console.log('🔗 Sending Reset Link email...');
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
       const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`
 
-      await sendEmail({
+      const result = await sendEmail({
         to: user.email,
         subject: 'Reset Your WorkOnTap Password',
         html: getResetLinkEmailHtml(name, resetUrl),
         text: `Reset your WorkOnTap password: ${resetUrl}`
       })
+      console.log(`📨 Reset Link Email result for ${user.email}:`, result.success ? 'SUCCESS' : `FAILURE (${result.error})`);
     }
 
     return NextResponse.json({ success: true, message: 'If an account exists, you will receive a reset email' })

@@ -23,14 +23,17 @@ export async function sendEmail({ to, subject, html, text }) {
       console.error('❌ SMTP_USER or EMAIL_USER not configured');
       return { success: false, error: 'Email configuration missing' };
     }
-    
+
     if (!process.env.SMTP_PASS && !process.env.EMAIL_PASS) {
       console.error('❌ SMTP_PASS or EMAIL_PASS not configured');
       return { success: false, error: 'Email configuration missing' };
     }
 
+    const from = process.env.EMAIL_FROM || process.env.SMTP_USER || 'WorkOnTap <noreply@workontap.com>';
+    console.log(`📬 [sendEmail] To: ${to}, From: ${from}, Subject: ${subject}`);
+
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || 'WorkOnTap <noreply@workontap.com>',
+      from,
       to,
       subject,
       html,
@@ -40,7 +43,6 @@ export async function sendEmail({ to, subject, html, text }) {
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('❌ Email send error:', error);
-    // Don't throw error, just return false - so app doesn't break
     return { success: false, error: error.message };
   }
 }

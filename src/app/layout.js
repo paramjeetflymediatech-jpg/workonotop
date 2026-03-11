@@ -1,5 +1,4 @@
-// app/layout.js
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "src/context/AuthContext";
 
@@ -13,6 +12,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
 export const metadata = {
   title: "WorkOnTap - Home Maintenance Services",
   description: "Book trusted local pros for your home maintenance needs",
@@ -22,7 +26,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased `}
+        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased `}
         suppressHydrationWarning
       >
         <AuthProvider>

@@ -18,21 +18,21 @@ export default function Header() {
   } = useAuth();
 
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [customerModalMode, setCustomerModalMode]     = useState('login');
-  const [mobileMenuOpen, setMobileMenuOpen]           = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm]     = useState(false);
-  const [proDropdownOpen, setProDropdownOpen]         = useState(false);
-  const [loginDropdownOpen, setLoginDropdownOpen]     = useState(false);
-  const [userMenuOpen, setUserMenuOpen]               = useState(false);
+  const [customerModalMode, setCustomerModalMode] = useState('login');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [proDropdownOpen, setProDropdownOpen] = useState(false);
+  const [loginDropdownOpen, setLoginDropdownOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const proRef      = useRef(null);
-  const loginRef    = useRef(null);
+  const proRef = useRef(null);
+  const loginRef = useRef(null);
   const userMenuRef = useRef(null);
 
   useEffect(() => {
     const handler = (e) => {
-      if (proRef.current      && !proRef.current.contains(e.target))      setProDropdownOpen(false);
-      if (loginRef.current    && !loginRef.current.contains(e.target))    setLoginDropdownOpen(false);
+      if (proRef.current && !proRef.current.contains(e.target)) setProDropdownOpen(false);
+      if (loginRef.current && !loginRef.current.contains(e.target)) setLoginDropdownOpen(false);
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false);
     };
     document.addEventListener('mousedown', handler);
@@ -46,9 +46,9 @@ export default function Header() {
     setLoginDropdownOpen(false);
   };
 
-  const goToProLogin  = () => { router.push('/provider/login');  setMobileMenuOpen(false); setProDropdownOpen(false); };
+  const goToProLogin = () => { router.push('/provider/login'); setMobileMenuOpen(false); setProDropdownOpen(false); };
   const goToProSignup = () => { router.push('/provider/signup'); setMobileMenuOpen(false); setProDropdownOpen(false); };
-  const handleLogout  = () => { logout(true); setShowLogoutConfirm(false); };
+  const handleLogout = () => { logout(true); setShowLogoutConfirm(false); };
 
   return (
     <>

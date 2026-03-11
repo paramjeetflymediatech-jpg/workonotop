@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
     View,
     Text,
@@ -14,7 +14,7 @@ import { scale, verticalScale, moderateScale } from '../utils/responsive';
 
 const { width } = Dimensions.get('window');
 
-const CustomTabBar = ({ state, descriptors, navigation, role }) => {
+const CustomTabBar = memo(({ state, descriptors, navigation, role }) => {
     const insets = useSafeAreaInsets();
 
     // Adjust bottom padding based on device insets (handles gestures/keys)
@@ -97,7 +97,7 @@ const CustomTabBar = ({ state, descriptors, navigation, role }) => {
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     tabBarContainer: {

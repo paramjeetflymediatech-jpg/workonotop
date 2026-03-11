@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import {
     View,
     Text,
@@ -14,6 +14,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../utils/responsive';
+
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+    }).format(amount || 0);
+};
+
+const StatBox = memo(({ label, value, color }) => (
+    <View style={[styles.statBox, { backgroundColor: color + '15' }]}>
+        <Text style={[styles.statValue, { color: color }]}>{value}</Text>
+        <Text style={[styles.statLabel, { color: color }]}>{label}</Text>
+    </View>
+));
 
 const ProviderDashboard = ({ navigation }) => {
     const { user } = useAuth();
@@ -31,7 +46,7 @@ const ProviderDashboard = ({ navigation }) => {
         availableJobsCount: 0
     });
 
-    const fetchProviderData = async () => {
+    const fetchProviderData = useCallback(async () => {
         try {
             const [statsRes, availableRes] = await Promise.all([
                 api.get('/api/provider/dashboard-stats'),
@@ -49,31 +64,16 @@ const ProviderDashboard = ({ navigation }) => {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchProviderData();
-    }, []);
+    }, [fetchProviderData]);
 
     const onRefresh = () => {
         setRefreshing(true);
         fetchProviderData();
     };
-
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-        }).format(amount || 0);
-    };
-
-    const StatBox = ({ label, value, color }) => (
-        <View style={[styles.statBox, { backgroundColor: color + '15' }]}>
-            <Text style={[styles.statValue, { color: color }]}>{value}</Text>
-            <Text style={[styles.statLabel, { color: color }]}>{label}</Text>
-        </View>
-    );
 
     if (loading && !refreshing) {
         return (
