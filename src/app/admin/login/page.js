@@ -11,30 +11,31 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
-  const handleLogin = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        localStorage.setItem('adminAuth', 'loggedin')
-        router.push('/admin')
-        router.refresh()
-      } else {
-        setError(data.message || 'Invalid credentials')
-      }
-    } catch {
-      setError('An error occurred. Please try again.')
-    } finally {
-      setLoading(false)
+// app/admin/login/page.js — only the handleLogin function changes
+const handleLogin = async (e) => {
+  e.preventDefault()
+  setError('')
+  setLoading(true)
+  try {
+    const res = await fetch('/api/admin/login', {  // ✅ /auth removed
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      // ✅ no localStorage — JWT lives in httpOnly cookie
+      router.push('/admin')
+      router.refresh()
+    } else {
+      setError(data.message || 'Invalid credentials')
     }
+  } catch {
+    setError('An error occurred. Please try again.')
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <div className="min-h-screen flex" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>

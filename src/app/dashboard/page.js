@@ -16,7 +16,7 @@ const fmtDate = (d) => d
   : '—'
 
 export default function CustomerDashboard() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router   = useRouter()
 
   const [profile, setProfile] = useState(null)
@@ -24,9 +24,10 @@ export default function CustomerDashboard() {
   const [error, setError]     = useState('')
 
   useEffect(() => {
+    if (authLoading) return
     if (!user) { router.push('/'); return }
     loadProfile()
-  }, [user])
+  }, [user, authLoading])
 
   const loadProfile = async () => {
     try {
@@ -39,7 +40,7 @@ export default function CustomerDashboard() {
     finally  { setLoading(false) }
   }
 
-  if (loading) return (
+  if (authLoading || loading) return (
     <>
       <Header />
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

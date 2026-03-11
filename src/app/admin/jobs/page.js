@@ -73,11 +73,18 @@ export default function JobRequests() {
 
   useEffect(() => { setPage(1) }, [filter, selectedCustomer])
 
-  const checkAuth = () => {
-    const auth = localStorage.getItem('adminAuth')
-    if (!auth) router.push('/')
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/admin/me')
+      if (!res.ok) {
+        router.push('/admin/login')
+        return
+      }
+      loadJobs() // ✅ auth pass hone ke baad hi load karo
+    } catch {
+      router.push('/admin/login')
+    }
   }
-
   const loadJobs = async () => {
     setLoading(true)
     try {

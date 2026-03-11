@@ -20,15 +20,40 @@ export default function EarningsPage() {
     })
     const [providers, setProviders] = useState([])
 
-    useEffect(() => {
-        checkAuth()
-        loadInitialData()
-    }, [])
+    // useEffect(() => {
+    //     checkAuth()
+    //     loadInitialData()
+    // }, [])
 
-    const checkAuth = () => {
-        const auth = localStorage.getItem('adminAuth')
-        if (!auth) router.push('/admin/login')
+    // const checkAuth = () => {
+    //     const auth = localStorage.getItem('adminAuth')
+    //     if (!auth) router.push('/admin/login')
+    // }
+
+
+
+
+    useEffect(() => {
+  checkAuth()
+}, [])
+
+const checkAuth = async () => {
+  try {
+    const res = await fetch('/api/admin/me')
+    if (!res.ok) {
+      router.push('/admin/login')
+      return
     }
+    loadInitialData() // ✅ auth pass hone ke baad hi load karo
+  } catch {
+    router.push('/admin/login')
+  }
+}
+
+
+
+
+
 
     const loadInitialData = async () => {
         setLoading(true)

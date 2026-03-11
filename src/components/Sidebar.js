@@ -476,10 +476,11 @@ export default function Sidebar() {
     window.dispatchEvent(new Event('sidebarCollapsed'))
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('adminAuth')
-    router.push('/')
-  }
+ const handleLogout = async () => {
+  await fetch('/api/admin/logout', { method: 'POST' })
+  router.push('/admin/login')
+}
+
 
   const menuItems = [
     {
