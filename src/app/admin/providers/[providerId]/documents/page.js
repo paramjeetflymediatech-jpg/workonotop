@@ -33,7 +33,7 @@ function ApproveModal({ isOpen, onClose, onConfirm, providerName, isDarkMode }) 
       </div>
       <h3 className={`text-lg font-bold text-center mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Approve Provider</h3>
       <p className={`text-sm text-center mb-6 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-        Approve <strong>{providerName}</strong>? They'll receive a welcome email and can start accepting jobs immediately.
+        Approve <strong>{providerName}</strong>? They&apos;ll receive a welcome email and can start accepting jobs immediately.
       </p>
       <div className="flex gap-3">
         <button onClick={onClose}
@@ -66,7 +66,7 @@ function RejectDocsModal({ isOpen, onClose, onConfirm, providerName, isDarkMode 
       </div>
       <h3 className={`text-lg font-bold text-center mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Reject Documents</h3>
       <p className={`text-sm text-center mb-3 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-        Tell <strong>{providerName}</strong> what to fix — they'll be asked to re-upload.
+        Tell <strong>{providerName}</strong> what to fix — they&apos;ll be asked to re-upload.
       </p>
       <div className={`flex items-center gap-2 rounded-xl px-3 py-2 mb-4 text-xs font-medium ${isDarkMode ? 'bg-amber-900/30 text-amber-400 border border-amber-800' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
         <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,13 +114,13 @@ function RejectProviderModal({ isOpen, onClose, onConfirm, providerName, isDarkM
       </div>
       <h3 className={`text-lg font-bold text-center mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Reject Provider Account</h3>
       <p className={`text-sm text-center mb-3 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-        Permanently reject <strong>{providerName}</strong>'s application.
+        Permanently reject <strong>{providerName}</strong>&apos;s application.
       </p>
       <div className={`flex items-center gap-2 rounded-xl px-3 py-2 mb-4 text-xs font-medium ${isDarkMode ? 'bg-red-900/30 text-red-400 border border-red-800' : 'bg-red-50 text-red-700 border border-red-200'}`}>
         <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
         </svg>
-        This will suspend the provider's account and send a rejection email
+        This will suspend the provider&apos;s account and send a rejection email
       </div>
       <textarea
         value={reason}
