@@ -78,8 +78,12 @@ export default function CustomerDashboard() {
         {/* Hero Banner */}
         <div className="bg-gradient-to-br from-teal-700 via-teal-600 to-emerald-600 pt-8 pb-20 px-4">
           <div className="max-w-2xl mx-auto flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center text-white text-xl font-black flex-shrink-0 shadow-lg">
-              {initials}
+            <div className="w-14 h-14 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center text-white text-xl font-black flex-shrink-0 shadow-lg overflow-hidden">
+              {profile.image_url ? (
+                <img src={profile.image_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-teal-200 text-xs font-semibold uppercase tracking-widest mb-0.5">Welcome back</p>

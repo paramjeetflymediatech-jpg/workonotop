@@ -36,6 +36,7 @@ const tables = [
     hear_about VARCHAR(255),
     receive_offers TINYINT(1) DEFAULT 0,
     role ENUM('user', 'admin') DEFAULT 'user',
+    image_url VARCHAR(255),
     reset_token VARCHAR(255),
     reset_token_expiry DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -475,7 +476,10 @@ const alterations = [
   { table: 'bookings', column: 'before_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN before_photos_uploaded TINYINT(1) DEFAULT 0' },
   { table: 'bookings', column: 'after_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN after_photos_uploaded TINYINT(1) DEFAULT 0' },
   { table: 'bookings', column: 'work_summary', sql: 'ALTER TABLE bookings ADD COLUMN work_summary TEXT' },
-  { table: 'bookings', column: 'recommendations', sql: 'ALTER TABLE bookings ADD COLUMN recommendations TEXT' }
+  { table: 'bookings', column: 'recommendations', sql: 'ALTER TABLE bookings ADD COLUMN recommendations TEXT' },
+  
+  // users table additions
+  { table: 'users', column: 'image_url', sql: 'ALTER TABLE users ADD COLUMN image_url VARCHAR(255) AFTER role' }
 ];
 
 // =====================================================

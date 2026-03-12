@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
-import { execute } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
+
+// Unified JWT implementation
 
 export async function GET(request) {
   try {
-    const token = request.cookies.get('provider_token')?.value;
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader ? authHeader.replace('Bearer ', '') : request.cookies.get('provider_token')?.value;
     
     if (!token) {
       return NextResponse.json(

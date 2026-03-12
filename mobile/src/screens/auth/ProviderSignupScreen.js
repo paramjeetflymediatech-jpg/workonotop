@@ -15,6 +15,7 @@ import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/
 import { apiService } from '../../services/api';
 import { Alert } from 'react-native';
 import PasswordInput from '../../components/PasswordInput';
+import SuccessModal from '../../components/SuccessModal';
 
 const ProviderSignupScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
@@ -27,6 +28,7 @@ const ProviderSignupScreen = ({ navigation }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showSuccess, setShowSuccess] = useState(false);
 
     const handleSignup = async () => {
         const { firstName, lastName, email, phone, password, confirmPassword } = formData;
@@ -86,11 +88,7 @@ const ProviderSignupScreen = ({ navigation }) => {
             });
 
             if (response.success) {
-                Alert.alert(
-                    "Account Created",
-                    "Please check your email to verify your account before logging in.",
-                    [{ text: "OK", onPress: () => navigation.navigate('Login', { type: 'pro' }) }]
-                );
+                setShowSuccess(true);
             } else {
                 setError(response.message || 'Signup failed');
             }
@@ -225,6 +223,16 @@ const ProviderSignupScreen = ({ navigation }) => {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            <SuccessModal 
+                visible={showSuccess}
+                title="Account Created"
+                message="Please check your email to verify your account before logging in."
+                onOk={() => {
+                    setShowSuccess(false);
+                    navigation.navigate('Login', { type: 'pro' });
+                }}
+            />
         </SafeAreaView>
     );
 };

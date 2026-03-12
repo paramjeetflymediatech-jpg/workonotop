@@ -125,14 +125,20 @@
 
 
 
-// app/api/customers/[id]/route.js
 import { NextResponse } from 'next/server'
 import { execute } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
+import { promises as fs } from 'fs'
+import path from 'path'
 
 export async function GET(request, { params }) {
   try {
-    const token = request.cookies.get('customer_token')?.value
+    const { id } = await params
+    
+    // Auth check - prioritize Authorization header for mobile
+    const authHeader = request.headers.get('Authorization')
+    let token = authHeader ? authHeader.replace('Bearer ', '') : request.cookies.get('customer_token')?.value
+    
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
@@ -140,8 +146,6 @@ export async function GET(request, { params }) {
     if (!decoded) {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
-
-    const id = params.id
 
     // Only allow users to fetch their own profile (unless admin)
     if (String(decoded.id) !== String(id) && decoded.role !== 'admin') {
@@ -157,6 +161,7 @@ export async function GET(request, { params }) {
         u.phone, 
         u.hear_about,
         u.receive_offers,
+        u.image_url,
         u.created_at,
         u.updated_at,
         (SELECT COUNT(*) FROM bookings WHERE user_id = u.id) as total_bookings,
@@ -198,6 +203,7 @@ export async function GET(request, { params }) {
       phone: row.phone,
       hear_about: row.hear_about,
       receive_offers: row.receive_offers,
+      image_url: row.image_url,
       created_at: row.created_at,
       updated_at: row.updated_at,
       stats: {
@@ -225,7 +231,12 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    const token = request.cookies.get('customer_token')?.value
+    const { id } = await params
+    
+    // Auth check - prioritize Authorization header for mobile
+    const authHeader = request.headers.get('Authorization')
+    let token = authHeader ? authHeader.replace('Bearer ', '') : request.cookies.get('customer_token')?.value
+    
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
@@ -234,41 +245,89 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
-    const id = params.id
-
     // Only allow users to update their own profile
     if (String(decoded.id) !== String(id)) {
       return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
     }
 
-    const { first_name, last_name, phone, hear_about, receive_offers } = await request.json()
+    const contentType = request.headers.get('content-type') || ''
+    let first_name, last_name, phone, hear_about, receive_offers, profile_image
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      first_name = formData.get('first_name')
+      last_name = formData.get('last_name')
+      phone = formData.get('phone')
+      hear_about = formData.get('hear_about')
+      receive_offers = formData.get('receive_offers') === 'true' || formData.get('receive_offers') === '1'
+      profile_image = formData.get('profile_image')
+    } else {
+      const body = await request.json()
+      first_name = body.first_name
+      last_name = body.last_name
+      phone = body.phone
+      hear_about = body.hear_about
+      receive_offers = body.receive_offers
+    }
 
     if (!first_name || !last_name) {
       return NextResponse.json({ success: false, message: 'First name and last name are required' }, { status: 400 })
     }
 
-    await execute(
-      `UPDATE users SET 
+    // Handle profile image upload if provided
+    let imageUrl = null
+    if (profile_image && profile_image.size > 0) {
+      const bytes = await profile_image.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const ext = profile_image.name.split('.').pop()
+      const filename = `customer_${id}_${Date.now()}.${ext}`
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+      
+      try {
+        await fs.access(uploadDir)
+      } catch {
+        await fs.mkdir(uploadDir, { recursive: true })
+      }
+      
+      const filepath = path.join(uploadDir, filename)
+      await fs.writeFile(filepath, buffer)
+      imageUrl = `/uploads/${filename}`
+    }
+
+    // Prepare update query
+    let query = `UPDATE users SET 
         first_name = ?, 
         last_name = ?, 
         phone = ?, 
         hear_about = ?,
         receive_offers = ?,
-        updated_at = NOW() 
-       WHERE id = ?`,
-      [first_name, last_name, phone || null, hear_about || null, receive_offers ? 1 : 0, id]
-    )
+        updated_at = NOW()`
+    let queryParams = [first_name, last_name, phone || null, hear_about || null, receive_offers ? 1 : 0]
+    
+    if (imageUrl) {
+      query += `, image_url = ?`
+      queryParams.push(imageUrl)
+    }
+    
+    query += ` WHERE id = ?`
+    queryParams.push(id)
+
+    await execute(query, queryParams)
 
     // Return updated user
     const updated = await execute(
-      `SELECT id, email, first_name, last_name, phone, hear_about, receive_offers, created_at, updated_at FROM users WHERE id = ?`,
+      `SELECT id, email, first_name, last_name, phone, hear_about, receive_offers, image_url, created_at, updated_at FROM users WHERE id = ?`,
       [id]
     )
 
-    return NextResponse.json({ success: true, message: 'Profile updated successfully', data: updated[0] })
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Profile updated successfully', 
+      data: updated[0] 
+    })
 
   } catch (error) {
     console.error('Error updating customer:', error)
     return NextResponse.json({ success: false, message: 'Failed to update profile: ' + error.message }, { status: 500 })
   }
-}
+}

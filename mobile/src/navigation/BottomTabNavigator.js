@@ -9,6 +9,7 @@ import CustomerDashboard from '../screens/CustomerDashboard';
 import ProviderDashboard from '../screens/ProviderDashboard';
 import ServicesScreen from '../screens/ServicesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import MyBookingsScreen from '../screens/customer/MyBookingsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -43,11 +44,18 @@ const BottomTabNavigator = () => {
                     options={{ title: 'My Jobs' }}
                 />
             ) : (
-                <Tab.Screen
-                    name="Services"
-                    component={ServicesScreen}
-                    options={{ title: 'Services' }}
-                />
+                <>
+                    <Tab.Screen
+                        name="Services"
+                        component={ServicesScreen}
+                        options={{ title: 'Services' }}
+                    />
+                    <Tab.Screen
+                        name="MyBookings"
+                        component={MyBookingsScreen}
+                        options={{ title: 'My Bookings' }}
+                    />
+                </>
             )}
 
             {/* Common last tab */}

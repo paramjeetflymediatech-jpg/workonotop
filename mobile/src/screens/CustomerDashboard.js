@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../utils/responsive';
+import { API_BASE_URL } from '../config';
 
 const PRIMARY = '#115e59'; // Deep Teal
 const PRIMARY_LIGHT = '#14b8a6'; // Teal
@@ -103,7 +104,14 @@ const CustomerDashboard = ({ navigation }) => {
                             activeOpacity={0.8}
                         >
                             <View style={styles.avatarWrap}>
-                                <Text style={styles.avatarTxt}>{firstName.charAt(0)}</Text>
+                                {user?.image_url ? (
+                                    <Image 
+                                        source={{ uri: user.image_url.startsWith('http') ? user.image_url : `${API_BASE_URL}${user.image_url}` }} 
+                                        style={styles.avatarImg} 
+                                    />
+                                ) : (
+                                    <Text style={styles.avatarTxt}>{firstName.charAt(0)}</Text>
+                                )}
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -151,17 +159,17 @@ const CustomerDashboard = ({ navigation }) => {
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.categoryScroll}
                     >
-                        {(categories.length > 0 ? categories : [
+                        {(categories && categories.length > 0 ? categories : [
                             { id: 1, name: 'Plumbing', icon: '🚰', color: '#3b82f6' },
-                            { id: 2, name: 'Electric', icon: '⚡', color: '#f59e0b' },
+                            { id: 2, name: 'Electrical', icon: '⚡', color: '#f59e0b' },
                             { id: 3, name: 'Cleaning', icon: '🧹', color: '#ec4899' },
                             { id: 4, name: 'Painting', icon: '🎨', color: '#8b5cf6' },
                             { id: 5, name: 'AC Repair', icon: '❄️', color: '#06b6d4' },
                         ]).map((cat) => (
                             <TouchableOpacity
-                                key={cat.id}
+                                key={cat.id || cat._id}
                                 style={styles.catCard}
-                                onPress={() => navigation.navigate('Services', { categoryId: cat.id })}
+                                onPress={() => navigation.navigate('Services', { categoryId: cat.id || cat._id })}
                             >
                                 <View style={[styles.catIconWrap, { backgroundColor: (cat.color || PRIMARY) + '15' }]}>
                                     <Text style={styles.catEmoji}>{cat.icon || '🛠️'}</Text>
@@ -173,11 +181,16 @@ const CustomerDashboard = ({ navigation }) => {
                 </View>
 
                 {/* --- ACTIVE BOOKINGS --- */}
-                <View style={[styles.section, { marginBottom: verticalScale(40) }]}>
-                    <Text style={[styles.sectionTitle, { marginLeft: moderateScale(20), marginBottom: verticalScale(15) }]}>My Active Orders</Text>
+                <View style={[styles.section, { marginBottom: verticalScale(15) }]}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>My Active Orders</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('MyBookings')}>
+                            <Text style={styles.viewAllBtn}>See All</Text>
+                        </TouchableOpacity>
+                    </View>
 
                     {bookings.length > 0 ? (
-                        bookings.slice(0, 3).map((booking) => {
+                        bookings.slice(0, 2).map((booking) => {
                             const status = getStatusStyle(booking.status);
                             return (
                                 <TouchableOpacity
@@ -206,13 +219,13 @@ const CustomerDashboard = ({ navigation }) => {
                             <View style={styles.emptyIconCircle}>
                                 <Ionicons name="receipt-outline" size={moderateScale(40)} color="#cbd5e1" />
                             </View>
-                            <Text style={styles.emptyTitle}>No active bookings</Text>
-                            <Text style={styles.emptySub}>You haven't scheduled any services yet. Start by exploring our top-rated professionals.</Text>
+                            <Text style={styles.emptyTitle}>No bookings yet</Text>
+                            <Text style={styles.emptySub}>Your bookings will appear here once you book a service.</Text>
                             <TouchableOpacity
                                 style={styles.emptyBtn}
                                 onPress={() => navigation.navigate('Services')}
                             >
-                                <Text style={styles.emptyBtnTxt}>Find a Pro</Text>
+                                <Text style={styles.emptyBtnTxt}>Browse Services</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -262,12 +275,17 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.2)',
     },
     avatarWrap: {
-        width: moderateScale(38),
-        height: moderateScale(38),
-        borderRadius: moderateScale(14),
+        width: moderateScale(42),
+        height: moderateScale(42),
+        borderRadius: moderateScale(16),
         backgroundColor: '#fff',
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden',
+    },
+    avatarImg: {
+        width: '100%',
+        height: '100%',
     },
     avatarTxt: { color: PRIMARY, fontSize: moderateScale(18), fontWeight: 'bold' },
 

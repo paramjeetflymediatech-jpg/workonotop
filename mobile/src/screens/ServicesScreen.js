@@ -4,20 +4,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scale, verticalScale, moderateScale } from '../utils/responsive';
 import { apiService } from '../services/api';
 
-const ServicesScreen = () => {
+const ServicesScreen = ({ navigation, route }) => {
     const insets = useSafeAreaInsets();
+    const categoryId = route?.params?.categoryId;
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         fetchServices();
-    }, []);
+    }, [categoryId]);
 
     const fetchServices = async () => {
         try {
             setLoading(true);
-            const response = await apiService.get('/api/services');
+            const params = categoryId ? { categoryId } : {};
+            const response = await apiService.get('/api/services', params);
             if (response.success) {
                 setServices(response.data);
             } else {
@@ -51,7 +53,11 @@ const ServicesScreen = () => {
     }
 
     const renderItem = ({ item }) => (
-        <View style={styles.card}>
+        <TouchableOpacity 
+            style={styles.card}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('Details', { service: item })}
+        >
             {item.image_url && (
                 <Image source={{ uri: item.image_url }} style={styles.image} />
             )}
@@ -60,7 +66,7 @@ const ServicesScreen = () => {
                 <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
                 <Text style={styles.price}>${item.price}</Text>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     return (

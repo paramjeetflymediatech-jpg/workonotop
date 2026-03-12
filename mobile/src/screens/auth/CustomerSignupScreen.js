@@ -15,6 +15,7 @@ import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/
 import { apiService } from '../../services/api';
 import { Alert } from 'react-native';
 import PasswordInput from '../../components/PasswordInput';
+import SuccessModal from '../../components/SuccessModal';
 
 const CustomerSignupScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ const CustomerSignupScreen = ({ navigation }) => {
     const [isNewsletterEnabled, setIsNewsletterEnabled] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showSuccess, setShowSuccess] = useState(false);
 
     const handleSignup = async () => {
         const { firstName, lastName, email, phone, password, confirmPassword, referral } = formData;
@@ -60,7 +62,7 @@ const CustomerSignupScreen = ({ navigation }) => {
         // Phone validation (10-15 digits)
         const phoneRegex = /^\+?[\d\s-]{10,15}$/;
         if (!phoneRegex.test(phone.trim())) {
-            setError('Phone number must be between 10nd 15 digits.');
+            setError('Phone number must be between 10 and 15 digits.');
             return;
         }
 
@@ -90,11 +92,7 @@ const CustomerSignupScreen = ({ navigation }) => {
             });
 
             if (response.success) {
-                Alert.alert(
-                    "Success",
-                    "Account created successfully! Please log in.",
-                    [{ text: "OK", onPress: () => navigation.navigate('Login', { type: 'customer' }) }]
-                );
+                setShowSuccess(true);
             } else {
                 setError(response.message || 'Signup failed');
             }
@@ -247,6 +245,16 @@ const CustomerSignupScreen = ({ navigation }) => {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            <SuccessModal 
+                visible={showSuccess}
+                title="Success"
+                message="Account created successfully! Please log in."
+                onOk={() => {
+                    setShowSuccess(false);
+                    navigation.navigate('Login', { type: 'customer' });
+                }}
+            />
         </SafeAreaView>
     );
 };

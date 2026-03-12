@@ -209,7 +209,7 @@ export async function POST(request) {
     )
 
     const newUser = await query(
-      'SELECT id, email, first_name, last_name, phone, role, created_at FROM users WHERE id = ?',
+      'SELECT id, email, first_name, last_name, phone, role, image_url, created_at FROM users WHERE id = ?',
       [result.insertId]
     )
 

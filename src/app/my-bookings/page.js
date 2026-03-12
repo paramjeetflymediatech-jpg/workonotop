@@ -238,14 +238,14 @@ export default function MyBookings() {
   const openChat = (booking) => { setSelectedBooking(booking); setShowChat(true) }
 
   const statusConfig = {
-    pending:           { label: 'Pending',            cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-    matching:          { label: 'Finding Provider',   cls: 'bg-orange-50 text-orange-700 border-orange-200' },
-    confirmed:         { label: 'Confirmed',          cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-    in_progress:       { label: 'In Progress',        cls: 'bg-violet-50 text-violet-700 border-violet-200' },
-    awaiting_approval: { label: 'Needs Your Approval',cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-    completed:         { label: 'Completed',          cls: 'bg-green-50 text-green-700 border-green-200' },
-    cancelled:         { label: 'Cancelled',          cls: 'bg-red-50 text-red-500 border-red-200' },
-    disputed:          { label: 'Disputed',           cls: 'bg-red-50 text-red-700 border-red-200' },
+    pending: { label: 'Pending', cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+    matching: { label: 'Finding Provider', cls: 'bg-orange-50 text-orange-700 border-orange-200' },
+    confirmed: { label: 'Confirmed', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+    in_progress: { label: 'In Progress', cls: 'bg-violet-50 text-violet-700 border-violet-200' },
+    awaiting_approval: { label: 'Needs Your Approval', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+    completed: { label: 'Completed', cls: 'bg-green-50 text-green-700 border-green-200' },
+    cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-500 border-red-200' },
+    disputed: { label: 'Disputed', cls: 'bg-red-50 text-red-700 border-red-200' },
   }
 
   const getStatus = (s) => statusConfig[s] || { label: s, cls: 'bg-gray-50 text-gray-500 border-gray-200' }
@@ -262,14 +262,14 @@ export default function MyBookings() {
   }
 
   const statusDot = {
-    pending:           'bg-yellow-400',
-    matching:          'bg-orange-400',
-    confirmed:         'bg-blue-400',
-    in_progress:       'bg-violet-500 animate-pulse',
+    pending: 'bg-yellow-400',
+    matching: 'bg-orange-400',
+    confirmed: 'bg-blue-400',
+    in_progress: 'bg-violet-500 animate-pulse',
     awaiting_approval: 'bg-amber-400 animate-pulse',
-    completed:         'bg-green-500',
-    cancelled:         'bg-red-400',
-    disputed:          'bg-red-600',
+    completed: 'bg-green-500',
+    cancelled: 'bg-red-400',
+    disputed: 'bg-red-600',
   }
 
   // ── Full page loader ──────────────────────────────────────────────────────
@@ -403,8 +403,8 @@ export default function MyBookings() {
                           {isNavigating
                             ? <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Loading…</>
                             : needsApproval
-                            ? <><span>🎉</span> Review & Approve</>
-                            : <><Eye className="w-4 h-4" /> View Details</>
+                              ? <><span>🎉</span> Review & Approve</>
+                              : <><Eye className="w-4 h-4" /> View Details</>
                           }
                         </button>
 

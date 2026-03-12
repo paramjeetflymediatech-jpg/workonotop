@@ -78,8 +78,12 @@ export default function Header() {
                 {isProvider() && (
                   <div className="flex items-center gap-2">
                     <Link href={getDashboardLink()} className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                        {getUserInitials()}
+                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden border border-blue-100">
+                        {user.avatar_url ? (
+                          <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          getUserInitials()
+                        )}
                       </div>
                       <div className="flex flex-col leading-none">
                         <span className="text-sm font-semibold text-gray-900 truncate max-w-[120px]">{getUserDisplayName()}</span>
@@ -97,8 +101,12 @@ export default function Header() {
                   <div className="relative" ref={userMenuRef}>
                     <button onClick={() => setUserMenuOpen(p => !p)}
                       className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition">
-                      <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                        {getUserInitials()}
+                      <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden border border-green-100">
+                        {user.image_url ? (
+                          <img src={user.image_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          getUserInitials()
+                        )}
                       </div>
                       <div className="flex flex-col leading-none text-left">
                         <span className="text-sm font-semibold text-gray-900 truncate max-w-[100px]">{getUserDisplayName()}</span>
@@ -236,8 +244,12 @@ export default function Header() {
               {user ? (
                 <div className="space-y-1">
                   <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-2xl mb-2">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 ${isProvider() ? 'bg-blue-600' : 'bg-green-600'}`}>
-                      {getUserInitials()}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 overflow-hidden border ${isProvider() ? 'bg-blue-600 border-blue-100' : 'bg-green-600 border-green-100'}`}>
+                      {(isProvider() ? user.avatar_url : user.image_url) ? (
+                        <img src={isProvider() ? user.avatar_url : user.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        getUserInitials()
+                      )}
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-sm text-gray-900 truncate">{getUserDisplayName()}</p>

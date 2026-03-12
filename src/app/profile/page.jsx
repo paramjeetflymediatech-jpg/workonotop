@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from 'src/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import {
   User, Mail, Phone, Calendar,
-  Edit2, Save, X, CheckCircle, AlertCircle, Clock
+  Edit2, Save, X, CheckCircle, AlertCircle, Clock, Camera
 } from 'lucide-react'
 
 function Toast({ message, type, onClose }) {
@@ -57,6 +57,7 @@ function InputField({ label, required, ...props }) {
 export default function CustomerProfilePage() {
   const { user, login } = useAuth()
   const router = useRouter()
+  const fileInputRef = useRef(null)
 
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -64,6 +65,8 @@ export default function CustomerProfilePage() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving]   = useState(false)
   const [toast, setToast]     = useState({ message: '', type: '' })
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
 
   const [form, setForm] = useState({
     first_name: '', last_name: '', phone: '', hear_about: '', receive_offers: false,
@@ -103,22 +106,49 @@ export default function CustomerProfilePage() {
     }
     setSaving(true)
     try {
+      const formData = new FormData()
+      formData.append('first_name', form.first_name)
+      formData.append('last_name', form.last_name)
+      formData.append('phone', form.phone)
+      formData.append('hear_about', form.hear_about)
+      formData.append('receive_offers', form.receive_offers)
+      if (selectedImage) {
+        formData.append('profile_image', selectedImage)
+      }
+
       const res  = await fetch(`/api/customers/${user.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: formData,
       })
       const data = await res.json()
       if (data.success) {
         setProfile(prev => ({ ...prev, ...data.data }))
-        login({ ...user, first_name: data.data.first_name, last_name: data.data.last_name })
+        login({ ...user, 
+          first_name: data.data.first_name, 
+          last_name: data.data.last_name,
+          image_url: data.data.image_url 
+        })
         setEditing(false)
+        setSelectedImage(null)
+        setImagePreview(null)
         notify('Profile updated successfully')
       } else {
         notify(data.message || 'Failed to update', 'error')
       }
     } catch { notify('Something went wrong', 'error') }
     finally  { setSaving(false) }
+  }
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        notify('Image size should be less than 5MB', 'error')
+        return
+      }
+      setSelectedImage(file)
+      setImagePreview(URL.createObjectURL(file))
+    }
   }
 
   const handleCancel = () => {
@@ -129,6 +159,8 @@ export default function CustomerProfilePage() {
       hear_about:     profile.hear_about    || '',
       receive_offers: !!profile.receive_offers,
     })
+    setSelectedImage(null)
+    setImagePreview(null)
     setEditing(false)
   }
 
@@ -172,8 +204,29 @@ export default function CustomerProfilePage() {
         {/* Hero Banner */}
         <div className="bg-gradient-to-br from-teal-700 via-teal-600 to-emerald-600 pt-8 pb-14 px-4">
           <div className="max-w-2xl mx-auto flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center text-white text-xl font-black flex-shrink-0 shadow-lg">
-              {profile.first_name?.[0]?.toUpperCase()}{profile.last_name?.[0]?.toUpperCase()}
+            <div className="relative group/avatar">
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+              <div className="w-16 h-16 sm:w-20 sm:w-20 rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center text-white text-xl sm:text-2xl font-black flex-shrink-0 shadow-lg overflow-hidden relative">
+                {(imagePreview || profile.image_url) ? (
+                  <img src={imagePreview || profile.image_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{profile.first_name?.[0]?.toUpperCase()}{profile.last_name?.[0]?.toUpperCase()}</span>
+                )}
+                
+                {editing && (
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                    <Camera className="w-6 h-6 text-white" />
+                  </button>
+                )}
+              </div>
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate">

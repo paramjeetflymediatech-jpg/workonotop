@@ -21,7 +21,7 @@ export async function GET(request) {
 
     // Get user from database
     const users = await query(
-      'SELECT id, email, first_name, last_name, phone, role FROM users WHERE id = ?',
+      'SELECT id, email, first_name, last_name, phone, role, image_url FROM users WHERE id = ?',
       [decoded.id]
     );
 

@@ -31,6 +31,7 @@ import FinishJobScreen from '../screens/contractor/FinishJobScreen';
 
 // Customer Screens
 import JobReportScreen from '../screens/customer/JobReportScreen';
+import UpdateProfileScreen from '../screens/customer/UpdateProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -83,6 +84,7 @@ const RootNavigator = () => {
                                 <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
                             )}
                             <Stack.Screen name="Details" component={DetailsScreen} />
+                            <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ headerShown: false }} />
 
                             {/* Contractor Onboarding (Still registered for deep links or manual re-entry if allowed) */}
                             <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
