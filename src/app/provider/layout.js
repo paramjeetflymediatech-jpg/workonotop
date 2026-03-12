@@ -1,9 +1,14 @@
+
+
+
+
+
 // 'use client';
 
 // import { useEffect, useState } from 'react';
 // import { useRouter, usePathname } from 'next/navigation';
 // import Link from 'next/link';
-// import { Home, Briefcase, DollarSign, User, LogOut, Menu, X, ChevronRight, MessageCircle, AlertCircle } from 'lucide-react';
+// import { Home, Briefcase, DollarSign, User, LogOut, Menu, X, ChevronRight, MessageCircle, AlertCircle, Star } from 'lucide-react';
 
 // const STRIPE_REQUIRED_PATHS = ['/provider/chats', '/provider/earnings'];
 
@@ -29,7 +34,6 @@
 //               className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl text-sm hover:bg-gray-50 transition">
 //               Later
 //             </button>
-//             {/* ✅ No onClick=onClose here — let it navigate freely */}
 //             <Link href="/provider/onboarding?step=3"
 //               className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition text-center"
 //               onClick={onClose}>
@@ -58,15 +62,13 @@
 //     '/provider/rejected', '/provider/forgot-password', '/provider/reset-password'
 //   ];
 
-//   // Compute isPublic fresh on every render based on current pathname
 //   const isPublic = publicPaths.some(p => pathname.startsWith(p));
 
 //   useEffect(() => { checkAuth(); }, [pathname]);
 
-//   // ✅ Only redirect to dashboard if on a restricted path AND not on a public path
 //   useEffect(() => {
 //     if (loading) return;
-//     if (isPublic) return;  // ← KEY FIX: never interfere with public paths
+//     if (isPublic) return;
 //     if (!provider) return;
 //     if (stripeConnected) return;
 
@@ -123,12 +125,13 @@
 //   };
 
 //   const navItems = [
-//     { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
-//     { href: '/provider/available-jobs', label: 'Available Jobs', icon: Briefcase },
-//     { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
-//     { href: '/provider/chats', label: 'Messages', icon: MessageCircle, stripeRequired: true },
-//     { href: '/provider/payouts', label: 'Earnings', icon: DollarSign, stripeRequired: true },
-//     { href: '/provider/profile', label: 'Profile', icon: User },
+//     { href: '/provider/dashboard',      label: 'Dashboard',      icon: Home },
+//     { href: '/provider/available-jobs', label: 'Available Jobs',  icon: Briefcase },
+//     { href: '/provider/jobs',           label: 'My Jobs',         icon: Briefcase },
+//     { href: '/provider/chats',          label: 'Messages',        icon: MessageCircle, stripeRequired: true },
+//     { href: '/provider/payouts',        label: 'Earnings',        icon: DollarSign,    stripeRequired: true },
+//     { href: '/provider/ratings',        label: 'Ratings',         icon: Star },
+//     { href: '/provider/profile',        label: 'Profile',         icon: User },
 //   ];
 
 //   if (loading) return (
@@ -140,7 +143,6 @@
 //     </div>
 //   );
 
-//   // ✅ Public paths render immediately — no provider check, no spinner
 //   if (isPublic) return children;
 
 //   if (!provider) return (
@@ -200,7 +202,7 @@
 //         onClose={() => setStripeModal(false)}
 //       />
 
-//       {/* ── Desktop Sidebar ── */}
+//       {/* Desktop Sidebar */}
 //       <aside className={`hidden lg:flex flex-col fixed top-0 left-0 h-full bg-white border-r border-gray-100 shadow-sm z-40 transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
 //         <div className={`flex items-center h-16 border-b border-gray-100 px-4 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
 //           {!sidebarCollapsed && (
@@ -255,12 +257,12 @@
 //         </div>
 //       </aside>
 
-//       {/* ── Mobile Overlay ── */}
+//       {/* Mobile Overlay */}
 //       {mobileMenuOpen && (
 //         <div className="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
 //       )}
 
-//       {/* ── Mobile Sidebar ── */}
+//       {/* Mobile Sidebar */}
 //       <aside className={`lg:hidden fixed top-0 left-0 h-full w-64 bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
 //         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100">
 //           <Link href="/provider/dashboard" className="text-xl font-bold text-green-700">WorkOnTap</Link>
@@ -307,7 +309,7 @@
 //         </div>
 //       </aside>
 
-//       {/* ── Main Content ── */}
+//       {/* Main Content */}
 //       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-60'}`}>
 //         <header className="lg:hidden bg-white border-b border-gray-100 h-14 flex items-center px-4 sticky top-0 z-30 shadow-sm">
 //           <button onClick={() => setMobileMenuOpen(true)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100">
@@ -328,6 +330,29 @@
 //     </div>
 //   );
 // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -427,15 +452,42 @@ export default function ProviderLayout({ children }) {
 
       const prov = data.provider;
 
-      if (prov.status === 'rejected') { router.push('/provider/rejected'); return; }
-      if (!prov.email_verified) { router.push('/provider/verify-email-pending'); return; }
-      if (!prov.onboarding_completed) { router.push('/provider/onboarding'); return; }
+      // ── Hard stops (order matters) ──────────────────────────────────────────
+
+      if (prov.status === 'rejected') {
+        router.push('/provider/rejected');
+        return;
+      }
+
+      if (!prov.email_verified) {
+        router.push('/provider/verify-email-pending');
+        return;
+      }
+
+      // Not finished onboarding yet → go to whatever step they left off
+      if (!prov.onboarding_completed) {
+        router.push('/provider/onboarding');
+        return;
+      }
+
+      // ── Onboarding completed but awaiting admin approval ────────────────────
       if (prov.onboarding_completed && prov.status !== 'active') {
+
+        // documents_uploaded = 0 means admin rejected docs and reset the flag.
+        // Send provider back to step 2 to re-upload — no extra API call needed.
+        if (!prov.documents_uploaded) {
+          router.push('/provider/onboarding?step=2');
+          setLoading(false);
+          return;
+        }
+
+        // Docs uploaded and waiting for admin review
         if (pathname !== '/provider/pending') router.push('/provider/pending');
         setLoading(false);
         return;
       }
 
+      // ── Fully active provider ───────────────────────────────────────────────
       setProvider(prov);
       setStripeConnected(prov.stripe_onboarding_complete || false);
 
@@ -484,7 +536,7 @@ export default function ProviderLayout({ children }) {
 
   const handleLogout = async () => {
     await fetch('/api/provider/logout', { method: 'POST' });
-    router.push('/provider/login');
+    window.location.href = '/provider/login';
   };
 
   const renderNavItem = (item, isMobile = false) => {
