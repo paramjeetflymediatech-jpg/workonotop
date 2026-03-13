@@ -16,6 +16,7 @@ import { apiService } from '../../services/api';
 import { Alert } from 'react-native';
 import PasswordInput from '../../components/PasswordInput';
 import SuccessModal from '../../components/SuccessModal';
+import ErrorModal from '../../components/ErrorModal';
 
 const ProviderSignupScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
@@ -28,6 +29,7 @@ const ProviderSignupScreen = ({ navigation }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showError, setShowError] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
     const handleSignup = async () => {
@@ -36,6 +38,7 @@ const ProviderSignupScreen = ({ navigation }) => {
         // Basic presence check
         if (!firstName || !lastName || !email || !phone || !password) {
             setError('Please fill in all fields');
+            setShowError(true);
             return;
         }
 
@@ -43,10 +46,12 @@ const ProviderSignupScreen = ({ navigation }) => {
         const nameRegex = /^[A-Za-z\s]{2,15}$/;
         if (!nameRegex.test(firstName.trim())) {
             setError('First name must be 2-15 characters and contain only letters.');
+            setShowError(true);
             return;
         }
         if (!nameRegex.test(lastName.trim())) {
             setError('Last name must be 2-15 characters and contain only letters.');
+            setShowError(true);
             return;
         }
 
@@ -54,6 +59,7 @@ const ProviderSignupScreen = ({ navigation }) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email.toLowerCase().trim())) {
             setError('Please enter a valid email address.');
+            setShowError(true);
             return;
         }
 
@@ -61,17 +67,20 @@ const ProviderSignupScreen = ({ navigation }) => {
         const phoneRegex = /^\+?[\d\s-]{10,15}$/;
         if (!phoneRegex.test(phone.trim())) {
             setError('Phone number must be between 10 and 15 digits.');
+            setShowError(true);
             return;
         }
 
         // Password validation (min 6 chars)
         if (password.length < 6) {
             setError('Password must be at least 6 characters.');
+            setShowError(true);
             return;
         }
 
         if (password !== confirmPassword) {
             setError('Passwords do not match');
+            setShowError(true);
             return;
         }
 
@@ -91,9 +100,11 @@ const ProviderSignupScreen = ({ navigation }) => {
                 setShowSuccess(true);
             } else {
                 setError(response.message || 'Signup failed');
+                setShowError(true);
             }
         } catch (err) {
-            setError('Connection failed. Please try again.');
+            setError(err.message || 'Connection failed. Please try again.');
+            setShowError(true);
             console.error(err);
         } finally {
             setLoading(false);
@@ -203,8 +214,6 @@ const ProviderSignupScreen = ({ navigation }) => {
                             </View>
                         </View>
 
-                        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
                         <TouchableOpacity
                             style={[styles.submitButton, loading && styles.disabledButton]}
                             onPress={handleSignup}
@@ -224,7 +233,7 @@ const ProviderSignupScreen = ({ navigation }) => {
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            <SuccessModal 
+            <SuccessModal
                 visible={showSuccess}
                 title="Account Created"
                 message="Please check your email to verify your account before logging in."
@@ -232,6 +241,13 @@ const ProviderSignupScreen = ({ navigation }) => {
                     setShowSuccess(false);
                     navigation.navigate('Login', { type: 'pro' });
                 }}
+            />
+
+            <ErrorModal 
+                visible={showError}
+                title="Registration Error"
+                message={error}
+                onOk={() => setShowError(false)}
             />
         </SafeAreaView>
     );
@@ -255,6 +271,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: verticalScale(10),
+        marginTop: verticalScale(15),
+
     },
     backIcon: {
         fontSize: moderateScale(20),

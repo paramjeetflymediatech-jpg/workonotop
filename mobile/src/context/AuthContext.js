@@ -142,12 +142,21 @@ export const AuthProvider = ({ children }) => {
 
     const updateUser = useCallback(async (updatedData) => {
         try {
+            // 1. Update In-Memory State
             setUser(curr => {
                 const newUser = { ...curr, ...updatedData };
-                AsyncStorage.setItem('user', JSON.stringify(newUser));
                 return newUser;
             });
-            console.log('[AuthContext] User data updated locally ✅');
+
+            // 2. Persist to Storage (Outside of state setter)
+            const storedUser = await AsyncStorage.getItem('user');
+            if (storedUser) {
+                const parsed = JSON.parse(storedUser);
+                const updated = { ...parsed, ...updatedData };
+                await AsyncStorage.setItem('user', JSON.stringify(updated));
+            }
+
+            console.log('[AuthContext] User data updated and persisted ✅', updatedData);
         } catch (error) {
             console.error('Failed to update user auth data:', error);
         }

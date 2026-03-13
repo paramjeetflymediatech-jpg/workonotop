@@ -1,4 +1,6 @@
+import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
+import { execute } from '@/lib/db';
 
 // Unified JWT implementation
 

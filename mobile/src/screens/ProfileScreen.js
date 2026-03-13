@@ -61,7 +61,7 @@ const ProfileScreen = ({ navigation }) => {
                     <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.menuItem} onPress={() => alert('Settings Coming Soon')}>
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Settings')}>
                     <View style={styles.menuIconContainer}>
                         <Ionicons name="settings-outline" size={20} color="#115e59" />
                     </View>
@@ -69,7 +69,7 @@ const ProfileScreen = ({ navigation }) => {
                     <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.menuItem} onPress={() => alert('Help & Support Coming Soon')}>
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('HelpSupport')}>
                     <View style={styles.menuIconContainer}>
                         <Ionicons name="help-buoy-outline" size={20} color="#115e59" />
                     </View>
@@ -102,8 +102,8 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginTop: 40,
-        marginBottom: 40,
+        marginTop: verticalScale(50),
+        marginBottom: verticalScale(40),
     },
     avatar: {
         width: 100,

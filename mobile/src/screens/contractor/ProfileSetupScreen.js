@@ -119,7 +119,7 @@ const ProfileSetupScreen = ({ navigation }) => {
                             <Text style={styles.label}>Experience <Text style={styles.req}>*</Text></Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder=""
+                                placeholder="0-10"
                                 placeholderTextColor="#94a3b8"
                                 keyboardType="numeric"
                                 value={profile.yearsExperience}
@@ -133,7 +133,7 @@ const ProfileSetupScreen = ({ navigation }) => {
                         <Text style={styles.label}>Business Address <Text style={styles.req}>*</Text></Text>
                         <TextInput
                             style={styles.input}
-                            placeholder=""
+                            placeholder="123 Main St"
                             placeholderTextColor="#94a3b8"
                             value={profile.businessAddress}
                             onChangeText={(t) => setProfile({ ...profile, businessAddress: t })}

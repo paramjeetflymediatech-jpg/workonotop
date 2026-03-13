@@ -498,6 +498,7 @@
 import { NextResponse } from 'next/server'
 import { execute, getConnection, withConnection } from '@/lib/db'
 import Stripe from 'stripe'
+import { notifyUser } from '@/lib/push'
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null
 
@@ -670,6 +671,12 @@ export async function POST(request) {
 
       await connection.query('COMMIT')
 
+      // Send push notification (non-blocking)
+      if (user_id) {
+        notifyUser(user_id, 'Booking Confirmed!', `Your booking #${bookingNumber} for ${service_name} has been created.`, { bookingId, bookingNumber, type: 'booking_created' }, execute, 'customer')
+          .catch(err => console.error('[Push] Notification Error:', err));
+      }
+
       return NextResponse.json({
         success: true,
         booking_id: bookingId,
@@ -800,6 +807,42 @@ export async function PUT(request) {
       }
 
       await connection.query('COMMIT')
+
+      // Send push notifications (non-blocking)
+      try {
+        const [[bookingData]] = await connection.execute(
+          'SELECT user_id, booking_number, service_name, provider_id FROM bookings WHERE id = ?',
+          [id]
+        );
+
+        if (bookingData) {
+          // Notify Customer about status change
+          if (status && bookingData.user_id) {
+            let title = 'Booking Update';
+            let body = `Your booking #${bookingData.booking_number} is now ${status.replace('_', ' ')}`;
+            
+            if (status === 'matching') {
+              title = 'Provider Assigned';
+              body = `A provider has been assigned to your booking #${bookingData.booking_number}`;
+            } else if (status === 'completed') {
+              title = 'Service Completed';
+              body = `The service for your booking #${bookingData.booking_number} has been completed.`;
+            }
+
+            notifyUser(bookingData.user_id, title, body, { bookingId: id, status, type: 'status_update' }, execute, 'customer')
+              .catch(err => console.error('[Push] Customer status notification error:', err));
+          }
+
+          // Notify Provider if newly assigned
+          if (provider_id && provider_id !== current.current_provider) {
+            notifyUser(provider_id, 'New Job Assigned', `You have been assigned to booking #${bookingData.booking_number}`, { bookingId: id, type: 'new_job' }, execute, 'provider')
+              .catch(err => console.error('[Push] Provider assignment notification error:', err));
+          }
+        }
+      } catch (notifyErr) {
+        console.error('[Push] Error in notification logic:', notifyErr);
+      }
+
       return NextResponse.json({ success: true, message: 'Booking updated successfully' })
     } catch (err) {
       await connection.query('ROLLBACK')

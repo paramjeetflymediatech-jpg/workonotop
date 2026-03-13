@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { execute } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
+import { getMobileSession } from '@/lib/mobile-auth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock');
 
@@ -22,25 +23,29 @@ export async function POST(request) {
   console.log('='.repeat(80));
 
   try {
-    const token = request.cookies.get('provider_token')?.value;
-    if (!token) {
+    // 1. Check Mobile Session (via Authorization Header + DB)
+    let decoded = await getMobileSession(request);
+    let providerId = decoded?.providerId;
+
+    // 2. Fallback to Web Session (via Cookies)
+    if (!decoded) {
+      const token = request.cookies.get('provider_token')?.value;
+      if (token) {
+        decoded = verifyToken(token);
+        if (decoded && decoded.type === 'provider') {
+          providerId = decoded.providerId;
+        }
+      }
+    }
+
+    if (!decoded || !providerId) {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { success: false, message: 'Unauthorized or session expired' },
         { status: 401 }
       );
     }
-
-    const decoded = verifyToken(token);
-    if (!decoded || decoded.type !== 'provider') {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    const providerId = decoded.providerId;
     const body = await request.json();
-    
+
     // ✅ FIX: Use environment variable for URLs
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
     const refreshUrl =

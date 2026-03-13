@@ -86,6 +86,26 @@ export async function POST(request) {
             user: userData
         })
 
+        // 🔥 Save session to mobile_auth_users table for mobile API verification
+        try {
+            const userIdCol = role === 'provider' ? 'provider_id' : 'user_id';
+            await query(
+                `INSERT INTO mobile_auth_users 
+                 (${userIdCol}, user_type, refresh_token, refresh_token_expires, is_active, last_login)
+                 VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY), 1, NOW())
+                 ON DUPLICATE KEY UPDATE 
+                 refresh_token = VALUES(refresh_token),
+                 refresh_token_expires = VALUES(refresh_token_expires),
+                 is_active = 1,
+                 last_login = NOW()`,
+                [user.id, role, token]
+            );
+            console.log(`✅ Mobile session persisted for ${role} ID: ${user.id}`);
+        } catch (dbError) {
+            console.error('Failed to persist mobile session:', dbError);
+            // Don't fail the login if session persistence fails, but log it
+        }
+
         // Set HTTP-only cookie based on role (for web support)
         const cookieOptions = {
             value: token,

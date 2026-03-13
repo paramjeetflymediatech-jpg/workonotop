@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    SafeAreaView, ActivityIndicator, ScrollView
+    SafeAreaView, ActivityIndicator, ScrollView,
+    Animated, Easing
 } from 'react-native';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
@@ -12,6 +13,27 @@ const PendingApprovalScreen = ({ navigation }) => {
     const [status, setStatus] = useState('pending');
     const [loading, setLoading] = useState(true);
     const [checkingCount, setCheckingCount] = useState(0);
+    const rotateAnim = React.useRef(new Animated.Value(0)).current;
+
+    const startRotation = () => {
+        rotateAnim.setValue(0);
+        Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 3000,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            })
+        ).start();
+    };
+
+    React.useEffect(() => {
+        if (status === 'pending') {
+            startRotation();
+        } else {
+            rotateAnim.stopAnimation();
+        }
+    }, [status]);
 
     const checkStatus = async () => {
         try {
@@ -80,7 +102,16 @@ const PendingApprovalScreen = ({ navigation }) => {
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scroll}>
                 <View style={[styles.card, { backgroundColor: cfg.bgColor, borderColor: cfg.borderColor }]}>
-                    <Text style={styles.statusIcon}>{cfg.icon}</Text>
+                    <Animated.View style={{
+                        transform: [{
+                            rotate: status === 'pending' ? rotateAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ['0deg', '360deg']
+                            }) : '0deg'
+                        }]
+                    }}>
+                        <Text style={styles.statusIcon}>{cfg.icon}</Text>
+                    </Animated.View>
                     <Text style={[styles.statusTitle, { color: cfg.color }]}>{cfg.title}</Text>
                     <Text style={styles.statusDesc}>{cfg.desc}</Text>
                 </View>
@@ -103,7 +134,7 @@ const PendingApprovalScreen = ({ navigation }) => {
                         ))}
                     </View>
                 )}
-
+  
                 <TouchableOpacity
                     style={[styles.actionBtn, { backgroundColor: cfg.color }, loading && styles.btnDisabled]}
                     onPress={cfg.action}

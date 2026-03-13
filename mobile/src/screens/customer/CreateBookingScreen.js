@@ -518,7 +518,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
-    header: { padding: moderateScale(20), borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#fff' },
+    header: { padding: moderateScale(20), marginTop: verticalScale(25), borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#fff' },
     progressTrack: { height: 6, backgroundColor: '#f1f5f9', borderRadius: 3, marginBottom: 12 },
     progressBar: { height: '100%', backgroundColor: PRIMARY, borderRadius: 3 },
     headerInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

@@ -67,7 +67,6 @@ const CustomDrawerContent = (props) => {
                     <Text style={styles.logoText}>ON TOP</Text>
                 </View>
             </View>
-
             <DrawerContentScrollView {...props} contentContainerStyle={styles.drawerContent}>
                 <View style={styles.menuContainer}>
                     {menuItems.map((item, index) => (
@@ -81,14 +80,12 @@ const CustomDrawerContent = (props) => {
                     ))}
                 </View>
             </DrawerContentScrollView>
-
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogoutPress}>
                     <Ionicons name="log-out-outline" size={moderateScale(22)} color="#ef4444" />
                     <Text style={styles.logoutText}>Log out</Text>
                 </TouchableOpacity>
             </View>
-
             <LogoutConfirmationModal
                 visible={logoutModalVisible}
                 onCancel={handleLogoutCancel}
@@ -100,7 +97,7 @@ const CustomDrawerContent = (props) => {
 
 const styles = StyleSheet.create({
     headerContainer: {
-        padding: moderateScale(20),
+        padding: moderateScale(5),
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',
         marginBottom: verticalScale(10),
@@ -159,7 +156,9 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     footer: {
-        padding: moderateScale(20),
+        padding: moderateScale(5),
+        marginBottom: verticalScale(10),
+        paddingLeft: moderateScale(35),
         borderTopWidth: 1,
         borderTopColor: '#f1f5f9',
     },

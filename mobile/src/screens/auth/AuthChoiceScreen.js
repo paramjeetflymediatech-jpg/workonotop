@@ -83,6 +83,24 @@ const AuthChoiceScreen = ({ navigation, route }) => {
 
     return (
         <SafeAreaView style={styles.container}>
+            {/* Top Navigation / Back Button */}
+            <View style={styles.topNav}>
+                {(viewState !== 'initial' || navigation.canGoBack()) && (
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => {
+                            if (viewState !== 'initial') {
+                                changeView('initial');
+                            } else if (navigation.canGoBack()) {
+                                navigation.goBack();
+                            }
+                        }}
+                    >
+                        <Text style={styles.backIcon}>←</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
             {/* Top Header */}
             <View style={styles.header}>
                 <Text style={styles.brandText}>WorkOn<Text style={styles.brandBold}>Top</Text></Text>
@@ -205,6 +223,23 @@ const styles = StyleSheet.create({
     //     fontSize: moderateScale(16),
     //     fontWeight: '500',
     // }
+    topNav: {
+        paddingHorizontal: scale(20),
+    },
+    backButton: {
+        width: moderateScale(40),
+        height: moderateScale(40),
+        borderRadius: moderateScale(20),
+        backgroundColor: '#f8fafc',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: verticalScale(25),
+    },
+    backIcon: {
+        fontSize: moderateScale(20),
+        color: '#0f172a',
+        fontWeight: 'bold',
+    },
 });
 
 export default AuthChoiceScreen;

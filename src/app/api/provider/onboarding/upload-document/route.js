@@ -2,36 +2,40 @@
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 import { execute } from '@/lib/db';
+import { getMobileSession } from '@/lib/mobile-auth';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
 
 export async function POST(request) {
   try {
-    // Check authentication
-    const token = request.cookies.get('provider_token')?.value;
-    if (!token) {
+    // 1. Check Mobile Session (via Authorization Header + DB)
+    let decoded = await getMobileSession(request);
+    let providerId = decoded?.providerId;
+
+    // 2. Fallback to Web Session (via Cookies)
+    if (!decoded) {
+      const token = request.cookies.get('provider_token')?.value;
+      if (token) {
+        decoded = verifyToken(token);
+        if (decoded && decoded.type === 'provider') {
+          providerId = decoded.providerId;
+        }
+      }
+    }
+
+    if (!decoded || !providerId) {
       return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
+        { success: false, message: 'Not authenticated or session expired' },
         { status: 401 }
       );
     }
-
-    const decoded = verifyToken(token);
-    if (!decoded || decoded.type !== 'provider') {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    const providerId = decoded.providerId;
 
     // Parse form data
     const formData = await request.formData();
     const file = formData.get('file');
     const documentType = formData.get('type');
-    
+
     if (!file || !documentType) {
       return NextResponse.json(
         { success: false, message: 'File and document type required' },
@@ -87,7 +91,7 @@ export async function POST(request) {
       // Extract filename from URL
       const oldFilename = oldUrl.split('/').pop();
       const oldPath = path.join(uploadDir, oldFilename);
-      
+
       // Delete old file if it exists
       try {
         if (existsSync(oldPath)) {
@@ -105,7 +109,7 @@ export async function POST(request) {
     const extension = file.name.split('.').pop();
     const filename = `${providerId}-${documentType}-${timestamp}.${extension}`;
     const filePath = path.join(uploadDir, filename);
-    
+
     // Save new file
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);

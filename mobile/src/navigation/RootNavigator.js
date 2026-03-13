@@ -24,6 +24,7 @@ import OnboardingIntroScreen from '../screens/contractor/OnboardingIntroScreen';
 import ProfileSetupScreen from '../screens/contractor/ProfileSetupScreen';
 import DocumentUploadScreen from '../screens/contractor/DocumentUploadScreen';
 import BankLinkScreen from '../screens/contractor/BankLinkScreen';
+import ReviewScreen from '../screens/contractor/ReviewScreen';
 import PendingApprovalScreen from '../screens/contractor/PendingApprovalScreen';
 
 // Contractor Job Screens
@@ -36,11 +37,26 @@ import JobReportScreen from '../screens/customer/JobReportScreen';
 import UpdateProfileScreen from '../screens/customer/UpdateProfileScreen';
 import CreateBookingScreen from '../screens/customer/CreateBookingScreen';
 import BookingSuccessScreen from '../screens/customer/BookingSuccessScreen';
+import SettingsScreen from '../screens/customer/SettingsScreen';
+import HelpSupportScreen from '../screens/customer/HelpSupportScreen';
+import ChangePasswordScreen from '../screens/customer/ChangePasswordScreen';
+import SavedAddressesScreen from '../screens/customer/SavedAddressesScreen';
 
 const Stack = createNativeStackNavigator();
 
 const RootNavigator = () => {
     const { user, loading } = useAuth();
+
+    React.useEffect(() => {
+        if (user) {
+            console.log('🛡️ [RootNavigator] User State:', {
+                id: user.id,
+                role: user.role,
+                onboarding_completed: user.onboarding_completed,
+                status: user.status
+            });
+        }
+    }, [user]);
 
     if (loading) {
         return (
@@ -62,12 +78,13 @@ const RootNavigator = () => {
                 <>
                     {/* Main App Stack - Order matters for standard navigation */}
                     {/* If provider is not onboarded, the onboarding screens come first */}
-                    {user.role === 'provider' && !user.onboarding_completed ? (
+                    {(user.role === 'provider' && Number(user.onboarding_completed) !== 1) ? (
                         <>
                             <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="Review" component={ReviewScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
                         </>
@@ -79,6 +96,7 @@ const RootNavigator = () => {
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="Review" component={ReviewScreen} options={{ headerShown: false }} />
                         </>
                     ) : (
                         <>
@@ -91,6 +109,10 @@ const RootNavigator = () => {
                             <Stack.Screen name="CustomerBookingDetails" component={CustomerBookingDetailsScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Details" component={DetailsScreen} />
                             <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="SavedAddresses" component={SavedAddressesScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="CreateBooking" component={CreateBookingScreen} options={{ title: 'Book Service' }} />
                             <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} options={{ headerShown: false }} />
 
@@ -99,6 +121,7 @@ const RootNavigator = () => {
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="Review" component={ReviewScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
                         </>
                     )}

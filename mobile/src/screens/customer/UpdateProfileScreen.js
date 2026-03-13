@@ -251,6 +251,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: moderateScale(20),
         paddingVertical: verticalScale(15),
+        marginTop: verticalScale(25),
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',

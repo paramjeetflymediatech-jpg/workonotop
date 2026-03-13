@@ -41,14 +41,7 @@ const BankLinkScreen = ({ navigation, route }) => {
     };
 
     const handleSkip = () => {
-        Alert.alert(
-            'Skip Bank Linking?',
-            'You can add your bank account later from your profile settings.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Skip', onPress: submitApplication },
-            ]
-        );
+        navigation.navigate('Review', { profile, documents, connected: false });
     };
 
     const submitApplication = async () => {
@@ -92,6 +85,8 @@ const BankLinkScreen = ({ navigation, route }) => {
         if (url.includes('/stripe/callback') || url.includes('/stripe/refresh') || url.includes('success=true')) {
             setStripeUrl(null);
             setConnected(true);
+            // Auto navigate to review after connection
+            navigation.navigate('Review', { profile, documents, connected: true });
         }
     };
 
@@ -151,14 +146,16 @@ const BankLinkScreen = ({ navigation, route }) => {
 
                 <TouchableOpacity
                     style={[styles.stripeBtn, loading && styles.btnDisabled]}
-                    onPress={connected ? submitApplication : openStripeOnboarding}
+                    onPress={connected 
+                        ? () => navigation.navigate('Review', { profile, documents, connected: true }) 
+                        : openStripeOnboarding}
                     disabled={loading}
                 >
                     {loading ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
                         <Text style={styles.stripeBtnText}>
-                            {connected ? 'Submit Application →' : '🔗 Connect Bank Account'}
+                            {connected ? 'Continue to Review →' : '🔗 Connect Bank Account'}
                         </Text>
                     )}
                 </TouchableOpacity>

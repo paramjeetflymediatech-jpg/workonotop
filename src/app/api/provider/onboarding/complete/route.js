@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { execute } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
+import { getMobileSession } from '@/lib/mobile-auth';
 
 export async function POST(request) {
   try {
@@ -8,26 +9,29 @@ export async function POST(request) {
     console.log('🚀 ONBOARDING COMPLETE API CALLED');
     console.log('='.repeat(60));
 
-    const token = request.cookies.get('provider_token')?.value;
-    
-    if (!token) {
-      console.log('❌ No token found');
+    // 1. Check Mobile Session (via Authorization Header + DB)
+    let decoded = await getMobileSession(request);
+    let providerId = decoded?.providerId;
+
+    // 2. Fallback to Web Session (via Cookies)
+    if (!decoded) {
+      const token = request.cookies.get('provider_token')?.value;
+      if (token) {
+        decoded = verifyToken(token);
+        if (decoded && decoded.type === 'provider') {
+          providerId = decoded.providerId;
+        }
+      }
+    }
+
+    if (!decoded || !providerId) {
+      console.log('❌ Not authenticated');
       return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
+        { success: false, message: 'Not authenticated or session expired' },
         { status: 401 }
       );
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded || decoded.type !== 'provider') {
-      console.log('❌ Invalid token');
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    const providerId = decoded.providerId;
     console.log('✅ Provider ID:', providerId);
 
     // First, check if documents are uploaded
@@ -35,7 +39,7 @@ export async function POST(request) {
       `SELECT COUNT(*) as count FROM provider_documents WHERE provider_id = ?`,
       [providerId]
     );
-    
+
     console.log('📊 Documents count:', docs[0]?.count || 0);
 
     // Update provider
@@ -44,7 +48,7 @@ export async function POST(request) {
        SET 
            onboarding_completed = 1,
            onboarding_step = 5,
-           status = 'inactive',
+           status = 'pending',
            updated_at = NOW()
        WHERE id = ?`,
       [providerId]

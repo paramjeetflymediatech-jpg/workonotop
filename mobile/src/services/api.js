@@ -88,6 +88,28 @@ export const apiService = {
 
         // Terminate the current session
         logout: (token) => request('/api/auth/logout', { method: 'POST', token }),
+
+        // Change account password
+        changePassword: (data, token) => request('/api/auth/change-password', { method: 'POST', body: JSON.stringify(data), token }),
+    },
+
+    /**
+     * ⚙️ USER SETTINGS & PREFERENCES
+     */
+    user: {
+        // Fetch user preferences
+        getSettings: (token) => request('/api/user/settings', { method: 'GET', token }),
+
+        // Update user preferences
+        updateSettings: (data, token) => request('/api/user/settings', { method: 'PUT', body: JSON.stringify(data), token }),
+
+        // Address Management
+        addresses: {
+            list: (token) => request('/api/user/addresses', { method: 'GET', token }),
+            add: (data, token) => request('/api/user/addresses', { method: 'POST', body: JSON.stringify(data), token }),
+            update: (id, data, token) => request(`/api/user/addresses/${id}`, { method: 'PUT', body: JSON.stringify(data), token }),
+            delete: (id, token) => request(`/api/user/addresses/${id}`, { method: 'DELETE', token }),
+        }
     },
 
     /**
