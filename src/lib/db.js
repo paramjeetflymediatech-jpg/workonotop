@@ -2,24 +2,25 @@
 // src/lib/db.js
 import mysql from 'mysql2/promise';
 
-// Create connection pool with sensible defaults.  We set a small
-// connectionLimit and make the pool wait if all connections are in use so
-// we don't hit "Too many connections" errors.  The original problem
-// reported by the user was that connections were never released when
-// callers used `getConnection()` manually, so every API handler needs to
-// either release or, preferably, run inside the helper below.
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'root123',
-  database: process.env.DB_NAME || 'workontap_db',
-  // ✨ adjusted per request
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0
-});
+// Create connection pool with sensible defaults.
+let pool;
+
+if (!global.mysqlPool) {
+  global.mysqlPool = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'root123',
+    database: process.env.DB_NAME || 'workontap_db',
+    // ✨ adjusted per request
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
+  });
+}
+
+pool = global.mysqlPool;
 
 // Helper that gives you a connection, automatically releases it when the
 // callback finishes (even if it throws).  All API routes should use this

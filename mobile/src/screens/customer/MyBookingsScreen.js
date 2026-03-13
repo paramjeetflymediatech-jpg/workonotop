@@ -63,7 +63,7 @@ const MyBookingsScreen = ({ navigation }) => {
         return (
             <TouchableOpacity
                 style={styles.orderCard}
-                onPress={() => navigation.navigate('Details', { bookingId: booking.id })}
+                onPress={() => navigation.navigate('CustomerBookingDetails', { bookingId: booking.id })}
                 activeOpacity={0.7}
             >
                 <View style={styles.orderIcon}>
@@ -97,8 +97,14 @@ const MyBookingsScreen = ({ navigation }) => {
             <StatusBar barStyle="dark-content" backgroundColor="#fff" />
             
             {/* Custom Header */}
-            <View style={[styles.header, { pt: insets.top }]}>
-                <Text style={styles.headerTitle}>My Bookings</Text>
+            <View style={[styles.header, { paddingTop: insets.top + moderateScale(10) }]}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={moderateScale(24)} color={PRIMARY} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>My Bookings</Text>
+                    <View style={{ width: scale(40) }} />
+                </View>
             </View>
 
             <FlatList
@@ -137,12 +143,25 @@ const styles = StyleSheet.create({
     
     header: {
         backgroundColor: '#fff',
-        paddingHorizontal: moderateScale(25),
-        paddingVertical: verticalScale(20),
+        paddingHorizontal: moderateScale(20),
+        paddingBottom: verticalScale(15),
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',
     },
-    headerTitle: { fontSize: moderateScale(24), fontWeight: 'bold', color: '#0f172a' },
+    headerTop: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    backBtn: {
+        width: moderateScale(40),
+        height: moderateScale(40),
+        borderRadius: moderateScale(12),
+        backgroundColor: '#f1f5f9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerTitle: { fontSize: moderateScale(20), fontWeight: 'bold', color: '#0f172a' },
 
     listContent: { padding: moderateScale(20) },
 

@@ -20,10 +20,12 @@ const request = async (endpoint, options = {}) => {
 
         console.log(`🌐 [API Request] ${fetchOptions.method || 'GET'} ${endpoint}`);
 
+        const isFormData = fetchOptions.body instanceof FormData;
+
         const response = await fetch(url, {
             ...fetchOptions,
             headers: {
-                'Content-Type': 'application/json',
+                ...(!isFormData && { 'Content-Type': 'application/json' }),
                 // Attach Bearer token if available
                 ...(token && { 'Authorization': `Bearer ${token}` }),
                 ...fetchOptions.headers,
@@ -97,7 +99,7 @@ export const apiService = {
         getBookings: (token) => request('/api/customer/bookings', { method: 'GET', token }),
 
         // Get details for a specific booking
-        getBookingDetails: (id, token) => request('/api/customer/booking-details', { method: 'GET', params: { id }, token }),
+        getBookingDetails: (id, token) => request('/api/customer/booking-details', { method: 'GET', params: { bookingId: id }, token }),
 
         // Create a new service booking
         createBooking: (data, token) => request('/api/bookings', { method: 'POST', body: JSON.stringify(data), token }),
@@ -201,8 +203,31 @@ export const apiService = {
      * 🏗️ GENERIC REQUEST HELPERS
      * Generic methods for custom or legacy calls.
      */
-    get: (endpoint, params = {}, token = null) => request(endpoint, { method: 'GET', params, token }),
-    post: (endpoint, data, token = null) => request(endpoint, { method: 'POST', body: JSON.stringify(data), token }),
-    put: (endpoint, data, token = null) => request(endpoint, { method: 'PUT', body: JSON.stringify(data), token }),
-    delete: (endpoint, token = null) => request(endpoint, { method: 'DELETE', token }),
+    get: (endpoint, params = {}, token = null, extraOptions = {}) => 
+        request(endpoint, { method: 'GET', params, token, ...extraOptions }),
+    
+    post: (endpoint, data, token = null, extraOptions = {}) => {
+        const isFormData = data instanceof FormData;
+        return request(endpoint, { 
+            method: 'POST', 
+            body: isFormData ? data : JSON.stringify(data), 
+            token,
+            headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+            ...extraOptions 
+        });
+    },
+
+    put: (endpoint, data, token = null, extraOptions = {}) => {
+        const isFormData = data instanceof FormData;
+        return request(endpoint, { 
+            method: 'PUT', 
+            body: isFormData ? data : JSON.stringify(data), 
+            token,
+            headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+            ...extraOptions 
+        });
+    },
+
+    delete: (endpoint, token = null, extraOptions = {}) => 
+        request(endpoint, { method: 'DELETE', token, ...extraOptions }),
 };

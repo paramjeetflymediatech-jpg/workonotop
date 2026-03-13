@@ -16,6 +16,8 @@ import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import BottomTabNavigator from './BottomTabNavigator';
 import AdminDrawerNavigator from './AdminDrawerNavigator';
 import DetailsScreen from '../screens/DetailsScreen';
+import AdminJobDetailsScreen from '../screens/admin/AdminJobDetailsScreen';
+import CustomerBookingDetailsScreen from '../screens/customer/CustomerBookingDetailsScreen';
 
 // Contractor Onboarding
 import OnboardingIntroScreen from '../screens/contractor/OnboardingIntroScreen';
@@ -32,6 +34,8 @@ import FinishJobScreen from '../screens/contractor/FinishJobScreen';
 // Customer Screens
 import JobReportScreen from '../screens/customer/JobReportScreen';
 import UpdateProfileScreen from '../screens/customer/UpdateProfileScreen';
+import CreateBookingScreen from '../screens/customer/CreateBookingScreen';
+import BookingSuccessScreen from '../screens/customer/BookingSuccessScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -83,8 +87,12 @@ const RootNavigator = () => {
                             ) : (
                                 <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
                             )}
+                            <Stack.Screen name="AdminJobDetails" component={AdminJobDetailsScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="CustomerBookingDetails" component={CustomerBookingDetailsScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Details" component={DetailsScreen} />
                             <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="CreateBooking" component={CreateBookingScreen} options={{ title: 'Book Service' }} />
+                            <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} options={{ headerShown: false }} />
 
                             {/* Contractor Onboarding (Still registered for deep links or manual re-entry if allowed) */}
                             <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />

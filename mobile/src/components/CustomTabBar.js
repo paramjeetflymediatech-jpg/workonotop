@@ -64,6 +64,8 @@ const CustomTabBar = memo(({ state, descriptors, navigation, role }) => {
                         iconName = isFocused ? 'person' : 'person-outline';
                     } else if (route.name === 'Jobs' || route.name === 'Manage') {
                         iconName = isFocused ? 'briefcase' : 'briefcase-outline';
+                    } else if (route.name === 'MyBookings') {
+                        iconName = isFocused ? 'calendar' : 'calendar-outline';
                     }
 
                     return (
@@ -84,12 +86,9 @@ const CustomTabBar = memo(({ state, descriptors, navigation, role }) => {
                             ]}>
                                 <Ionicons
                                     name={iconName}
-                                    size={moderateScale(24)}
+                                    size={moderateScale(26)}
                                     color={isFocused ? '#fff' : '#64748b'}
                                 />
-                                {isFocused && (
-                                    <Text style={styles.tabLabel}>{label}</Text>
-                                )}
                             </Animated.View>
                         </TouchableOpacity>
                     );
@@ -142,14 +141,8 @@ const styles = StyleSheet.create({
     },
     activeIconContainer: {
         backgroundColor: '#115e59',
-        paddingHorizontal: scale(16),
+        paddingHorizontal: scale(12),
     },
-    tabLabel: {
-        color: '#fff',
-        fontSize: moderateScale(12),
-        fontWeight: 'bold',
-        marginLeft: scale(8),
-    }
 });
 
 export default CustomTabBar;

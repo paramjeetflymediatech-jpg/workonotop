@@ -22,6 +22,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { api } from '../../utils/api';
+import { API_BASE_URL } from '../../config';
 
 const ServicesListScreen = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +49,8 @@ const ServicesListScreen = ({ navigation }) => {
         is_popular: false,
         is_active: true
     });
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [editingServiceId, setEditingServiceId] = useState(null);
 
     const fetchServices = async () => {
         setLoading(true);
@@ -134,7 +137,7 @@ const ServicesListScreen = ({ navigation }) => {
         }
     };
 
-    const handleAddService = async () => {
+    const handleSaveService = async () => {
         if (!newService.category_id || !newService.name || !newService.slug || !newService.base_price) {
             Alert.alert('Missing Fields', 'Please fill in all required fields marked with *');
             return;
@@ -142,24 +145,90 @@ const ServicesListScreen = ({ navigation }) => {
 
         setLoading(true);
         try {
-            const res = await api.post('/api/services', newService);
+            const endpoint = '/api/services';
+            const method = isEditMode ? 'put' : 'post';
+            
+            const payload = isEditMode ? { ...newService, id: editingServiceId } : newService;
+            const res = await api[method](endpoint, payload);
             if (res.success) {
-                Alert.alert('Success', 'Service added successfully');
-                setIsAddModalOpen(false);
-                setNewService({
-                    category_id: '', name: '', slug: '', description: '', short_description: '',
-                    base_price: '', additional_price: '', duration_minutes: '', image_url: '',
-                    use_cases: '', is_homepage: false, is_trending: false, is_popular: false,
-                    is_active: true
-                });
-                setImagePreview(null);
+                Alert.alert('Success', `Service ${isEditMode ? 'updated' : 'added'} successfully`);
+                closeModal();
                 fetchServices();
             }
         } catch (error) {
-            Alert.alert('Error', error.message || 'Failed to add service');
+            Alert.alert('Error', error.message || `Failed to ${isEditMode ? 'update' : 'add'} service`);
         } finally {
             setLoading(false);
         }
+    };
+
+    const closeModal = () => {
+        setIsAddModalOpen(false);
+        setIsEditMode(false);
+        setEditingServiceId(null);
+        setNewService({
+            category_id: '', name: '', slug: '', description: '', short_description: '',
+            base_price: '', additional_price: '', duration_minutes: '', image_url: '',
+            use_cases: '', is_homepage: false, is_trending: false, is_popular: false,
+            is_active: true
+        });
+        setImagePreview(null);
+    };
+
+    const handleEditPress = (service) => {
+        setEditingServiceId(service.id);
+        setNewService({
+            category_id: service.category_id,
+            name: service.name,
+            slug: service.slug,
+            short_description: service.short_description || '',
+            description: service.description || '',
+            base_price: String(service.base_price),
+            additional_price: String(service.additional_price || ''),
+            duration_minutes: String(service.duration_minutes || ''),
+            image_url: service.image_url || '',
+            use_cases: service.use_cases || '',
+            is_homepage: !!service.is_homepage,
+            is_trending: !!service.is_trending,
+            is_popular: !!service.is_popular,
+            is_active: !!service.is_active
+        });
+        
+        let preview = service.image_url;
+        if (preview && !preview.startsWith('http')) {
+            preview = `${API_BASE_URL}${preview}`;
+        }
+        setImagePreview(preview);
+        
+        setIsEditMode(true);
+        setIsAddModalOpen(true);
+    };
+
+    const handleDeletePress = (service) => {
+        Alert.alert(
+            'Delete Service',
+            `Are you sure you want to delete "${service.name}"? This action cannot be undone.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                    text: 'Delete', 
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const res = await api.delete(`/api/services?id=${service.id}`);
+                            if (res.success) {
+                                Alert.alert('Deleted', 'Service has been removed.');
+                                fetchServices();
+                            } else {
+                                Alert.alert('Error', res.message || 'Failed to delete service');
+                            }
+                        } catch (error) {
+                            Alert.alert('Error', 'An unexpected error occurred');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const handleNameChange = (name) => {
@@ -181,11 +250,17 @@ const ServicesListScreen = ({ navigation }) => {
     );
 
     const renderServiceItem = ({ item }) => (
-        <TouchableOpacity style={styles.card}>
+        <TouchableOpacity 
+            style={styles.card}
+            onPress={() => navigation.navigate('Details', { service: item, hideBooking: true })}
+        >
             <View style={styles.cardHeader}>
                 <View style={styles.imagePlaceholder}>
                     {item.image_url ? (
-                        <Image source={{ uri: item.image_url }} style={styles.serviceImage} />
+                        <Image 
+                            source={{ uri: item.image_url.startsWith('http') ? item.image_url : `${API_BASE_URL}${item.image_url}` }} 
+                            style={styles.serviceImage} 
+                        />
                     ) : (
                         <Ionicons name="settings-outline" size={moderateScale(30)} color="#115e59" />
                     )}
@@ -205,11 +280,22 @@ const ServicesListScreen = ({ navigation }) => {
             <View style={styles.cardBottom}>
                 <View style={styles.metaRow}>
                     <Ionicons name="time-outline" size={moderateScale(14)} color="#64748b" />
-                    <Text style={styles.metaText}>{item.duration || 'Flexible'} Duration</Text>
+                    <Text style={styles.metaText}>{item.duration_minutes || 'Flexible'} min</Text>
                 </View>
-                <TouchableOpacity style={styles.editIcon}>
-                    <Ionicons name="pencil" size={moderateScale(16)} color="#3b82f6" />
-                </TouchableOpacity>
+                <View style={styles.actionButtons}>
+                    <TouchableOpacity 
+                        style={[styles.actionIcon, { backgroundColor: '#f0fdf4' }]} 
+                        onPress={() => handleEditPress(item)}
+                    >
+                        <Ionicons name="pencil-outline" size={moderateScale(18)} color="#16a34a" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        style={[styles.actionIcon, { backgroundColor: '#fef2f2' }]} 
+                        onPress={() => handleDeletePress(item)}
+                    >
+                        <Ionicons name="trash-outline" size={moderateScale(18)} color="#dc2626" />
+                    </TouchableOpacity>
+                </View>
             </View>
         </TouchableOpacity>
     );
@@ -279,8 +365,8 @@ const ServicesListScreen = ({ navigation }) => {
                         style={styles.modalContent}
                     >
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Add New Service</Text>
-                            <TouchableOpacity onPress={() => setIsAddModalOpen(false)}>
+                            <Text style={styles.modalTitle}>{isEditMode ? 'Edit Service' : 'Add New Service'}</Text>
+                            <TouchableOpacity onPress={closeModal}>
                                 <Ionicons name="close" size={moderateScale(24)} color="#0f172a" />
                             </TouchableOpacity>
                         </View>
@@ -391,7 +477,10 @@ const ServicesListScreen = ({ navigation }) => {
                                 <Text style={styles.inputLabel}>Service Image</Text>
                                 <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
                                     {imagePreview ? (
-                                        <Image source={{ uri: imagePreview }} style={styles.previewImage} />
+                                        <Image 
+                                            source={{ uri: imagePreview.startsWith('http') ? imagePreview : `${API_BASE_URL}${imagePreview}` }} 
+                                            style={styles.previewImage} 
+                                        />
                                     ) : (
                                         <View style={styles.imagePickerPlaceholder}>
                                             <Ionicons name="camera-outline" size={moderateScale(30)} color="#115e59" />
@@ -442,8 +531,8 @@ const ServicesListScreen = ({ navigation }) => {
                                 <Text style={styles.imageNote}>Separate with commas.</Text>
                             </View>
 
-                            <TouchableOpacity style={styles.submitBtn} onPress={handleAddService}>
-                                <Text style={styles.submitBtnText}>Add Service</Text>
+                            <TouchableOpacity style={styles.submitBtn} onPress={handleSaveService}>
+                                <Text style={styles.submitBtnText}>{isEditMode ? 'Update Service' : 'Add Service'}</Text>
                             </TouchableOpacity>
                         </ScrollView>
                     </KeyboardAvoidingView>
@@ -570,8 +659,17 @@ const styles = StyleSheet.create({
         color: '#64748b',
         marginLeft: scale(6),
     },
-    editIcon: {
-        padding: scale(5),
+    actionButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    actionIcon: {
+        width: moderateScale(34),
+        height: moderateScale(34),
+        borderRadius: moderateScale(10),
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: scale(8),
     },
     emptyContainer: {
         flex: 1,

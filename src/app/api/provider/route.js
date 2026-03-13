@@ -244,5 +244,7 @@ export async function DELETE(request) {
     if (connection) await connection.rollback()
     console.error('Error deleting provider:', error)
     return NextResponse.json({ success: false, message: 'Failed to delete provider' }, { status: 500 })
+  } finally {
+    if (connection) connection.release()
   }
 }

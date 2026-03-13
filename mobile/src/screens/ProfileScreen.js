@@ -1,16 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { verticalScale } from '../utils/responsive';
 import { API_BASE_URL } from '../config';
+import LogoutConfirmationModal from '../components/LogoutConfirmationModal';
 
 const ProfileScreen = ({ navigation }) => {
     const { user, logout } = useAuth();
     const insets = useSafeAreaInsets();
 
     const firstName = user?.first_name || user?.name || 'User';
+
+    const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+    const handleLogoutPress = () => setLogoutModalVisible(true);
+    const handleLogoutCancel = () => setLogoutModalVisible(false);
+    const handleLogoutConfirm = () => {
+        setLogoutModalVisible(false);
+        logout();
+    };
 
     return (
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -68,9 +78,15 @@ const ProfileScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogoutPress}>
                 <Text style={styles.logoutText}>Log Out</Text>
             </TouchableOpacity>
+
+            <LogoutConfirmationModal 
+                visible={logoutModalVisible}
+                onCancel={handleLogoutCancel}
+                onConfirm={handleLogoutConfirm}
+            />
 
             {/* Bottom Space for Floating Tab Bar */}
             <View style={{ height: verticalScale(120) + insets.bottom }} />

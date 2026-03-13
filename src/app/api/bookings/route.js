@@ -602,7 +602,7 @@ export async function POST(request) {
     const [serviceInfo] = await execute('SELECT duration_minutes FROM services WHERE id = ?', [service_id])
     const standardDuration = serviceInfo?.duration_minutes || 60
 
-    const basePrice = parseFloat(service_price)
+    const basePrice = parseFloat(service_price || 0)
     const overtimeRate = parseFloat(additional_price || 0)
     const maxOvertimeCost = overtimeRate * 2
     const totalAuthorizedAmount = basePrice + maxOvertimeCost
@@ -622,17 +622,32 @@ export async function POST(request) {
           standard_duration_minutes, payment_intent_id, authorized_amount)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,?,'pending','not_started','authorized',?,?,?)`,
         [
-          bookingNumber, user_id || null, service_id, service_name || null,
-          service_price, additional_price || 0,
-          first_name, last_name, email, phone,
-          job_date, timeSlotString, timing_constraints || null,
-          job_description || null, instructions || null,
-          parking_access ? 1 : 0, elevator_access ? 1 : 0, has_pets ? 1 : 0,
-          address_line1, address_line2 || null, city, postal_code || null,
-          basePrice,
-          standardDuration,
-          payment_intent_id,
-          totalAuthorizedAmount,
+          bookingNumber, 
+          user_id || null, 
+          service_id || null, 
+          service_name || null,
+          service_price || 0, 
+          additional_price || 0,
+          first_name || null, 
+          last_name || null, 
+          email || null, 
+          phone || null,
+          job_date || null, 
+          timeSlotString || null, 
+          timing_constraints || null,
+          job_description || null, 
+          instructions || null,
+          parking_access ? 1 : 0, 
+          elevator_access ? 1 : 0, 
+          has_pets ? 1 : 0,
+          address_line1 || null, 
+          address_line2 || null, 
+          city || 'Calgary', 
+          postal_code || null,
+          basePrice || 0,
+          standardDuration || 60,
+          payment_intent_id || null,
+          totalAuthorizedAmount || 0,
         ]
       )
 

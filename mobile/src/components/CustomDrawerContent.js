@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    SafeAreaView
+    SafeAreaView,
+    Alert
 } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { scale, verticalScale, moderateScale } from '../utils/responsive';
+import LogoutConfirmationModal from './LogoutConfirmationModal';
 
 const DrawerItem = ({ label, icon, onPress, active }) => (
     <TouchableOpacity
@@ -31,7 +33,7 @@ const DrawerItem = ({ label, icon, onPress, active }) => (
 );
 
 const CustomDrawerContent = (props) => {
-    const { user, logout } = useAuth();
+    const { logout } = useAuth();
     const currentRoute = props.state.routes[props.state.index].name;
 
     const menuItems = [
@@ -48,21 +50,21 @@ const CustomDrawerContent = (props) => {
         { label: 'Settings', icon: 'options-outline', route: 'Settings' },
     ];
 
+    const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+    const handleLogoutPress = () => setLogoutModalVisible(true);
+    const handleLogoutCancel = () => setLogoutModalVisible(false);
+    const handleLogoutConfirm = () => {
+        setLogoutModalVisible(false);
+        logout();
+    };
+
     return (
         <SafeAreaView style={{ flex: 1 }}>
             <View style={styles.headerContainer}>
-                <View style={styles.profileSection}>
-                    <View style={styles.avatarContainer}>
-                        <Text style={styles.avatarInitial}>
-                            {(user?.name || user?.email || 'A')[0].toUpperCase()}
-                        </Text>
-                    </View>
-                    <View style={styles.userInfo}>
-                        <Text style={styles.userName} numberOfLines={1}>
-                            {user?.name || user?.email?.split('@')[0] || 'Admin'}
-                        </Text>
-                        <Text style={styles.userRole}>Administrator</Text>
-                    </View>
+                <View style={styles.logoContainer}>
+                    <Text style={styles.logoTextBold}>WORK</Text>
+                    <Text style={styles.logoText}>ON TOP</Text>
                 </View>
             </View>
 
@@ -81,11 +83,17 @@ const CustomDrawerContent = (props) => {
             </DrawerContentScrollView>
 
             <View style={styles.footer}>
-                <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogoutPress}>
                     <Ionicons name="log-out-outline" size={moderateScale(22)} color="#ef4444" />
                     <Text style={styles.logoutText}>Log out</Text>
                 </TouchableOpacity>
             </View>
+
+            <LogoutConfirmationModal
+                visible={logoutModalVisible}
+                onCancel={handleLogoutCancel}
+                onConfirm={handleLogoutConfirm}
+            />
         </SafeAreaView>
     );
 };
@@ -95,40 +103,32 @@ const styles = StyleSheet.create({
         padding: moderateScale(20),
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',
-    },
-    profileSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        marginBottom: verticalScale(10),
         marginTop: verticalScale(10),
     },
-    avatarContainer: {
-        width: moderateScale(58),
-        height: moderateScale(58),
-        borderRadius: moderateScale(29),
-        backgroundColor: '#115e59',
-        justifyContent: 'center',
+    logoContainer: {
+        marginBottom: verticalScale(10),
+        flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#0f766e',
+        justifyContent: 'center',
+        width: '100%',
     },
-    avatarInitial: {
-        fontSize: moderateScale(24),
-        fontWeight: 'bold',
-        color: '#fff',
+    logoTextBold: {
+        fontSize: moderateScale(22),
+        fontWeight: '900',
+        color: '#115e59', // Deep teal
+        letterSpacing: 1.5,
+
+        marginTop: verticalScale(12),
     },
-    userInfo: {
-        marginLeft: scale(15),
-    },
-    userName: {
-        fontSize: moderateScale(18),
-        fontWeight: 'bold',
-        color: '#0f172a',
-    },
-    userRole: {
-        fontSize: moderateScale(12),
-        color: '#64748b',
-        marginTop: verticalScale(3),
-        fontWeight: '500',
+    logoText: {
+        fontSize: moderateScale(22),
+        fontWeight: '400',
+        color: '#0f766e',
+        marginLeft: scale(8),
+        letterSpacing: 1.5,
+        marginTop: verticalScale(12),
+
     },
     drawerContent: {
         paddingTop: 0,

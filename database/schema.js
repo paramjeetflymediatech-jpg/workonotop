@@ -194,7 +194,7 @@ const tables = [
     customer_email VARCHAR(255) NOT NULL,
     customer_phone VARCHAR(50) NOT NULL,
     job_date DATE NOT NULL,
-    job_time_slot SET('morning', 'afternoon', 'evening') NOT NULL,
+    job_time_slot VARCHAR(255) NOT NULL,
     timing_constraints TEXT,
     job_description TEXT NOT NULL,
     instructions TEXT,
@@ -479,7 +479,9 @@ const alterations = [
   { table: 'bookings', column: 'recommendations', sql: 'ALTER TABLE bookings ADD COLUMN recommendations TEXT' },
   
   // users table additions
-  { table: 'users', column: 'image_url', sql: 'ALTER TABLE users ADD COLUMN image_url VARCHAR(255) AFTER role' }
+  { table: 'users', column: 'image_url', sql: 'ALTER TABLE users ADD COLUMN image_url VARCHAR(255) AFTER role' },
+  // Fix job_time_slot truncation
+  { table: 'bookings', column: 'job_time_slot_varchar', sql: 'ALTER TABLE bookings MODIFY COLUMN job_time_slot VARCHAR(255) NOT NULL' }
 ];
 
 // =====================================================

@@ -196,7 +196,7 @@ const CustomerDashboard = ({ navigation }) => {
                                 <TouchableOpacity
                                     key={booking.id}
                                     style={styles.orderCard}
-                                    onPress={() => navigation.navigate('Details', { bookingId: booking.id })}
+                                    onPress={() => navigation.navigate('CustomerBookingDetails', { bookingId: booking.id })}
                                     activeOpacity={0.7}
                                 >
                                     <View style={styles.orderIcon}>

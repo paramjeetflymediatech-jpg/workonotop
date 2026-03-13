@@ -103,7 +103,6 @@ const AdminDashboard = ({ navigation }) => {
     }
 
     const adminName = user?.name || user?.email?.split('@')[0] || 'Admin';
-    const adminInitial = adminName[0]?.toUpperCase() || 'A';
 
     return (
         <SafeAreaView style={styles.container}>
@@ -125,9 +124,13 @@ const AdminDashboard = ({ navigation }) => {
                         <Text style={styles.headerName}>Welcome back, {adminName}</Text>
                     </View>
 
-                    <TouchableOpacity style={styles.avatarWrap} onPress={() => navigation.navigate('Profile')}>
-                        <Text style={styles.avatarText}>{adminInitial}</Text>
-                        <View style={styles.onlineDot} />
+                    <TouchableOpacity 
+                        style={styles.notificationBtn} 
+                        onPress={() => alert('Notifications feature coming soon!')}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="notifications-outline" size={moderateScale(24)} color="#fff" />
+                        <View style={styles.notificationBadge} />
                     </TouchableOpacity>
                 </View>
 
@@ -190,12 +193,13 @@ const AdminDashboard = ({ navigation }) => {
                                 const st = getStatusConfig(booking.status);
                                 const amount = parseFloat(booking.service_price || 0) + parseFloat(booking.additional_price || 0);
                                 return (
-                                    <View
+                                    <TouchableOpacity
                                         key={booking.id}
                                         style={[
                                             styles.bookingRow,
                                             index < recentBookings.length - 1 && styles.bookingRowBorder,
                                         ]}
+                                        onPress={() => navigation.navigate('AdminJobDetails', { booking })}
                                     >
                                         <View style={styles.bookingIconWrap}>
                                             <Ionicons name="hammer-outline" size={moderateScale(18)} color={TEAL} />
@@ -209,7 +213,7 @@ const AdminDashboard = ({ navigation }) => {
                                         <View style={[styles.badge, { backgroundColor: st.bg }]}>
                                             <Text style={[styles.badgeText, { color: st.text }]}>{st.label}</Text>
                                         </View>
-                                    </View>
+                                    </TouchableOpacity>
                                 );
                             })
                         ) : (
@@ -279,28 +283,23 @@ const styles = StyleSheet.create({
         color: '#fff',
         marginTop: verticalScale(2),
     },
-    avatarWrap: {
+    notificationBtn: {
         width: moderateScale(42),
         height: moderateScale(42),
-        borderRadius: moderateScale(21),
-        backgroundColor: TEAL_LIGHT,
+        borderRadius: moderateScale(12),
+        backgroundColor: 'rgba(255,255,255,0.12)',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    avatarText: {
-        color: '#fff',
-        fontSize: moderateScale(17),
-        fontWeight: 'bold',
-    },
-    onlineDot: {
+    notificationBadge: {
         position: 'absolute',
-        bottom: 1,
-        right: 1,
-        width: moderateScale(10),
-        height: moderateScale(10),
-        borderRadius: moderateScale(5),
-        backgroundColor: '#22c55e',
-        borderWidth: 2,
+        top: moderateScale(10),
+        right: moderateScale(10),
+        width: moderateScale(8),
+        height: moderateScale(8),
+        borderRadius: moderateScale(4),
+        backgroundColor: '#ef4444',
+        borderWidth: 1.5,
         borderColor: TEAL_DARK,
     },
 
