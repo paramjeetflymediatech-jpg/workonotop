@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',
+        marginTop: verticalScale(20),
     },
     backButtonIcon: {
         padding: scale(5),

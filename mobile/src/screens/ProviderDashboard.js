@@ -11,6 +11,7 @@ import {
     RefreshControl
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../utils/responsive';
@@ -95,9 +96,17 @@ const ProviderDashboard = ({ navigation }) => {
                 }
             >
                 <View style={styles.header}>
-                    <View>
-                        <Text style={styles.welcomeText}>Pro Dashboard</Text>
-                        <Text style={styles.nameText}>Hi, {user?.name || 'Partner'}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity 
+                            onPress={() => navigation.openDrawer()}
+                            style={{ marginRight: moderateScale(15) }}
+                        >
+                            <Ionicons name="menu-outline" size={moderateScale(28)} color="#0f172a" />
+                        </TouchableOpacity>
+                        <View>
+                            <Text style={styles.welcomeText}>Pro Dashboard</Text>
+                            <Text style={styles.nameText}>Hi, {user?.name || 'Partner'}</Text>
+                        </View>
                     </View>
                     <View style={styles.statusToggle}>
                         <View style={styles.statusDot} />
@@ -168,16 +177,6 @@ const ProviderDashboard = ({ navigation }) => {
                     </View>
                 )}
 
-                <View style={styles.toolsGrid}>
-                    <TouchableOpacity style={styles.toolCard}>
-                        <Text style={styles.toolIcon}>📊</Text>
-                        <Text style={styles.toolTitle}>Earning History</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.toolCard}>
-                        <Text style={styles.toolIcon}>⭐</Text>
-                        <Text style={styles.toolTitle}>My Reviews</Text>
-                    </TouchableOpacity>
-                </View>
 
                 {/* Bottom Space for Floating Tab Bar */}
                 <View style={{ height: verticalScale(100) + insets.bottom }} />
@@ -211,6 +210,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: verticalScale(25),
+        marginTop: verticalScale(25),
     },
     welcomeText: {
         fontSize: moderateScale(14),
@@ -409,34 +409,6 @@ const styles = StyleSheet.create({
     },
     detailsIcon: {
         padding: moderateScale(5),
-    },
-    toolsGrid: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: verticalScale(8),
-    },
-    toolCard: {
-        backgroundColor: '#fff',
-        width: (SCREEN_WIDTH - moderateScale(56)) / 2,
-        padding: moderateScale(18),
-        borderRadius: moderateScale(18),
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#f1f5f9',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-    },
-    toolIcon: {
-        fontSize: moderateScale(24),
-        marginBottom: verticalScale(8),
-    },
-    toolTitle: {
-        fontSize: moderateScale(13),
-        fontWeight: 'bold',
-        color: '#475569',
     },
     emptyContainer: {
         backgroundColor: '#fff',

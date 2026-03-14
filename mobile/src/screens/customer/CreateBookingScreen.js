@@ -10,12 +10,15 @@ import {
     Alert,
     ActivityIndicator,
     Image,
+    Modal,
+    Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from '../../utils/responsive';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { WebView } from 'react-native-webview';
 import { Platform } from 'react-native';
@@ -33,6 +36,8 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const [paymentUrl, setPaymentUrl] = useState(null);
     const [fetchingIntent, setFetchingIntent] = useState(false);
     const [intentError, setIntentError] = useState(null);
+    const [viewerVisible, setViewerVisible] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     // Form State
     const [bookingData, setBookingData] = useState({
@@ -44,7 +49,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
         job_time_slot: '',
         address_line1: user?.address || '',
         address_line2: '',
-        city: 'Calgary',
+        city: '',
         postal_code: '',
         job_description: '',
         instructions: '',
@@ -77,7 +82,12 @@ const CreateBookingScreen = ({ navigation, route }) => {
         });
 
         if (!result.canceled) {
-            uploadPhoto(result.assets[0].uri);
+            const manipResult = await ImageManipulator.manipulateAsync(
+                result.assets[0].uri,
+                [{ resize: { width: 1000 } }], // Resize to 1000px width while maintaining aspect ratio
+                { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+            );
+            uploadPhoto(manipResult.uri);
         }
     };
 
@@ -93,9 +103,10 @@ const CreateBookingScreen = ({ navigation, route }) => {
             const res = await apiService.post('/api/upload', formData);
 
             if (res.success) {
+                const fullUrl = res.url.startsWith('http') ? res.url : `${API_BASE_URL}${res.url}`;
                 setBookingData(prev => ({
                     ...prev,
-                    photos: [...prev.photos, res.url]
+                    photos: [...prev.photos, fullUrl]
                 }));
             } else {
                 Alert.alert('Upload Failed', res.message || 'Could not upload image.');
@@ -116,16 +127,20 @@ const CreateBookingScreen = ({ navigation, route }) => {
     };
 
     const nextStep = async () => {
-        if (step === 1 && !bookingData.job_time_slot) {
-            Alert.alert('Selection Required', 'Please select a time slot.');
+        if (step === 1 && (!bookingData.address_line1 || !bookingData.postal_code || !bookingData.city)) {
+            Alert.alert('Fields Required', 'Address, City and Postal Code are required.');
             return;
         }
-        if (step === 2 && (!bookingData.address_line1 || !bookingData.phone || !bookingData.job_description)) {
-            Alert.alert('Fields Required', 'Address, Phone, and Job Description are required.');
+        if (step === 2 && (!bookingData.job_date || !bookingData.job_time_slot)) {
+            Alert.alert('Selection Required', 'Please select a date and time slot.');
+            return;
+        }
+        if (step === 3 && (!bookingData.phone || !bookingData.job_description)) {
+            Alert.alert('Fields Required', 'Phone and Job Description are required.');
             return;
         }
 
-        if (step === 3) {
+        if (step === 4) {
             setFetchingIntent(true);
             try {
                 const res = await apiService.post('/api/payment/create-intent', {
@@ -204,9 +219,77 @@ const CreateBookingScreen = ({ navigation, route }) => {
         });
     };
 
+    const openViewer = (url) => {
+        setSelectedImage(url);
+        setViewerVisible(true);
+    };
+
+    const renderImageViewer = () => (
+        <Modal
+            visible={viewerVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setViewerVisible(false)}
+        >
+            <View style={styles.viewerContainer}>
+                <TouchableOpacity 
+                    style={styles.viewerCloseBtn} 
+                    onPress={() => setViewerVisible(false)}
+                >
+                    <Ionicons name="close" size={32} color="#fff" />
+                </TouchableOpacity>
+                {selectedImage && (
+                    <Image 
+                        source={{ uri: selectedImage }} 
+                        style={styles.viewerImage} 
+                        resizeMode="contain" 
+                    />
+                )}
+            </View>
+        </Modal>
+    );
+
     const renderStep1 = () => (
+        <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionTitle}>Where do you need service?</Text>
+            
+            <Text style={styles.label}>Service Address *</Text>
+            <TextInput
+                style={styles.input}
+                value={bookingData.address_line1}
+                onChangeText={txt => setBookingData({ ...bookingData, address_line1: txt })}
+                placeholder="Street address"
+            />
+
+            <View style={styles.row}>
+                <View style={{ flex: 1, marginRight: 10 }}>
+                    <Text style={styles.label}>City *</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={bookingData.city}
+                        onChangeText={txt => setBookingData({ ...bookingData, city: txt })}
+                        placeholder="e.g. Calgary"
+                    />
+                </View>
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.label}>Postal Code *</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={bookingData.postal_code}
+                        onChangeText={txt => setBookingData({ ...bookingData, postal_code: txt })}
+                        placeholder="T2P 2M1"
+                        autoCapitalize="characters"
+                    />
+                </View>
+            </View>
+            <View style={{ height: 40 }} />
+        </ScrollView>
+    );
+
+    const renderStep2 = () => (
         <View style={styles.stepContainer}>
             <Text style={styles.sectionTitle}>When should we come?</Text>
+            
             <Text style={styles.label}>Select Date</Text>
             <TouchableOpacity 
                 style={styles.dateSelector} 
@@ -247,39 +330,10 @@ const CreateBookingScreen = ({ navigation, route }) => {
         </View>
     );
 
-    const renderStep2 = () => (
+    const renderStep3 = () => (
         <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>Job Details</Text>
             
-            <Text style={styles.label}>Service Address *</Text>
-            <TextInput
-                style={styles.input}
-                value={bookingData.address_line1}
-                onChangeText={txt => setBookingData({ ...bookingData, address_line1: txt })}
-                placeholder="Street address"
-            />
-
-            <View style={styles.row}>
-                <View style={{ flex: 1, marginRight: 10 }}>
-                    <Text style={styles.label}>City</Text>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: '#f1f5f9' }]}
-                        value={bookingData.city}
-                        editable={false}
-                    />
-                </View>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.label}>Postal Code</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={bookingData.postal_code}
-                        onChangeText={txt => setBookingData({ ...bookingData, postal_code: txt })}
-                        placeholder="T2P 2M1"
-                        autoCapitalize="characters"
-                    />
-                </View>
-            </View>
-
             <Text style={styles.label}>Phone Number *</Text>
             <TextInput
                 style={styles.input}
@@ -303,7 +357,9 @@ const CreateBookingScreen = ({ navigation, route }) => {
             <View style={styles.photoList}>
                 {bookingData.photos.map((url, index) => (
                     <View key={index} style={styles.photoWrapper}>
-                        <Image source={{ uri: url }} style={styles.photo} />
+                        <TouchableOpacity onPress={() => openViewer(url)}>
+                            <Image source={{ uri: url }} style={styles.photo} />
+                        </TouchableOpacity>
                         <TouchableOpacity style={styles.removePhotoBtn} onPress={() => removePhoto(url)}>
                             <Ionicons name="close-circle" size={20} color="#ef4444" />
                         </TouchableOpacity>
@@ -363,7 +419,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
         </ScrollView>
     );
 
-    const renderStep3 = () => (
+    const renderStep4 = () => (
         <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>Review Your Booking</Text>
             
@@ -391,7 +447,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     <Text style={styles.reviewLabel}>LOCATION</Text>
                     <View style={styles.reviewRow}>
                         <Ionicons name="location-outline" size={16} color="#64748b" />
-                        <Text style={styles.reviewText}>{bookingData.address_line1}, {bookingData.postal_code}</Text>
+                        <Text style={styles.reviewText}>{bookingData.address_line1}, {bookingData.city}, {bookingData.postal_code}</Text>
                     </View>
                 </View>
 
@@ -399,21 +455,60 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     <Text style={styles.reviewLabel}>CONTACT</Text>
                     <Text style={styles.reviewText}>{bookingData.first_name} {bookingData.last_name}</Text>
                     <Text style={styles.reviewText}>{bookingData.phone}</Text>
+                    <Text style={styles.reviewText}>{bookingData.email}</Text>
                 </View>
 
                 {bookingData.job_description ? (
                     <View style={styles.reviewSection}>
                         <Text style={styles.reviewLabel}>DESCRIPTION</Text>
-                        <Text style={styles.reviewText} numberOfLines={3}>{bookingData.job_description}</Text>
+                        <Text style={styles.reviewText}>{bookingData.job_description}</Text>
                     </View>
                 ) : null}
+
+                {(bookingData.timing_constraints || bookingData.instructions) ? (
+                    <View style={styles.reviewSection}>
+                        <Text style={styles.reviewLabel}>EXTRA DETAILS</Text>
+                        {bookingData.timing_constraints ? (
+                            <View style={styles.reviewRow}>
+                                <Ionicons name="hourglass-outline" size={14} color="#64748b" />
+                                <Text style={styles.reviewText}>Limits: {bookingData.timing_constraints}</Text>
+                            </View>
+                        ) : null}
+                        {bookingData.instructions ? (
+                            <View style={styles.reviewRow}>
+                                <Ionicons name="information-circle-outline" size={14} color="#64748b" />
+                                <Text style={styles.reviewText}>Notes: {bookingData.instructions}</Text>
+                            </View>
+                        ) : null}
+                    </View>
+                ) : null}
+
+                <View style={styles.reviewSection}>
+                    <Text style={styles.reviewLabel}>ACCESS & AMENITIES</Text>
+                    <View style={styles.badgeRow}>
+                        <View style={[styles.badge, bookingData.parking_access && styles.badgeActive]}>
+                            <Ionicons name="car-outline" size={12} color={bookingData.parking_access ? '#fff' : '#64748b'} />
+                            <Text style={[styles.badgeText, bookingData.parking_access && styles.badgeTextActive]}>Parking</Text>
+                        </View>
+                        <View style={[styles.badge, bookingData.elevator_access && styles.badgeActive]}>
+                            <Ionicons name="business-outline" size={12} color={bookingData.elevator_access ? '#fff' : '#64748b'} />
+                            <Text style={[styles.badgeText, bookingData.elevator_access && styles.badgeTextActive]}>Elevator</Text>
+                        </View>
+                        <View style={[styles.badge, bookingData.has_pets && styles.badgeActive]}>
+                            <Ionicons name="paw-outline" size={12} color={bookingData.has_pets ? '#fff' : '#64748b'} />
+                            <Text style={[styles.badgeText, bookingData.has_pets && styles.badgeTextActive]}>Pets</Text>
+                        </View>
+                    </View>
+                </View>
 
                 {bookingData.photos.length > 0 && (
                     <View style={styles.reviewSection}>
                         <Text style={styles.reviewLabel}>PHOTOS</Text>
                         <View style={styles.photoListMini}>
                             {bookingData.photos.map((url, idx) => (
-                                <Image key={idx} source={{ uri: url }} style={styles.photoMini} />
+                                <TouchableOpacity key={idx} onPress={() => openViewer(url)}>
+                                    <Image source={{ uri: url }} style={styles.photoMini} />
+                                </TouchableOpacity>
                             ))}
                         </View>
                     </View>
@@ -423,7 +518,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
         </ScrollView>
     );
 
-    const renderStep4 = () => (
+    const renderStep5 = () => (
         <View style={styles.stepContainer}>
             <Text style={styles.sectionTitle}>Payment & Authorization</Text>
             
@@ -480,12 +575,12 @@ const CreateBookingScreen = ({ navigation, route }) => {
         <View style={styles.container}>
             <View style={styles.header}>
                 <View style={styles.progressTrack}>
-                    <View style={[styles.progressBar, { width: `${(step / 4) * 100}%` }]} />
+                    <View style={[styles.progressBar, { width: `${(step / 5) * 100}%` }]} />
                 </View>
                 <View style={styles.headerInfo}>
-                    <Text style={styles.stepIndicator}>Step {step} of 4</Text>
+                    <Text style={styles.stepIndicator}>Step {step} of 5</Text>
                     <Text style={styles.stepTitle}>
-                        {step === 1 ? 'Schedule' : step === 2 ? 'Details' : step === 3 ? 'Confirm' : 'Payment'}
+                        {step === 1 ? 'Location' : step === 2 ? 'Schedule' : step === 3 ? 'Details' : step === 4 ? 'Confirm' : 'Payment'}
                     </Text>
                 </View>
             </View>
@@ -494,6 +589,8 @@ const CreateBookingScreen = ({ navigation, route }) => {
             {step === 2 && renderStep2()}
             {step === 3 && renderStep3()}
             {step === 4 && renderStep4()}
+            {step === 5 && renderStep5()}
+            {renderImageViewer()}
 
             <View style={styles.footer}>
                 {step > 1 && (
@@ -501,12 +598,12 @@ const CreateBookingScreen = ({ navigation, route }) => {
                         <Text style={styles.backBtnText}>Back</Text>
                     </TouchableOpacity>
                 )}
-                {step < 4 && (
+                {step < 5 && (
                     <TouchableOpacity style={styles.nextBtn} onPress={nextStep} disabled={uploading || fetchingIntent}>
                         {fetchingIntent ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text style={styles.nextBtnText}>{step === 3 ? 'Go to Payment' : 'Next Step'}</Text>
+                            <Text style={styles.nextBtnText}>{step === 4 ? 'Go to Payment' : 'Next Step'}</Text>
                         )}
                     </TouchableOpacity>
                 )}
@@ -659,6 +756,51 @@ const styles = StyleSheet.create({
     confirmBtn: { flex: 2, paddingVertical: 16, alignItems: 'center', borderRadius: 14, backgroundColor: PRIMARY },
     confirmBtnText: { fontWeight: 'bold', color: '#fff', fontSize: 16 },
     disabledBtn: { opacity: 0.6 },
+
+    /* Viewer Styles */
+    viewerContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    viewerCloseBtn: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        zIndex: 10,
+        padding: 10,
+    },
+    viewerImage: {
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height * 0.8,
+    },
+
+    /* Badge Styles */
+    badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 5 },
+    badge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: '#f1f5f9',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    badgeActive: {
+        backgroundColor: PRIMARY,
+        borderColor: PRIMARY,
+    },
+    badgeText: {
+        marginLeft: 4,
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#64748b',
+    },
+    badgeTextActive: {
+        color: '#fff',
+    },
 });
 
 export default CreateBookingScreen;

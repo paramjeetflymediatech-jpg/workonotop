@@ -12,11 +12,15 @@ import {
     Alert,
     Image,
     Modal,
-    ScrollView
+    ScrollView,
+    Platform,
+    Dimensions,
+    TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { api } from '../../utils/api';
+import { API_BASE_URL } from '../../config';
 
 const ProvidersScreen = ({ navigation }) => {
     const [providers, setProviders] = useState([]);
@@ -25,6 +29,12 @@ const ProvidersScreen = ({ navigation }) => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedProvider, setSelectedProvider] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [providerDocs, setProviderDocs] = useState([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [showRejectInput, setShowRejectInput] = useState(false);
+    const [viewerVisible, setViewerVisible] = useState(false);
+    const [viewerImage, setViewerImage] = useState(null);
 
     const statuses = [
         { id: 'all', label: 'All' },
@@ -47,6 +57,20 @@ const ProvidersScreen = ({ navigation }) => {
         }
     };
 
+    const fetchDocuments = async (providerId) => {
+        setLoadingDocs(true);
+        try {
+            const res = await api.get(`/api/admin/providers/${providerId}/documents`);
+            if (res.success) {
+                setProviderDocs(res.documents || []);
+            }
+        } catch (error) {
+            console.error('Error fetching documents:', error);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+
     useEffect(() => {
         fetchProviders();
     }, [statusFilter]);
@@ -56,9 +80,11 @@ const ProvidersScreen = ({ navigation }) => {
         fetchProviders();
     };
 
-    const handleAction = (providerId, action) => {
+    const handleAction = (providerId, action, reason) => {
         const title = action === 'approve' ? 'Approve Provider' : 'Reject Provider';
-        const message = `Are you sure you want to ${action} this provider?`;
+        const message = reason 
+            ? `Are you sure you want to reject this provider for: "${reason}"?`
+            : `Are you sure you want to ${action} this provider?`;
 
         Alert.alert(title, message, [
             { text: 'Cancel', style: 'cancel' },
@@ -70,10 +96,11 @@ const ProvidersScreen = ({ navigation }) => {
                         const res = await api.put('/api/admin/providers', {
                             providerId,
                             action,
-                            rejectionReason: action === 'reject' ? 'Does not meet requirements' : undefined
+                            rejectionReason: action === 'reject' ? (reason || 'Does not meet requirements') : undefined
                         });
                         if (res.success) {
                             Alert.alert('Success', `Provider ${action}ed successfully`);
+                            setModalVisible(false);
                             fetchProviders();
                         }
                     } catch (error) {
@@ -96,7 +123,11 @@ const ProvidersScreen = ({ navigation }) => {
 
     const openProviderDetails = (provider) => {
         setSelectedProvider(provider);
+        setProviderDocs([]);
+        setShowRejectInput(false);
+        setRejectionReason('');
         setModalVisible(true);
+        fetchDocuments(provider.id);
     };
 
     const renderProviderItem = ({ item }) => {
@@ -301,6 +332,48 @@ const ProvidersScreen = ({ navigation }) => {
                                 </View>
 
                                 <View style={styles.detailSection}>
+                                    <Text style={styles.sectionTitle}>Uploaded Documents</Text>
+                                    {loadingDocs ? (
+                                        <ActivityIndicator size="small" color="#115e59" style={{ marginVertical: 20 }} />
+                                    ) : providerDocs.length > 0 ? (
+                                        <View style={styles.docsGallery}>
+                                            {providerDocs.map((doc, index) => (
+                                                <TouchableOpacity 
+                                                    key={doc.id || index} 
+                                                    style={styles.docItem}
+                                                    onPress={() => {
+                                                        const url = doc.document_url.startsWith('http') 
+                                                            ? doc.document_url 
+                                                            : `${API_BASE_URL}${doc.document_url}`;
+                                                        setViewerImage(url);
+                                                        setViewerVisible(true);
+                                                    }}
+                                                >
+                                                    <View style={styles.docImageContainer}>
+                                                        <Image 
+                                                            source={{ uri: doc.document_url.startsWith('http') ? doc.document_url : `${API_BASE_URL}${doc.document_url}` }} 
+                                                            style={styles.docImage}
+                                                            resizeMode="cover"
+                                                        />
+                                                        <View style={[styles.docStatusBadge, { backgroundColor: getStatusStyle(doc.status).bg }]}>
+                                                            <Text style={[styles.docStatusText, { color: getStatusStyle(doc.status).text }]}>
+                                                                {doc.status}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                    <Text style={styles.docLabelText}>{doc.document_type.replace('_', ' ')}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    ) : (
+                                        <View style={styles.emptyDocs}>
+                                            <Ionicons name="document-text-outline" size={moderateScale(32)} color="#cbd5e1" />
+                                            <Text style={styles.emptyDocsText}>No documents uploaded yet</Text>
+                                        </View>
+                                    )}
+                                </View>
+
+                                <View style={styles.detailSection}>
                                     <Text style={styles.sectionTitle}>Business Info</Text>
                                     <View style={styles.detailItem}>
                                         <Ionicons name="business-outline" size={moderateScale(20)} color="#115e59" />
@@ -321,30 +394,76 @@ const ProvidersScreen = ({ navigation }) => {
                                 </View>
 
                                 {selectedProvider.status === 'pending' && (
-                                    <View style={styles.modalActionRow}>
-                                        <TouchableOpacity
-                                            style={[styles.modalActionBtn, styles.approveBtn]}
-                                            onPress={() => {
-                                                setModalVisible(false);
-                                                handleAction(selectedProvider.id, 'approve');
-                                            }}
-                                        >
-                                            <Text style={styles.actionBtnText}>Approve Provider</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[styles.modalActionBtn, styles.rejectBtn]}
-                                            onPress={() => {
-                                                setModalVisible(false);
-                                                handleAction(selectedProvider.id, 'reject');
-                                            }}
-                                        >
-                                            <Text style={styles.actionBtnText}>Reject</Text>
-                                        </TouchableOpacity>
+                                    <View style={{ marginTop: verticalScale(10) }}>
+                                        {!showRejectInput ? (
+                                            <View style={styles.modalActionRow}>
+                                                <TouchableOpacity
+                                                    style={[styles.modalActionBtn, styles.approveBtn]}
+                                                    onPress={() => handleAction(selectedProvider.id, 'approve')}
+                                                >
+                                                    <Text style={styles.actionBtnText}>Approve Provider</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[styles.modalActionBtn, styles.rejectBtn]}
+                                                    onPress={() => setShowRejectInput(true)}
+                                                >
+                                                    <Text style={styles.actionBtnText}>Reject</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        ) : (
+                                            <View style={styles.rejectInputContainer}>
+                                                <Text style={styles.rejectInputLabel}>Rejection Reason</Text>
+                                                <TextInput
+                                                    style={styles.rejectInput}
+                                                    placeholder="Enter reason for rejection..."
+                                                    placeholderTextColor="#94a3b8"
+                                                    multiline
+                                                    value={rejectionReason}
+                                                    onChangeText={setRejectionReason}
+                                                />
+                                                <TouchableOpacity
+                                                    style={[styles.rejectSubmitBtn, { opacity: rejectionReason.trim() ? 1 : 0.6 }]}
+                                                    disabled={!rejectionReason.trim()}
+                                                    onPress={() => handleAction(selectedProvider.id, 'reject', rejectionReason)}
+                                                >
+                                                    <Text style={styles.rejectSubmitText}>Submit Rejection</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={styles.cancelRejectBtn}
+                                                    onPress={() => setShowRejectInput(false)}
+                                                >
+                                                    <Text style={styles.cancelRejectText}>Cancel</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        )}
                                     </View>
                                 )}
                             </ScrollView>
                         )}
                     </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={viewerVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setViewerVisible(false)}
+            >
+                <View style={styles.viewerOverlay}>
+                    <TouchableOpacity 
+                        style={styles.viewerClose}
+                        onPress={() => setViewerVisible(false)}
+                    >
+                        <Ionicons name="close" size={moderateScale(32)} color="#fff" />
+                    </TouchableOpacity>
+                    {viewerImage && (
+                        <Image 
+                            source={{ uri: viewerImage }} 
+                            style={styles.fullImage}
+                            resizeMode="contain"
+                        />
+                    )}
                 </View>
             </Modal>
         </SafeAreaView>
@@ -566,6 +685,129 @@ const styles = StyleSheet.create({
         borderRadius: moderateScale(12),
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    /* Documents Gallery */
+    docsGallery: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginHorizontal: -scale(5),
+    },
+    docItem: {
+        width: (Dimensions.get('window').width - scale(60)) / 2,
+        margin: scale(5),
+        backgroundColor: '#f8fafc',
+        borderRadius: moderateScale(12),
+        padding: scale(8),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    docImageContainer: {
+        width: '100%',
+        height: verticalScale(100),
+        borderRadius: moderateScale(8),
+        overflow: 'hidden',
+        backgroundColor: '#f1f5f9',
+    },
+    docImage: {
+        width: '100%',
+        height: '100%',
+    },
+    docStatusBadge: {
+        position: 'absolute',
+        top: scale(5),
+        right: scale(5),
+        paddingHorizontal: scale(6),
+        paddingVertical: scale(2),
+        borderRadius: scale(4),
+    },
+    docStatusText: {
+        fontSize: scale(8),
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    },
+    docLabelText: {
+        fontSize: moderateScale(12),
+        fontWeight: '600',
+        color: '#334155',
+        marginTop: verticalScale(8),
+        textAlign: 'center',
+        textTransform: 'capitalize',
+    },
+    emptyDocs: {
+        alignItems: 'center',
+        paddingVertical: verticalScale(20),
+        backgroundColor: '#f8fafc',
+        borderRadius: moderateScale(15),
+    },
+    emptyDocsText: {
+        fontSize: moderateScale(12),
+        color: '#94a3b8',
+        marginTop: verticalScale(8),
+    },
+    rejectInputContainer: {
+        marginTop: verticalScale(10),
+        backgroundColor: '#fff1f2',
+        padding: scale(15),
+        borderRadius: moderateScale(12),
+        borderWidth: 1,
+        borderColor: '#fecaca',
+    },
+    rejectInputLabel: {
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+        color: '#be123c',
+        marginBottom: verticalScale(8),
+    },
+    rejectInput: {
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#fca5a5',
+        borderRadius: moderateScale(8),
+        padding: scale(10),
+        minHeight: verticalScale(80),
+        textAlignVertical: 'top',
+        fontSize: moderateScale(14),
+        color: '#334155',
+    },
+    rejectSubmitBtn: {
+        backgroundColor: '#e11d48',
+        paddingVertical: verticalScale(12),
+        borderRadius: moderateScale(10),
+        alignItems: 'center',
+        marginTop: verticalScale(12),
+    },
+    rejectSubmitText: {
+        color: '#fff',
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+    },
+    cancelRejectBtn: {
+        paddingVertical: verticalScale(8),
+        alignItems: 'center',
+        marginTop: verticalScale(4),
+    },
+    cancelRejectText: {
+        color: '#64748b',
+        fontSize: moderateScale(12),
+        fontWeight: '600',
+    },
+    /* Image Viewer */
+    viewerOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    viewerClose: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(30),
+        right: scale(20),
+        zIndex: 10,
+        padding: scale(10),
+    },
+    fullImage: {
+        width: '100%',
+        height: '80%',
     },
 });
 

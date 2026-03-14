@@ -136,32 +136,32 @@ export default function AdminProviders() {
       })
       const data = await res.json()
       if (data.success) {
-        Swal.fire({ 
-          title: 'Updated!', 
-          text: `${providerName} is now ${statusLabels[newStatus]}.`, 
-          icon: 'success', 
-          confirmButtonColor: '#14b8a6', 
-          timer: 2000, 
+        Swal.fire({
+          title: 'Updated!',
+          text: `${providerName} is now ${statusLabels[newStatus]}.`,
+          icon: 'success',
+          confirmButtonColor: '#14b8a6',
+          timer: 2000,
           showConfirmButton: false,
           background: isDarkMode ? '#1e293b' : '#ffffff',
           color: isDarkMode ? '#ffffff' : '#000000',
         })
         loadProviders()
       } else {
-        Swal.fire({ 
-          title: 'Error', 
-          text: data.message || 'Failed to update status', 
-          icon: 'error', 
+        Swal.fire({
+          title: 'Error',
+          text: data.message || 'Failed to update status',
+          icon: 'error',
           confirmButtonColor: '#14b8a6',
           background: isDarkMode ? '#1e293b' : '#ffffff',
           color: isDarkMode ? '#ffffff' : '#000000',
         })
       }
     } catch {
-      Swal.fire({ 
-        title: 'Error', 
-        text: 'Failed to update provider status', 
-        icon: 'error', 
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to update provider status',
+        icon: 'error',
         confirmButtonColor: '#14b8a6',
         background: isDarkMode ? '#1e293b' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#000000',
@@ -219,7 +219,7 @@ export default function AdminProviders() {
 
         {/* Filters and Search - Mobile Optimized */}
         <div className={`rounded-xl shadow-sm border p-3 sm:p-4 mb-4 sm:mb-6 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          
+
           {/* Mobile Filter Toggle */}
           <div className="flex lg:hidden items-center justify-between mb-3">
             <button
@@ -264,7 +264,7 @@ export default function AdminProviders() {
                   </button>
                 ))}
               </div>
-              
+
               {/* Search Input */}
               <div className="relative w-full lg:w-80">
                 <input
@@ -278,7 +278,7 @@ export default function AdminProviders() {
                       : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                     }`}
                 />
-                <svg className={`w-4 sm:w-5 h-4 sm:h-5 absolute left-3 top-2.5 sm:top-3 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} 
+                <svg className={`w-4 sm:w-5 h-4 sm:h-5 absolute left-3 top-2.5 sm:top-3 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`}
                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -397,7 +397,7 @@ export default function AdminProviders() {
                                       provider.status === 'inactive' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30' :
                                         provider.status === 'pending' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30' :
                                           isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-gray-100 text-gray-700 border-gray-200'
-                              }`}>
+                                }`}>
                               <option value="active">Active</option>
                               <option value="inactive">Inactive</option>
                               <option value="pending">Pending</option>
