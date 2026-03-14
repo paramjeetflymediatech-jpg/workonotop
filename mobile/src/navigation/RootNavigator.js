@@ -15,6 +15,7 @@ import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 // Main
 import BottomTabNavigator from './BottomTabNavigator';
 import AdminDrawerNavigator from './AdminDrawerNavigator';
+import ProviderDrawerNavigator from './ProviderDrawerNavigator';
 import DetailsScreen from '../screens/DetailsScreen';
 import AdminJobDetailsScreen from '../screens/admin/AdminJobDetailsScreen';
 import CustomerBookingDetailsScreen from '../screens/customer/CustomerBookingDetailsScreen';
@@ -41,6 +42,8 @@ import SettingsScreen from '../screens/customer/SettingsScreen';
 import HelpSupportScreen from '../screens/customer/HelpSupportScreen';
 import ChangePasswordScreen from '../screens/customer/ChangePasswordScreen';
 import SavedAddressesScreen from '../screens/customer/SavedAddressesScreen';
+import PlaceholderScreen from '../screens/PlaceholderScreen';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -86,12 +89,12 @@ const RootNavigator = () => {
                             <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Review" component={ReviewScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
+                            <Stack.Screen name="Main" component={ProviderDrawerNavigator} options={{ headerShown: false }} />
                         </>
                     ) : user.role === 'provider' && user.status === 'pending' ? (
                         <>
                             <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
+                            <Stack.Screen name="Main" component={ProviderDrawerNavigator} options={{ headerShown: false }} />
                             <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
@@ -102,6 +105,8 @@ const RootNavigator = () => {
                         <>
                             {user.role === 'admin' ? (
                                 <Stack.Screen name="Main" component={AdminDrawerNavigator} options={{ headerShown: false }} />
+                            ) : user.role === 'provider' ? (
+                                <Stack.Screen name="Main" component={ProviderDrawerNavigator} options={{ headerShown: false }} />
                             ) : (
                                 <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
                             )}
@@ -132,6 +137,12 @@ const RootNavigator = () => {
                     <Stack.Screen name="FinishJob" component={FinishJobScreen} options={{ headerShown: false }} />
 
                     <Stack.Screen name="JobReport" component={JobReportScreen} options={{ title: 'Job Report' }} />
+
+                    {/* Placeholder Screens for Provider Menu */}
+                    <Stack.Screen name="Messages" component={PlaceholderScreen} initialParams={{ title: 'Messages' }} options={{ headerShown: false }} />
+                    <Stack.Screen name="Earnings" component={PlaceholderScreen} initialParams={{ title: 'Earnings' }} options={{ headerShown: false }} />
+                    <Stack.Screen name="Ratings" component={PlaceholderScreen} initialParams={{ title: 'Ratings' }} options={{ headerShown: false }} />
+
                 </>
             ) : (
                 <>

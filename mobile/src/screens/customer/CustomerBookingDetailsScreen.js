@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, SafeAreaView, ScrollView,
-    TouchableOpacity, ActivityIndicator, Image, StatusBar
+    TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,10 +17,17 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     const insets = useSafeAreaInsets();
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [viewerVisible, setViewerVisible] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     useEffect(() => {
         fetchDetails();
     }, [bookingId]);
+
+    const openViewer = (url) => {
+        setSelectedImage(url);
+        setViewerVisible(true);
+    };
 
     const fetchDetails = async () => {
         try {
@@ -36,10 +43,35 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
         }
     };
 
+    const renderImageViewer = () => (
+        <Modal
+            visible={viewerVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setViewerVisible(false)}
+        >
+            <View style={styles.viewerContainer}>
+                <TouchableOpacity 
+                    style={styles.viewerCloseBtn} 
+                    onPress={() => setViewerVisible(false)}
+                >
+                    <Ionicons name="close" size={32} color="#fff" />
+                </TouchableOpacity>
+                {selectedImage && (
+                    <Image 
+                        source={{ uri: selectedImage }} 
+                        style={styles.viewerImage} 
+                        resizeMode="contain" 
+                    />
+                )}
+            </View>
+        </Modal>
+    );
+
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-GB', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'GBP',
+            currency: 'USD',
             minimumFractionDigits: 2,
         }).format(amount || 0);
     };
@@ -97,16 +129,115 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                 )}
 
                 <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Schedule</Text>
+                    <View style={styles.card}>
+                        <View style={styles.iconRow}>
+                            <Ionicons name="calendar-outline" size={moderateScale(20)} color={PRIMARY} />
+                            <Text style={styles.cardTextVals}>{booking.job_date}</Text>
+                        </View>
+                        <View style={[styles.iconRow, { marginTop: 10 }]}>
+                            <Ionicons name="time-outline" size={moderateScale(20)} color={PRIMARY} />
+                            <Text style={styles.cardTextVals}>{booking.job_time_slot}</Text>
+                        </View>
+                    </View>
+                </View>
+
+                <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Service Location</Text>
                     <View style={styles.card}>
                         <View style={styles.iconRow}>
                             <Ionicons name="location-outline" size={moderateScale(20)} color={PRIMARY} />
                             <Text style={styles.cardTextVals}>
-                                {booking.address_line1}{booking.city ? `, ${booking.city}` : ''}
+                                {booking.address_line1}{booking.city ? `, ${booking.city}` : ''}{booking.postal_code ? `, ${booking.postal_code}` : ''}
                             </Text>
                         </View>
                     </View>
                 </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Contact</Text>
+                    <View style={styles.card}>
+                        {(booking.first_name || booking.last_name) && (
+                            <View style={[styles.iconRow, { marginBottom: 10 }]}>
+                                <Ionicons name="person-outline" size={moderateScale(20)} color={PRIMARY} />
+                                <Text style={styles.cardTextVals}>{booking.first_name} {booking.last_name}</Text>
+                            </View>
+                        )}
+                        <View style={styles.iconRow}>
+                            <Ionicons name="call-outline" size={moderateScale(20)} color={PRIMARY} />
+                            <Text style={styles.cardTextVals}>{booking.phone}</Text>
+                        </View>
+                        {booking.email && (
+                            <View style={[styles.iconRow, { marginTop: 10 }]}>
+                                <Ionicons name="mail-outline" size={moderateScale(20)} color={PRIMARY} />
+                                <Text style={styles.cardTextVals}>{booking.email}</Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+
+                {booking.job_description && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Job Description</Text>
+                        <View style={styles.card}>
+                            <Text style={styles.descriptionText}>{booking.job_description}</Text>
+                        </View>
+                    </View>
+                )}
+
+                {(booking.timing_constraints || booking.instructions) && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Extra Details</Text>
+                        <View style={styles.card}>
+                            {booking.timing_constraints && (
+                                <View style={styles.iconRow}>
+                                    <Ionicons name="hourglass-outline" size={moderateScale(18)} color="#64748b" />
+                                    <Text style={styles.extraText}>Limits: {booking.timing_constraints}</Text>
+                                </View>
+                            )}
+                            {booking.instructions && (
+                                <View style={[styles.iconRow, { marginTop: 10 }]}>
+                                    <Ionicons name="information-circle-outline" size={moderateScale(18)} color="#64748b" />
+                                    <Text style={styles.extraText}>Notes: {booking.instructions}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                )}
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Access & Amenities</Text>
+                    <View style={styles.badgeRow}>
+                        <View style={[styles.badge, booking.parking_access && styles.badgeActive]}>
+                            <Ionicons name="car-outline" size={12} color={booking.parking_access ? '#fff' : '#64748b'} />
+                            <Text style={[styles.badgeText, booking.parking_access && styles.badgeTextActive]}>Parking</Text>
+                        </View>
+                        <View style={[styles.badge, booking.elevator_access && styles.badgeActive]}>
+                            <Ionicons name="business-outline" size={12} color={booking.elevator_access ? '#fff' : '#64748b'} />
+                            <Text style={[styles.badgeText, booking.elevator_access && styles.badgeTextActive]}>Elevator</Text>
+                        </View>
+                        <View style={[styles.badge, booking.has_pets && styles.badgeActive]}>
+                            <Ionicons name="paw-outline" size={12} color={booking.has_pets ? '#fff' : '#64748b'} />
+                            <Text style={[styles.badgeText, booking.has_pets && styles.badgeTextActive]}>Pets</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {booking.photos && booking.photos.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Job Photos</Text>
+                        <View style={styles.photoGrid}>
+                            {booking.photos.map((url, idx) => {
+                                const photoUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+                                return (
+                                    <TouchableOpacity key={idx} onPress={() => openViewer(photoUrl)}>
+                                        <Image source={{ uri: photoUrl }} style={styles.photoMini} />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                )}
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Payment Details</Text>
@@ -161,6 +292,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                 </View>
 
             </ScrollView>
+            {renderImageViewer()}
         </SafeAreaView>
     );
 };
@@ -179,7 +311,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         paddingHorizontal: moderateScale(20),
         paddingVertical: verticalScale(15),
-        marginTop: verticalScale(25),
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',
     },
@@ -236,6 +367,51 @@ const styles = StyleSheet.create({
     timelineContent: { flex: 1, paddingBottom: verticalScale(20), paddingTop: verticalScale(-2) },
     timelineStatus: { fontSize: moderateScale(15), fontWeight: 'bold', color: '#0f172a', textTransform: 'capitalize' },
     timelineDate: { fontSize: moderateScale(12), color: '#64748b', marginTop: verticalScale(2) },
+
+    descriptionText: { fontSize: moderateScale(15), color: '#334155', lineHeight: verticalScale(22) },
+    extraText: { fontSize: moderateScale(14), color: '#475569', marginLeft: scale(10), flex: 1 },
+
+    /* Badge Styles */
+    badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    badge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    badgeActive: {
+        backgroundColor: PRIMARY,
+        borderColor: PRIMARY,
+    },
+    badgeText: { marginLeft: 4, fontSize: 12, fontWeight: '600', color: '#64748b' },
+    badgeTextActive: { color: '#fff' },
+
+    /* Photo Grid */
+    photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    photoMini: { width: scale(80), height: scale(80), borderRadius: 12 },
+
+    /* Viewer Styles */
+    viewerContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    viewerCloseBtn: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        zIndex: 10,
+        padding: 10,
+    },
+    viewerImage: {
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height * 0.8,
+    },
 });
 
 export default CustomerBookingDetailsScreen;

@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useAdminTheme } from '../../../layout';
 
 const DOC_TYPES = {
-  profile_photo: { label: 'Profile Photo',     icon: '👤', description: 'Clear, professional photo' },
-  id_proof:      { label: 'Government ID',      icon: '🆔', description: "Driver's license or passport" },
-  insurance:     { label: 'Insurance Document', icon: '📄', description: 'Liability insurance certificate' },
-  trade_license: { label: 'Trade License',      icon: '📜', description: 'If applicable for your trade' },
+  profile_photo: { label: 'Profile Photo', icon: '👤', description: 'Clear, professional photo' },
+  id_proof: { label: 'Government ID', icon: '🆔', description: "Driver's license or passport" },
+  insurance: { label: 'Insurance Document', icon: '📄', description: 'Liability insurance certificate' },
+  trade_license: { label: 'Trade License', icon: '📜', description: 'If applicable for your trade' },
 };
 
 function ModalShell({ isOpen, onClose, isDarkMode, children }) {
@@ -165,15 +165,15 @@ function Toast({ toast, onDismiss }) {
 
 export default function ReviewDocuments({ params }) {
   const { providerId } = React.use(params);
-  const router         = useRouter();
+  const router = useRouter();
   const { isDarkMode } = useAdminTheme();
 
-  const [provider,   setProvider]   = useState(null);
-  const [documents,  setDocuments]  = useState([]);
-  const [loading,    setLoading]    = useState(true);
+  const [provider, setProvider] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [toast,      setToast]      = useState(null);
-  const [modal,      setModal]      = useState(null);
+  const [toast, setToast] = useState(null);
+  const [modal, setModal] = useState(null);
 
   const showToast = (message, type = 'success') => setToast({ message, type });
 
@@ -182,7 +182,7 @@ export default function ReviewDocuments({ params }) {
   const loadData = async () => {
     try {
       setLoading(true);
-      const res  = await fetch(`/api/admin/providers/${providerId}/documents`);
+      const res = await fetch(`/api/admin/providers/${providerId}/documents`);
       const data = await res.json();
       if (data.success) {
         setProvider(data.provider);
@@ -226,7 +226,7 @@ export default function ReviewDocuments({ params }) {
         showToast('Failed to approve provider', 'error');
       }
     } catch { showToast('Failed to approve provider', 'error'); }
-    finally  { setProcessing(false); }
+    finally { setProcessing(false); }
   };
 
   const handleRejectDocs = async (reason) => {
@@ -245,7 +245,7 @@ export default function ReviewDocuments({ params }) {
         showToast('Failed to reject documents', 'error');
       }
     } catch { showToast('Failed to reject documents', 'error'); }
-    finally  { setProcessing(false); }
+    finally { setProcessing(false); }
   };
 
   const handleRejectProvider = async (reason) => {
@@ -264,20 +264,20 @@ export default function ReviewDocuments({ params }) {
         showToast('Failed to reject provider', 'error');
       }
     } catch { showToast('Failed to reject provider', 'error'); }
-    finally  { setProcessing(false); }
+    finally { setProcessing(false); }
   };
 
-  const isApproved  = provider?.status === 'active';
+  const isApproved = provider?.status === 'active';
   const isSuspended = provider?.status === 'suspended' || provider?.status === 'rejected';
-  const hasAllDocs  = ['profile_photo', 'id_proof', 'insurance'].every(
+  const hasAllDocs = ['profile_photo', 'id_proof', 'insurance'].every(
     t => documents.some(d => d.document_type === t)
   );
   const allDocsAlreadyRejected = documents.length > 0 && documents.every(d => d.status === 'rejected');
-  const hasPendingDocs         = documents.some(d => d.status === 'pending');
-  const canRejectDocs          = !allDocsAlreadyRejected && hasPendingDocs;
+  const hasPendingDocs = documents.some(d => d.status === 'pending');
+  const canRejectDocs = !allDocsAlreadyRejected && hasPendingDocs;
 
-  const card    = `rounded-xl border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} shadow-sm`;
-  const text    = isDarkMode ? 'text-white'     : 'text-gray-900';
+  const card = `rounded-xl border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} shadow-sm`;
+  const text = isDarkMode ? 'text-white' : 'text-gray-900';
   const subtext = isDarkMode ? 'text-slate-400' : 'text-gray-500';
 
   if (loading) return (
@@ -291,9 +291,9 @@ export default function ReviewDocuments({ params }) {
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
 
-      <ApproveModal        isOpen={modal === 'approve'}         onClose={() => setModal(null)} onConfirm={handleApprove}         providerName={provider?.name} isDarkMode={isDarkMode} />
-      <RejectDocsModal     isOpen={modal === 'rejectDocs'}      onClose={() => setModal(null)} onConfirm={handleRejectDocs}      providerName={provider?.name} isDarkMode={isDarkMode} />
-      <RejectProviderModal isOpen={modal === 'rejectProvider'}  onClose={() => setModal(null)} onConfirm={handleRejectProvider}  providerName={provider?.name} isDarkMode={isDarkMode} />
+      <ApproveModal isOpen={modal === 'approve'} onClose={() => setModal(null)} onConfirm={handleApprove} providerName={provider?.name} isDarkMode={isDarkMode} />
+      <RejectDocsModal isOpen={modal === 'rejectDocs'} onClose={() => setModal(null)} onConfirm={handleRejectDocs} providerName={provider?.name} isDarkMode={isDarkMode} />
+      <RejectProviderModal isOpen={modal === 'rejectProvider'} onClose={() => setModal(null)} onConfirm={handleRejectProvider} providerName={provider?.name} isDarkMode={isDarkMode} />
 
       {/* ── Sticky Header ── */}
       <div className={`sticky top-0 z-10 px-3 sm:px-6 py-3 sm:py-4 border-b ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
@@ -328,11 +328,10 @@ export default function ReviewDocuments({ params }) {
                 onClick={() => setModal('approve')}
                 disabled={processing || !hasAllDocs}
                 title={!hasAllDocs ? 'Some required documents are missing' : ''}
-                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition ${
-                  hasAllDocs
+                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition ${hasAllDocs
                     ? 'bg-green-600 hover:bg-green-700 text-white'
                     : isDarkMode ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -344,11 +343,10 @@ export default function ReviewDocuments({ params }) {
                 onClick={() => setModal('rejectDocs')}
                 disabled={processing || !canRejectDocs}
                 title={!canRejectDocs ? 'Documents already rejected — waiting for provider to re-upload' : ''}
-                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition ${
-                  canRejectDocs
+                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition ${canRejectDocs
                     ? 'bg-amber-500 hover:bg-amber-600 text-white'
                     : isDarkMode ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -409,12 +407,12 @@ export default function ReviewDocuments({ params }) {
           <h2 className={`text-xs font-semibold uppercase tracking-wider mb-4 ${subtext}`}>Provider Details</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5">
             {[
-              ['Name',       provider?.name],
-              ['Email',      provider?.email],
-              ['Phone',      provider?.phone],
-              ['Specialty',  provider?.specialty       || '—'],
+              ['Name', provider?.name],
+              ['Email', provider?.email],
+              ['Phone', provider?.phone],
+              ['Specialty', provider?.specialty || '—'],
               ['Experience', `${provider?.experience_years || 0} yrs`],
-              ['City',       provider?.city             || '—'],
+              ['City', provider?.city || '—'],
             ].map(([label, value]) => (
               <div key={label} className="min-w-0">
                 <p className={`text-xs mb-0.5 ${subtext}`}>{label}</p>
@@ -432,21 +430,19 @@ export default function ReviewDocuments({ params }) {
           <div className="mt-4 pt-4 border-t flex items-center gap-2 flex-wrap"
             style={{ borderColor: isDarkMode ? '#334155' : '#f3f4f6' }}>
             <span className={`text-xs ${subtext}`}>Status:</span>
-            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-              provider?.status === 'active'
+            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${provider?.status === 'active'
                 ? isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'
                 : provider?.status === 'suspended' || provider?.status === 'rejected'
-                ? isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800'
-                : isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-amber-100 text-amber-800'
-            }`}>
+                  ? isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800'
+                  : isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-amber-100 text-amber-800'
+              }`}>
               {provider?.status?.toUpperCase()}
             </span>
             <span className={`sm:ml-auto text-xs ${subtext}`}>Stripe:</span>
-            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-              provider?.stripe_onboarding_complete
+            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${provider?.stripe_onboarding_complete
                 ? isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'
                 : isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'
-            }`}>
+              }`}>
               {provider?.stripe_onboarding_complete ? 'Connected' : 'Not Connected'}
             </span>
           </div>
@@ -465,20 +461,20 @@ export default function ReviewDocuments({ params }) {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {documents.map(doc => {
-                const meta    = DOC_TYPES[doc.document_type] || { label: doc.document_type, icon: '📎', description: '' };
-                const isPdf   = doc.document_url?.toLowerCase().endsWith('.pdf');
-                const docSt   = doc.status || 'pending';
+                const meta = DOC_TYPES[doc.document_type] || { label: doc.document_type, icon: '📎', description: '' };
+                const isPdf = doc.document_url?.toLowerCase().endsWith('.pdf');
+                const docSt = doc.status || 'pending';
                 const docBorder = docSt === 'approved'
                   ? isDarkMode ? 'border-green-700' : 'border-green-200'
                   : docSt === 'rejected'
-                  ? isDarkMode ? 'border-red-700' : 'border-red-200'
-                  : isDarkMode ? 'border-slate-700' : 'border-gray-100';
+                    ? isDarkMode ? 'border-red-700' : 'border-red-200'
+                    : isDarkMode ? 'border-slate-700' : 'border-gray-100';
 
                 const statusBadge = docSt === 'approved'
                   ? { cls: isDarkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200', label: '✓ Approved' }
                   : docSt === 'rejected'
-                  ? { cls: isDarkMode ? 'bg-red-900/30 text-red-400 border-red-800'       : 'bg-red-50 text-red-700 border-red-200',     label: '✗ Rejected' }
-                  : { cls: isDarkMode ? 'bg-blue-900/30 text-blue-400 border-blue-800'    : 'bg-blue-50 text-blue-700 border-blue-200',   label: '⏳ Pending' };
+                    ? { cls: isDarkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200', label: '✗ Rejected' }
+                    : { cls: isDarkMode ? 'bg-blue-900/30 text-blue-400 border-blue-800' : 'bg-blue-50 text-blue-700 border-blue-200', label: '⏳ Pending' };
 
                 return (
                   <div key={doc.id} className={`rounded-xl border-2 ${docBorder} overflow-hidden shadow-sm`}>
@@ -547,27 +543,25 @@ export default function ReviewDocuments({ params }) {
                 {allDocsAlreadyRejected
                   ? '🔴 Documents rejected — waiting for provider to re-upload.'
                   : hasAllDocs
-                  ? '✅ All required documents present.'
-                  : '⚠️ Some required documents are missing.'}
+                    ? '✅ All required documents present.'
+                    : '⚠️ Some required documents are missing.'}
               </p>
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setModal('approve')}
                   disabled={processing || !hasAllDocs}
-                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
-                    hasAllDocs
+                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${hasAllDocs
                       ? 'bg-green-600 hover:bg-green-700 text-white'
                       : isDarkMode ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
+                    }`}
                 >✓ Approve</button>
                 <button
                   onClick={() => setModal('rejectDocs')}
                   disabled={processing || !canRejectDocs}
-                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
-                    canRejectDocs
+                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${canRejectDocs
                       ? 'bg-amber-500 hover:bg-amber-600 text-white'
                       : isDarkMode ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
+                    }`}
                 >{allDocsAlreadyRejected ? '⚠ Already Rejected' : '↑ Reject Docs'}</button>
                 <button
                   onClick={() => setModal('rejectProvider')}

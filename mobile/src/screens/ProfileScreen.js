@@ -24,6 +24,12 @@ const ProfileScreen = ({ navigation }) => {
 
     return (
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            <TouchableOpacity 
+                onPress={() => navigation.goBack()}
+                style={{ position: 'absolute', top: verticalScale(20), left: 0, zIndex: 10, padding: 10 }}
+            >
+                <Ionicons name="arrow-back" size={28} color="#0f172a" />
+            </TouchableOpacity>
             <View style={styles.header}>
                 <View style={styles.avatar}>
                     {user?.image_url ? (

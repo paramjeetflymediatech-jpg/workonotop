@@ -33,10 +33,10 @@ const DrawerItem = ({ label, icon, onPress, active }) => (
 );
 
 const CustomDrawerContent = (props) => {
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const currentRoute = props.state.routes[props.state.index].name;
 
-    const menuItems = [
+    const adminMenuItems = [
         { label: 'Dashboard', icon: 'grid-outline', route: 'AdminHome' },
         { label: 'Job Requests', icon: 'document-text-outline', route: 'Job Requests' },
         { label: 'Users', icon: 'people-outline', route: 'Users' },
@@ -49,6 +49,18 @@ const CustomDrawerContent = (props) => {
         { label: 'Disputes', icon: 'alert-circle-outline', route: 'Disputes' },
         { label: 'Settings', icon: 'options-outline', route: 'Settings' },
     ];
+
+    const providerMenuItems = [
+        { label: 'Dashboard', icon: 'home-outline', route: 'Dashboard' },
+        { label: 'Available Jobs', icon: 'search-outline', route: 'Services' },
+        { label: 'My Jobs', icon: 'briefcase-outline', route: 'ContractorJobs' },
+        { label: 'Messages', icon: 'chatbubbles-outline', route: 'Messages' },
+        { label: 'Earnings', icon: 'wallet-outline', route: 'Earnings' },
+        { label: 'Ratings', icon: 'star-half-outline', route: 'Ratings' },
+        { label: 'Profile', icon: 'person-outline', route: 'Profile' },
+    ];
+
+    const menuItems = user?.role === 'admin' ? adminMenuItems : (user?.role === 'provider' ? providerMenuItems : []);
 
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 

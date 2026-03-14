@@ -100,9 +100,13 @@ const ServicesScreen = ({ navigation, route }) => {
     const renderHeader = () => (
         <View style={[styles.header, { paddingTop: insets.top + moderateScale(10) }]}>
             <View style={styles.headerTop}>
-                {navigation.canGoBack() && (
+                {navigation.canGoBack() ? (
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color="#fff" />
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.openDrawer()}>
+                        <Ionicons name="menu" size={24} color="#fff" />
                     </TouchableOpacity>
                 )}
                 <Text style={styles.headerTitle}>

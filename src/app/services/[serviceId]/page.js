@@ -156,7 +156,7 @@ export default function ServiceDetailPage({ params }) {
 
             {service.description && (
               <div className="bg-green-50/50 rounded-2xl p-6 md:p-8 mb-8 border border-green-100">
-                <p className="text-gray-800 text-lg leading-relaxed">
+                <p className="text-gray-800 text-lg leading-relaxed break-words">
                   {service.description}
                 </p>
               </div>

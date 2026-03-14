@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     SafeAreaView, ActivityIndicator, RefreshControl, Alert
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { moderateScale, verticalScale, SCREEN_WIDTH } from '../../utils/responsive';
@@ -76,6 +77,15 @@ const ContractorJobsScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
+            {/* Header with Menu */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.openDrawer()} style={styles.menuBtn}>
+                    <Ionicons name="menu" size={28} color="#0f172a" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Job Management</Text>
+                <View style={{ width: 28 }} />
+            </View>
+
             {/* Tabs */}
             <View style={styles.tabBar}>
                 {['available', 'myJobs'].map((tab) => (
@@ -169,6 +179,24 @@ const ContractorJobsScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f8fafc' },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: moderateScale(16),
+        paddingVertical: verticalScale(12),
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    menuBtn: {
+        padding: moderateScale(4),
+    },
+    headerTitle: {
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
     loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     tabBar: {
         flexDirection: 'row', backgroundColor: '#fff',
