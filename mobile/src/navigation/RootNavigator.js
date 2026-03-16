@@ -32,6 +32,7 @@ import PendingApprovalScreen from '../screens/contractor/PendingApprovalScreen';
 import ContractorJobsScreen from '../screens/contractor/ContractorJobsScreen';
 import StartJobScreen from '../screens/contractor/StartJobScreen';
 import FinishJobScreen from '../screens/contractor/FinishJobScreen';
+import ProviderUpdateProfileScreen from '../screens/contractor/ProviderUpdateProfileScreen';
 
 // Customer Screens
 import JobReportScreen from '../screens/customer/JobReportScreen';
@@ -42,6 +43,7 @@ import SettingsScreen from '../screens/customer/SettingsScreen';
 import HelpSupportScreen from '../screens/customer/HelpSupportScreen';
 import ChangePasswordScreen from '../screens/customer/ChangePasswordScreen';
 import SavedAddressesScreen from '../screens/customer/SavedAddressesScreen';
+import InvoicesScreen from '../screens/customer/InvoicesScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
 
 
@@ -95,11 +97,6 @@ const RootNavigator = () => {
                         <>
                             <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Main" component={ProviderDrawerNavigator} options={{ headerShown: false }} />
-                            <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Review" component={ReviewScreen} options={{ headerShown: false }} />
                         </>
                     ) : (
                         <>
@@ -114,10 +111,12 @@ const RootNavigator = () => {
                             <Stack.Screen name="CustomerBookingDetails" component={CustomerBookingDetailsScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Details" component={DetailsScreen} />
                             <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="ProviderUpdateProfile" component={ProviderUpdateProfileScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="SavedAddresses" component={SavedAddressesScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="CreateBooking" component={CreateBookingScreen} options={{ title: 'Book Service' }} />
                             <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} options={{ headerShown: false }} />
 

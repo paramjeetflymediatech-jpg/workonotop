@@ -190,7 +190,7 @@ export async function GET(request) {
            ORDER BY created_at DESC LIMIT 1`,
           [providerId]
         )
-        
+
         if (documents && documents.length > 0 && documents[0].document_url) {
           provider.avatar_url = documents[0].document_url;
         }
@@ -220,23 +220,23 @@ export async function GET(request) {
     // Safely parse JSON fields
     provider.service_areas = (() => {
       if (!provider.service_areas) return []
-      try { 
-        return typeof provider.service_areas === 'string' 
-          ? JSON.parse(provider.service_areas) 
-          : (provider.service_areas || []) 
-      } catch { 
-        return [] 
+      try {
+        return typeof provider.service_areas === 'string'
+          ? JSON.parse(provider.service_areas)
+          : (provider.service_areas || [])
+      } catch {
+        return []
       }
     })()
 
     provider.skills = (() => {
       if (!provider.skills) return []
-      try { 
-        return typeof provider.skills === 'string' 
-          ? JSON.parse(provider.skills) 
-          : (provider.skills || []) 
-      } catch { 
-        return [] 
+      try {
+        return typeof provider.skills === 'string'
+          ? JSON.parse(provider.skills)
+          : (provider.skills || [])
+      } catch {
+        return []
       }
     })()
 
@@ -320,7 +320,7 @@ export async function PUT(request) {
            ORDER BY created_at DESC LIMIT 1`,
           [providerId]
         )
-        
+
         if (documents && documents.length > 0 && documents[0].document_url) {
           provider.avatar_url = documents[0].document_url;
         }
@@ -330,24 +330,24 @@ export async function PUT(request) {
     }
 
     // Parse JSON fields
-    provider.service_areas = (() => { 
-      try { 
-        return typeof provider.service_areas === 'string' 
-          ? JSON.parse(provider.service_areas) 
-          : (provider.service_areas || []) 
-      } catch { 
-        return [] 
-      } 
+    provider.service_areas = (() => {
+      try {
+        return typeof provider.service_areas === 'string'
+          ? JSON.parse(provider.service_areas)
+          : (provider.service_areas || [])
+      } catch {
+        return []
+      }
     })()
-    
-    provider.skills = (() => { 
-      try { 
-        return typeof provider.skills === 'string' 
-          ? JSON.parse(provider.skills) 
-          : (provider.skills || []) 
-      } catch { 
-        return [] 
-      } 
+
+    provider.skills = (() => {
+      try {
+        return typeof provider.skills === 'string'
+          ? JSON.parse(provider.skills)
+          : (provider.skills || [])
+      } catch {
+        return []
+      }
     })()
 
     return NextResponse.json({ success: true, message: 'Profile updated successfully', data: provider })

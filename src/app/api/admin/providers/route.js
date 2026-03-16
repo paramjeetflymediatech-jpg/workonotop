@@ -162,6 +162,16 @@ import { sendEmail, getApprovalEmailHtml, getRejectionEmailHtml } from '@/lib/em
 
 export async function GET(request) {
   try {
+    let token = request.cookies.get('adminAuth')?.value || request.cookies.get('provider_token')?.value;
+
+    if (!token) {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        }
+    }
+    
+    // We don't strictly enforce adminAuth here yet, but we allow Bearer tokens
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const search = searchParams.get('search');
@@ -229,6 +239,15 @@ export async function GET(request) {
 
 export async function PUT(request) {
   try {
+    let token = request.cookies.get('adminAuth')?.value;
+
+    if (!token) {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        }
+    }
+
     const { providerId, action, rejectionReason } = await request.json();
 
     console.log(`🔄 Processing ${action} for provider:`, providerId);

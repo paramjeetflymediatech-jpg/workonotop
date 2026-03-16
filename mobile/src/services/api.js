@@ -129,6 +129,9 @@ export const apiService = {
         // Approve a completed job for payment
         approveBooking: (id, token) => request(`/api/customer/bookings/${id}/approve`, { method: 'POST', token }),
 
+        // Fetch invoices associated with the customer
+        getInvoices: (userId, token) => request('/api/customer/invoices', { method: 'GET', params: { user_id: userId }, token }),
+
         // Submit a rating and review for a provider
         submitReview: (data, token) => request('/api/customer/reviews', { method: 'POST', body: JSON.stringify(data), token }),
     },
@@ -138,6 +141,9 @@ export const apiService = {
      * Endpoints for service provider workflows and onboarding.
      */
     provider: {
+        // Retrieve current authenticated provider profile
+        me: (token) => request('/api/provider/me', { method: 'GET', token }),
+
         // Register as a new service provider
         signup: (data) => request('/api/provider/signup', { method: 'POST', body: JSON.stringify(data) }),
 
@@ -225,31 +231,31 @@ export const apiService = {
      * 🏗️ GENERIC REQUEST HELPERS
      * Generic methods for custom or legacy calls.
      */
-    get: (endpoint, params = {}, token = null, extraOptions = {}) => 
+    get: (endpoint, params = {}, token = null, extraOptions = {}) =>
         request(endpoint, { method: 'GET', params, token, ...extraOptions }),
-    
+
     post: (endpoint, data, token = null, extraOptions = {}) => {
         const isFormData = data instanceof FormData;
-        return request(endpoint, { 
-            method: 'POST', 
-            body: isFormData ? data : JSON.stringify(data), 
+        return request(endpoint, {
+            method: 'POST',
+            body: isFormData ? data : JSON.stringify(data),
             token,
             headers: isFormData ? {} : { 'Content-Type': 'application/json' },
-            ...extraOptions 
+            ...extraOptions
         });
     },
 
     put: (endpoint, data, token = null, extraOptions = {}) => {
         const isFormData = data instanceof FormData;
-        return request(endpoint, { 
-            method: 'PUT', 
-            body: isFormData ? data : JSON.stringify(data), 
+        return request(endpoint, {
+            method: 'PUT',
+            body: isFormData ? data : JSON.stringify(data),
             token,
             headers: isFormData ? {} : { 'Content-Type': 'application/json' },
-            ...extraOptions 
+            ...extraOptions
         });
     },
 
-    delete: (endpoint, token = null, extraOptions = {}) => 
+    delete: (endpoint, token = null, extraOptions = {}) =>
         request(endpoint, { method: 'DELETE', token, ...extraOptions }),
 };

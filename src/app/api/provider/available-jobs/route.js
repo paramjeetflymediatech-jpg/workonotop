@@ -446,10 +446,25 @@ import { verifyToken } from '@/lib/jwt'
 // ── GET: List available jobs ──────────────────────────────────────────────────
 export async function GET(request) {
   try {
-    const token = request.cookies.get('provider_token')?.value
+    let token = request.cookies.get('provider_token')?.value
+    
+    if (!token) {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        }
+    }
+
     if (!token) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
+    
     const decoded = verifyToken(token)
-    if (!decoded || decoded.type !== 'provider') return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
+    const userType = decoded?.type || decoded?.role;
+
+    if (!decoded || userType !== 'provider') {
+        return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
+    }
+
+    const providerId = decoded.providerId || decoded.id;
 
     const { searchParams } = new URL(request.url)
     const city = searchParams.get('city')
@@ -457,16 +472,17 @@ export async function GET(request) {
     const countOnly = searchParams.get('count') === 'true'
     const previewLimit = parseInt(searchParams.get('preview') || '3')
 
-    const providers = await execute('SELECT city FROM service_providers WHERE id = ?', [decoded.providerId])
+    const providers = await execute('SELECT city FROM service_providers WHERE id = ?', [providerId])
     const providerCity = providers[0]?.city || ''
     const locationFilter = city || providerCity
 
-    // ✅ Match provider city ONLY with booking address_line1 (not booking.city)
+    // ✅ Match provider city with booking city OR address_line1
     let locationCondition = ''
     const locationParams = []
     if (locationFilter) {
-      locationCondition = `AND LOWER(b.address_line1) LIKE LOWER(?)`
-      locationParams.push(`%${locationFilter}%`)
+      locationCondition = `AND (LOWER(b.city) LIKE LOWER(?) OR LOWER(b.address_line1) LIKE LOWER(?))`
+      const locMatch = `%${locationFilter}%`
+      locationParams.push(locMatch, locMatch)
     }
 
     const sql = `
@@ -504,8 +520,8 @@ export async function GET(request) {
     `
 
     const params = [
-      decoded.providerId, // CASE WHEN
-      decoded.providerId, // admin-assigned block
+      providerId, // CASE WHEN
+      providerId, // admin-assigned block
       ...locationParams,  // address_line1 match
     ]
 
@@ -572,10 +588,25 @@ export async function GET(request) {
 export async function POST(request) {
   let connection
   try {
-    const token = request.cookies.get('provider_token')?.value
+    let token = request.cookies.get('provider_token')?.value
+
+    if (!token) {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        }
+    }
+
     if (!token) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
+    
     const decoded = verifyToken(token)
-    if (!decoded || decoded.type !== 'provider') return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
+    const userType = decoded?.type || decoded?.role;
+
+    if (!decoded || userType !== 'provider') {
+        return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
+    }
+
+    const providerId = decoded.providerId || decoded.id;
 
     const { booking_id } = await request.json()
     if (!booking_id) return NextResponse.json({ success: false, message: 'booking_id is required' }, { status: 400 })
@@ -619,11 +650,11 @@ export async function POST(request) {
 
       await connection.execute(
         `UPDATE bookings SET provider_id = ?, status = 'confirmed', accepted_at = NOW(), updated_at = NOW() WHERE id = ?`,
-        [decoded.providerId, booking_id]
+        [providerId, booking_id]
       )
       await connection.execute(
         `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'confirmed', ?)`,
-        [booking_id, `Accepted by provider #${decoded.providerId}`]
+        [booking_id, `Accepted by provider #${providerId}`]
       )
 
       await connection.query('COMMIT')

@@ -35,6 +35,9 @@ const ProvidersScreen = ({ navigation }) => {
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [viewerVisible, setViewerVisible] = useState(false);
     const [viewerImage, setViewerImage] = useState(null);
+    const [editMode, setEditMode] = useState(false);
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+    const [updating, setUpdating] = useState(false);
 
     const statuses = [
         { id: 'all', label: 'All' },
@@ -123,11 +126,66 @@ const ProvidersScreen = ({ navigation }) => {
 
     const openProviderDetails = (provider) => {
         setSelectedProvider(provider);
+        setFormData({
+            name: provider.name || '',
+            email: provider.email || '',
+            phone: provider.phone || ''
+        });
+        setEditMode(false);
         setProviderDocs([]);
         setShowRejectInput(false);
         setRejectionReason('');
         setModalVisible(true);
         fetchDocuments(provider.id);
+    };
+
+    const handleUpdate = async () => {
+        if (!formData.name || !formData.email) {
+            alert('Please fill in required fields');
+            return;
+        }
+
+        setUpdating(true);
+        try {
+            const res = await api.put(`/api/provider?id=${selectedProvider.id}`, formData);
+            if (res.success) {
+                setModalVisible(false);
+                fetchProviders();
+            } else {
+                alert(res.message || 'Update failed');
+            }
+        } catch (error) {
+            alert(error.message || 'Update failed');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        Alert.alert(
+            'Delete Provider',
+            'Are you sure you want to delete this provider? This will delete all their bookings, documents, and data permanently.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const res = await api.delete(`/api/provider?id=${selectedProvider.id}`);
+                            if (res.success) {
+                                setModalVisible(false);
+                                fetchProviders();
+                            } else {
+                                alert(res.message || 'Delete failed');
+                            }
+                        } catch (error) {
+                            alert(error.message || 'Delete failed');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const renderProviderItem = ({ item }) => {
@@ -279,164 +337,211 @@ const ProvidersScreen = ({ navigation }) => {
 
                         {selectedProvider && (
                             <ScrollView showsVerticalScrollIndicator={false}>
-                                <View style={styles.modalProfileHeader}>
-                                    <View style={styles.largeAvatar}>
-                                        <Text style={styles.largeAvatarText}>
-                                            {selectedProvider.name?.[0]}
-                                        </Text>
-                                    </View>
-                                    <Text style={styles.modalUserName}>
-                                        {selectedProvider.name}
-                                    </Text>
-                                    <View style={[styles.statusBadge, { backgroundColor: getStatusStyle(selectedProvider.status).bg, marginTop: verticalScale(10) }]}>
-                                        <Text style={[styles.statusText, { color: getStatusStyle(selectedProvider.status).text }]}>
-                                            {selectedProvider.status}
-                                        </Text>
-                                    </View>
-                                </View>
+                                {editMode ? (
+                                    <View style={styles.editForm}>
+                                        <Text style={styles.inputLabel}>Name</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={formData.name}
+                                            onChangeText={(text) => setFormData({ ...formData, name: text })}
+                                            placeholder="Name"
+                                        />
+                                        <Text style={styles.inputLabel}>Email</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={formData.email}
+                                            onChangeText={(text) => setFormData({ ...formData, email: text })}
+                                            placeholder="Email"
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                        />
+                                        <Text style={styles.inputLabel}>Phone</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={formData.phone}
+                                            onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                                            placeholder="Phone"
+                                            keyboardType="phone-pad"
+                                        />
 
-                                <View style={styles.detailSection}>
-                                    <Text style={styles.sectionTitle}>Contact Information</Text>
-                                    <View style={styles.detailItem}>
-                                        <Ionicons name="mail-outline" size={moderateScale(20)} color="#115e59" />
-                                        <View style={styles.detailInfo}>
-                                            <Text style={styles.detailLabel}>Email Address</Text>
-                                            <Text style={styles.detailValue}>{selectedProvider.email}</Text>
+                                        <View style={styles.editActionRow}>
+                                            <TouchableOpacity 
+                                                style={[styles.modalActionRowBtn, styles.saveBtn]}
+                                                onPress={handleUpdate}
+                                                disabled={updating}
+                                            >
+                                                {updating ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>Save Changes</Text>}
+                                            </TouchableOpacity>
+                                            <TouchableOpacity 
+                                                style={[styles.modalActionRowBtn, styles.cancelBtn]}
+                                                onPress={() => setEditMode(false)}
+                                            >
+                                                <Text style={[styles.actionBtnText, { color: '#64748b' }]}>Cancel</Text>
+                                            </TouchableOpacity>
                                         </View>
                                     </View>
-                                    <View style={styles.detailItem}>
-                                        <Ionicons name="call-outline" size={moderateScale(20)} color="#115e59" />
-                                        <View style={styles.detailInfo}>
-                                            <Text style={styles.detailLabel}>Phone Number</Text>
-                                            <Text style={styles.detailValue}>{selectedProvider.phone || 'Not provided'}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <View style={styles.detailSection}>
-                                    <Text style={styles.sectionTitle}>Performance & Stats</Text>
-                                    <View style={styles.statsRowModal}>
-                                        <View style={styles.statBox}>
-                                            <Text style={styles.statNumber}>{parseFloat(selectedProvider.avg_rating || 0).toFixed(1)}</Text>
-                                            <Text style={styles.statLabel}>Rating ⭐</Text>
-                                        </View>
-                                        <View style={styles.statBox}>
-                                            <Text style={styles.statNumber}>{selectedProvider.total_reviews || 0}</Text>
-                                            <Text style={styles.statLabel}>Total Jobs</Text>
-                                        </View>
-                                        <View style={styles.statBox}>
-                                            <Text style={styles.statNumber}>{selectedProvider.approved_docs || 0}</Text>
-                                            <Text style={styles.statLabel}>Docs ✅</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <View style={styles.detailSection}>
-                                    <Text style={styles.sectionTitle}>Uploaded Documents</Text>
-                                    {loadingDocs ? (
-                                        <ActivityIndicator size="small" color="#115e59" style={{ marginVertical: 20 }} />
-                                    ) : providerDocs.length > 0 ? (
-                                        <View style={styles.docsGallery}>
-                                            {providerDocs.map((doc, index) => (
-                                                <TouchableOpacity 
-                                                    key={doc.id || index} 
-                                                    style={styles.docItem}
-                                                    onPress={() => {
-                                                        const url = doc.document_url.startsWith('http') 
-                                                            ? doc.document_url 
-                                                            : `${API_BASE_URL}${doc.document_url}`;
-                                                        setViewerImage(url);
-                                                        setViewerVisible(true);
-                                                    }}
-                                                >
-                                                    <View style={styles.docImageContainer}>
-                                                        <Image 
-                                                            source={{ uri: doc.document_url.startsWith('http') ? doc.document_url : `${API_BASE_URL}${doc.document_url}` }} 
-                                                            style={styles.docImage}
-                                                            resizeMode="cover"
-                                                        />
-                                                        <View style={[styles.docStatusBadge, { backgroundColor: getStatusStyle(doc.status).bg }]}>
-                                                            <Text style={[styles.docStatusText, { color: getStatusStyle(doc.status).text }]}>
-                                                                {doc.status}
-                                                            </Text>
-                                                        </View>
-                                                    </View>
-                                                    <Text style={styles.docLabelText}>{doc.document_type.replace('_', ' ')}</Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
-                                    ) : (
-                                        <View style={styles.emptyDocs}>
-                                            <Ionicons name="document-text-outline" size={moderateScale(32)} color="#cbd5e1" />
-                                            <Text style={styles.emptyDocsText}>No documents uploaded yet</Text>
-                                        </View>
-                                    )}
-                                </View>
-
-                                <View style={styles.detailSection}>
-                                    <Text style={styles.sectionTitle}>Business Info</Text>
-                                    <View style={styles.detailItem}>
-                                        <Ionicons name="business-outline" size={moderateScale(20)} color="#115e59" />
-                                        <View style={styles.detailInfo}>
-                                            <Text style={styles.detailLabel}>Account Type</Text>
-                                            <Text style={styles.detailValue}>Service Provider</Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.detailItem}>
-                                        <Ionicons name="calendar-outline" size={moderateScale(20)} color="#115e59" />
-                                        <View style={styles.detailInfo}>
-                                            <Text style={styles.detailLabel}>Provider Since</Text>
-                                            <Text style={styles.detailValue}>
-                                                {new Date(selectedProvider.created_at).toLocaleDateString()}
+                                ) : (
+                                    <>
+                                        <View style={styles.modalProfileHeader}>
+                                            <View style={styles.largeAvatar}>
+                                                <Text style={styles.largeAvatarText}>
+                                                    {selectedProvider.name?.[0]}
+                                                </Text>
+                                            </View>
+                                            <Text style={styles.modalUserName}>
+                                                {selectedProvider.name}
                                             </Text>
+                                            <View style={[styles.statusBadge, { backgroundColor: getStatusStyle(selectedProvider.status).bg, marginTop: verticalScale(10) }]}>
+                                                <Text style={[styles.statusText, { color: getStatusStyle(selectedProvider.status).text }]}>
+                                                    {selectedProvider.status}
+                                                </Text>
+                                            </View>
                                         </View>
-                                    </View>
-                                </View>
 
-                                {selectedProvider.status === 'pending' && (
-                                    <View style={{ marginTop: verticalScale(10) }}>
-                                        {!showRejectInput ? (
-                                            <View style={styles.modalActionRow}>
-                                                <TouchableOpacity
-                                                    style={[styles.modalActionBtn, styles.approveBtn]}
-                                                    onPress={() => handleAction(selectedProvider.id, 'approve')}
+                                        <View style={styles.detailSection}>
+                                            <Text style={styles.sectionTitle}>Contact Information</Text>
+                                            <View style={styles.detailItem}>
+                                                <Ionicons name="mail-outline" size={moderateScale(20)} color="#115e59" />
+                                                <View style={styles.detailInfo}>
+                                                    <Text style={styles.detailLabel}>Email Address</Text>
+                                                    <Text style={styles.detailValue}>{selectedProvider.email}</Text>
+                                                </View>
+                                            </View>
+                                            <View style={styles.detailItem}>
+                                                <Ionicons name="call-outline" size={moderateScale(20)} color="#115e59" />
+                                                <View style={styles.detailInfo}>
+                                                    <Text style={styles.detailLabel}>Phone Number</Text>
+                                                    <Text style={styles.detailValue}>{selectedProvider.phone || 'Not provided'}</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.detailSection}>
+                                            <Text style={styles.sectionTitle}>Performance & Stats</Text>
+                                            <View style={styles.statsRowModal}>
+                                                <View style={styles.statBox}>
+                                                    <Text style={styles.statNumber}>{parseFloat(selectedProvider.avg_rating || 0).toFixed(1)}</Text>
+                                                    <Text style={styles.statLabel}>Rating ⭐</Text>
+                                                </View>
+                                                <View style={styles.statBox}>
+                                                    <Text style={styles.statNumber}>{selectedProvider.total_reviews || 0}</Text>
+                                                    <Text style={styles.statLabel}>Total Jobs</Text>
+                                                </View>
+                                                <View style={styles.statBox}>
+                                                    <Text style={styles.statNumber}>{selectedProvider.approved_docs || 0}</Text>
+                                                    <Text style={styles.statLabel}>Docs ✅</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.detailSection}>
+                                            <Text style={styles.sectionTitle}>Uploaded Documents</Text>
+                                            {loadingDocs ? (
+                                                <ActivityIndicator size="small" color="#115e59" style={{ marginVertical: 20 }} />
+                                            ) : providerDocs.length > 0 ? (
+                                                <View style={styles.docsGallery}>
+                                                    {providerDocs.map((doc, index) => (
+                                                        <TouchableOpacity 
+                                                            key={doc.id || index} 
+                                                            style={styles.docItem}
+                                                            onPress={() => {
+                                                                const url = doc.document_url.startsWith('http') 
+                                                                    ? doc.document_url 
+                                                                    : `${API_BASE_URL}${doc.document_url}`;
+                                                                setViewerImage(url);
+                                                                setViewerVisible(true);
+                                                            }}
+                                                        >
+                                                            <View style={styles.docImageContainer}>
+                                                                <Image 
+                                                                    source={{ uri: doc.document_url.startsWith('http') ? doc.document_url : `${API_BASE_URL}${doc.document_url}` }} 
+                                                                    style={styles.docImage}
+                                                                    resizeMode="cover"
+                                                                />
+                                                                <View style={[styles.docStatusBadge, { backgroundColor: getStatusStyle(doc.status).bg }]}>
+                                                                    <Text style={[styles.docStatusText, { color: getStatusStyle(doc.status).text }]}>
+                                                                        {doc.status}
+                                                                    </Text>
+                                                                </View>
+                                                            </View>
+                                                            <Text style={styles.docLabelText}>{doc.document_type.replace('_', ' ')}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </View>
+                                            ) : (
+                                                <View style={styles.emptyDocs}>
+                                                    <Ionicons name="document-text-outline" size={moderateScale(32)} color="#cbd5e1" />
+                                                    <Text style={styles.emptyDocsText}>No documents uploaded yet</Text>
+                                                </View>
+                                            )}
+                                        </View>
+
+                                        <View style={styles.detailSection}>
+                                            <Text style={styles.sectionTitle}>Admin Actions</Text>
+                                            <View style={styles.adminActionRowLayout}>
+                                                <TouchableOpacity 
+                                                    style={[styles.adminActionBtn, styles.editProviderBtn]}
+                                                    onPress={() => setEditMode(true)}
                                                 >
-                                                    <Text style={styles.actionBtnText}>Approve Provider</Text>
+                                                    <Ionicons name="create-outline" size={moderateScale(20)} color="#fff" />
+                                                    <Text style={styles.adminActionBtnText}>Edit</Text>
                                                 </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    style={[styles.modalActionBtn, styles.rejectBtn]}
-                                                    onPress={() => setShowRejectInput(true)}
+                                                <TouchableOpacity 
+                                                    style={[styles.adminActionBtn, styles.deleteProviderBtn]}
+                                                    onPress={handleDelete}
                                                 >
-                                                    <Text style={styles.actionBtnText}>Reject</Text>
+                                                    <Ionicons name="trash-outline" size={moderateScale(20)} color="#fff" />
+                                                    <Text style={styles.adminActionBtnText}>Delete</Text>
                                                 </TouchableOpacity>
                                             </View>
-                                        ) : (
-                                            <View style={styles.rejectInputContainer}>
-                                                <Text style={styles.rejectInputLabel}>Rejection Reason</Text>
-                                                <TextInput
-                                                    style={styles.rejectInput}
-                                                    placeholder="Enter reason for rejection..."
-                                                    placeholderTextColor="#94a3b8"
-                                                    multiline
-                                                    value={rejectionReason}
-                                                    onChangeText={setRejectionReason}
-                                                />
-                                                <TouchableOpacity
-                                                    style={[styles.rejectSubmitBtn, { opacity: rejectionReason.trim() ? 1 : 0.6 }]}
-                                                    disabled={!rejectionReason.trim()}
-                                                    onPress={() => handleAction(selectedProvider.id, 'reject', rejectionReason)}
-                                                >
-                                                    <Text style={styles.rejectSubmitText}>Submit Rejection</Text>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    style={styles.cancelRejectBtn}
-                                                    onPress={() => setShowRejectInput(false)}
-                                                >
-                                                    <Text style={styles.cancelRejectText}>Cancel</Text>
-                                                </TouchableOpacity>
+                                        </View>
+
+                                        {selectedProvider.status === 'pending' && (
+                                            <View style={{ marginTop: verticalScale(10) }}>
+                                                {!showRejectInput ? (
+                                                    <View style={styles.modalActionRow}>
+                                                        <TouchableOpacity
+                                                            style={[styles.modalActionBtn, styles.approveBtn]}
+                                                            onPress={() => handleAction(selectedProvider.id, 'approve')}
+                                                        >
+                                                            <Text style={styles.actionBtnText}>Approve Provider</Text>
+                                                        </TouchableOpacity>
+                                                        <TouchableOpacity
+                                                            style={[styles.modalActionBtn, styles.rejectBtn]}
+                                                            onPress={() => setShowRejectInput(true)}
+                                                        >
+                                                            <Text style={styles.actionBtnText}>Reject</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                ) : (
+                                                    <View style={styles.rejectInputContainer}>
+                                                        <Text style={styles.rejectInputLabel}>Rejection Reason</Text>
+                                                        <TextInput
+                                                            style={styles.rejectInput}
+                                                            placeholder="Enter reason for rejection..."
+                                                            placeholderTextColor="#94a3b8"
+                                                            multiline
+                                                            value={rejectionReason}
+                                                            onChangeText={setRejectionReason}
+                                                        />
+                                                        <TouchableOpacity
+                                                            style={[styles.rejectSubmitBtn, { opacity: rejectionReason.trim() ? 1 : 0.6 }]}
+                                                            disabled={!rejectionReason.trim()}
+                                                            onPress={() => handleAction(selectedProvider.id, 'reject', rejectionReason)}
+                                                        >
+                                                            <Text style={styles.rejectSubmitText}>Submit Rejection</Text>
+                                                        </TouchableOpacity>
+                                                        <TouchableOpacity
+                                                            style={styles.cancelRejectBtn}
+                                                            onPress={() => setShowRejectInput(false)}
+                                                        >
+                                                            <Text style={styles.cancelRejectText}>Cancel</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
                                             </View>
                                         )}
-                                    </View>
+                                    </>
                                 )}
                             </ScrollView>
                         )}
@@ -797,6 +902,67 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.95)',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    editForm: {
+        paddingVertical: verticalScale(10),
+    },
+    inputLabel: {
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+        color: '#64748b',
+        marginBottom: verticalScale(5),
+    },
+    input: {
+        backgroundColor: '#f8fafc',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: moderateScale(10),
+        padding: scale(12),
+        fontSize: moderateScale(15),
+        color: '#0f172a',
+        marginBottom: verticalScale(15),
+    },
+    editActionRow: {
+        flexDirection: 'row',
+        gap: scale(10),
+        marginTop: verticalScale(10),
+    },
+    modalActionRowBtn: {
+        flex: 1,
+        height: verticalScale(50),
+        borderRadius: moderateScale(12),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    saveBtn: {
+        backgroundColor: '#115e59',
+    },
+    cancelBtn: {
+        backgroundColor: '#f1f5f9',
+    },
+    adminActionRowLayout: {
+        flexDirection: 'row',
+        gap: scale(10),
+    },
+    adminActionBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        height: verticalScale(45),
+        borderRadius: moderateScale(10),
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: scale(8),
+    },
+    editProviderBtn: {
+        backgroundColor: '#115e59',
+    },
+    deleteProviderBtn: {
+        backgroundColor: '#ef4444',
+    },
+    adminActionBtnText: {
+        color: '#fff',
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
     },
     viewerClose: {
         position: 'absolute',

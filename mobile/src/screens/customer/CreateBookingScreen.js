@@ -43,7 +43,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const [bookingData, setBookingData] = useState({
         service_id: service.id,
         service_name: service.name,
-        service_price: service.price,
+        service_price: service.base_price || service.price || 0,
         additional_price: service.additional_price || 0,
         job_date: new Date().toISOString().split('T')[0],
         job_time_slot: '',
@@ -184,9 +184,9 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
             const res = await apiService.post('/api/bookings', payload);
             if (res.success) {
-                navigation.navigate('BookingSuccess', { 
+                navigation.navigate('BookingSuccess', {
                     bookingNumber: res.booking_number,
-                    bookingId: res.booking_id 
+                    bookingId: res.booking_id
                 });
             } else {
                 Alert.alert('Error', res.message || 'Failed to create booking.');
@@ -232,17 +232,17 @@ const CreateBookingScreen = ({ navigation, route }) => {
             onRequestClose={() => setViewerVisible(false)}
         >
             <View style={styles.viewerContainer}>
-                <TouchableOpacity 
-                    style={styles.viewerCloseBtn} 
+                <TouchableOpacity
+                    style={styles.viewerCloseBtn}
                     onPress={() => setViewerVisible(false)}
                 >
                     <Ionicons name="close" size={32} color="#fff" />
                 </TouchableOpacity>
                 {selectedImage && (
-                    <Image 
-                        source={{ uri: selectedImage }} 
-                        style={styles.viewerImage} 
-                        resizeMode="contain" 
+                    <Image
+                        source={{ uri: selectedImage }}
+                        style={styles.viewerImage}
+                        resizeMode="contain"
                     />
                 )}
             </View>
@@ -252,7 +252,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const renderStep1 = () => (
         <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>Where do you need service?</Text>
-            
+
             <Text style={styles.label}>Service Address *</Text>
             <TextInput
                 style={styles.input}
@@ -289,10 +289,10 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const renderStep2 = () => (
         <View style={styles.stepContainer}>
             <Text style={styles.sectionTitle}>When should we come?</Text>
-            
+
             <Text style={styles.label}>Select Date</Text>
-            <TouchableOpacity 
-                style={styles.dateSelector} 
+            <TouchableOpacity
+                style={styles.dateSelector}
                 onPress={() => setShowDatePicker(true)}
             >
                 <Ionicons name="calendar-outline" size={20} color={PRIMARY} />
@@ -333,7 +333,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const renderStep3 = () => (
         <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>Job Details</Text>
-            
+
             <Text style={styles.label}>Phone Number *</Text>
             <TextInput
                 style={styles.input}
@@ -422,7 +422,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const renderStep4 = () => (
         <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>Review Your Booking</Text>
-            
+
             <View style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
                     <Text style={styles.reviewTitle}>{service.name}</Text>
@@ -521,10 +521,10 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const renderStep5 = () => (
         <View style={styles.stepContainer}>
             <Text style={styles.sectionTitle}>Payment & Authorization</Text>
-            
+
             <View style={styles.paymentCard}>
                 <Text style={styles.paymentCardTitle}>Order Summary</Text>
-                
+
                 <View style={styles.paymentRow}>
                     <Text style={styles.paymentLabel}>{service.name}</Text>
                     <Text style={styles.paymentValue}>${parseFloat(service.base_price || service.price || 0).toFixed(2)}</Text>
@@ -532,13 +532,20 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
                 {service.additional_price > 0 && (
                     <View style={styles.paymentRow}>
-                        <Text style={styles.paymentLabel}>Additional Rate (if applicable)</Text>
-                        <Text style={styles.paymentValue}>+${service.additional_price}/hr</Text>
+                        <Text style={styles.paymentLabel}>⏱️ Overtime</Text>
+                        <Text style={styles.paymentValue}>
+                            ${parseFloat(service.additional_price).toFixed(2)}/hr (max 2hr = ${(parseFloat(service.additional_price) * 2).toFixed(2)})
+                        </Text>
                     </View>
                 )}
 
                 <View style={[styles.paymentRow, styles.totalRow]}>
-                    <Text style={styles.totalLabel}>Total Hold Amount</Text>
+                    <View>
+                        <Text style={styles.totalLabel}>Total Hold Amount</Text>
+                        <Text style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                            (Includes 2hr Overtime Authorization)
+                        </Text>
+                    </View>
                     <Text style={styles.totalPrice}>
                         ${(parseFloat(service.base_price || service.price || 0) + (parseFloat(service.additional_price || 0) * 2)).toFixed(2)}
                     </Text>
@@ -554,7 +561,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
             {paymentUrl ? (
                 <View style={styles.webviewContainer}>
-                    <WebView 
+                    <WebView
                         source={{ uri: paymentUrl }}
                         onMessage={handleWebViewMessage}
                         showsVerticalScrollIndicator={false}
@@ -668,14 +675,14 @@ const styles = StyleSheet.create({
     photoWrapper: { position: 'relative' },
     photo: { width: 80, height: 80, borderRadius: 12 },
     removePhotoBtn: { position: 'absolute', top: -5, right: -5, backgroundColor: '#fff', borderRadius: 10 },
-    addPhotoBtn: { 
-        width: 80, 
-        height: 80, 
-        borderRadius: 12, 
-        borderWidth: 2, 
-        borderStyle: 'dashed', 
-        borderColor: '#cbd5e1', 
-        justifyContent: 'center', 
+    addPhotoBtn: {
+        width: 80,
+        height: 80,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderStyle: 'dashed',
+        borderColor: '#cbd5e1',
+        justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#f8fafc'
     },

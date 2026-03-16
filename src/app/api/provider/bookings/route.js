@@ -4,16 +4,27 @@ import { verifyToken } from '@/lib/jwt';
 
 export async function GET(request) {
   try {
-    const token = request.cookies.get('provider_token')?.value;
+    let token = request.cookies.get('provider_token')?.value;
+    
+    if (!token) {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        }
+    }
+
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || decoded.type !== 'provider') {
+    const userType = decoded?.type || decoded?.role;
+
+    if (!decoded || userType !== 'provider') {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
     }
 
+    const providerId = decoded.providerId || decoded.id;
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get('status');
 
@@ -32,7 +43,7 @@ export async function GET(request) {
       WHERE b.provider_id = ?
     `;
 
-    const params = [decoded.providerId];
+    const params = [providerId];
 
     if (statusFilter) {
       const statuses = statusFilter.split(',');

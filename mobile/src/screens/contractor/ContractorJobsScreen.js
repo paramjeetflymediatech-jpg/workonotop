@@ -17,13 +17,9 @@ const ContractorJobsScreen = ({ navigation }) => {
 
     const fetchJobs = async () => {
         try {
-            const [availableRes, myJobsRes] = await Promise.all([
-                api.get('/api/provider/available-jobs'),
-                api.get('/api/provider/my-jobs'),
-            ]);
+            const availableRes = await api.get('/api/provider/available-jobs');
             setJobs({
                 available: availableRes.data || [],
-                myJobs: myJobsRes.data || [],
             });
         } catch (err) {
             console.error('Error fetching jobs:', err);
@@ -33,7 +29,13 @@ const ContractorJobsScreen = ({ navigation }) => {
         }
     };
 
-    useEffect(() => { fetchJobs(); }, []);
+    useEffect(() => {
+        if (user?.role === 'provider') {
+            fetchJobs();
+        } else {
+            setLoading(false);
+        }
+    }, [user?.role]);
 
     const onRefresh = () => { setRefreshing(true); fetchJobs(); };
 
@@ -43,9 +45,13 @@ const ContractorJobsScreen = ({ navigation }) => {
             {
                 text: 'Accept', onPress: async () => {
                     try {
-                        await api.post('/api/booking/accept', { booking_id: jobId });
-                        Alert.alert('Success', 'Job accepted! Check your schedule.');
-                        fetchJobs();
+                        const res = await api.post('/api/provider/available-jobs', { booking_id: jobId });
+                        if (res.success) {
+                            Alert.alert('Success', 'Job accepted! Check your schedule.');
+                            fetchJobs();
+                        } else {
+                            Alert.alert('Error', res.message || 'Failed to accept job.');
+                        }
                     } catch (err) {
                         Alert.alert('Error', 'Failed to accept job. It may have been taken.');
                     }
@@ -65,7 +71,7 @@ const ContractorJobsScreen = ({ navigation }) => {
         }
     };
 
-    const displayJobs = activeTab === 'available' ? jobs.available : jobs.myJobs;
+    const displayJobs = jobs.available;
 
     if (loading) {
         return (
@@ -82,23 +88,8 @@ const ContractorJobsScreen = ({ navigation }) => {
                 <TouchableOpacity onPress={() => navigation.openDrawer()} style={styles.menuBtn}>
                     <Ionicons name="menu" size={28} color="#0f172a" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Job Management</Text>
+                <Text style={styles.headerTitle}>Available Jobs ({jobs.available.length})</Text>
                 <View style={{ width: 28 }} />
-            </View>
-
-            {/* Tabs */}
-            <View style={styles.tabBar}>
-                {['available', 'myJobs'].map((tab) => (
-                    <TouchableOpacity
-                        key={tab}
-                        style={[styles.tab, activeTab === tab && styles.tabActive]}
-                        onPress={() => setActiveTab(tab)}
-                    >
-                        <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                            {tab === 'available' ? `Available (${jobs.available.length})` : `My Jobs (${jobs.myJobs.length})`}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
             </View>
 
             <ScrollView
@@ -107,12 +98,10 @@ const ContractorJobsScreen = ({ navigation }) => {
             >
                 {displayJobs.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyIcon}>{activeTab === 'available' ? '🔍' : '📋'}</Text>
-                        <Text style={styles.emptyTitle}>{activeTab === 'available' ? 'No Available Jobs' : 'No Jobs Yet'}</Text>
+                        <Text style={styles.emptyIcon}>🔍</Text>
+                        <Text style={styles.emptyTitle}>No Available Jobs</Text>
                         <Text style={styles.emptyText}>
-                            {activeTab === 'available'
-                                ? 'No jobs match your skills right now. Pull down to refresh.'
-                                : 'You have not accepted any jobs yet.'}
+                            No jobs match your skills right now. Pull down to refresh.
                         </Text>
                     </View>
                 ) : (
@@ -144,30 +133,12 @@ const ContractorJobsScreen = ({ navigation }) => {
                                         👤 {job.customer_first_name} {job.customer_last_name}
                                     </Text>
                                 )}
-                                {activeTab === 'available' && (
-                                    <TouchableOpacity
-                                        style={styles.acceptBtn}
-                                        onPress={() => acceptJob(job.id)}
-                                    >
-                                        <Text style={styles.acceptBtnText}>✓ Accept Job</Text>
-                                    </TouchableOpacity>
-                                )}
-                                {activeTab === 'myJobs' && job.status === 'confirmed' && (
-                                    <TouchableOpacity
-                                        style={styles.startBtn}
-                                        onPress={() => navigation.navigate('StartJob', { job })}
-                                    >
-                                        <Text style={styles.startBtnText}>▶ Start Job</Text>
-                                    </TouchableOpacity>
-                                )}
-                                {activeTab === 'myJobs' && job.status === 'in_progress' && (
-                                    <TouchableOpacity
-                                        style={[styles.startBtn, { backgroundColor: '#f59e0b' }]}
-                                        onPress={() => navigation.navigate('FinishJob', { job })}
-                                    >
-                                        <Text style={styles.startBtnText}>✔ Finish Job</Text>
-                                    </TouchableOpacity>
-                                )}
+                                <TouchableOpacity
+                                    style={styles.acceptBtn}
+                                    onPress={() => acceptJob(job.id)}
+                                >
+                                    <Text style={styles.acceptBtnText}>✓ Accept Job</Text>
+                                </TouchableOpacity>
                             </TouchableOpacity>
                         );
                     })
@@ -188,6 +159,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',
+        marginTop: verticalScale(12),
     },
     menuBtn: {
         padding: moderateScale(4),

@@ -4,7 +4,7 @@ import fs from 'fs';
 import mime from 'mime';
 
 export async function GET(request, { params }) {
-    const { path: filePathParams } = params;
+    const { path: filePathParams } = await params;
 
     // Construct the full file path from the URL parameters
     const filePath = path.join(process.cwd(), 'public', 'uploads', ...filePathParams);

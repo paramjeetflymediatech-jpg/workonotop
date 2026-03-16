@@ -105,7 +105,8 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
 
     const basePrice = parseFloat(booking.service_price || 0);
     const authAmount = booking.authorized_amount ? parseFloat(booking.authorized_amount) : basePrice;
-    const totalAmount = basePrice + parseFloat(booking.additional_price || 0);
+    const overtimeEarnings = parseFloat(booking.overtime_earnings || 0);
+    const totalAmount = basePrice + overtimeEarnings;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -157,24 +158,48 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Contact</Text>
                     <View style={styles.card}>
-                        {(booking.first_name || booking.last_name) && (
+                        {(booking.customer_first_name || booking.customer_last_name) && (
                             <View style={[styles.iconRow, { marginBottom: 10 }]}>
                                 <Ionicons name="person-outline" size={moderateScale(20)} color={PRIMARY} />
-                                <Text style={styles.cardTextVals}>{booking.first_name} {booking.last_name}</Text>
+                                <Text style={styles.cardTextVals}>{booking.customer_first_name} {booking.customer_last_name}</Text>
                             </View>
                         )}
                         <View style={styles.iconRow}>
                             <Ionicons name="call-outline" size={moderateScale(20)} color={PRIMARY} />
-                            <Text style={styles.cardTextVals}>{booking.phone}</Text>
+                            <Text style={styles.cardTextVals}>{booking.customer_phone}</Text>
                         </View>
-                        {booking.email && (
+                        {booking.customer_email && (
                             <View style={[styles.iconRow, { marginTop: 10 }]}>
                                 <Ionicons name="mail-outline" size={moderateScale(20)} color={PRIMARY} />
-                                <Text style={styles.cardTextVals}>{booking.email}</Text>
+                                <Text style={styles.cardTextVals}>{booking.customer_email}</Text>
                             </View>
                         )}
                     </View>
                 </View>
+
+                {booking.provider_name && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Service Professional</Text>
+                        <View style={styles.card}>
+                            <View style={styles.iconRow}>
+                                <Ionicons name="person-circle-outline" size={moderateScale(24)} color={PRIMARY} />
+                                <View style={{ marginLeft: scale(10), flex: 1 }}>
+                                    <Text style={[styles.cardTextVals, { marginLeft: 0 }]}>{booking.provider_name}</Text>
+                                    <View style={styles.providerRatingRow}>
+                                        <Ionicons name="star" size={14} color="#f59e0b" />
+                                        <Text style={styles.providerRating}>{booking.provider_rating || 'N/A'}</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            {booking.provider_phone && (
+                                <View style={[styles.iconRow, { marginTop: 12 }]}>
+                                    <Ionicons name="call-outline" size={moderateScale(18)} color="#64748b" />
+                                    <Text style={styles.extraText}>{booking.provider_phone}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                )}
 
                 {booking.job_description && (
                     <View style={styles.section}>
@@ -250,6 +275,12 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                             <Text style={styles.pricingLabel}>Base Price ({booking.standard_duration_minutes}min):</Text>
                             <Text style={styles.pricingValue}>{formatCurrency(basePrice)}</Text>
                         </View>
+                        {overtimeEarnings > 0 && (
+                            <View style={styles.pricingRow}>
+                                <Text style={styles.pricingLabel}>Additional Earnings:</Text>
+                                <Text style={styles.pricingValue}>{formatCurrency(overtimeEarnings)}</Text>
+                            </View>
+                        )}
                         <View style={[styles.pricingRow, styles.totalRow]}>
                             <Text style={styles.totalLabel}>Total</Text>
                             <Text style={styles.totalValue}>{formatCurrency(totalAmount)}</Text>
@@ -370,6 +401,8 @@ const styles = StyleSheet.create({
 
     descriptionText: { fontSize: moderateScale(15), color: '#334155', lineHeight: verticalScale(22) },
     extraText: { fontSize: moderateScale(14), color: '#475569', marginLeft: scale(10), flex: 1 },
+    providerRatingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+    providerRating: { fontSize: moderateScale(13), color: '#64748b', marginLeft: 4 },
 
     /* Badge Styles */
     badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

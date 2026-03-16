@@ -1,18 +1,45 @@
 import React from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    SafeAreaView,
-    ScrollView,
-    TouchableOpacity,
-    StatusBar
+    View, Text, StyleSheet, SafeAreaView, ScrollView,
+    TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 
 const AdminJobDetailsScreen = ({ navigation, route }) => {
     const { booking } = route.params || {};
+    const [viewerVisible, setViewerVisible] = React.useState(false);
+    const [selectedImage, setSelectedImage] = React.useState(null);
+
+    const openViewer = (url) => {
+        setSelectedImage(url);
+        setViewerVisible(true);
+    };
+
+    const renderImageViewer = () => (
+        <Modal
+            visible={viewerVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setViewerVisible(false)}
+        >
+            <View style={styles.viewerContainer}>
+                <TouchableOpacity 
+                    style={styles.viewerCloseBtn} 
+                    onPress={() => setViewerVisible(false)}
+                >
+                    <Ionicons name="close" size={32} color="#fff" />
+                </TouchableOpacity>
+                {selectedImage && (
+                    <Image 
+                        source={{ uri: selectedImage }} 
+                        style={styles.viewerImage} 
+                        resizeMode="contain" 
+                    />
+                )}
+            </View>
+        </Modal>
+    );
 
     if (!booking) {
         return (
@@ -39,17 +66,17 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
     };
 
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-GB', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'GBP',
+            currency: 'USD',
             minimumFractionDigits: 2,
-        }).format(amount);
+        }).format(amount || 0);
     };
 
     const statusStyle = getStatusStyle(booking.status);
     const servicePrice = parseFloat(booking.service_price || 0);
-    const additionalPrice = parseFloat(booking.additional_price || 0);
-    const totalAmount = servicePrice + additionalPrice;
+    const overtimeEarnings = parseFloat(booking.overtime_earnings || 0);
+    const totalAmount = servicePrice + overtimeEarnings;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -139,6 +166,72 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                     </View>
                 </View>
 
+                {booking.job_description && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Job Description</Text>
+                        <View style={styles.card}>
+                            <Text style={styles.descriptionText}>{booking.job_description}</Text>
+                        </View>
+                    </View>
+                )}
+
+                {(booking.timing_constraints || booking.instructions) && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Extra Details</Text>
+                        <View style={styles.card}>
+                            {booking.timing_constraints && (
+                                <View style={styles.detailItemCompact}>
+                                    <Ionicons name="hourglass-outline" size={moderateScale(18)} color="#64748b" />
+                                    <View style={{ marginLeft: scale(10), flex: 1 }}>
+                                        <Text style={styles.labelSmall}>Timing Constraints</Text>
+                                        <Text style={styles.extraText}>{booking.timing_constraints}</Text>
+                                    </View>
+                                </View>
+                            )}
+                            {booking.instructions && (
+                                <View style={[styles.detailItemCompact, { marginTop: 10 }]}>
+                                    <Ionicons name="information-circle-outline" size={moderateScale(18)} color="#64748b" />
+                                    <View style={{ marginLeft: scale(10), flex: 1 }}>
+                                        <Text style={styles.labelSmall}>Special Instructions</Text>
+                                        <Text style={styles.extraText}>{booking.instructions}</Text>
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                )}
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Access & Amenities</Text>
+                    <View style={styles.badgeRow}>
+                        <View style={[styles.badge, booking.parking_access && styles.badgeActive]}>
+                            <Ionicons name="car-outline" size={12} color={booking.parking_access ? '#fff' : '#64748b'} />
+                            <Text style={[styles.badgeText, booking.parking_access && styles.badgeTextActive]}>Parking</Text>
+                        </View>
+                        <View style={[styles.badge, booking.elevator_access && styles.badgeActive]}>
+                            <Ionicons name="business-outline" size={12} color={booking.elevator_access ? '#fff' : '#64748b'} />
+                            <Text style={[styles.badgeText, booking.elevator_access && styles.badgeTextActive]}>Elevator</Text>
+                        </View>
+                        <View style={[styles.badge, booking.has_pets && styles.badgeActive]}>
+                            <Ionicons name="paw-outline" size={12} color={booking.has_pets ? '#fff' : '#64748b'} />
+                            <Text style={[styles.badgeText, booking.has_pets && styles.badgeTextActive]}>Pets</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {booking.photos && booking.photos.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Job Photos</Text>
+                        <View style={styles.photoGrid}>
+                            {booking.photos.map((url, idx) => (
+                                <TouchableOpacity key={idx} onPress={() => openViewer(url)}>
+                                    <Image source={{ uri: url }} style={styles.photoMini} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Pricing Information</Text>
                     <View style={styles.card}>
@@ -146,10 +239,12 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                             <Text style={styles.pricingLabel}>Service Price</Text>
                             <Text style={styles.pricingValue}>{formatCurrency(servicePrice)}</Text>
                         </View>
-                        <View style={styles.pricingRow}>
-                            <Text style={styles.pricingLabel}>Additional Price</Text>
-                            <Text style={styles.pricingValue}>{formatCurrency(additionalPrice)}</Text>
-                        </View>
+                        {overtimeEarnings > 0 && (
+                            <View style={styles.pricingRow}>
+                                <Text style={styles.pricingLabel}>Additional Earnings</Text>
+                                <Text style={styles.pricingValue}>{formatCurrency(overtimeEarnings)}</Text>
+                            </View>
+                        )}
                         <View style={[styles.pricingRow, styles.totalRow]}>
                             <Text style={styles.totalLabel}>Total Amount</Text>
                             <Text style={styles.totalValue}>{formatCurrency(totalAmount)}</Text>
@@ -332,7 +427,90 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
         fontSize: moderateScale(14),
-    }
+    },
+    /* Viewer Styles */
+    viewerContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    viewerCloseBtn: {
+        position: 'absolute',
+        top: verticalScale(50),
+        right: scale(20),
+        zIndex: 10,
+        padding: scale(10),
+    },
+    viewerImage: {
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height * 0.8,
+    },
+    /* Description & Extra */
+    descriptionText: {
+        fontSize: moderateScale(15),
+        color: '#334155',
+        lineHeight: verticalScale(22),
+    },
+    detailItemCompact: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    labelSmall: {
+        fontSize: moderateScale(12),
+        color: '#64748b',
+        fontWeight: 'bold',
+        marginBottom: verticalScale(2),
+        textTransform: 'uppercase',
+    },
+    extraText: {
+        fontSize: moderateScale(14),
+        color: '#1e293b',
+        lineHeight: verticalScale(20),
+    },
+    /* Badge Styles */
+    badgeRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: moderateScale(8),
+        marginTop: verticalScale(5),
+    },
+    badge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: scale(12),
+        paddingVertical: verticalScale(6),
+        borderRadius: moderateScale(20),
+        backgroundColor: '#f1f5f9',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    badgeActive: {
+        backgroundColor: '#115e59',
+        borderColor: '#115e59',
+    },
+    badgeText: {
+        marginLeft: scale(4),
+        fontSize: moderateScale(12),
+        fontWeight: '600',
+        color: '#64748b',
+    },
+    badgeTextActive: {
+        color: '#fff',
+    },
+    /* Photo Grid */
+    photoGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: moderateScale(10),
+        marginTop: verticalScale(5),
+    },
+    photoMini: {
+        width: moderateScale(70),
+        height: moderateScale(70),
+        borderRadius: moderateScale(12),
+        backgroundColor: '#f1f5f9',
+    },
 });
 
 export default AdminJobDetailsScreen;

@@ -7,7 +7,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function POST(request) {
     try {
-        const { email, password } = await request.json()
+        const body = await request.json().catch(() => ({}));
+        const { email, password, device_id = 'mobile_default' } = body;
         console.log('Mobile login attempt:', { email, role_check: true })
 
         if (!email || !password) {
@@ -65,10 +66,12 @@ export async function POST(request) {
         const token = jwt.sign(
             {
                 id: user.id,
+                providerId: role === 'provider' ? user.id : undefined,
                 email: user.email,
                 first_name: user.first_name || user.name,
                 last_name: user.last_name || '',
-                role: role
+                role: role,
+                type: role // Added for compatibility with provider middleware/routes
             },
             JWT_SECRET,
             { expiresIn: '7d' }
@@ -88,22 +91,26 @@ export async function POST(request) {
 
         // 🔥 Save session to mobile_auth_users table for mobile API verification
         try {
-            const userIdCol = role === 'provider' ? 'provider_id' : 'user_id';
+            // Map roles to database enum ('customer', 'provider')
+            const dbType = (role === 'provider') ? 'provider' : 'customer';
+            const userIdCol = (dbType === 'provider') ? 'provider_id' : 'user_id';
+            
+            // Note: device_id is part of unique index, we use the value extracted from body
+            // to ensure ON DUPLICATE KEY properly triggers for the same user on "this" device.
             await query(
                 `INSERT INTO mobile_auth_users 
-                 (${userIdCol}, user_type, refresh_token, refresh_token_expires, is_active, last_login)
-                 VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY), 1, NOW())
+                 (${userIdCol}, user_type, refresh_token, refresh_token_expires, is_active, last_login, device_id)
+                 VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY), 1, NOW(), ?)
                  ON DUPLICATE KEY UPDATE 
                  refresh_token = VALUES(refresh_token),
                  refresh_token_expires = VALUES(refresh_token_expires),
                  is_active = 1,
                  last_login = NOW()`,
-                [user.id, role, token]
+                [user.id, dbType, token, device_id]
             );
-            console.log(`✅ Mobile session persisted for ${role} ID: ${user.id}`);
+            console.log(`✅ Mobile session persisted for ${dbType} ID: ${user.id}`);
         } catch (dbError) {
-            console.error('Failed to persist mobile session:', dbError);
-            // Don't fail the login if session persistence fails, but log it
+            console.error('❌ Failed to persist mobile session:', dbError.message);
         }
 
         // Set HTTP-only cookie based on role (for web support)

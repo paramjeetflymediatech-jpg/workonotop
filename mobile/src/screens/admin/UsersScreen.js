@@ -24,6 +24,9 @@ const UsersScreen = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [editMode, setEditMode] = useState(false);
+    const [formData, setFormData] = useState({ first_name: '', last_name: '', email: '', phone: '' });
+    const [updating, setUpdating] = useState(false);
 
     const fetchUsers = async () => {
         try {
@@ -58,7 +61,68 @@ const UsersScreen = ({ navigation }) => {
 
     const openUserDetails = (user) => {
         setSelectedUser(user);
+        setFormData({
+            first_name: user.first_name || '',
+            last_name: user.last_name || '',
+            email: user.email || '',
+            phone: user.phone || ''
+        });
+        setEditMode(false);
         setModalVisible(true);
+    };
+
+    const handleUpdate = async () => {
+        if (!formData.first_name || !formData.last_name || !formData.email) {
+            alert('Please fill in required fields');
+            return;
+        }
+
+        setUpdating(true);
+        try {
+            const res = await api.put(`/api/customers?id=${selectedUser.id}`, {
+                ...formData,
+                role: 'user'
+            });
+            if (res.success) {
+                setModalVisible(false);
+                fetchUsers();
+            } else {
+                alert(res.message || 'Update failed');
+            }
+        } catch (error) {
+            alert(error.message || 'Update failed');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        import('react-native').then(({ Alert }) => {
+            Alert.alert(
+                'Delete User',
+                'Are you sure you want to delete this user? This will delete all their bookings and data permanently.',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try {
+                                const res = await api.delete(`/api/customers?id=${selectedUser.id}`);
+                                if (res.success) {
+                                    setModalVisible(false);
+                                    fetchUsers();
+                                } else {
+                                    alert(res.message || 'Delete failed');
+                                }
+                            } catch (error) {
+                                alert(error.message || 'Delete failed');
+                            }
+                        }
+                    }
+                ]
+            );
+        });
     };
 
     const renderUserItem = ({ item }) => (
@@ -168,62 +232,125 @@ const UsersScreen = ({ navigation }) => {
 
                         {selectedUser && (
                             <ScrollView showsVerticalScrollIndicator={false}>
-                                <View style={styles.modalProfileHeader}>
-                                    <View style={styles.largeAvatar}>
-                                        <Text style={styles.largeAvatarText}>
-                                            {selectedUser.first_name?.[0]}{selectedUser.last_name?.[0]}
-                                        </Text>
-                                    </View>
-                                    <Text style={styles.modalUserName}>
-                                        {selectedUser.first_name} {selectedUser.last_name}
-                                    </Text>
-                                    <View style={styles.roleBadge}>
-                                        <Text style={styles.roleText}>Customer</Text>
-                                    </View>
-                                </View>
+                                {editMode ? (
+                                    <View style={styles.editForm}>
+                                        <Text style={styles.inputLabel}>First Name</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={formData.first_name}
+                                            onChangeText={(text) => setFormData({ ...formData, first_name: text })}
+                                            placeholder="First Name"
+                                        />
+                                        <Text style={styles.inputLabel}>Last Name</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={formData.last_name}
+                                            onChangeText={(text) => setFormData({ ...formData, last_name: text })}
+                                            placeholder="Last Name"
+                                        />
+                                        <Text style={styles.inputLabel}>Email</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={formData.email}
+                                            onChangeText={(text) => setFormData({ ...formData, email: text })}
+                                            placeholder="Email"
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                        />
+                                        <Text style={styles.inputLabel}>Phone</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={formData.phone}
+                                            onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                                            placeholder="Phone"
+                                            keyboardType="phone-pad"
+                                        />
 
-                                <View style={styles.detailSection}>
-                                    <Text style={styles.sectionTitle}>Contact Information</Text>
-                                    <View style={styles.detailItem}>
-                                        <Ionicons name="mail-outline" size={moderateScale(20)} color="#115e59" />
-                                        <View style={styles.detailInfo}>
-                                            <Text style={styles.detailLabel}>Email Address</Text>
-                                            <Text style={styles.detailValue}>{selectedUser.email}</Text>
+                                        <View style={styles.editActionRow}>
+                                            <TouchableOpacity 
+                                                style={[styles.modalActionBtn, styles.saveBtn]}
+                                                onPress={handleUpdate}
+                                                disabled={updating}
+                                            >
+                                                {updating ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>Save Changes</Text>}
+                                            </TouchableOpacity>
+                                            <TouchableOpacity 
+                                                style={[styles.modalActionBtn, styles.cancelBtn]}
+                                                onPress={() => setEditMode(false)}
+                                            >
+                                                <Text style={[styles.actionBtnText, { color: '#64748b' }]}>Cancel</Text>
+                                            </TouchableOpacity>
                                         </View>
                                     </View>
-                                    <View style={styles.detailItem}>
-                                        <Ionicons name="call-outline" size={moderateScale(20)} color="#115e59" />
-                                        <View style={styles.detailInfo}>
-                                            <Text style={styles.detailLabel}>Phone Number</Text>
-                                            <Text style={styles.detailValue}>{selectedUser.phone || 'Not provided'}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <View style={styles.detailSection}>
-                                    <Text style={styles.sectionTitle}>Platform Activity</Text>
-                                    <View style={styles.statsRow}>
-                                        <View style={styles.statBox}>
-                                            <Text style={styles.statNumber}>{selectedUser.booking_count || 0}</Text>
-                                            <Text style={styles.statLabel}>Total Jobs</Text>
-                                        </View>
-                                        <View style={styles.statBox}>
-                                            <Ionicons name="calendar-outline" size={moderateScale(24)} color="#115e59" />
-                                            <Text style={styles.statLabel}>Joined Date</Text>
-                                            <Text style={styles.statDate}>
-                                                {new Date(selectedUser.created_at).toLocaleDateString()}
+                                ) : (
+                                    <>
+                                        <View style={styles.modalProfileHeader}>
+                                            <View style={styles.largeAvatar}>
+                                                <Text style={styles.largeAvatarText}>
+                                                    {selectedUser.first_name?.[0]}{selectedUser.last_name?.[0]}
+                                                </Text>
+                                            </View>
+                                            <Text style={styles.modalUserName}>
+                                                {selectedUser.first_name} {selectedUser.last_name}
                                             </Text>
+                                            <View style={styles.roleBadge}>
+                                                <Text style={styles.roleText}>Customer</Text>
+                                            </View>
                                         </View>
-                                    </View>
-                                </View>
 
-                                <View style={styles.detailSection}>
-                                    <Text style={styles.sectionTitle}>Account Status</Text>
-                                    <View style={styles.statusRow}>
-                                        <View style={[styles.statusIndicator, { backgroundColor: '#10b981' }]} />
-                                        <Text style={styles.statusText}>Active Account</Text>
-                                    </View>
-                                </View>
+                                        <View style={styles.detailSection}>
+                                            <Text style={styles.sectionTitle}>Contact Information</Text>
+                                            <View style={styles.detailItem}>
+                                                <Ionicons name="mail-outline" size={moderateScale(20)} color="#115e59" />
+                                                <View style={styles.detailInfo}>
+                                                    <Text style={styles.detailLabel}>Email Address</Text>
+                                                    <Text style={styles.detailValue}>{selectedUser.email}</Text>
+                                                </View>
+                                            </View>
+                                            <View style={styles.detailItem}>
+                                                <Ionicons name="call-outline" size={moderateScale(20)} color="#115e59" />
+                                                <View style={styles.detailInfo}>
+                                                    <Text style={styles.detailLabel}>Phone Number</Text>
+                                                    <Text style={styles.detailValue}>{selectedUser.phone || 'Not provided'}</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.detailSection}>
+                                            <Text style={styles.sectionTitle}>Platform Activity</Text>
+                                            <View style={styles.statsRow}>
+                                                <View style={styles.statBox}>
+                                                    <Text style={styles.statNumber}>{selectedUser.booking_count || 0}</Text>
+                                                    <Text style={styles.statLabel}>Total Jobs</Text>
+                                                </View>
+                                                <View style={styles.statBox}>
+                                                    <Ionicons name="calendar-outline" size={moderateScale(24)} color="#115e59" />
+                                                    <Text style={styles.statLabel}>Joined Date</Text>
+                                                    <Text style={styles.statDate}>
+                                                        {new Date(selectedUser.created_at).toLocaleDateString()}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.modalActionRow}>
+                                            <TouchableOpacity 
+                                                style={[styles.modalActionBtn, styles.editBtn]}
+                                                onPress={() => setEditMode(true)}
+                                            >
+                                                <Ionicons name="create-outline" size={moderateScale(20)} color="#fff" />
+                                                <Text style={styles.actionBtnText}>Edit User</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity 
+                                                style={[styles.modalActionBtn, styles.deleteBtn]}
+                                                onPress={handleDelete}
+                                            >
+                                                <Ionicons name="trash-outline" size={moderateScale(20)} color="#fff" />
+                                                <Text style={styles.actionBtnText}>Delete</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </>
+                                )}
                             </ScrollView>
                         )}
                     </View>
@@ -508,6 +635,61 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(14),
         fontWeight: 'bold',
         color: '#065f46',
+    },
+    modalActionRow: {
+        flexDirection: 'row',
+        gap: scale(10),
+        marginTop: verticalScale(10),
+    },
+    modalActionBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        height: verticalScale(50),
+        borderRadius: moderateScale(12),
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: scale(8),
+    },
+    editBtn: {
+        backgroundColor: '#115e59',
+    },
+    deleteBtn: {
+        backgroundColor: '#ef4444',
+    },
+    actionBtnText: {
+        color: '#fff',
+        fontSize: moderateScale(15),
+        fontWeight: 'bold',
+    },
+    editForm: {
+        paddingVertical: verticalScale(10),
+    },
+    inputLabel: {
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+        color: '#64748b',
+        marginBottom: verticalScale(5),
+    },
+    input: {
+        backgroundColor: '#f8fafc',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: moderateScale(10),
+        padding: scale(12),
+        fontSize: moderateScale(15),
+        color: '#0f172a',
+        marginBottom: verticalScale(15),
+    },
+    editActionRow: {
+        flexDirection: 'row',
+        gap: scale(10),
+        marginTop: verticalScale(10),
+    },
+    saveBtn: {
+        backgroundColor: '#115e59',
+    },
+    cancelBtn: {
+        backgroundColor: '#f1f5f9',
     },
 });
 

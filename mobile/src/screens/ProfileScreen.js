@@ -59,7 +59,18 @@ const ProfileScreen = ({ navigation }) => {
                     <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('UpdateProfile')}>
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Invoices')}>
+                    <View style={styles.menuIconContainer}>
+                        <Ionicons name="document-text-outline" size={20} color="#115e59" />
+                    </View>
+                    <Text style={styles.menuText}>My Invoices</Text>
+                    <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                    style={styles.menuItem} 
+                    onPress={() => navigation.navigate(user?.role === 'provider' ? 'ProviderUpdateProfile' : 'UpdateProfile')}
+                >
                     <View style={styles.menuIconContainer}>
                         <Ionicons name="person-outline" size={20} color="#115e59" />
                     </View>

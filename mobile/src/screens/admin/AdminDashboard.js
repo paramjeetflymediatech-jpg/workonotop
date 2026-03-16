@@ -80,10 +80,10 @@ const AdminDashboard = ({ navigation }) => {
     };
 
     const statCards = [
-        { title: 'Total Revenue', value: formatCurrency(stats.totalRevenue), icon: 'cash-outline', color: '#10b981', bg: '#d1fae5' },
-        { title: 'Active Jobs', value: stats.activeJobs.toString(), icon: 'briefcase-outline', color: '#3b82f6', bg: '#dbeafe' },
-        { title: 'Providers', value: stats.totalProviders.toString(), icon: 'construct-outline', color: '#f59e0b', bg: '#fef3c7' },
-        { title: 'Customers', value: stats.totalCustomers.toString(), icon: 'people-outline', color: '#8b5cf6', bg: '#ede9fe' },
+        { title: 'Total Revenue', value: formatCurrency(stats.totalRevenue), icon: 'cash-outline', color: '#10b981', bg: '#d1fae5', screen: 'Earnings' },
+        { title: 'Active Jobs', value: stats.activeJobs.toString(), icon: 'briefcase-outline', color: '#3b82f6', bg: '#dbeafe', screen: 'Job Requests' },
+        { title: 'Providers', value: stats.totalProviders.toString(), icon: 'construct-outline', color: '#f59e0b', bg: '#fef3c7', screen: 'Providers' },
+        { title: 'Customers', value: stats.totalCustomers.toString(), icon: 'people-outline', color: '#8b5cf6', bg: '#ede9fe', screen: 'Users' },
     ];
 
     const quickActions = [
@@ -148,13 +148,18 @@ const AdminDashboard = ({ navigation }) => {
                 {/* ── Stat Cards ── */}
                 <View style={styles.cardGrid}>
                     {statCards.map((card) => (
-                        <View key={card.title} style={styles.statCard}>
+                        <TouchableOpacity 
+                            key={card.title} 
+                            style={styles.statCard}
+                            onPress={() => navigation.navigate(card.screen)}
+                            activeOpacity={0.7}
+                        >
                             <View style={[styles.statIconCircle, { backgroundColor: card.bg }]}>
                                 <Ionicons name={card.icon} size={moderateScale(22)} color={card.color} />
                             </View>
                             <Text style={styles.statValue}>{card.value}</Text>
                             <Text style={styles.statTitle}>{card.title}</Text>
-                        </View>
+                        </TouchableOpacity>
                     ))}
                 </View>
 

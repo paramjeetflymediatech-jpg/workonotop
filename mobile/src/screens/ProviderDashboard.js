@@ -68,8 +68,12 @@ const ProviderDashboard = ({ navigation }) => {
     }, []);
 
     useEffect(() => {
-        fetchProviderData();
-    }, [fetchProviderData]);
+        if (user?.role === 'provider') {
+            fetchProviderData();
+        } else {
+            setLoading(false);
+        }
+    }, [fetchProviderData, user?.role]);
 
     const onRefresh = () => {
         setRefreshing(true);

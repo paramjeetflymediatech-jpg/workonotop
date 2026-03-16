@@ -66,11 +66,11 @@ const JobRequestsScreen = ({ navigation }) => {
     };
 
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-GB', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'GBP',
+            currency: 'USD',
             minimumFractionDigits: 2,
-        }).format(amount);
+        }).format(amount || 0);
     };
 
     const openBookingDetails = (booking) => {
@@ -83,7 +83,7 @@ const JobRequestsScreen = ({ navigation }) => {
 
     const renderBookingItem = ({ item }) => {
         const statusStyle = getStatusStyle(item.status);
-        const amount = parseFloat(item.service_price || 0) + parseFloat(item.additional_price || 0);
+        const amount = parseFloat(item.service_price || 0) + parseFloat(item.overtime_earnings || 0);
 
         return (
             <TouchableOpacity

@@ -52,8 +52,7 @@ const CustomDrawerContent = (props) => {
 
     const providerMenuItems = [
         { label: 'Dashboard', icon: 'home-outline', route: 'Dashboard' },
-        { label: 'Available Jobs', icon: 'search-outline', route: 'Services' },
-        { label: 'My Jobs', icon: 'briefcase-outline', route: 'ContractorJobs' },
+        { label: 'Available Jobs', icon: 'search-outline', route: 'ContractorJobs' },
         { label: 'Messages', icon: 'chatbubbles-outline', route: 'Messages' },
         { label: 'Earnings', icon: 'wallet-outline', route: 'Earnings' },
         { label: 'Ratings', icon: 'star-half-outline', route: 'Ratings' },

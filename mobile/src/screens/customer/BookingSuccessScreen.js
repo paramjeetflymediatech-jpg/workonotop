@@ -1,12 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from '../../utils/responsive';
+import { API_BASE_URL } from '../../config';
 
 const PRIMARY = '#115e59';
 
 const BookingSuccessScreen = ({ navigation, route }) => {
-    const { bookingNumber } = route.params || {};
+    const { bookingNumber, bookingId } = route.params || {};
+
+    const handleDownloadInvoice = () => {
+        if (!bookingId) return;
+        const url = `${API_BASE_URL}/api/bookings/${bookingId}/invoice/download`;
+        Linking.openURL(url).catch(err => console.error("Couldn't load page", err));
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -23,6 +30,14 @@ const BookingSuccessScreen = ({ navigation, route }) => {
                 <View style={styles.infoCard}>
                     <Text style={styles.infoLabel}>Booking Number</Text>
                     <Text style={styles.infoValue}>{bookingNumber || 'BK-PENDING'}</Text>
+                    
+                    <TouchableOpacity 
+                        style={styles.downloadRow} 
+                        onPress={handleDownloadInvoice}
+                    >
+                        <Ionicons name="download-outline" size={18} color={PRIMARY} />
+                        <Text style={styles.downloadText}>Download Invoice/Receipt</Text>
+                    </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity 
@@ -60,7 +75,24 @@ const styles = StyleSheet.create({
         borderColor: '#e2e8f0',
     },
     infoLabel: { fontSize: moderateScale(12), color: '#94a3b8', textTransform: 'uppercase', marginBottom: verticalScale(5) },
-    infoValue: { fontSize: moderateScale(20), fontWeight: 'bold', color: '#1e293b' },
+    infoValue: { fontSize: moderateScale(20), fontWeight: 'bold', color: '#1e293b', marginBottom: verticalScale(10) },
+    downloadRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        backgroundColor: '#f0fdfa',
+        borderRadius: 10,
+        marginTop: 5,
+        borderWidth: 1,
+        borderColor: '#ccfbf1',
+    },
+    downloadText: {
+        color: PRIMARY,
+        fontSize: moderateScale(14),
+        fontWeight: '600',
+        marginLeft: 8,
+    },
     btnPrimary: {
         width: '100%',
         paddingVertical: verticalScale(16),

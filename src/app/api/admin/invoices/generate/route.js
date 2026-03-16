@@ -179,10 +179,10 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'Booking not found' }, { status: 404 })
     }
 
-    if (booking.status !== 'completed') {
+    if (booking.status !== 'completed' && booking.status !== 'pending' && booking.status !== 'confirmed') {
       return NextResponse.json({
         success: false,
-        message: 'Can only generate invoices for completed jobs'
+        message: 'Can only generate invoices for completed, pending, or confirmed jobs'
       }, { status: 400 })
     }
 
