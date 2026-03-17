@@ -32,12 +32,14 @@ const AdminDashboard = ({ navigation }) => {
         totalCustomers: 0,
     });
     const [recentBookings, setRecentBookings] = useState([]);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
 
     const fetchDashboardData = async () => {
         try {
             const [statsRes, bookingsRes] = await Promise.all([
                 api.get('/api/stats'),
                 api.get('/api/bookings?limit=5'),
+                api.get('/api/admin/notifications'),
             ]);
 
             if (statsRes.success) {
@@ -52,6 +54,11 @@ const AdminDashboard = ({ navigation }) => {
 
             if (bookingsRes.success) {
                 setRecentBookings(bookingsRes.data || []);
+            }
+
+            if (notificationsRes.success) {
+                const unread = (notificationsRes.data || []).filter(n => !n.is_read).length;
+                setUnreadNotifications(unread);
             }
         } catch (error) {
             console.error('Error fetching admin data:', error);
@@ -126,11 +133,11 @@ const AdminDashboard = ({ navigation }) => {
 
                     <TouchableOpacity 
                         style={styles.notificationBtn} 
-                        onPress={() => alert('Notifications feature coming soon!')}
+                        onPress={() => navigation.navigate('AdminNotifications')}
                         activeOpacity={0.7}
                     >
                         <Ionicons name="notifications-outline" size={moderateScale(24)} color="#fff" />
-                        <View style={styles.notificationBadge} />
+                        {unreadNotifications > 0 && <View style={styles.notificationBadge} />}
                     </TouchableOpacity>
                 </View>
 

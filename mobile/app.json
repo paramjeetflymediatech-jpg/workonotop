@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "WorkOnTop",
-    "slug": "workontop",
+    "name": "WorkOnTap",
+    "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,10 +21,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#115E59",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "package": "com.nh_aman.workontop",
       "permissions": [

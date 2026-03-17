@@ -6,8 +6,10 @@ import CustomDrawerContent from '../components/CustomDrawerContent';
 import ProviderDashboard from '../screens/ProviderDashboard';
 import ServicesScreen from '../screens/ServicesScreen';
 import ContractorJobsScreen from '../screens/contractor/ContractorJobsScreen';
-import PlaceholderScreen from '../screens/PlaceholderScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import EarningsScreen from '../screens/contractor/EarningsScreen';
+import RatingsScreen from '../screens/contractor/RatingsScreen';
+import ProviderMessagesScreen from '../screens/contractor/ProviderMessagesScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -27,9 +29,9 @@ const ProviderDrawerNavigator = () => {
             <Drawer.Screen name="Dashboard" component={ProviderDashboard} />
             <Drawer.Screen name="Services" component={ServicesScreen} />
             <Drawer.Screen name="ContractorJobs" component={ContractorJobsScreen} />
-            <Drawer.Screen name="Messages" component={PlaceholderScreen} initialParams={{ title: 'Messages' }} />
-            <Drawer.Screen name="Earnings" component={PlaceholderScreen} initialParams={{ title: 'Earnings' }} />
-            <Drawer.Screen name="Ratings" component={PlaceholderScreen} initialParams={{ title: 'Ratings' }} />
+            <Drawer.Screen name="Messages" component={ProviderMessagesScreen} />
+            <Drawer.Screen name="Earnings" component={EarningsScreen} />
+            <Drawer.Screen name="Ratings" component={RatingsScreen} />
             <Drawer.Screen name="Profile" component={ProfileScreen} />
         </Drawer.Navigator>
     );

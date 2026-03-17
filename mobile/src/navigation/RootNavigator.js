@@ -18,6 +18,7 @@ import AdminDrawerNavigator from './AdminDrawerNavigator';
 import ProviderDrawerNavigator from './ProviderDrawerNavigator';
 import DetailsScreen from '../screens/DetailsScreen';
 import AdminJobDetailsScreen from '../screens/admin/AdminJobDetailsScreen';
+import AdminNotificationsScreen from '../screens/admin/AdminNotificationsScreen';
 import CustomerBookingDetailsScreen from '../screens/customer/CustomerBookingDetailsScreen';
 
 // Contractor Onboarding
@@ -45,6 +46,7 @@ import ChangePasswordScreen from '../screens/customer/ChangePasswordScreen';
 import SavedAddressesScreen from '../screens/customer/SavedAddressesScreen';
 import InvoicesScreen from '../screens/customer/InvoicesScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
+import ChatScreen from '../screens/ChatScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -108,6 +110,7 @@ const RootNavigator = () => {
                                 <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
                             )}
                             <Stack.Screen name="AdminJobDetails" component={AdminJobDetailsScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="CustomerBookingDetails" component={CustomerBookingDetailsScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Details" component={DetailsScreen} />
                             <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ headerShown: false }} />
@@ -137,10 +140,8 @@ const RootNavigator = () => {
 
                     <Stack.Screen name="JobReport" component={JobReportScreen} options={{ title: 'Job Report' }} />
 
-                    {/* Placeholder Screens for Provider Menu */}
-                    <Stack.Screen name="Messages" component={PlaceholderScreen} initialParams={{ title: 'Messages' }} options={{ headerShown: false }} />
-                    <Stack.Screen name="Earnings" component={PlaceholderScreen} initialParams={{ title: 'Earnings' }} options={{ headerShown: false }} />
-                    <Stack.Screen name="Ratings" component={PlaceholderScreen} initialParams={{ title: 'Ratings' }} options={{ headerShown: false }} />
+                    {/* Chat Screen - accessible by both Customer and Provider */}
+                    <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
 
                 </>
             ) : (

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, SafeAreaView, ScrollView,
-    TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions
+    TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
 import { API_BASE_URL } from '../../config';
 
@@ -15,6 +16,7 @@ const BG_COLOR = '#f8fafc';
 const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     const { bookingId } = route.params;
     const insets = useSafeAreaInsets();
+    const { user } = useAuth();
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
     const [viewerVisible, setViewerVisible] = useState(false);
@@ -41,6 +43,47 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCancel = () => {
+        Alert.alert(
+            'Cancel Booking',
+            'Are you sure you want to cancel this booking? This action cannot be undone.',
+            [
+                { text: 'Keep Booking', style: 'cancel' },
+                {
+                    text: 'Yes, Cancel',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const res = await apiService.post(
+                                `/api/customer/bookings/${bookingId}/cancel`,
+                                {},
+                                user?.token
+                            );
+                            if (res?.success) {
+                                Alert.alert('Cancelled', 'Your booking has been cancelled.', [
+                                    { text: 'OK', onPress: () => { fetchDetails(); } }
+                                ]);
+                            } else {
+                                Alert.alert('Error', res?.message || 'Could not cancel booking.');
+                            }
+                        } catch (e) {
+                            Alert.alert('Error', 'Failed to cancel booking.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const openChat = () => {
+        navigation.navigate('Chat', {
+            bookingId: booking.id,
+            bookingNumber: booking.booking_number || booking.id,
+            role: 'customer',
+            otherPartyName: booking.provider_name || 'Provider',
+        });
     };
 
     const renderImageViewer = () => (
@@ -322,6 +365,22 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     </View>
                 </View>
 
+                {/* Action Buttons */}
+                <View style={styles.actionsRow}>
+                    {['confirmed', 'in_progress'].includes(booking.status) && booking.provider_name && (
+                        <TouchableOpacity style={styles.chatBtn} onPress={openChat} activeOpacity={0.8}>
+                            <Ionicons name="chatbubble-ellipses-outline" size={moderateScale(18)} color="#fff" />
+                            <Text style={styles.chatBtnText}>Chat with Provider</Text>
+                        </TouchableOpacity>
+                    )}
+                    {booking.status === 'pending' && (
+                        <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
+                            <Ionicons name="close-circle-outline" size={moderateScale(18)} color="#b91c1c" />
+                            <Text style={styles.cancelBtnText}>Cancel Booking</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
             </ScrollView>
             {renderImageViewer()}
         </SafeAreaView>
@@ -426,6 +485,23 @@ const styles = StyleSheet.create({
     /* Photo Grid */
     photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     photoMini: { width: scale(80), height: scale(80), borderRadius: 12 },
+
+    /* Action Buttons */
+    actionsRow: { gap: verticalScale(12), marginBottom: verticalScale(30), marginTop: verticalScale(4) },
+    chatBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: PRIMARY, borderRadius: moderateScale(14),
+        paddingVertical: verticalScale(14), paddingHorizontal: scale(20),
+        elevation: 2, shadowColor: PRIMARY, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6,
+    },
+    chatBtnText: { color: '#fff', fontWeight: '700', fontSize: moderateScale(15) },
+    cancelBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: '#fff', borderRadius: moderateScale(14),
+        borderWidth: 2, borderColor: '#fca5a5',
+        paddingVertical: verticalScale(14), paddingHorizontal: scale(20),
+    },
+    cancelBtnText: { color: '#b91c1c', fontWeight: '700', fontSize: moderateScale(15) },
 
     /* Viewer Styles */
     viewerContainer: {

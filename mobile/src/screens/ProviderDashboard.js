@@ -8,7 +8,8 @@ import {
     SafeAreaView,
     StatusBar,
     ActivityIndicator,
-    RefreshControl
+    RefreshControl,
+    Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,6 +47,30 @@ const ProviderDashboard = ({ navigation }) => {
         recentJobs: [],
         availableJobsCount: 0
     });
+    const [isAvailable, setIsAvailable] = useState(true);
+    const [toggling, setToggling] = useState(false);
+
+    const fetchAvailability = useCallback(async () => {
+        try {
+            const res = await api.get('/api/provider/availability');
+            if (res?.success) setIsAvailable(res.is_available);
+        } catch (_) {}
+    }, []);
+
+    const toggleAvailability = async () => {
+        if (toggling) return;
+        setToggling(true);
+        const next = !isAvailable;
+        setIsAvailable(next); // optimistic
+        try {
+            const res = await api.post('/api/provider/availability', { is_available: next });
+            if (!res?.success) setIsAvailable(!next); // revert on fail
+        } catch (_) {
+            setIsAvailable(!next);
+        } finally {
+            setToggling(false);
+        }
+    };
 
     const fetchProviderData = useCallback(async () => {
         try {
@@ -70,10 +95,11 @@ const ProviderDashboard = ({ navigation }) => {
     useEffect(() => {
         if (user?.role === 'provider') {
             fetchProviderData();
+            fetchAvailability();
         } else {
             setLoading(false);
         }
-    }, [fetchProviderData, user?.role]);
+    }, [fetchProviderData, fetchAvailability, user?.role]);
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -112,9 +138,18 @@ const ProviderDashboard = ({ navigation }) => {
                             <Text style={styles.nameText}>Hi, {user?.name || 'Partner'}</Text>
                         </View>
                     </View>
-                    <View style={styles.statusToggle}>
-                        <View style={styles.statusDot} />
-                        <Text style={styles.statusText}>Online</Text>
+                    <View style={[styles.statusToggle, { backgroundColor: isAvailable ? '#f0fdf4' : '#f1f5f9', borderColor: isAvailable ? '#bbf7d0' : '#cbd5e1' }]}>
+                        <Switch
+                            value={isAvailable}
+                            onValueChange={toggleAvailability}
+                            trackColor={{ false: '#cbd5e1', true: '#6ee7b7' }}
+                            thumbColor={isAvailable ? '#10b981' : '#94a3b8'}
+                            ios_backgroundColor="#cbd5e1"
+                            style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }}
+                        />
+                        <Text style={[styles.statusText, { color: isAvailable ? '#10b981' : '#94a3b8' }]}>
+                            {isAvailable ? 'Online' : 'Offline'}
+                        </Text>
                     </View>
                 </View>
 

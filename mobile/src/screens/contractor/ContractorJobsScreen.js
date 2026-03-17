@@ -139,6 +139,22 @@ const ContractorJobsScreen = ({ navigation }) => {
                                 >
                                     <Text style={styles.acceptBtnText}>✓ Accept Job</Text>
                                 </TouchableOpacity>
+                                {['confirmed', 'in_progress'].includes(job.status) && (
+                                    <TouchableOpacity
+                                        style={styles.chatBtn}
+                                        onPress={() => navigation.navigate('Chat', {
+                                            bookingId: job.id,
+                                            bookingNumber: job.booking_number || job.id,
+                                            role: 'provider',
+                                            otherPartyName: job.customer_first_name
+                                                ? `${job.customer_first_name} ${job.customer_last_name || ''}`.trim()
+                                                : 'Customer',
+                                        })}
+                                    >
+                                        <Ionicons name="chatbubble-outline" size={moderateScale(15)} color="#0f766e" />
+                                        <Text style={styles.chatBtnText}>Chat with Customer</Text>
+                                    </TouchableOpacity>
+                                )}
                             </TouchableOpacity>
                         );
                     })
@@ -201,6 +217,12 @@ const styles = StyleSheet.create({
         borderRadius: moderateScale(12), alignItems: 'center', marginTop: verticalScale(8),
     },
     acceptBtnText: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(14) },
+    chatBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+        backgroundColor: '#f0fdfa', borderWidth: 1.5, borderColor: '#99f6e4',
+        padding: moderateScale(10), borderRadius: moderateScale(12), marginTop: verticalScale(6),
+    },
+    chatBtnText: { color: '#0f766e', fontWeight: '700', fontSize: moderateScale(13) },
     startBtn: {
         backgroundColor: '#10b981', padding: moderateScale(12),
         borderRadius: moderateScale(12), alignItems: 'center', marginTop: verticalScale(8),
