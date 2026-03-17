@@ -1,5 +1,5 @@
 import { execute } from './db.js';
-import { decodeToken } from './jwt.js';
+import { decodeToken, verifyToken } from './jwt.js';
 
 /**
  * Verifies a mobile session by checking the token against the mobile_auth_users table.
@@ -33,7 +33,14 @@ export async function getMobileSession(request) {
                 const decoded = verifyToken(token);
                 if (decoded) {
                     console.log('✅ JWT verified successfully');
-                    return decoded;
+                    // Standardize the response to match what onboarding routes expect
+                    return {
+                        ...decoded,
+                        providerId: decoded.providerId || (decoded.role === 'provider' ? decoded.id : null),
+                        userId: decoded.userId || (decoded.role !== 'provider' ? decoded.id : null),
+                        type: decoded.role || decoded.type,
+                        mobileSession: true
+                    };
                 }
             } catch (jwtErr) {
                 console.log('❌ JWT verification also failed:', jwtErr.message);
