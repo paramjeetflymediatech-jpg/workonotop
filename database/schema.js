@@ -497,7 +497,15 @@ const alterations = [
   // users table additions
   { table: 'users', column: 'image_url', sql: 'ALTER TABLE users ADD COLUMN image_url VARCHAR(255) AFTER role' },
   // Fix job_time_slot truncation
-  { table: 'bookings', column: 'job_time_slot_varchar', sql: 'ALTER TABLE bookings MODIFY COLUMN job_time_slot VARCHAR(255) NOT NULL' }
+  { table: 'bookings', column: 'job_time_slot_varchar', sql: 'ALTER TABLE bookings MODIFY COLUMN job_time_slot VARCHAR(255) NOT NULL' },
+
+  // mobile_auth_users table additions/fixes
+  { table: 'mobile_auth_users', column: 'user_type_enum', sql: "ALTER TABLE mobile_auth_users MODIFY COLUMN user_type ENUM('customer', 'provider', 'admin') NOT NULL", type: 'modify' },
+  { table: 'mobile_auth_users', column: 'device_id', sql: "ALTER TABLE mobile_auth_users ADD COLUMN device_id VARCHAR(255) AFTER push_token_updated_at" },
+  { table: 'mobile_auth_users', column: 'device_name', sql: "ALTER TABLE mobile_auth_users ADD COLUMN device_name VARCHAR(255) AFTER device_id" },
+  { table: 'mobile_auth_users', column: 'device_platform', sql: "ALTER TABLE mobile_auth_users ADD COLUMN device_platform ENUM('ios', 'android', 'web') AFTER device_name" },
+  { table: 'mobile_auth_users', column: 'uq_user_device', sql: "ALTER TABLE mobile_auth_users ADD UNIQUE INDEX uq_user_device (user_id, device_id)", type: 'unique' },
+  { table: 'mobile_auth_users', column: 'uq_provider_device', sql: "ALTER TABLE mobile_auth_users ADD UNIQUE INDEX uq_provider_device (provider_id, device_id)", type: 'unique' }
 ];
 
 // =====================================================
@@ -576,6 +584,10 @@ async function runMigration() {
               throw err;
             }
           }
+        } else if (alt.type === 'modify') {
+          // Handle COLUMN modification (e.g. changing ENUM values)
+          await conn.execute(alt.sql);
+          console.log(`   ✓ Modified column: ${alt.table}.${alt.column}`);
         } else {
           // Handle column addition
           const [cols] = await conn.query(
