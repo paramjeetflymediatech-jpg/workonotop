@@ -91,12 +91,16 @@ export async function POST(request) {
 
         // 🔥 Save session to mobile_auth_users table for mobile API verification
         try {
-            // Map roles to database enum ('customer', 'provider')
-            const dbType = (role === 'provider') ? 'provider' : 'customer';
+            // Map roles to database enum ('customer', 'provider', 'admin')
+            let dbType = 'customer';
+            if (role === 'provider') dbType = 'provider';
+            else if (role === 'admin') dbType = 'admin';
+
             const userIdCol = (dbType === 'provider') ? 'provider_id' : 'user_id';
             
-            // Note: device_id is part of unique index, we use the value extracted from body
-            // to ensure ON DUPLICATE KEY properly triggers for the same user on "this" device.
+            // Note: device_id is part of unique index.
+            const finalDeviceId = device_id || 'mobile_default';
+
             await query(
                 `INSERT INTO mobile_auth_users 
                  (${userIdCol}, user_type, refresh_token, refresh_token_expires, is_active, last_login, device_id)
@@ -106,7 +110,7 @@ export async function POST(request) {
                  refresh_token_expires = VALUES(refresh_token_expires),
                  is_active = 1,
                  last_login = NOW()`,
-                [user.id, dbType, token, device_id]
+                [user.id, dbType, token, finalDeviceId]
             );
             console.log(`✅ Mobile session persisted for ${dbType} ID: ${user.id}`);
         } catch (dbError) {
