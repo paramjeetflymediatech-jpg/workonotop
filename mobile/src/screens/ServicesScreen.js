@@ -173,7 +173,7 @@ const ServicesScreen = ({ navigation, route }) => {
                             </Text>
                         </View>
                     }
-                    ListFooterComponent={<View style={{ height: verticalScale(100) }} />}
+                    ListFooterComponent={<View style={{ height: insets.bottom + verticalScale(100) }} />}
                 />
             )}
         </View>

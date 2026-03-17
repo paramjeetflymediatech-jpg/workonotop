@@ -6,6 +6,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale, scale } from '../../utils/responsive';
+import { apiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import PremiumAlert from '../../components/PremiumAlert';
 
 const SERVICE_AREAS = [
     'Calgary NW', 'Calgary NE', 'Calgary SW', 'Calgary SE',
@@ -29,6 +32,12 @@ const ProfileSetupScreen = ({ navigation }) => {
         skills: []
     });
     const [loading, setLoading] = useState(false);
+    const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
+    const { token, updateUser } = useAuth();
+
+    const showPremiumAlert = (message, title = '', type = 'error') => {
+        setAlert({ visible: true, title, message, type });
+    };
 
     const toggleSelection = (key, value) => {
         setProfile(prev => {
@@ -40,12 +49,68 @@ const ProfileSetupScreen = ({ navigation }) => {
         });
     };
 
-    const handleNext = () => {
-        if (!profile.bio || !profile.primarySpecialty || !profile.yearsExperience || !profile.businessAddress || !profile.city || profile.skills.length === 0) {
-            Alert.alert('Missing Info', 'Please fill in all required fields and select at least one skill.');
+    const handleNext = async () => {
+        const { bio, primarySpecialty, yearsExperience, businessAddress, city, serviceAreas, skills } = profile;
+
+        // 1. Basic empty check
+        if (!bio || !primarySpecialty || !yearsExperience || !businessAddress || !city) {
+            showPremiumAlert('Please fill in all required fields.', 'Missing Info');
             return;
         }
-        navigation.navigate('DocumentUpload', { profile });
+
+        // 2. Bio length validation (50-500)
+        const bioLength = bio.trim().length;
+        if (bioLength < 50) {
+            showPremiumAlert(`Professional bio must be at least 50 characters. Current: ${bioLength}`, 'Bio Too Short');
+            return;
+        }
+
+        // 3. Experience range validation (0-50)
+        const exp = Number(yearsExperience);
+        if (isNaN(exp) || exp < 0 || exp > 50) {
+            showPremiumAlert('Years of experience must be between 0 and 50.', 'Invalid Experience');
+            return;
+        }
+
+        // 4. Service Areas (at least one)
+        if (serviceAreas.length === 0) {
+            showPremiumAlert('Please select at least one service area.', 'Service Areas');
+            return;
+        }
+
+        // 5. Skills (at least one)
+        if (skills.length === 0) {
+            showPremiumAlert('Please select at least one skill.', 'Skills');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const data = {
+                bio: bio.trim(),
+                specialty: primarySpecialty,
+                experience_years: exp,
+                location: businessAddress,
+                city: city,
+                service_areas: serviceAreas,
+                skills: skills
+            };
+
+            const response = await apiService.provider.onboarding.updateProfile(data, token);
+
+            if (response.success) {
+                // Update local user state so RootNavigator/IntroScreen knows we've progressed
+                await updateUser({ onboarding_step: 3 });
+                navigation.navigate('DocumentUpload', { profile });
+            } else {
+                showPremiumAlert(response.message || 'Failed to save profile. Please try again.');
+            }
+        } catch (error) {
+            console.error('Profile save error:', error);
+            showPremiumAlert('Connection error. Please check your internet.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const Stepper = () => (
@@ -201,13 +266,29 @@ const ProfileSetupScreen = ({ navigation }) => {
                         </View>
                     </View>
 
-                    <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-                        <Text style={styles.nextBtnText}>Continue to Documents</Text>
+                    <TouchableOpacity 
+                        style={[styles.nextBtn, loading && { opacity: 0.7 }]} 
+                        onPress={handleNext}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.nextBtnText}>Continue to Documents</Text>
+                        )}
                     </TouchableOpacity>
 
                     <Text style={styles.stepFooter}>Step 1 of 4</Text>
                 </View>
             </ScrollView>
+
+            <PremiumAlert
+                visible={alert.visible}
+                title={alert.title}
+                message={alert.message}
+                type={alert.type}
+                onClose={() => setAlert({ ...alert, visible: false })}
+            />
         </SafeAreaView>
     );
 };

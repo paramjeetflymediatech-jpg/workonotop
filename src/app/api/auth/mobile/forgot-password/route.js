@@ -35,10 +35,10 @@ export async function POST(request) {
             }
         }
 
-        // Always return success (security)
+        // Return error if user not found (as requested by user for better UX)
         if (!targetUser) {
             console.log('ℹ️ No user or provider found with email:', email)
-            return NextResponse.json({ success: true, message: 'If an account exists, you will receive a verification code' })
+            return NextResponse.json({ success: false, message: 'No account found with this email address' }, { status: 404 })
         }
 
         console.log(`✅ ${targetUser.type === 'pro' ? 'Provider' : 'Customer'} found:`, targetUser.id)

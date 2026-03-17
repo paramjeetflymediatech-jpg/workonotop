@@ -137,10 +137,10 @@ const ReviewScreen = ({ navigation, route }) => {
                             </TouchableOpacity>
                         </View>
                         <View style={styles.docStatusRow}>
-                            <Ionicons 
-                                name={connected ? "checkmark-circle" : "alert-circle"} 
-                                size={20} 
-                                color={connected ? "#10b981" : "#f59e0b"} 
+                            <Ionicons
+                                name={connected ? "checkmark-circle" : "alert-circle"}
+                                size={20}
+                                color={connected ? "#10b981" : "#f59e0b"}
                             />
                             <Text style={styles.docStatusText}>
                                 {connected ? 'Bank account linked with Stripe' : 'Bank linking skipped (Add later)'}
@@ -154,8 +154,8 @@ const ReviewScreen = ({ navigation, route }) => {
                         </Text>
                     </View>
 
-                    <TouchableOpacity 
-                        style={[styles.submitBtn, loading && styles.btnDisabled]} 
+                    <TouchableOpacity
+                        style={[styles.submitBtn, loading && styles.btnDisabled]}
                         onPress={submitApplication}
                         disabled={loading}
                     >

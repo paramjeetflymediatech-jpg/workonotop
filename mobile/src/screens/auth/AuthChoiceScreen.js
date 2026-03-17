@@ -5,12 +5,13 @@ import {
     StyleSheet,
     TouchableOpacity,
     Image,
-    SafeAreaView,
     Animated,
     LayoutAnimation,
     Platform,
-    UIManager
+    UIManager,
+    StatusBar
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../../utils/responsive';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -18,6 +19,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const AuthChoiceScreen = ({ navigation, route }) => {
+    const insets = useSafeAreaInsets();
     const { initialState } = route.params || {};
     // 'initial' | 'login' | 'signup'
     const [viewState, setViewState] = useState(initialState || 'initial');
@@ -82,7 +84,8 @@ const AuthChoiceScreen = ({ navigation, route }) => {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <StatusBar barStyle="dark-content" />
             {/* Top Navigation / Back Button */}
             <View style={styles.topNav}>
                 {(viewState !== 'initial' || navigation.canGoBack()) && (
@@ -126,7 +129,7 @@ const AuthChoiceScreen = ({ navigation, route }) => {
                 {viewState === 'login' && renderLoginOptions()}
                 {viewState === 'signup' && renderSignUpOptions()}
             </View>
-        </SafeAreaView>
+        </View>
     );
 };
 
@@ -137,7 +140,7 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginTop: verticalScale(50),
+        marginTop: verticalScale(20),
     },
     brandText: {
         fontSize: moderateScale(24),
@@ -233,7 +236,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f8fafc',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: verticalScale(25),
+        marginTop: verticalScale(10),
     },
     backIcon: {
         fontSize: moderateScale(20),

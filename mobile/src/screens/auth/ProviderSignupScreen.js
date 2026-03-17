@@ -6,11 +6,12 @@ import {
     TextInput,
     TouchableOpacity,
     ScrollView,
-    SafeAreaView,
     KeyboardAvoidingView,
     Platform,
-    Image
+    Image,
+    StatusBar
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
 import { apiService } from '../../services/api';
 import { Alert } from 'react-native';
@@ -19,6 +20,7 @@ import SuccessModal from '../../components/SuccessModal';
 import ErrorModal from '../../components/ErrorModal';
 
 const ProviderSignupScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -115,7 +117,8 @@ const ProviderSignupScreen = ({ navigation }) => {
     const isVerySmallDevice = SCREEN_HEIGHT < 650;
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <StatusBar barStyle="dark-content" />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
@@ -249,7 +252,7 @@ const ProviderSignupScreen = ({ navigation }) => {
                 message={error}
                 onOk={() => setShowError(false)}
             />
-        </SafeAreaView>
+        </View>
     );
 };
 

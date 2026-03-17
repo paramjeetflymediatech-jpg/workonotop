@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,9 +10,37 @@ import {
 } from 'react-native';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { useAuth } from '../../context/AuthContext';
+import { useIsFocused } from '@react-navigation/native';
 
 const OnboardingIntroScreen = ({ navigation }) => {
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
+    const isFocused = useIsFocused();
+
+    const steps = [
+        { id: 1, title: 'Profile Setup', desc: 'Add your skills, bio and location', icon: 'person-outline' },
+        { id: 2, title: 'Documents', desc: 'ID proof and insurance', icon: 'document-text-outline' },
+        { id: 3, title: 'Payment', desc: 'Connect Stripe for payouts', icon: 'card-outline' },
+        { id: 4, title: 'Review', desc: 'Final application review', icon: 'checkmark-circle-outline' },
+    ];
+
+    const currentStep = Number(user?.onboarding_step) || 1;
+
+    useEffect(() => {
+        if (isFocused && !user?.onboarding_completed) {
+            console.log('🔄 [Intro] Checking step:', currentStep);
+            if (currentStep === 2) navigation.navigate('ProfileSetup');
+            else if (currentStep === 3) navigation.navigate('DocumentUpload');
+            else if (currentStep === 4) navigation.navigate('BankLink');
+            else if (currentStep === 5) navigation.navigate('Review');
+        }
+    }, [isFocused, currentStep, user?.onboarding_completed]);
+
+    const handleGetStarted = () => {
+        // If they are on step 1, assume starting profile setup moves them to step "1.5"
+        // But we follow the redirect logic above. Step 1 stays here.
+        navigation.navigate('ProfileSetup');
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -45,7 +73,7 @@ const OnboardingIntroScreen = ({ navigation }) => {
                         </View>
                         <View style={styles.stepInfo}>
                             <Text style={styles.stepTitle}>Documents</Text>
-                            <Text style={styles.stepDesc}>Upload ID proof and trade certifications</Text>
+                            <Text style={styles.stepDesc}>Upload profile photo, ID and insurance</Text>
                         </View>
                     </View>
 

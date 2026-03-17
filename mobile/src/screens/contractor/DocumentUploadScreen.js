@@ -5,20 +5,35 @@ import {
     Platform
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { api } from '../../utils/api';
+import { apiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../config';
 import { moderateScale, verticalScale, scale } from '../../utils/responsive';
+import PremiumAlert from '../../components/PremiumAlert';
 
 const DocumentUploadScreen = ({ navigation, route }) => {
     const { profile } = route.params || {};
+    const { token, updateUser } = useAuth();
     const [documents, setDocuments] = useState({
+        profile_photo: null,
         id_proof: null,
         trade_license: null,
         insurance: null,
     });
     const [loading, setLoading] = useState(false);
+    const [uploadingSlots, setUploadingSlots] = useState({
+        id_proof: false,
+        trade_license: false,
+        insurance: false,
+    });
+    const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
+
+    const showPremiumAlert = (message, title = '', type = 'error') => {
+        setAlert({ visible: true, title, message, type });
+    };
 
     const uploadFile = async (uri, type, label) => {
-        setLoading(true);
+        setUploadingSlots(prev => ({ ...prev, [type]: true }));
         try {
             const formData = new FormData();
             const filename = uri.split('/').pop();
@@ -32,32 +47,39 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             });
             formData.append('type', type);
 
-            const res = await api.post('/api/provider/onboarding/upload-document', formData);
+            const res = await apiService.provider.onboarding.uploadDocument(formData, token);
 
             if (res.success) {
-                setDocuments(prev => ({ ...prev, [type]: res.fileUrl || uri }));
-                Alert.alert('Success', `${label} uploaded successfully.`);
+                // Ensure URL is absolute for display
+                const finalUrl = res.fileUrl.startsWith('http') 
+                    ? res.fileUrl 
+                    : `${API_BASE_URL}${res.fileUrl}`;
+                
+                setDocuments(prev => ({ ...prev, [type]: finalUrl }));
+                // Alert.alert('Success', `${label} uploaded successfully.`);
             } else {
                 throw new Error(res.message || 'Upload failed');
             }
         } catch (err) {
             console.error(`Upload error (${type}):`, err);
-            Alert.alert('Upload Failed', err.message || 'Something went wrong while uploading.');
+            showPremiumAlert(err.message || 'Something went wrong while uploading.', 'Upload Failed');
         } finally {
-            setLoading(false);
+            setUploadingSlots(prev => ({ ...prev, [type]: false }));
         }
     };
 
     const pickDocument = async (key, label) => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
-            Alert.alert('Permission Required', 'Please allow access to your photo library.');
+            showPremiumAlert('Please allow access to your photo library.', 'Permission Required');
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false,
-            quality: 0.8,
+            quality: 0.7,
+            maxWidth: 1200,
+            maxHeight: 1200,
         });
         if (!result.canceled) {
             await uploadFile(result.assets[0].uri, key, label);
@@ -67,13 +89,15 @@ const DocumentUploadScreen = ({ navigation, route }) => {
     const takePhoto = async (key, label) => {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
-            Alert.alert('Permission Required', 'Please allow camera access.');
+            showPremiumAlert('Please allow camera access.', 'Permission Required');
             return;
         }
         const result = await ImagePicker.launchCameraAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false,
-            quality: 0.8,
+            quality: 0.7,
+            maxWidth: 1200,
+            maxHeight: 1200,
         });
         if (!result.canceled) {
             await uploadFile(result.assets[0].uri, key, label);
@@ -89,10 +113,18 @@ const DocumentUploadScreen = ({ navigation, route }) => {
     };
 
     const handleNext = () => {
-        if (!documents.id_proof || !documents.trade_license) {
-            Alert.alert('Required Documents', 'Please upload your ID and License photo.');
+        const { profile_photo, id_proof, insurance } = documents;
+        if (!profile_photo || !id_proof || !insurance) {
+            let missing = [];
+            if (!profile_photo) missing.push('Profile Photo');
+            if (!id_proof) missing.push('Government ID');
+            if (!insurance) missing.push('Insurance Document');
+            
+            showPremiumAlert(`Please upload the following required documents:\n\n• ${missing.join('\n• ')}`, 'Missing Documents');
             return;
         }
+        // Update local state so it doesn't show Document step on reload
+        updateUser({ onboarding_step: 4 });
         navigation.navigate('BankLink', { profile, documents });
     };
 
@@ -131,11 +163,16 @@ const DocumentUploadScreen = ({ navigation, route }) => {
     const DocUploadCard = ({ docKey, label, icon, description, required }) => (
         <TouchableOpacity
             style={styles.docCard}
-            onPress={() => showPickOptions(docKey, label)}
+            onPress={() => !uploadingSlots[docKey] && showPickOptions(docKey, label)}
+            disabled={uploadingSlots[docKey]}
         >
-            {documents[docKey] ? (
+            {uploadingSlots[docKey] ? (
+                <View style={[styles.docCardInner, { height: verticalScale(110), justifyContent: 'center' }]}>
+                    <ActivityIndicator size="large" color="#0d9488" />
+                    <Text style={[styles.docDesc, { marginTop: 10 }]}>Uploading {label}...</Text>
+                </View>
+            ) : documents[docKey] ? (
                 <>
-
                     <Image source={{ uri: documents[docKey] }} style={styles.docPreview} />
                     <View style={styles.docCardOverlay}>
                         <Text style={styles.docCardLabel}>{label}</Text>
@@ -169,6 +206,14 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                     </View>
 
                     <DocUploadCard
+                        docKey="profile_photo"
+                        label="Profile Photo"
+                        icon="👤"
+                        description="Clear, professional photo of yourself"
+                        required
+                    />
+
+                    <DocUploadCard
                         docKey="id_proof"
                         label="Government-Issued ID"
                         icon="🪪"
@@ -177,18 +222,18 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                     />
 
                     <DocUploadCard
-                        docKey="trade_license"
-                        label="Trade License / Certification"
-                        icon="📜"
-                        description="Professional license or trade certificate"
+                        docKey="insurance"
+                        label="Insurance Document"
+                        icon="🛡️"
+                        description="Liability insurance certificate"
                         required
                     />
 
                     <DocUploadCard
-                        docKey="insurance"
-                        label="Insurance Document"
-                        icon="🛡️"
-                        description="Liability insurance (optional)"
+                        docKey="trade_license"
+                        label="Trade License / Certification"
+                        icon="📜"
+                        description="Professional license or trade certificate (optional)"
                         required={false}
                     />
 
@@ -199,6 +244,14 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                     <Text style={styles.stepFooter}>Step 2 of 4</Text>
                 </View>
             </ScrollView>
+
+            <PremiumAlert
+                visible={alert.visible}
+                title={alert.title}
+                message={alert.message}
+                type={alert.type}
+                onClose={() => setAlert({ ...alert, visible: false })}
+            />
         </SafeAreaView>
     );
 };

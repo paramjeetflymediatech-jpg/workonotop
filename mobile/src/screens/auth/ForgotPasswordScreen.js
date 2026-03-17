@@ -88,7 +88,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                 const userType = res.type || type;
                 navigation.navigate('OtpVerification', { email, type: userType });
             } else {
-                setError(res.message || 'Something went wrong. Please try again.');
+                showError(res.message || 'Something went wrong. Please try again.');
             }
         } catch (err) {
             console.error('Forgot password error:', err);
@@ -243,6 +243,7 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(20),
         color: '#0f172a',
         fontWeight: 'bold',
+        
     },
     header: {
         alignItems: 'center',
