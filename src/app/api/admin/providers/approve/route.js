@@ -148,6 +148,9 @@ export async function PUT(request) {
         await connection.execute(
           `UPDATE service_providers
            SET status       = 'active',
+               email_verified = 1,
+               email_verification_token = NULL,
+               email_verification_expires = NULL,
                approved_at  = NOW(),
                updated_at   = NOW()
            WHERE id = ?`,

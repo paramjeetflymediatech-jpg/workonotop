@@ -24,7 +24,7 @@
         "backgroundColor": "#115E59",
         "foregroundImage": "./assets/adaptive-icon.png"
       },
-      "package": "com.nh_aman.workontop",
+      "package": "com.nh_aman.mobile",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "android.permission.POST_NOTIFICATIONS"

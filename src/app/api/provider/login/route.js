@@ -201,7 +201,8 @@ export async function POST(request) {
       );
     }
 
-    if (!provider.email_verified) {
+    // Check email verification (Active providers bypass this)
+    if (!provider.email_verified && provider.status !== 'active') {
       return NextResponse.json({
         success: false,
         message: 'Please verify your email first',

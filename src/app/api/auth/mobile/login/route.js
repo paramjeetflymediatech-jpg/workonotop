@@ -62,6 +62,14 @@ export async function POST(request) {
             )
         }
 
+        // Check if provider is verified or approved (skipped for customers/admins)
+        if (role === 'provider' && !user.email_verified && user.status !== 'active') {
+            return NextResponse.json(
+                { success: false, message: 'Please verify your email first', requiresVerification: true, email: user.email },
+                { status: 403 }
+            )
+        }
+
         // Generate JWT token
         const token = jwt.sign(
             {

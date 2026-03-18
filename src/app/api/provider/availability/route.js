@@ -34,8 +34,16 @@ export async function GET(request) {
     }
 }
 
-// PUT — toggle is_available
+// POST/PUT — toggle is_available
+export async function POST(request) {
+    return await handleToggle(request);
+}
+
 export async function PUT(request) {
+    return await handleToggle(request);
+}
+
+async function handleToggle(request) {
     try {
         let token = request.cookies.get('provider_token')?.value;
         if (!token) {
@@ -60,19 +68,30 @@ export async function PUT(request) {
                 [is_available ? 1 : 0, providerId]
             );
         } catch (colErr) {
-            // If column missing, create it then update
-            await execute(
-                'ALTER TABLE service_providers ADD COLUMN IF NOT EXISTS is_available TINYINT(1) DEFAULT 1'
-            );
+            console.log('Column is_available might be missing, attempting to add...');
+            try {
+                // MySQL 8.0.19+ supports IF NOT EXISTS, but for older versions we just try and ignore error if it exists
+                await execute(
+                    'ALTER TABLE service_providers ADD COLUMN is_available TINYINT(1) DEFAULT 1 AFTER status'
+                );
+            } catch (alterError) {
+                // If it already exists, this might error, which is fine
+                console.log('ALTER TABLE note:', alterError.message);
+            }
+            
             await execute(
                 'UPDATE service_providers SET is_available = ?, updated_at = NOW() WHERE id = ?',
                 [is_available ? 1 : 0, providerId]
             );
         }
 
-        return NextResponse.json({ success: true, is_available: !!is_available });
+        return NextResponse.json({ 
+            success: true, 
+            is_available: !!is_available,
+            message: `You are now ${is_available ? 'Online' : 'Offline'}`
+        });
     } catch (error) {
-        console.error('Availability PUT error:', error);
-        return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+        console.error('Availability update error:', error);
+        return NextResponse.json({ success: false, message: error.message || 'Server error' }, { status: 500 });
     }
 }

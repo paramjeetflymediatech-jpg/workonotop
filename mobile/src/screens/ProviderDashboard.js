@@ -153,22 +153,7 @@ const ProviderDashboard = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* Onboarding Prompt */}
-                {(!user?.profile_completed) && (
-                    <TouchableOpacity
-                        style={styles.onboardingBanner}
-                        onPress={() => navigation.navigate('ProfileSetup')}
-                    >
-                        <View style={styles.onboardingLeft}>
-                            <Text style={styles.onboardingIcon}>🚀</Text>
-                            <View>
-                                <Text style={styles.onboardingTitle}>Complete Your Profile</Text>
-                                <Text style={styles.onboardingSubtitle}>Add skills, documents & bank details to start earning</Text>
-                            </View>
-                        </View>
-                        <Text style={styles.onboardingArrow}>›</Text>
-                    </TouchableOpacity>
-                )}
+
 
                 <View style={styles.statsRow}>
                     <StatBox label="Total Earnings" value={formatCurrency(dashboardData.stats.totalEarnings)} color="#10b981" />
@@ -180,7 +165,7 @@ const ProviderDashboard = ({ navigation }) => {
                     <Text style={styles.jobsSubtitle}>
                         You have {dashboardData.availableJobsCount} jobs matching your skills nearby
                     </Text>
-                    <TouchableOpacity style={styles.viewJobsButton} onPress={() => navigation.navigate('Services')}>
+                    <TouchableOpacity style={styles.viewJobsButton} onPress={() => navigation.navigate('ContractorJobs')}>
                         <Text style={styles.viewJobsText}>View Available Jobs</Text>
                     </TouchableOpacity>
                 </View>
@@ -265,8 +250,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#f0fdf4',
-        paddingHorizontal: moderateScale(12),
-        paddingVertical: verticalScale(6),
+        paddingHorizontal: moderateScale(10),
+        paddingVertical: verticalScale(5),
         borderRadius: moderateScale(20),
         borderWidth: 1,
         borderColor: '#bcf0da',
@@ -281,74 +266,34 @@ const styles = StyleSheet.create({
     statusText: {
         color: '#10b981',
         fontWeight: 'bold',
-        fontSize: moderateScale(12),
-    },
-    onboardingBanner: {
-        backgroundColor: '#fffbeb',
-        borderRadius: moderateScale(20),
-        padding: moderateScale(16),
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: verticalScale(20),
-        borderWidth: 1,
-        borderColor: '#fde68a',
-        elevation: 2,
-        shadowColor: '#f59e0b',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-    },
-    onboardingLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    onboardingIcon: {
-        fontSize: moderateScale(28),
-        marginRight: moderateScale(12),
-    },
-    onboardingTitle: {
-        fontSize: moderateScale(14),
-        fontWeight: 'bold',
-        color: '#92400e',
-        marginBottom: verticalScale(2),
-    },
-    onboardingSubtitle: {
         fontSize: moderateScale(11),
-        color: '#b45309',
-        flexShrink: 1,
-        lineHeight: moderateScale(15),
     },
-    onboardingArrow: {
-        fontSize: moderateScale(22),
-        color: '#f59e0b',
-        fontWeight: 'bold',
-        marginLeft: scale(8),
-    },
+
     statsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: verticalScale(20),
+        gap: scale(10),
     },
     statBox: {
-        width: (SCREEN_WIDTH - moderateScale(56)) / 2,
-        padding: moderateScale(18),
+        flex: 1,
+        padding: moderateScale(15),
         borderRadius: moderateScale(18),
         alignItems: 'center',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.5)',
     },
     statValue: {
-        fontSize: moderateScale(22),
+        fontSize: moderateScale(20),
         fontWeight: 'bold',
     },
     statLabel: {
-        fontSize: moderateScale(11),
+        fontSize: moderateScale(10),
         marginTop: verticalScale(4),
         fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
+        textAlign: 'center',
     },
     jobsCard: {
         backgroundColor: '#115e59',
@@ -357,13 +302,13 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(25),
         elevation: 8,
         shadowColor: '#115e59',
-        shadowOffset: { width: 0, height: 10 },
+        shadowOffset: { width: 0, height: verticalScale(5) },
         shadowOpacity: 0.3,
-        shadowRadius: 15,
+        shadowRadius: moderateScale(15),
     },
     jobsTitle: {
         color: '#fff',
-        fontSize: moderateScale(20),
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
     },
     jobsSubtitle: {
@@ -401,16 +346,16 @@ const styles = StyleSheet.create({
         borderColor: '#f1f5f9',
         elevation: 3,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: verticalScale(2) },
         shadowOpacity: 0.05,
-        shadowRadius: 10,
+        shadowRadius: moderateScale(10),
     },
     dateBox: {
         backgroundColor: '#f8fafc',
         padding: moderateScale(8),
         borderRadius: moderateScale(12),
         alignItems: 'center',
-        width: moderateScale(55),
+        width: moderateScale(52),
         borderWidth: 1,
         borderColor: '#e2e8f0',
     },
@@ -421,21 +366,21 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
     },
     dateNum: {
-        fontSize: moderateScale(18),
+        fontSize: moderateScale(16),
         fontWeight: 'bold',
         color: '#0f172a',
     },
     jobDetails: {
         flex: 1,
-        marginLeft: moderateScale(14),
+        marginLeft: moderateScale(12),
     },
     jobType: {
-        fontSize: moderateScale(15),
+        fontSize: moderateScale(14),
         fontWeight: 'bold',
         color: '#0f172a',
     },
     jobTime: {
-        fontSize: moderateScale(11),
+        fontSize: moderateScale(10),
         color: '#115e59',
         marginTop: verticalScale(2),
         fontWeight: '700',

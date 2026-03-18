@@ -6,7 +6,8 @@ import {
 import { WebView } from 'react-native-webview';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { moderateScale, verticalScale } from '../../utils/responsive';
+import { moderateScale, verticalScale, scale } from '../../utils/responsive';
+import { Ionicons } from '@expo/vector-icons';
 import PremiumAlert from '../../components/PremiumAlert';
 
 const BankLinkScreen = ({ navigation, route }) => {
@@ -114,9 +115,12 @@ const BankLinkScreen = ({ navigation, route }) => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backIcon}>←</Text>
-                </TouchableOpacity>
+                <View style={styles.headerRow}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={moderateScale(24)} color="#0f172a" />
+                    </TouchableOpacity>
+                    <Text style={styles.mainTitle}>Bank Account</Text>
+                </View>
 
                 <Text style={styles.title}>Link Your Bank Account</Text>
                 <Text style={styles.subtitle}>Step 3 of 4 — Get paid directly to your account</Text>
@@ -184,12 +188,24 @@ const styles = StyleSheet.create({
     closeText: { color: '#ef4444', fontWeight: '600', fontSize: moderateScale(15) },
     webTitle: { flex: 1, textAlign: 'center', fontWeight: 'bold', fontSize: moderateScale(16), color: '#0f172a', marginRight: moderateScale(40) },
     webLoader: { position: 'absolute', top: '50%', left: '50%', zIndex: 10 },
-    backBtn: {
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: verticalScale(20),
+    },
+    backButton: {
         width: moderateScale(40), height: moderateScale(40),
         borderRadius: moderateScale(20), backgroundColor: '#f1f5f9',
-        justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(24),
+        justifyContent: 'center', alignItems: 'center',
     },
-    backIcon: { fontSize: moderateScale(20), color: '#0f172a', fontWeight: 'bold' },
+    mainTitle: {
+        flex: 1,
+        textAlign: 'center',
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+        color: '#0f172a',
+        marginRight: moderateScale(40), // Balance the back button
+    },
     title: { fontSize: moderateScale(28), fontWeight: 'bold', color: '#0f172a' },
     subtitle: { fontSize: moderateScale(14), color: '#64748b', marginTop: verticalScale(4), marginBottom: verticalScale(32) },
     stripeCard: {

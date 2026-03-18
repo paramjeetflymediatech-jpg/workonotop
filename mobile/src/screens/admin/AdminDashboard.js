@@ -36,7 +36,7 @@ const AdminDashboard = ({ navigation }) => {
 
     const fetchDashboardData = async () => {
         try {
-            const [statsRes, bookingsRes] = await Promise.all([
+            const [statsRes, bookingsRes, notificationsRes] = await Promise.all([
                 api.get('/api/stats'),
                 api.get('/api/bookings?limit=5'),
                 api.get('/api/admin/notifications'),

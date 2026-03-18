@@ -101,7 +101,9 @@ const ProfileSetupScreen = ({ navigation }) => {
             if (response.success) {
                 // Update local user state so RootNavigator/IntroScreen knows we've progressed
                 await updateUser({ onboarding_step: 3 });
-                navigation.navigate('DocumentUpload', { profile });
+                navigation.navigate('DocumentUpload', { 
+                    profile: { ...profile, ...data } 
+                });
             } else {
                 showPremiumAlert(response.message || 'Failed to save profile. Please try again.');
             }
@@ -151,7 +153,13 @@ const ProfileSetupScreen = ({ navigation }) => {
                 <Stepper />
 
                 <View style={styles.contentCard}>
-                    <Text style={styles.mainTitle}>Profile Information</Text>
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={moderateScale(24)} color="#1e293b" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Profile Setup</Text>
+                    <View style={{ width: moderateScale(40) }} />
+                </View>
 
                     {/* Bio */}
                     <View style={styles.inputGroup}>
@@ -266,8 +274,8 @@ const ProfileSetupScreen = ({ navigation }) => {
                         </View>
                     </View>
 
-                    <TouchableOpacity 
-                        style={[styles.nextBtn, loading && { opacity: 0.7 }]} 
+                    <TouchableOpacity
+                        style={[styles.nextBtn, loading && { opacity: 0.7 }]}
                         onPress={handleNext}
                         disabled={loading}
                     >
@@ -327,19 +335,39 @@ const styles = StyleSheet.create({
     /* Content Card */
     contentCard: {
         backgroundColor: '#fff',
-        borderRadius: moderateScale(12),
+        borderRadius: moderateScale(16),
         padding: moderateScale(20),
-        elevation: 2,
+        elevation: 3,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowRadius: 8,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: verticalScale(20),
+    },
+    backButton: {
+        width: moderateScale(40),
+        height: moderateScale(40),
+        borderRadius: moderateScale(20),
+        backgroundColor: '#f8fafc',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerTitle: {
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+        color: '#0f172a',
     },
     mainTitle: {
-        fontSize: moderateScale(22),
+        fontSize: moderateScale(24),
         fontWeight: 'bold',
         color: '#0f172a',
         marginBottom: verticalScale(20),
+        textAlign: 'center',
     },
     inputGroup: { marginBottom: verticalScale(15) },
     row: { flexDirection: 'row', marginBottom: verticalScale(5) },

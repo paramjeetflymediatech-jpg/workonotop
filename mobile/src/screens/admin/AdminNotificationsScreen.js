@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
         backgroundColor: TEAL_DARK,
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
-        paddingTop: verticalScale(20),
+        paddingTop: verticalScale(35),
     },
     backBtn: {
         padding: moderateScale(4),

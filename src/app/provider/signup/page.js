@@ -419,7 +419,7 @@ export default function ProviderSignup() {
       });
       const data = await res.json();
       if (data.success) {
-        router.push('/provider/verify-email-pending');
+        router.push(`/provider/verify-email-pending?email=${encodeURIComponent(formData.email)}`);
       } else {
         setErrors({ submit: data.message });
       }
