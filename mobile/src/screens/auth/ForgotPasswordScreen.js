@@ -174,7 +174,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                                 <Text style={styles.label}>Email Address</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="test@yopmail.com"
+                                    placeholder="Enter your email"
                                     value={email}
                                     onChangeText={setEmail}
                                     autoCapitalize="none"
@@ -238,6 +238,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: verticalScale(10),
+        marginTop: verticalScale(10),
     },
     backIcon: {
         fontSize: moderateScale(20),

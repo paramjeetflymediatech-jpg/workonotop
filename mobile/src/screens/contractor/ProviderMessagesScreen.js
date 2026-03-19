@@ -13,11 +13,11 @@ const TEAL_DARK = '#134e4a';
 const TEAL_LIGHT = '#14b8a6';
 
 const STATUS_CONFIG = {
-    confirmed:   { bg: '#dbeafe', text: '#1d4ed8', label: 'Confirmed' },
+    confirmed: { bg: '#dbeafe', text: '#1d4ed8', label: 'Confirmed' },
     in_progress: { bg: '#f3e8ff', text: '#7c3aed', label: 'In Progress' },
-    completed:   { bg: '#dcfce7', text: '#15803d', label: 'Completed' },
-    pending:     { bg: '#fef3c7', text: '#b45309', label: 'Pending' },
-    cancelled:   { bg: '#fee2e2', text: '#b91c1c', label: 'Cancelled' },
+    completed: { bg: '#dcfce7', text: '#15803d', label: 'Completed' },
+    pending: { bg: '#fef3c7', text: '#b45309', label: 'Pending' },
+    cancelled: { bg: '#fee2e2', text: '#b91c1c', label: 'Cancelled' },
 };
 
 const ProviderMessagesScreen = ({ navigation }) => {

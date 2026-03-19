@@ -160,7 +160,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { execute, getConnection } from '@/lib/db';
 import { generateEmailVerificationToken } from '@/lib/jwt';
-import { sendEmail, getVerificationEmailHtml } from '@/lib/email';
+import { sendEmail, getVerificationEmailHtml, getOtpVerificationEmailHtml } from '@/lib/email';
 
 export async function POST(request) {
   console.log('🚀 PROVIDER SIGNUP API CALLED at:', new Date().toISOString());
@@ -169,7 +169,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { email, password, firstName, lastName, phone } = body;
+    const { email, password, firstName, lastName, phone, source } = body;
 
     if (!email || !password || !firstName || !lastName || !phone) {
       return NextResponse.json(
@@ -243,21 +243,48 @@ export async function POST(request) {
 
     const providerId = result.insertId;
 
-    const finalToken = generateEmailVerificationToken(providerId, email);
-    await connection.execute(
-      `UPDATE service_providers SET email_verification_token = ? WHERE id = ?`,
-      [finalToken, providerId]
-    );
+    let finalToken = null;
+    let otp = null;
+
+    if (source === 'mobile') {
+      // 📱 Mobile Flow: Generate 6-digit OTP
+      otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      
+      await connection.execute(
+        `UPDATE service_providers SET reset_token = ?, reset_token_expiry = ? WHERE id = ?`,
+        [otp, otpExpiry, providerId]
+      );
+    } else {
+      // 🌐 Web Flow: Generate JWT Token
+      finalToken = generateEmailVerificationToken(providerId, email);
+      await connection.execute(
+        `UPDATE service_providers SET email_verification_token = ? WHERE id = ?`,
+        [finalToken, providerId]
+      );
+    }
 
     await connection.commit();
 
     try {
-      const emailResult = await sendEmail({
-        to: email,
-        subject: 'Verify Your Email - WorkOnTap',
-        html: getVerificationEmailHtml(firstName, finalToken),
-        text: `Welcome to WorkOnTap! Verify your email: ${process.env.NEXT_PUBLIC_APP_URL}/provider/verify-email?token=${finalToken}`,
-      });
+      let emailOptions;
+      if (source === 'mobile') {
+        emailOptions = {
+          to: email,
+          subject: `${otp} is your WorkOnTap verification code`,
+          html: getOtpVerificationEmailHtml(firstName, otp),
+          text: `Hi ${firstName}, your WorkOnTap verification code is: ${otp}. It expires in 15 minutes.`
+        };
+      } else {
+        emailOptions = {
+          to: email,
+          subject: 'Verify Your Email - WorkOnTap',
+          html: getVerificationEmailHtml(firstName, finalToken),
+          text: `Welcome to WorkOnTap! Verify your email: ${process.env.NEXT_PUBLIC_APP_URL}/provider/verify-email?token=${finalToken}`,
+        };
+      }
+      
+      const emailResult = await sendEmail(emailOptions);
       if (emailResult.success) {
         console.log('✅ Verification email sent to:', email);
       }

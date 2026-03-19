@@ -4,6 +4,7 @@ import {
     TouchableOpacity, ActivityIndicator, StatusBar,
     TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -16,6 +17,7 @@ const POLL_INTERVAL = 5000;
 const ChatScreen = ({ navigation, route }) => {
     const { bookingId, bookingNumber, role, otherPartyName } = route.params || {};
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [text, setText] = useState('');
@@ -94,7 +96,7 @@ const ChatScreen = ({ navigation, route }) => {
             <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(10)) }]}>
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                     <Ionicons name="arrow-back" size={moderateScale(22)} color="#fff" />
                 </TouchableOpacity>
@@ -173,7 +175,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: scale(12),
         backgroundColor: TEAL_DARK,
         paddingHorizontal: scale(16),
-        paddingTop: verticalScale(40),
         paddingBottom: verticalScale(16),
     },
     backBtn: {

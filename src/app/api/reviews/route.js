@@ -151,9 +151,9 @@ export async function GET(request) {
 
     const reviews = await query(sql, params)
 
-    return NextResponse.json({ 
-      success: true, 
-      data: reviews 
+    return NextResponse.json({
+      success: true,
+      data: reviews
     })
   } catch (error) {
     console.error('Error fetching reviews:', error)
@@ -168,13 +168,13 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json()
-    const { 
-      booking_id, 
-      provider_id, 
-      customer_id, 
-      rating, 
+    const {
+      booking_id,
+      provider_id,
+      customer_id,
+      rating,
       review,
-      is_anonymous 
+      is_anonymous
     } = body
 
     console.log('Received review data:', body)
@@ -239,8 +239,8 @@ export async function POST(request) {
     // Update provider's average rating
     await updateProviderRating(provider_id)
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Review submitted successfully',
       review_id: result.insertId
     })
@@ -269,7 +269,7 @@ export async function DELETE(request) {
 
     // Get provider_id before deleting
     const [review] = await query('SELECT provider_id FROM provider_reviews WHERE id = ?', [id])
-    
+
     if (review) {
       await query('DELETE FROM provider_reviews WHERE id = ?', [id])
       // Update provider's average rating after deletion

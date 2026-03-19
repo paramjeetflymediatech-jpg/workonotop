@@ -17,6 +17,9 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../utils/responsive';
 
+const TEAL_DARK = '#134e4a';
+const TEAL_LIGHT = '#14b8a6';
+
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -117,7 +120,40 @@ const ProviderDashboard = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
+            
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(15)) }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity 
+                        onPress={() => navigation.openDrawer()}
+                        style={styles.menuBtn}
+                    >
+                        <Ionicons name="menu-outline" size={moderateScale(26)} color="#fff" />
+                    </TouchableOpacity>
+                    <View>
+                        <Text style={styles.welcomeText}>Pro Dashboard</Text>
+                        <Text style={styles.nameText}>Hi, {user?.name || 'Partner'}</Text>
+                    </View>
+                </View>
+                <View style={[styles.statusToggle, { 
+                    backgroundColor: isAvailable ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', 
+                    borderColor: isAvailable ? 'rgba(255,255,255,0.2)' : 'transparent' 
+                }]}>
+                    <Switch
+                        value={isAvailable}
+                        onValueChange={toggleAvailability}
+                        trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#10b981' }}
+                        thumbColor={isAvailable ? '#fff' : '#f1f5f9'}
+                        ios_backgroundColor="rgba(255,255,255,0.2)"
+                        style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }] }}
+                    />
+                    <Text style={[styles.statusText, { color: '#fff' }]}>
+                        {isAvailable ? 'Online' : 'Offline'}
+                    </Text>
+                </View>
+            </View>
+
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
@@ -125,33 +161,6 @@ const ProviderDashboard = ({ navigation }) => {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#10b981" />
                 }
             >
-                <View style={styles.header}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <TouchableOpacity 
-                            onPress={() => navigation.openDrawer()}
-                            style={{ marginRight: moderateScale(15) }}
-                        >
-                            <Ionicons name="menu-outline" size={moderateScale(28)} color="#0f172a" />
-                        </TouchableOpacity>
-                        <View>
-                            <Text style={styles.welcomeText}>Pro Dashboard</Text>
-                            <Text style={styles.nameText}>Hi, {user?.name || 'Partner'}</Text>
-                        </View>
-                    </View>
-                    <View style={[styles.statusToggle, { backgroundColor: isAvailable ? '#f0fdf4' : '#f1f5f9', borderColor: isAvailable ? '#bbf7d0' : '#cbd5e1' }]}>
-                        <Switch
-                            value={isAvailable}
-                            onValueChange={toggleAvailability}
-                            trackColor={{ false: '#cbd5e1', true: '#6ee7b7' }}
-                            thumbColor={isAvailable ? '#10b981' : '#94a3b8'}
-                            ios_backgroundColor="#cbd5e1"
-                            style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }}
-                        />
-                        <Text style={[styles.statusText, { color: isAvailable ? '#10b981' : '#94a3b8' }]}>
-                            {isAvailable ? 'Online' : 'Offline'}
-                        </Text>
-                    </View>
-                </View>
 
 
 
@@ -189,8 +198,13 @@ const ProviderDashboard = ({ navigation }) => {
                                     <Text style={styles.jobTime}>{job.status?.replace('_', ' ')}</Text>
                                     <Text style={styles.jobLocation}>Earning: {formatCurrency(job.provider_amount)}</Text>
                                 </View>
-                                <TouchableOpacity style={styles.detailsIcon}>
-                                    <Text style={{ fontSize: moderateScale(20) }}>➡️</Text>
+                                <TouchableOpacity 
+                                    style={styles.detailsIcon}
+                                    onPress={() => navigation.navigate('JobDetails', { job })}
+                                >
+                                    <View style={{ width: moderateScale(30), height: moderateScale(30), borderRadius: 15, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' }}>
+                                        <Ionicons name="chevron-forward" size={moderateScale(18)} color="#64748b" />
+                                    </View>
                                 </TouchableOpacity>
                             </View>
                         );
@@ -230,21 +244,27 @@ const styles = StyleSheet.create({
         padding: moderateScale(20),
     },
     header: {
-        flexDirection: 'row',
+        flexDirection: 'row', 
+        alignItems: 'center', 
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: verticalScale(25),
-        marginTop: verticalScale(25),
+        backgroundColor: TEAL_DARK,
+        paddingHorizontal: scale(20),
+        paddingBottom: verticalScale(16),
+    },
+    menuBtn: {
+        width: moderateScale(40), height: moderateScale(40), borderRadius: moderateScale(12),
+        backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center',
+        marginRight: scale(12),
     },
     welcomeText: {
-        fontSize: moderateScale(14),
-        color: '#64748b',
+        fontSize: moderateScale(12),
+        color: 'rgba(255,255,255,0.7)',
         fontWeight: '500',
     },
     nameText: {
-        fontSize: moderateScale(24),
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
-        color: '#0f172a',
+        color: '#fff',
     },
     statusToggle: {
         flexDirection: 'row',

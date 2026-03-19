@@ -33,6 +33,12 @@ export async function POST(request) {
             }, { status: 400 })
         }
 
+        // ✅ Mark email as verified and clear reset token
+        await execute(
+            `UPDATE service_providers SET email_verified = 1, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?`,
+            [providers[0].id]
+        )
+
         return NextResponse.json({
             success: true,
             message: 'Verification successful'

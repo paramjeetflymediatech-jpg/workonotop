@@ -95,7 +95,8 @@ const ProviderSignupScreen = ({ navigation }) => {
                 lastName: lastName.trim(),
                 email: email.toLowerCase().trim(),
                 phone: phone.trim(),
-                password
+                password,
+                source: 'mobile'
             });
 
             if (response.success) {
@@ -242,7 +243,10 @@ const ProviderSignupScreen = ({ navigation }) => {
                 message="Please check your email to verify your account before logging in."
                 onOk={() => {
                     setShowSuccess(false);
-                    navigation.navigate('Login', { type: 'pro' });
+                    navigation.navigate('EmailVerification', { 
+                        email: formData.email.toLowerCase().trim(),
+                        type: 'pro' 
+                    });
                 }}
             />
 

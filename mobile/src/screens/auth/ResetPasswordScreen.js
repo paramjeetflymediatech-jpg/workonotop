@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: verticalScale(20),
+        marginTop: verticalScale(15),
     },
     backIcon: {
         fontSize: moderateScale(20),

@@ -79,7 +79,7 @@ const JobRequestsScreen = ({ navigation }) => {
 
     const filteredBookings = statusFilter === 'all'
         ? bookings
-        : bookings.filter(b => b.status === statusFilter);
+        : (bookings || []).filter(b => b.status === statusFilter);
 
     const renderBookingItem = ({ item }) => {
         const statusStyle = getStatusStyle(item.status);
@@ -93,27 +93,34 @@ const JobRequestsScreen = ({ navigation }) => {
                 <View style={styles.cardHeader}>
                     <View>
                         <Text style={styles.bookingNumber}>#{item.booking_number || item.id}</Text>
-                        <Text style={styles.serviceName}>{item.service_name}</Text>
+                        <Text style={styles.serviceName}>{item.service_name || 'Service'}</Text>
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
                         <Text style={[styles.statusText, { color: statusStyle.text }]}>
-                            {item.status?.replace('_', ' ')}
+                            {item.status ? item.status.replace('_', ' ') : 'N/A'}
                         </Text>
                     </View>
+                    {item.commission_percent === null && item.status === 'pending' && (
+                        <View style={[styles.statusBadge, { backgroundColor: '#fee2e2', marginLeft: scale(8) }]}>
+                            <Text style={[styles.statusText, { color: '#dc2626' }]}>
+                                Commission Needed
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 <View style={styles.cardContent}>
                     <View style={styles.infoRow}>
                         <Ionicons name="person-outline" size={moderateScale(16)} color="#64748b" />
-                        <Text style={styles.infoText}>{item.customer_first_name} {item.customer_last_name}</Text>
+                        <Text style={styles.infoText}>{item.customer_first_name || ''} {item.customer_last_name || ''}</Text>
                     </View>
                     <View style={styles.infoRow}>
                         <Ionicons name="calendar-outline" size={moderateScale(16)} color="#64748b" />
-                        <Text style={styles.infoText}>{new Date(item.job_date).toLocaleDateString()}</Text>
+                        <Text style={styles.infoText}>{item.job_date ? new Date(item.job_date).toLocaleDateString() : 'N/A'}</Text>
                     </View>
                     <View style={styles.infoRow}>
                         <Ionicons name="location-outline" size={moderateScale(16)} color="#64748b" />
-                        <Text style={styles.infoText} numberOfLines={1}>{item.address_line1}, {item.city}</Text>
+                        <Text style={styles.infoText} numberOfLines={1}>{(item.address_line1 || '') + (item.city ? ', ' + item.city : '')}</Text>
                     </View>
                 </View>
 
@@ -191,8 +198,6 @@ const JobRequestsScreen = ({ navigation }) => {
                     }
                 />
             )}
-
-
         </SafeAreaView>
     );
 };
@@ -209,7 +214,6 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',
         marginTop: verticalScale(25),
-
     },
     headerTitle: { fontSize: moderateScale(20), fontWeight: 'bold', color: '#0f172a' },
     filterContainer: {

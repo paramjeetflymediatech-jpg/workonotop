@@ -65,21 +65,25 @@ const EarningsScreen = ({ navigation }) => {
         <View style={styles.transactionItem}>
             <View style={styles.transactionIcon}>
                 <Ionicons
-                    name={item.type === 'payout' ? "arrow-up-circle" : "arrow-down-circle"}
+                    name="receipt-outline"
                     size={moderateScale(24)}
-                    color={item.type === 'payout' ? "#ef4444" : "#10b981"}
+                    color="#115e59"
                 />
             </View>
             <View style={styles.transactionInfo}>
-                <Text style={styles.transactionTitle}>{item.description}</Text>
-                <Text style={styles.transactionDate}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                <Text style={styles.transactionTitle}>{item.service_name || 'Service Job'}</Text>
+                <Text style={styles.transactionDate}>
+                    {item.invoice_number} • {new Date(item.completion_date || item.created_at).toLocaleDateString()}
+                </Text>
             </View>
-            <Text style={[
-                styles.transactionAmount,
-                { color: item.type === 'payout' ? "#ef4444" : "#10b981" }
-            ]}>
-                {item.type === 'payout' ? '-' : '+'}{formatCurrency(item.amount)}
-            </Text>
+            <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[styles.transactionAmount, { color: '#0f172a' }]}>
+                    {formatCurrency(item.total_amount)}
+                </Text>
+                <Text style={{ fontSize: 10, color: '#10b981', fontWeight: 'bold' }}>
+                    Comm: {formatCurrency(item.commission_amount || 0)}
+                </Text>
+            </View>
         </View>
     );
 
@@ -107,16 +111,16 @@ const EarningsScreen = ({ navigation }) => {
 
             <View style={styles.summaryContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.summaryScroll}>
-                    <SummaryCard title="Total Volume" amount={earningsData?.totalEarnings || 0} icon="stats-chart-outline" color="#3b82f6" />
-                    <SummaryCard title="Platform Commission" amount={earningsData?.totalCommission || 0} icon="pie-chart-outline" color="#10b981" />
-                    <SummaryCard title="Pending Payouts" amount={earningsData?.pendingPayouts || 0} icon="time-outline" color="#f59e0b" />
+                    <SummaryCard title="Total Volume" amount={earningsData?.summary?.totalRevenue || 0} icon="stats-chart-outline" color="#3b82f6" />
+                    <SummaryCard title="Platform Commission" amount={earningsData?.summary?.totalCommission || 0} icon="pie-chart-outline" color="#10b981" />
+                    <SummaryCard title="Payouts" amount={earningsData?.summary?.totalPayouts || 0} icon="time-outline" color="#f59e0b" />
                 </ScrollView>
             </View>
 
             <View style={styles.transactionsSection}>
-                <Text style={styles.sectionTitle}>Recent Transactions</Text>
+                <Text style={styles.sectionTitle}>Recent Invoices</Text>
                 <FlatList
-                    data={earningsData?.recentTransactions || []}
+                    data={earningsData?.invoices || []}
                     renderItem={renderTransactionItem}
                     keyExtractor={(item, index) => index.toString()}
                     contentContainerStyle={styles.listContent}

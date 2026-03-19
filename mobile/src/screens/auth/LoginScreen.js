@@ -58,6 +58,13 @@ const LoginScreen = ({ navigation }) => {
                 showPremiumAlert(response.message || 'Invalid credentials');
             }
         } catch (err) {
+            if (err.status === 403 && err.data?.requiresVerification) {
+                navigation.navigate('EmailVerification', { 
+                    email: err.data.email || email,
+                    type: type || 'pro' 
+                });
+                return;
+            }
             showPremiumAlert(err.message || 'Connection failed. Please check your internet.');
             console.error(err);
         } finally {

@@ -33,7 +33,7 @@ const JobReportScreen = ({ navigation, route }) => {
                 text: 'Approve & Pay', onPress: async () => {
                     setActionLoading('approve');
                     try {
-                        await api.post('/api/job/approve', { booking_id: bookingId });
+                        await api.post(`/api/customer/bookings/${bookingId}/approve`, { action: 'approve' });
                         Alert.alert('Payment Released!', 'Great! The job is now completed and payment sent.', [
                             { text: 'OK', onPress: () => navigation.goBack() }
                         ]);
@@ -54,7 +54,7 @@ const JobReportScreen = ({ navigation, route }) => {
                 text: 'Open Dispute', style: 'destructive', onPress: async () => {
                     setActionLoading('dispute');
                     try {
-                        await api.post('/api/job/dispute', { booking_id: bookingId, reason: 'Customer disputed' });
+                        await api.post(`/api/customer/bookings/${bookingId}/approve`, { action: 'dispute', dispute_reason: 'Customer disputed' });
                         Alert.alert('Dispute Opened', 'Our team will contact you within 24 hours.', [
                             { text: 'OK', onPress: () => navigation.goBack() }
                         ]);

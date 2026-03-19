@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    SafeAreaView, ActivityIndicator, RefreshControl, Alert
+    SafeAreaView, ActivityIndicator, RefreshControl, Alert, StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { moderateScale, verticalScale, SCREEN_WIDTH } from '../../utils/responsive';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { moderateScale, scale, verticalScale, SCREEN_WIDTH } from '../../utils/responsive';
+
+const TEAL_DARK = '#134e4a';
+const TEAL_LIGHT = '#14b8a6';
 
 const ContractorJobsScreen = ({ navigation }) => {
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const [jobs, setJobs] = useState({ available: [], myJobs: [] });
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -83,13 +88,15 @@ const ContractorJobsScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
+
             {/* Header with Menu */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(15)) }]}>
                 <TouchableOpacity onPress={() => navigation.openDrawer()} style={styles.menuBtn}>
-                    <Ionicons name="menu" size={28} color="#0f172a" />
+                    <Ionicons name="menu-outline" size={moderateScale(26)} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Available Jobs ({jobs.available.length})</Text>
-                <View style={{ width: 28 }} />
+                <View style={{ width: moderateScale(40) }} />
             </View>
 
             <ScrollView
@@ -167,24 +174,16 @@ const ContractorJobsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f8fafc' },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: moderateScale(16),
-        paddingVertical: verticalScale(12),
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
-        marginTop: verticalScale(12),
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        backgroundColor: TEAL_DARK,
+        paddingHorizontal: scale(20),
+        paddingBottom: verticalScale(16),
     },
     menuBtn: {
-        padding: moderateScale(4),
+        width: moderateScale(40), height: moderateScale(40), borderRadius: moderateScale(12),
+        backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center',
     },
-    headerTitle: {
-        fontSize: moderateScale(18),
-        fontWeight: 'bold',
-        color: '#0f172a',
-    },
+    headerTitle: { fontSize: moderateScale(18), fontWeight: 'bold', color: '#fff' },
     loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     tabBar: {
         flexDirection: 'row', backgroundColor: '#fff',

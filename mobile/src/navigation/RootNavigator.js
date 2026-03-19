@@ -11,6 +11,7 @@ import CustomerSignupScreen from '../screens/auth/CustomerSignupScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import OtpVerificationScreen from '../screens/auth/OtpVerificationScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
+import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
 
 // Main
 import BottomTabNavigator from './BottomTabNavigator';
@@ -31,6 +32,8 @@ import PendingApprovalScreen from '../screens/contractor/PendingApprovalScreen';
 
 // Contractor Job Screens
 import ContractorJobsScreen from '../screens/contractor/ContractorJobsScreen';
+import JobDetailsScreen from '../screens/contractor/JobDetailsScreen';
+import MyJobsScreen from '../screens/contractor/MyJobsScreen';
 import StartJobScreen from '../screens/contractor/StartJobScreen';
 import FinishJobScreen from '../screens/contractor/FinishJobScreen';
 import ProviderUpdateProfileScreen from '../screens/contractor/ProviderUpdateProfileScreen';
@@ -43,7 +46,6 @@ import BookingSuccessScreen from '../screens/customer/BookingSuccessScreen';
 import SettingsScreen from '../screens/customer/SettingsScreen';
 import HelpSupportScreen from '../screens/customer/HelpSupportScreen';
 import ChangePasswordScreen from '../screens/customer/ChangePasswordScreen';
-import SavedAddressesScreen from '../screens/customer/SavedAddressesScreen';
 import InvoicesScreen from '../screens/customer/InvoicesScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
 import ChatScreen from '../screens/ChatScreen';
@@ -118,7 +120,6 @@ const RootNavigator = () => {
                             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="SavedAddresses" component={SavedAddressesScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="CreateBooking" component={CreateBookingScreen} options={{ title: 'Book Service' }} />
                             <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} options={{ headerShown: false }} />
@@ -135,6 +136,8 @@ const RootNavigator = () => {
 
                     {/* Contractor Job Flow */}
                     <Stack.Screen name="ContractorJobs" component={ContractorJobsScreen} options={{ title: 'Jobs' }} />
+                    <Stack.Screen name="MyJobs" component={MyJobsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="JobDetails" component={JobDetailsScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="StartJob" component={StartJobScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="FinishJob" component={FinishJobScreen} options={{ headerShown: false }} />
 
@@ -152,6 +155,7 @@ const RootNavigator = () => {
                     <Stack.Screen name="CustomerSignup" component={CustomerSignupScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
                 </>
             )}

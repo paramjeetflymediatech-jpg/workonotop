@@ -51,15 +51,16 @@ const FinishJobScreen = ({ navigation, route }) => {
         }
         setLoading(true);
         try {
-            await api.post('/api/job/complete', {
+            await api.post('/api/provider/jobs/time-tracking', {
                 booking_id: job?.id,
-                summary,
+                action: 'stop',
+                work_summary: summary,
                 recommendations,
             });
             Alert.alert(
                 'Job Submitted!',
                 'The customer will review your work and approve payment. Great job!',
-                [{ text: 'OK', onPress: () => navigation.navigate('Dashboard') }]
+                [{ text: 'OK', onPress: () => navigation.navigate('Main', { screen: 'MyJobs' }) }]
             );
         } catch (err) {
             Alert.alert('Error', 'Failed to submit job. Please try again.');
@@ -79,7 +80,7 @@ const FinishJobScreen = ({ navigation, route }) => {
                 <Text style={styles.subtitle}>{job?.service_name}</Text>
 
                 {/* After Photos */}
-                <Text style={styles.sectionTitle}>📷 After Photos (1-3 required)</Text>
+                <Text style={styles.sectionTitle}>3️⃣ After Photos (1-3 required)</Text>
                 <View style={styles.photosRow}>
                     {afterPhotos.map((uri, i) => (
                         <View key={i} style={styles.photoThumb}>
@@ -129,7 +130,7 @@ const FinishJobScreen = ({ navigation, route }) => {
                     onPress={handleFinishJob}
                     disabled={loading}
                 >
-                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.finishBtnText}>✔ Submit & Complete Job</Text>}
+                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.finishBtnText}>4️⃣ Complete</Text>}
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>

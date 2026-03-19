@@ -12,12 +12,14 @@ import {
     Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const SettingsScreen = ({ navigation }) => {
     const { token } = useAuth();
+    const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState({
         push_notifications_enabled: true,
@@ -106,12 +108,12 @@ const SettingsScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(10)) }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Ionicons name="arrow-back" size={moderateScale(24)} color="#0f172a" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Settings</Text>
-                <View style={{ width: 24 }} />
+                <View style={{ width: moderateScale(24) }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -128,12 +130,6 @@ const SettingsScreen = ({ navigation }) => {
                         icon="lock-closed-outline"
                         title="Change Password"
                         onPress={() => navigation.navigate('ChangePassword')}
-                    />
-                    <View style={styles.divider} />
-                    <SettingItem
-                        icon="location-outline"
-                        title="Saved Addresses"
-                        onPress={() => navigation.navigate('SavedAddresses')}
                     />
                 </View>
 
@@ -206,12 +202,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: scale(20),
-        paddingVertical: verticalScale(15),
-        marginTop: verticalScale(25),
+        paddingBottom: verticalScale(15),
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',
-
     },
     headerTitle: { fontSize: moderateScale(18), fontWeight: 'bold', color: '#0f172a' },
     scrollContent: { padding: scale(20) },

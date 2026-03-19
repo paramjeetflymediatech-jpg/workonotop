@@ -25,11 +25,13 @@ export async function GET(request, { params }) {
         s.name as service_full_name,
         s.duration_minutes,
         c.name as category_name,
+        d.reason as dispute_reason,
         (SELECT COUNT(*) FROM job_photos WHERE booking_id = b.id AND photo_type = 'before') > 0 as has_before_photos,
         (SELECT COUNT(*) FROM job_photos WHERE booking_id = b.id AND photo_type = 'after') > 0 as has_after_photos
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
+      LEFT JOIN disputes d ON b.id = d.booking_id
       WHERE b.id = ? AND b.provider_id = ?`,
       [id, decoded.providerId]  // Note: using providerId
     )

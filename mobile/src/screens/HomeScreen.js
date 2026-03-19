@@ -1,10 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { moderateScale, scale, verticalScale } from '../utils/responsive';
 
 const HomeScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
+        <SafeAreaView style={styles.container}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={[styles.header, { marginTop: Math.max(insets.top, verticalScale(10)) }]}>
                 <Text style={styles.title}>WorkOnTop</Text>
                 <Text style={styles.subtitle}>Stay on top of every job</Text>
             </View>
@@ -29,11 +32,13 @@ const HomeScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.infoBox}>
-                <Text style={styles.infoTitle}>Quick Tips</Text>
-                <Text style={styles.infoText}>Check your services regularly to keep your pricing updated and attract more customers.</Text>
-            </View>
-        </View>
+                <View style={styles.infoBox}>
+                    <Text style={styles.infoTitle}>Quick Tips</Text>
+                    <Text style={styles.infoText}>Check your services regularly to keep your pricing updated and attract more customers.</Text>
+                </View>
+                <View style={{ height: verticalScale(100) }} />
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
@@ -48,14 +53,14 @@ const styles = StyleSheet.create({
         marginBottom: 30,
     },
     title: {
-        fontSize: 32,
+        fontSize: moderateScale(32),
         fontWeight: 'bold',
         color: '#0f172a',
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: moderateScale(16),
         color: '#64748b',
-        marginTop: 4,
+        marginTop: verticalScale(4),
     },
     grid: {
         flexDirection: 'row',

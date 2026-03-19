@@ -4,42 +4,14 @@ import {
     SafeAreaView, Alert, ActivityIndicator, Image
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import { api } from '../../utils/api';
 import { moderateScale, verticalScale } from '../../utils/responsive';
 
 const StartJobScreen = ({ navigation, route }) => {
     const { job } = route.params || {};
     const [beforePhotos, setBeforePhotos] = useState([]);
-    const [location, setLocation] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [locationLoading, setLocationLoading] = useState(false);
 
-    const verifyLocation = async () => {
-        setLocationLoading(true);
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Permission Denied', 'Location permission is required to verify you are at the job site.');
-                return;
-            }
-            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-            setLocation(loc.coords);
-
-            // Send GPS to backend
-            await api.post('/api/job/verify-location', {
-                booking_id: job?.id,
-                latitude: loc.coords.latitude,
-                longitude: loc.coords.longitude,
-            });
-            Alert.alert('Location Verified', 'Your location matches the job site!');
-        } catch (err) {
-            console.error('Location error:', err);
-            Alert.alert('Location Error', 'Could not verify location. Please try again.');
-        } finally {
-            setLocationLoading(false);
-        }
-    };
 
     const addBeforePhoto = async () => {
         if (beforePhotos.length >= 2) {
@@ -74,7 +46,7 @@ const StartJobScreen = ({ navigation, route }) => {
         }
         setLoading(true);
         try {
-            await api.post('/api/job/start', { booking_id: job?.id });
+            await api.post('/api/provider/jobs/time-tracking', { booking_id: job?.id, action: 'start' });
             Alert.alert('Job Started!', 'The customer has been notified that you started the job.', [
                 { text: 'OK', onPress: () => navigation.goBack() }
             ]);
@@ -95,27 +67,10 @@ const StartJobScreen = ({ navigation, route }) => {
                 <Text style={styles.title}>Start Job</Text>
                 <Text style={styles.subtitle}>{job?.service_name}</Text>
 
-                {/* Location Verification */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>📍 Step 1: Verify Your Location</Text>
-                    <TouchableOpacity
-                        style={[styles.locationBtn, location && styles.locationBtnDone]}
-                        onPress={verifyLocation}
-                        disabled={locationLoading || !!location}
-                    >
-                        {locationLoading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text style={styles.locationBtnText}>
-                                {location ? '✓ Location Verified' : '🔍 Verify My Location'}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                </View>
 
                 {/* Before Photos */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>📷 Step 2: Before Photos (1-2)</Text>
+                    <Text style={styles.sectionTitle}>1️⃣ Before Photos</Text>
                     <View style={styles.photosRow}>
                         {beforePhotos.map((uri, i) => (
                             <View key={i} style={styles.photoThumb}>
@@ -142,7 +97,7 @@ const StartJobScreen = ({ navigation, route }) => {
                     onPress={handleStartJob}
                     disabled={loading}
                 >
-                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.startBtnText}>▶ Start Job Now</Text>}
+                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.startBtnText}>2️⃣ Start Job</Text>}
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
@@ -165,12 +120,6 @@ const styles = StyleSheet.create({
         padding: moderateScale(16), marginBottom: verticalScale(16),
     },
     sectionTitle: { fontSize: moderateScale(15), fontWeight: 'bold', color: '#0f172a', marginBottom: verticalScale(12) },
-    locationBtn: {
-        backgroundColor: '#3b82f6', padding: moderateScale(14),
-        borderRadius: moderateScale(12), alignItems: 'center',
-    },
-    locationBtnDone: { backgroundColor: '#10b981' },
-    locationBtnText: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(15) },
     photosRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     photoThumb: { width: moderateScale(80), height: moderateScale(80), borderRadius: moderateScale(10), overflow: 'hidden' },
     thumbImage: { width: '100%', height: '100%' },

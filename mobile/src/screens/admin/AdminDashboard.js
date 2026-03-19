@@ -131,8 +131,8 @@ const AdminDashboard = ({ navigation }) => {
                         <Text style={styles.headerName}>Welcome back, {adminName}</Text>
                     </View>
 
-                    <TouchableOpacity 
-                        style={styles.notificationBtn} 
+                    <TouchableOpacity
+                        style={styles.notificationBtn}
                         onPress={() => navigation.navigate('AdminNotifications')}
                         activeOpacity={0.7}
                     >
@@ -155,8 +155,8 @@ const AdminDashboard = ({ navigation }) => {
                 {/* ── Stat Cards ── */}
                 <View style={styles.cardGrid}>
                     {statCards.map((card) => (
-                        <TouchableOpacity 
-                            key={card.title} 
+                        <TouchableOpacity
+                            key={card.title}
                             style={styles.statCard}
                             onPress={() => navigation.navigate(card.screen)}
                             activeOpacity={0.7}

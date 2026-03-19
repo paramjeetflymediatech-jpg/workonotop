@@ -90,7 +90,7 @@ const ProvidersScreen = ({ navigation }) => {
 
     const handleAction = (providerId, action, reason) => {
         const title = action === 'approve' ? 'Approve Provider' : 'Reject Provider';
-        const message = reason 
+        const message = reason
             ? `Are you sure you want to reject this provider for: "${reason}"?`
             : `Are you sure you want to ${action} this provider?`;
 
@@ -121,13 +121,13 @@ const ProvidersScreen = ({ navigation }) => {
 
     const handleStatusUpdate = async (newStatus) => {
         if (!selectedProvider) return;
-        
-        const statusLabels = { 
-            active: 'Active', 
-            inactive: 'Inactive', 
-            suspended: 'Suspended', 
-            pending: 'Pending', 
-            rejected: 'Rejected' 
+
+        const statusLabels = {
+            active: 'Active',
+            inactive: 'Inactive',
+            suspended: 'Suspended',
+            pending: 'Pending',
+            rejected: 'Rejected'
         };
 
         Alert.alert(
@@ -140,8 +140,8 @@ const ProvidersScreen = ({ navigation }) => {
                     onPress: async () => {
                         setUpdatingStatus(true);
                         try {
-                            const res = await api.put(`/api/provider?id=${selectedProvider.id}`, { 
-                                status: newStatus 
+                            const res = await api.put(`/api/provider?id=${selectedProvider.id}`, {
+                                status: newStatus
                             });
                             if (res.success) {
                                 setSelectedProvider({ ...selectedProvider, status: newStatus });
@@ -358,8 +358,8 @@ const ProvidersScreen = ({ navigation }) => {
                         <View style={styles.emptyContainer}>
                             <Ionicons name="people-outline" size={scale(60)} color="#e2e8f0" />
                             <Text style={styles.emptyText}>
-                                {statusFilter === 'all' 
-                                    ? 'No providers found' 
+                                {statusFilter === 'all'
+                                    ? 'No providers found'
                                     : `No ${statusFilter} providers found`}
                             </Text>
                             <Text style={styles.emptySubtext}>
@@ -418,14 +418,14 @@ const ProvidersScreen = ({ navigation }) => {
                                         />
 
                                         <View style={styles.editActionRow}>
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 style={[styles.modalActionRowBtn, styles.saveBtn]}
                                                 onPress={handleUpdate}
                                                 disabled={updating}
                                             >
                                                 {updating ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>Save Changes</Text>}
                                             </TouchableOpacity>
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 style={[styles.modalActionRowBtn, styles.cancelBtn]}
                                                 onPress={() => setEditMode(false)}
                                             >
@@ -494,20 +494,20 @@ const ProvidersScreen = ({ navigation }) => {
                                             ) : providerDocs.length > 0 ? (
                                                 <View style={styles.docsGallery}>
                                                     {providerDocs.map((doc, index) => (
-                                                        <TouchableOpacity 
-                                                            key={doc.id || index} 
+                                                        <TouchableOpacity
+                                                            key={doc.id || index}
                                                             style={styles.docItem}
                                                             onPress={() => {
-                                                                const url = doc.document_url.startsWith('http') 
-                                                                    ? doc.document_url 
+                                                                const url = doc.document_url.startsWith('http')
+                                                                    ? doc.document_url
                                                                     : `${API_BASE_URL}${doc.document_url}`;
                                                                 setViewerImage(url);
                                                                 setViewerVisible(true);
                                                             }}
                                                         >
                                                             <View style={styles.docImageContainer}>
-                                                                <Image 
-                                                                    source={{ uri: doc.document_url.startsWith('http') ? doc.document_url : `${API_BASE_URL}${doc.document_url}` }} 
+                                                                <Image
+                                                                    source={{ uri: doc.document_url.startsWith('http') ? doc.document_url : `${API_BASE_URL}${doc.document_url}` }}
                                                                     style={styles.docImage}
                                                                     resizeMode="cover"
                                                                 />
@@ -532,14 +532,14 @@ const ProvidersScreen = ({ navigation }) => {
                                         <View style={styles.detailSection}>
                                             <Text style={styles.sectionTitle}>Admin Actions</Text>
                                             <View style={styles.adminActionRowLayout}>
-                                                <TouchableOpacity 
+                                                <TouchableOpacity
                                                     style={[styles.adminActionBtn, styles.editProviderBtn]}
                                                     onPress={() => setEditMode(true)}
                                                 >
                                                     <Ionicons name="create-outline" size={moderateScale(20)} color="#fff" />
                                                     <Text style={styles.adminActionBtnText}>Edit</Text>
                                                 </TouchableOpacity>
-                                                <TouchableOpacity 
+                                                <TouchableOpacity
                                                     style={[styles.adminActionBtn, styles.deleteProviderBtn]}
                                                     onPress={handleDelete}
                                                 >
@@ -645,15 +645,15 @@ const ProvidersScreen = ({ navigation }) => {
                 onRequestClose={() => setViewerVisible(false)}
             >
                 <View style={styles.viewerOverlay}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.viewerClose}
                         onPress={() => setViewerVisible(false)}
                     >
                         <Ionicons name="close" size={moderateScale(32)} color="#fff" />
                     </TouchableOpacity>
                     {viewerImage && (
-                        <Image 
-                            source={{ uri: viewerImage }} 
+                        <Image
+                            source={{ uri: viewerImage }}
                             style={styles.fullImage}
                             resizeMode="contain"
                         />

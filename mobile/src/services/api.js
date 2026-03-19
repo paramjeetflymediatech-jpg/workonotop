@@ -62,7 +62,10 @@ const request = async (endpoint, options = {}) => {
                 }
             }
             
-            throw new Error(data.message || `Request failed with status ${response.status}`);
+            const error = new Error(data.message || `Request failed with status ${response.status}`);
+            error.data = data;
+            error.status = response.status;
+            throw error;
         }
 
         console.log(`✅ [API Success] ${endpoint}`);

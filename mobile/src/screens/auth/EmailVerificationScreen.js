@@ -10,16 +10,15 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Alert,
     Image,
     Modal,
     Animated
 } from 'react-native';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
-import { api } from '../../utils/api';
+import { apiService } from '../../services/api';
 
-const OtpVerificationScreen = ({ navigation, route }) => {
-    const { email, type } = route.params;
+const EmailVerificationScreen = ({ navigation, route }) => {
+    const { email, type = 'pro' } = route.params || {};
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [timer, setTimer] = useState(60);
@@ -57,7 +56,12 @@ const OtpVerificationScreen = ({ navigation, route }) => {
                 duration: 200,
                 useNativeDriver: true,
             })
-        ]).start(() => setStatusModal(prev => ({ ...prev, visible: false })));
+        ]).start(() => {
+            setStatusModal(prev => ({ ...prev, visible: false }));
+            if (statusModal.type === 'success') {
+                navigation.navigate('Login', { email, type });
+            }
+        });
     };
 
     useEffect(() => {
@@ -71,7 +75,6 @@ const OtpVerificationScreen = ({ navigation, route }) => {
     }, [timer]);
 
     const handleOtpChange = (value, index) => {
-        // Only allow numbers
         if (value && !/^\d+$/.test(value)) return;
 
         const newOtp = [...otp];
@@ -98,20 +101,21 @@ const OtpVerificationScreen = ({ navigation, route }) => {
 
         setLoading(true);
         try {
-            const endpoint = type === 'pro'
+            // For providers, we use the specific provider verify-otp endpoint
+            const endpoint = type === 'pro' || type === 'provider'
                 ? '/api/provider/verify-otp'
                 : '/api/auth/verify-otp';
 
-            const res = await api.post(endpoint, { email, otp: otpString });
+            const res = await apiService.post(endpoint, { email, otp: otpString });
 
             if (res.success) {
-                navigation.navigate('ResetPassword', { email, otp: otpString, type });
+                showStatus('Account verified successfully! You can now log in.', 'success');
             } else {
                 showStatus(res.message || 'Invalid verification code.', 'error');
             }
         } catch (err) {
             console.error('Verify OTP error:', err);
-            showStatus('Something went wrong. Please try again.', 'error');
+            showStatus(err.message || 'Something went wrong. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -122,10 +126,7 @@ const OtpVerificationScreen = ({ navigation, route }) => {
 
         setLoading(true);
         try {
-            // Use unified mobile endpoint for resending as well
-            const endpoint = '/api/auth/mobile/forgot-password';
-
-            const res = await api.post(endpoint, { email, source: 'mobile' });
+            const res = await apiService.auth.forgotPassword(email);
 
             if (res.success) {
                 setTimer(60);
@@ -137,7 +138,7 @@ const OtpVerificationScreen = ({ navigation, route }) => {
             }
         } catch (err) {
             console.error('Resend OTP error:', err);
-            showStatus('Something went wrong. Please try again.', 'error');
+            showStatus(err.message || 'Something went wrong. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -166,17 +167,14 @@ const OtpVerificationScreen = ({ navigation, route }) => {
                             statusModal.type === 'success' ? styles.successCircle : styles.errorCircle
                         ]}>
                             {statusModal.type === 'success' ? (
-                                <View style={styles.checkmarkWrapper}>
-                                    <View style={styles.checkmarkStem} />
-                                    <View style={styles.checkmarkKick} />
-                                </View>
+                                <Text style={styles.successCheck}>✓</Text>
                             ) : (
                                 <Text style={styles.errorExclamation}>!</Text>
                             )}
                         </View>
                     </View>
                     <Text style={styles.modalTitle}>
-                        {statusModal.type === 'success' ? 'Great!' : 'Oops!'}
+                        {statusModal.type === 'success' ? 'Verified!' : 'Oops!'}
                     </Text>
                     <Text style={styles.modalMessage}>{statusModal.message}</Text>
                     <TouchableOpacity
@@ -187,7 +185,7 @@ const OtpVerificationScreen = ({ navigation, route }) => {
                         onPress={hideStatus}
                     >
                         <Text style={styles.modalButtonText}>
-                            {statusModal.type === 'success' ? 'Continue' : 'Try Again'}
+                            {statusModal.type === 'success' ? 'Go to Login' : 'Try Again'}
                         </Text>
                     </TouchableOpacity>
                 </Animated.View>
@@ -212,14 +210,7 @@ const OtpVerificationScreen = ({ navigation, route }) => {
                     </TouchableOpacity>
 
                     <View style={styles.header}>
-                        {SCREEN_HEIGHT > 750 && (
-                            <Image
-                                source={require('../../../assets/otp_verify.png')}
-                                style={styles.miniIllustration}
-                                resizeMode="contain"
-                            />
-                        )}
-                        <Text style={styles.title}>Verification</Text>
+                        <Text style={styles.title}>Email Verification</Text>
                         <Text style={styles.subtitle}>
                             Please enter the 6-digit code sent to {'\n'}
                             <Text style={styles.emailText}>{email}</Text>
@@ -250,7 +241,7 @@ const OtpVerificationScreen = ({ navigation, route }) => {
                         {loading ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text style={styles.buttonText}>Verify</Text>
+                            <Text style={styles.buttonText}>Verify Account</Text>
                         )}
                     </TouchableOpacity>
 
@@ -269,205 +260,53 @@ const OtpVerificationScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    scrollContent: {
-        paddingHorizontal: scale(24),
-        paddingVertical: verticalScale(10),
-        flexGrow: 1,
-    },
+    container: { flex: 1, backgroundColor: '#fff' },
+    scrollContent: { paddingHorizontal: scale(24), paddingVertical: verticalScale(10), flexGrow: 1 },
     backButton: {
-        width: moderateScale(40),
-        height: moderateScale(40),
-        borderRadius: moderateScale(20),
-        backgroundColor: '#f8fafc',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: verticalScale(20),
-        marginTop: verticalScale(15),
+        width: moderateScale(40), height: moderateScale(40), borderRadius: moderateScale(20),
+        backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center',
+        marginBottom: verticalScale(20), marginTop: verticalScale(15),
     },
-    backIcon: {
-        fontSize: moderateScale(20),
-        color: '#0f172a',
-        fontWeight: 'bold',
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: verticalScale(30),
-    },
-    miniIllustration: {
-        width: moderateScale(120),
-        height: moderateScale(120),
-        marginBottom: verticalScale(10),
-    },
-    title: {
-        fontSize: moderateScale(28),
-        fontWeight: 'bold',
-        color: '#0f172a',
-        textAlign: 'center',
-    },
-    subtitle: {
-        fontSize: moderateScale(15),
-        color: '#64748b',
-        textAlign: 'center',
-        marginTop: verticalScale(10),
-        lineHeight: moderateScale(22),
-    },
-    emailText: {
-        color: '#0f172a',
-        fontWeight: '600',
-    },
-    otpContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: verticalScale(40),
-    },
+    backIcon: { fontSize: moderateScale(20), color: '#0f172a', fontWeight: 'bold' },
+    header: { alignItems: 'center', marginBottom: verticalScale(30) },
+    title: { fontSize: moderateScale(28), fontWeight: 'bold', color: '#0f172a', textAlign: 'center' },
+    subtitle: { fontSize: moderateScale(15), color: '#64748b', textAlign: 'center', marginTop: verticalScale(10), lineHeight: moderateScale(22) },
+    emailText: { color: '#0f172a', fontWeight: '600' },
+    otpContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: verticalScale(40) },
     otpInput: {
-        width: moderateScale(45),
-        height: moderateScale(55),
-        borderWidth: 1.5,
-        borderColor: '#e2e8f0',
-        borderRadius: moderateScale(12),
-        textAlign: 'center',
-        fontSize: moderateScale(24),
-        fontWeight: 'bold',
-        color: '#115e59',
-        backgroundColor: '#f8fafc',
+        width: moderateScale(45), height: moderateScale(55), borderWidth: 1.5, borderColor: '#e2e8f0',
+        borderRadius: moderateScale(12), textAlign: 'center', fontSize: moderateScale(24),
+        fontWeight: 'bold', color: '#115e59', backgroundColor: '#f8fafc',
     },
     button: {
-        backgroundColor: '#115e59',
-        paddingVertical: verticalScale(16),
-        borderRadius: moderateScale(15),
-        alignItems: 'center',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
+        backgroundColor: '#115e59', paddingVertical: verticalScale(16), borderRadius: moderateScale(15),
+        alignItems: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1, shadowRadius: 8, elevation: 4,
     },
-    buttonDisabled: {
-        opacity: 0.6,
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: moderateScale(18),
-        fontWeight: 'bold',
-    },
-    resendContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: verticalScale(30),
-    },
-    resendText: {
-        fontSize: moderateScale(15),
-        color: '#64748b',
-    },
-    resendLink: {
-        fontSize: moderateScale(15),
-        color: '#115e59',
-        fontWeight: 'bold',
-    },
-    resendDisabled: {
-        color: '#94a3b8',
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: scale(40),
-    },
+    buttonDisabled: { opacity: 0.6 },
+    buttonText: { color: '#fff', fontSize: moderateScale(18), fontWeight: 'bold' },
+    resendContainer: { flexDirection: 'row', justifyContent: 'center', marginTop: verticalScale(30) },
+    resendText: { fontSize: moderateScale(15), color: '#64748b' },
+    resendLink: { fontSize: moderateScale(15), color: '#115e59', fontWeight: 'bold' },
+    resendDisabled: { color: '#94a3b8' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: scale(40) },
     modalContent: {
-        backgroundColor: '#fff',
-        borderRadius: moderateScale(24),
-        padding: moderateScale(30),
-        width: '100%',
-        alignItems: 'center',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.25,
-        shadowRadius: 20,
-        elevation: 10,
+        backgroundColor: '#fff', borderRadius: moderateScale(24), padding: moderateScale(30),
+        width: '100%', alignItems: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25, shadowRadius: 20, elevation: 10,
     },
-    iconContainer: {
-        marginBottom: verticalScale(20),
-    },
-    iconCircle: {
-        width: moderateScale(60),
-        height: moderateScale(60),
-        borderRadius: moderateScale(30),
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-    },
-    successCircle: {
-        backgroundColor: '#f0fdf4',
-        borderColor: '#22c55e',
-    },
-    errorCircle: {
-        backgroundColor: '#fef2f2',
-        borderColor: '#ef4444',
-    },
-    checkmarkWrapper: {
-        width: moderateScale(30),
-        height: moderateScale(30),
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    checkmarkStem: {
-        position: 'absolute',
-        width: moderateScale(4),
-        height: moderateScale(20),
-        backgroundColor: '#22c55e',
-        borderRadius: 2,
-        transform: [{ rotate: '45deg' }, { translateX: moderateScale(4) }, { translateY: moderateScale(-1) }],
-    },
-    checkmarkKick: {
-        position: 'absolute',
-        width: moderateScale(4),
-        height: moderateScale(10),
-        backgroundColor: '#22c55e',
-        borderRadius: 2,
-        transform: [{ rotate: '-45deg' }, { translateX: moderateScale(-5) }, { translateY: moderateScale(4) }],
-    },
-    errorExclamation: {
-        fontSize: moderateScale(36),
-        fontWeight: 'bold',
-        color: '#ef4444',
-    },
-    modalTitle: {
-        fontSize: moderateScale(22),
-        fontWeight: 'bold',
-        color: '#0f172a',
-        marginBottom: verticalScale(10),
-    },
-    modalMessage: {
-        fontSize: moderateScale(16),
-        color: '#64748b',
-        textAlign: 'center',
-        lineHeight: moderateScale(24),
-        marginBottom: verticalScale(24),
-    },
-    modalButton: {
-        paddingVertical: verticalScale(14),
-        paddingHorizontal: scale(40),
-        borderRadius: moderateScale(12),
-        width: '100%',
-        alignItems: 'center',
-    },
-    successButton: {
-        backgroundColor: '#115e59',
-    },
-    errorButton: {
-        backgroundColor: '#ef4444',
-    },
-    modalButtonText: {
-        color: '#fff',
-        fontSize: moderateScale(16),
-        fontWeight: 'bold',
-    }
+    iconContainer: { marginBottom: verticalScale(20) },
+    iconCircle: { width: moderateScale(60), height: moderateScale(60), borderRadius: moderateScale(30), justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
+    successCircle: { backgroundColor: '#f0fdf4', borderColor: '#22c55e' },
+    errorCircle: { backgroundColor: '#fef2f2', borderColor: '#ef4444' },
+    successCheck: { fontSize: moderateScale(32), color: '#22c55e', fontWeight: 'bold' },
+    errorExclamation: { fontSize: moderateScale(36), fontWeight: 'bold', color: '#ef4444' },
+    modalTitle: { fontSize: moderateScale(22), fontWeight: 'bold', color: '#0f172a', marginBottom: verticalScale(10) },
+    modalMessage: { fontSize: moderateScale(16), color: '#64748b', textAlign: 'center', lineHeight: moderateScale(24), marginBottom: verticalScale(24) },
+    modalButton: { paddingVertical: verticalScale(14), paddingHorizontal: scale(40), borderRadius: moderateScale(12), width: '100%', alignItems: 'center' },
+    successButton: { backgroundColor: '#115e59' },
+    errorButton: { backgroundColor: '#ef4444' },
+    modalButtonText: { color: '#fff', fontSize: moderateScale(16), fontWeight: 'bold' }
 });
 
-export default OtpVerificationScreen;
+export default EmailVerificationScreen;

@@ -21,7 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { WebView } from 'react-native-webview';
-import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_BASE_URL } from '../../config';
 
 const PRIMARY = '#115e59';
@@ -29,6 +29,7 @@ const PRIMARY = '#115e59';
 const CreateBookingScreen = ({ navigation, route }) => {
     const { service } = route.params;
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -287,7 +288,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
     );
 
     const renderStep2 = () => (
-        <View style={styles.stepContainer}>
+        <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>When should we come?</Text>
 
             <Text style={styles.label}>Select Date</Text>
@@ -327,7 +328,8 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     </TouchableOpacity>
                 ))}
             </View>
-        </View>
+            <View style={{ height: 40 }} />
+        </ScrollView>
     );
 
     const renderStep3 = () => (
@@ -519,7 +521,11 @@ const CreateBookingScreen = ({ navigation, route }) => {
     );
 
     const renderStep5 = () => (
-        <View style={styles.stepContainer}>
+        <ScrollView 
+            style={styles.stepContainer} 
+            contentContainerStyle={{ paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+        >
             <Text style={styles.sectionTitle}>Payment & Authorization</Text>
 
             <View style={styles.paymentCard}>
@@ -564,9 +570,9 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     <WebView
                         source={{ uri: paymentUrl }}
                         onMessage={handleWebViewMessage}
-                        showsVerticalScrollIndicator={false}
-                        bounces={false}
-                        scrollEnabled={false}
+                        showsVerticalScrollIndicator={true}
+                        bounces={true}
+                        scrollEnabled={true}
                         style={{ backgroundColor: 'transparent' }}
                     />
                 </View>
@@ -575,11 +581,11 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     <Text>Loading secure payment gateway...</Text>
                 </View>
             )}
-        </View>
+        </ScrollView>
     );
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
                 <View style={styles.progressTrack}>
                     <View style={[styles.progressBar, { width: `${(step / 5) * 100}%` }]} />
@@ -744,7 +750,7 @@ const styles = StyleSheet.create({
     webviewContainer: {
         flex: 1,
         marginTop: 20,
-        minHeight: 300,
+        minHeight: 600,
         backgroundColor: 'transparent'
     },
 
