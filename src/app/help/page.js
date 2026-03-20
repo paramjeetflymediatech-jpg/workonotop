@@ -19,7 +19,7 @@ export default function HelpPage() {
     },
     {
       question: "What areas do you serve?",
-      answer: "We currently serve Calgary and surrounding areas. We're expanding to more cities soon!"
+      answer: "We currently serve Metro Vancouver and surrounding areas. We're expanding to more cities soon!"
     },
     {
       question: "How are service providers vetted?",

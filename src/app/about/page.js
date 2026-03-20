@@ -27,8 +27,8 @@ export default function AboutPage() {
             <p className="text-gray-600 leading-relaxed">
               WorkOnTap was born from a simple idea: homeowners should be able to find trusted,
               qualified tradespeople quickly and easily. What started as a small local service
-              in Calgary has grown into a platform connecting thousands of homeowners with
-              verified professionals across Canada.
+              in Metro Vancouver has grown into a platform connecting thousands of homeowners with
+              verified professionals across Metro Vancouver and beyond.
             </p>
           </div>
 

@@ -643,7 +643,7 @@ export default function BookingConfirmPage() {
       has_pets: detailsData.has_pets || false,
       address_line1: address,
       address_line2: '',
-      city: 'Calgary',
+      city: 'Surrey',
       postal_code: '',
       photos: detailsData.photos || [],
       user_id: currentUser?.id,

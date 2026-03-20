@@ -8,7 +8,8 @@ import {
     FlatList,
     ActivityIndicator,
     RefreshControl,
-    StatusBar
+    StatusBar,
+    Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
@@ -18,6 +19,20 @@ const ReviewsScreen = ({ navigation }) => {
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
+    const fetchReviews = async () => {
+        try {
+            const res = await api.get('/api/reviews');
+            if (res.success) {
+                setReviews(res.data);
+            }
+        } catch (error) {
+            console.error('Error fetching reviews:', error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
     const handleDeleteReview = (id) => {
         Alert.alert(

@@ -19,11 +19,30 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
     };
 
     const [currentBooking, setCurrentBooking] = React.useState(booking);
-    const [commissionValue, setCommissionValue] = React.useState(
-        booking.commission_percent !== null ? String(booking.commission_percent) : ''
-    );
-    const [isEditingCommission, setIsEditingCommission] = React.useState(booking.commission_percent === null);
+    const [loading, setLoading] = React.useState(true);
+    const [commissionValue, setCommissionValue] = React.useState('');
+    const [isEditingCommission, setIsEditingCommission] = React.useState(false);
     const [savingCommission, setSavingCommission] = React.useState(false);
+
+    const fetchBookingDetails = async () => {
+        if (!booking?.id) return;
+        try {
+            const res = await api.get(`/api/bookings/${booking.id}`);
+            if (res.success) {
+                setCurrentBooking(res.data);
+                setCommissionValue(res.data.commission_percent !== null ? String(res.data.commission_percent) : '');
+                setIsEditingCommission(res.data.commission_percent === null);
+            }
+        } catch (error) {
+            console.error('Error fetching booking details:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchBookingDetails();
+    }, []);
 
     const handleSaveCommission = async () => {
         const pct = parseFloat(commissionValue);
@@ -83,7 +102,17 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
         </Modal>
     );
 
-    if (!booking) {
+    if (loading && !currentBooking) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loader}>
+                    <ActivityIndicator size="large" color="#115e59" />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (!currentBooking) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.errorContainer}>
@@ -115,9 +144,9 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
         }).format(amount || 0);
     };
 
-    const statusStyle = getStatusStyle(booking.status);
-    const servicePrice = parseFloat(booking.service_price || 0);
-    const overtimeEarnings = parseFloat(booking.overtime_earnings || 0);
+    const statusStyle = getStatusStyle(currentBooking.status);
+    const servicePrice = parseFloat(currentBooking.service_price || 0);
+    const overtimeEarnings = parseFloat(currentBooking.overtime_earnings || 0);
     const totalAmount = servicePrice + overtimeEarnings;
 
     return (
@@ -129,7 +158,7 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                     <Ionicons name="arrow-back" size={moderateScale(24)} color="#0f172a" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Job Details</Text>
-                <View style={{ width: moderateScale(24) }} /> {/* Spacer */}
+                <View style={{ width: moderateScale(24) }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -160,14 +189,6 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                                     <Text style={styles.commissionPlaceholder}>Not set yet</Text>
                                 )}
                             </View>
-                            {currentBooking.commission_percent !== null && !isEditingCommission && (
-                                <TouchableOpacity 
-                                    style={styles.editBtn}
-                                    onPress={() => setIsEditingCommission(true)}
-                                >
-                                    <Ionicons name="create-outline" size={moderateScale(20)} color="#115e59" />
-                                </TouchableOpacity>
-                            )}
                         </View>
 
                         {isEditingCommission ? (
@@ -345,9 +366,36 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                     </View>
                 </View>
 
+                {/* Photo Sections */}
+                {currentBooking.before_photos && currentBooking.before_photos.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: '#f59e0b' }]}>Before Photos ({currentBooking.before_photos.length})</Text>
+                        <View style={styles.photoGrid}>
+                            {currentBooking.before_photos.map((photo, idx) => (
+                                <TouchableOpacity key={idx} onPress={() => openViewer(photo.url || photo)}>
+                                    <Image source={{ uri: photo.url || photo }} style={styles.photoMini} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
+                {currentBooking.after_photos && currentBooking.after_photos.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: '#16a34a' }]}>After Photos ({currentBooking.after_photos.length})</Text>
+                        <View style={styles.photoGrid}>
+                            {currentBooking.after_photos.map((photo, idx) => (
+                                <TouchableOpacity key={idx} onPress={() => openViewer(photo.url || photo)}>
+                                    <Image source={{ uri: photo.url || photo }} style={styles.photoMini} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
                 {currentBooking.photos && currentBooking.photos.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Job Photos</Text>
+                        <Text style={styles.sectionTitle}>Customer Uploads ({currentBooking.photos.length})</Text>
                         <View style={styles.photoGrid}>
                             {currentBooking.photos.map((url, idx) => (
                                 <TouchableOpacity key={idx} onPress={() => openViewer(url)}>
@@ -385,9 +433,9 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                                 {formatCurrency((currentBooking.provider_amount || (servicePrice * (1 - (currentBooking.commission_percent || 0) / 100))) + overtimeEarnings)}
                             </Text>
                         </View>
-                    </View>
                 </View>
-
+                </View>
+                {renderImageViewer()}
             </ScrollView>
         </SafeAreaView>
     );
@@ -542,6 +590,12 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(20),
         fontWeight: 'bold',
         color: '#115e59',
+    },
+    loader: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
     },
     errorContainer: {
         flex: 1,

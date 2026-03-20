@@ -220,14 +220,20 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
+    // Calculate commission and provider earnings
+    const commissionPercent = parseFloat(booking.commission_percent || 0)
+    const commissionAmount = Math.round((totalAmount * commissionPercent / 100) * 100) / 100
+    const providerEarnings = Math.round((totalAmount - commissionAmount) * 100) / 100
+
     // Insert
     const result = await execute(
       `INSERT INTO invoices (
         invoice_number, booking_id, user_id, provider_id, invoice_type,
         base_amount, overtime_minutes, overtime_rate, overtime_amount,
-        total_amount, service_name, service_duration, actual_duration,
+        total_amount, commission_percent, commission_amount, provider_earnings,
+        service_name, service_duration, actual_duration,
         job_date, completion_date, status
-      ) VALUES (?, ?, ?, ?, 'customer', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
+      ) VALUES (?, ?, ?, ?, 'customer', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
       [
         invoiceNumber,
         booking.id,
@@ -235,9 +241,12 @@ export async function POST(request) {
         booking.provider_id,
         baseAmount,
         overtimeMinutes,
-        overtimeRatePerHour, // Store the hourly rate, not per minute
+        overtimeRatePerHour,
         overtimeAmount,
         totalAmount,
+        commissionPercent,
+        commissionAmount,
+        providerEarnings,
         booking.service_name,
         standardDuration,
         actualDuration,

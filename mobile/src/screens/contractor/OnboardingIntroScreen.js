@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -15,6 +15,7 @@ import { useIsFocused } from '@react-navigation/native';
 const OnboardingIntroScreen = ({ navigation }) => {
     const { logout, user } = useAuth();
     const isFocused = useIsFocused();
+    const hasResumed = useRef(false);
 
     const steps = [
         { id: 1, title: 'Profile Setup', desc: 'Add your skills, bio and location', icon: 'person-outline' },
@@ -26,8 +27,9 @@ const OnboardingIntroScreen = ({ navigation }) => {
     const currentStep = Number(user?.onboarding_step) || 1;
 
     useEffect(() => {
-        if (isFocused && !user?.onboarding_completed) {
+        if (isFocused && !hasResumed.current && !user?.onboarding_completed) {
             console.log('🔄 [Intro] Checking step:', currentStep);
+            hasResumed.current = true;
             if (currentStep === 2) navigation.navigate('ProfileSetup');
             else if (currentStep === 3) navigation.navigate('DocumentUpload');
             else if (currentStep === 4) navigation.navigate('BankLink');
@@ -36,8 +38,6 @@ const OnboardingIntroScreen = ({ navigation }) => {
     }, [isFocused, currentStep, user?.onboarding_completed]);
 
     const handleGetStarted = () => {
-        // If they are on step 1, assume starting profile setup moves them to step "1.5"
-        // But we follow the redirect logic above. Step 1 stays here.
         navigation.navigate('ProfileSetup');
     };
 

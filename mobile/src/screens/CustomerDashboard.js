@@ -145,6 +145,22 @@ const CustomerDashboard = ({ navigation }) => {
                     </View>
                 </View>
 
+                {/* --- HELPERS --- */}
+                {(() => {
+                    const renderCategoryIcon = (icon) => {
+                        // Check if icon is an Ionicons name (likely ends with -outline or -sharp or is a known name)
+                        const isVectorIcon = icon && (icon.includes('-outline') || icon.includes('-sharp') || ['build', 'construct', 'bus', 'trash', 'leaf', 'brush', 'water'].some(k => icon.includes(k)));
+                        
+                        if (isVectorIcon) {
+                            return <Ionicons name={icon} size={moderateScale(32)} color={PRIMARY} />;
+                        }
+                        return <Text style={styles.catEmoji}>{icon || '🛠️'}</Text>;
+                    };
+
+                    return null; // This is just to define the helper within the scope if needed, 
+                                 // but actually it's better to define it outside or use it directly.
+                })()}
+
                 {/* --- CATEGORIES --- */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
@@ -160,23 +176,32 @@ const CustomerDashboard = ({ navigation }) => {
                         contentContainerStyle={styles.categoryScroll}
                     >
                         {(categories && categories.length > 0 ? categories : [
-                            { id: 1, name: 'Plumbing', icon: '🚰', color: '#3b82f6' },
-                            { id: 2, name: 'Electrical', icon: '⚡', color: '#f59e0b' },
-                            { id: 3, name: 'Cleaning', icon: '🧹', color: '#ec4899' },
-                            { id: 4, name: 'Painting', icon: '🎨', color: '#8b5cf6' },
-                            { id: 5, name: 'AC Repair', icon: '❄️', color: '#06b6d4' },
-                        ]).map((cat) => (
-                            <TouchableOpacity
-                                key={cat.id || cat._id}
-                                style={styles.catCard}
-                                onPress={() => navigation.navigate('Services', { categoryId: cat.id || cat._id })}
-                            >
-                                <View style={[styles.catIconWrap, { backgroundColor: (cat.color || PRIMARY) + '15' }]}>
-                                    <Text style={styles.catEmoji}>{cat.icon || '🛠️'}</Text>
-                                </View>
-                                <Text style={styles.catName}>{cat.name}</Text>
-                            </TouchableOpacity>
-                        ))}
+                            { id: 1, name: 'Plumbing', icon: 'water-outline', color: '#3b82f6' },
+                            { id: 2, name: 'Electrical', icon: 'flash-outline', color: '#f59e0b' },
+                            { id: 3, name: 'Cleaning', icon: 'brush-outline', color: '#ec4899' },
+                            { id: 4, name: 'Painting', icon: 'color-palette-outline', color: '#8b5cf6' },
+                            { id: 5, name: 'Maintenance', icon: 'build-outline', color: '#06b6d4' },
+                        ]).map((cat) => {
+                            const isVectorIcon = cat.icon && (cat.icon.includes('-outline') || cat.icon.includes('-sharp') || ['build', 'construct', 'bus', 'trash', 'leaf', 'brush', 'water'].some(k => cat.icon.includes(k)));
+                            
+                            return (
+                                <TouchableOpacity
+                                    key={cat.id || cat._id}
+                                    style={styles.catCard}
+                                    onPress={() => navigation.navigate('Services', { categoryId: cat.id || cat._id })}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={[styles.catIconWrap, { backgroundColor: '#fff' }]}>
+                                        {isVectorIcon ? (
+                                            <Ionicons name={cat.icon} size={moderateScale(32)} color={PRIMARY} />
+                                        ) : (
+                                            <Text style={styles.catEmoji}>{cat.icon || '🛠️'}</Text>
+                                        )}
+                                    </View>
+                                    <Text style={styles.catName} numberOfLines={2}>{cat.name}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </ScrollView>
                 </View>
 
@@ -356,24 +381,33 @@ const styles = StyleSheet.create({
     viewAllBtn: { color: PRIMARY_LIGHT, fontWeight: '700', fontSize: moderateScale(14) },
 
     /* Category Scroll */
-    categoryScroll: { paddingLeft: moderateScale(25), paddingRight: moderateScale(10) },
+    categoryScroll: { paddingLeft: moderateScale(25), paddingRight: moderateScale(10), paddingBottom: verticalScale(10) },
     catCard: {
-        width: moderateScale(85),
-        marginRight: scale(15),
+        width: moderateScale(100),
+        marginRight: scale(12),
         alignItems: 'center',
-    },
-    catIconWrap: {
-        width: moderateScale(80),
-        height: moderateScale(80),
+        backgroundColor: '#fff',
+        padding: moderateScale(12),
         borderRadius: moderateScale(24),
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: verticalScale(10),
         borderWidth: 1,
         borderColor: '#f1f5f9',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
     },
-    catEmoji: { fontSize: moderateScale(34) },
-    catName: { fontSize: moderateScale(13), fontWeight: '600', color: '#475569', textAlign: 'center' },
+    catIconWrap: {
+        width: moderateScale(60),
+        height: moderateScale(60),
+        borderRadius: moderateScale(18),
+        backgroundColor: '#f0fdfa',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: verticalScale(12),
+    },
+    catEmoji: { fontSize: moderateScale(30) },
+    catName: { fontSize: moderateScale(12), fontWeight: '700', color: '#334155', textAlign: 'center', lineHeight: moderateScale(16) },
 
     /* Orders / Bookings */
     orderCard: {

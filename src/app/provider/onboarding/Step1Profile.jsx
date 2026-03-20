@@ -14,14 +14,20 @@
 import { useState } from 'react';
 
 const SERVICE_AREAS = [
-  'Calgary NW', 'Calgary NE', 'Calgary SW', 'Calgary SE',
-  'Airdrie', 'Chestermere', 'Cochrane', 'Okotoks'
+  'Surrey', 'Delta', 'Langley', 'Richmond', 
+  'Vancouver (North, West, South, East)', 'Burnaby', 
+  'Coquitlam/Port Coquitlam', 'Abbotsford', 'New Westminster'
 ];
 
 const SKILLS = [
-  'Plumbing', 'Electrical', 'Carpentry', 'Painting',
-  'Drywall', 'Flooring', 'HVAC', 'Appliance Repair',
-  'Landscaping', 'Cleaning', 'Moving', 'Handyman'
+  'Cleaning (regular, deep, move out)',
+  'Exterior cleaning (pressure washing, gutters, windows)',
+  'Handyman',
+  'Furniture assembly',
+  'Movers',
+  'Junk removal',
+  'Yard work',
+  'Carpet wash'
 ];
 
 export default function Step1Profile({ initialData, onNext, providerId }) {
@@ -206,7 +212,7 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
           onChange={handleChange}
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500
             ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
-          placeholder="Enter your city (e.g., Calgary, Airdrie)"
+          placeholder="Enter your city (e.g., Surrey, Vancouver)"
         />
         {errors.city && <p className="mt-1 text-sm text-red-500">{errors.city}</p>}
         <p className="mt-1 text-xs text-gray-500">
@@ -219,16 +225,16 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Service Areas <span className="text-red-500">*</span>
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {SERVICE_AREAS.map(area => (
-            <label key={area} className="flex items-center space-x-2">
+            <label key={area} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.service_areas.includes(area)}
                 onChange={() => handleArrayToggle('service_areas', area)}
                 className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
               />
-              <span className="text-sm text-gray-700">{area}</span>
+              <span className="text-sm text-gray-700 leading-tight">{area}</span>
             </label>
           ))}
         </div>
@@ -242,16 +248,16 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Skills <span className="text-red-500">*</span>
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {SKILLS.map(skill => (
-            <label key={skill} className="flex items-center space-x-2">
+            <label key={skill} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.skills.includes(skill)}
                 onChange={() => handleArrayToggle('skills', skill)}
                 className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
               />
-              <span className="text-sm text-gray-700">{skill}</span>
+              <span className="text-sm text-gray-700 leading-tight">{skill}</span>
             </label>
           ))}
         </div>

@@ -8,6 +8,7 @@ import path from 'path';
 import { existsSync } from 'fs';
 
 export async function POST(request) {
+  console.log('📬 [API] Incoming document upload request');
   try {
     // 1. Check Mobile Session (via Authorization Header + DB)
     let decoded = await getMobileSession(request);

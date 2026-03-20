@@ -345,7 +345,7 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 md:mb-16 gap-4 md:gap-6">
             <div className="max-w-2xl">
               <span className="text-emerald-600 font-bold tracking-widest uppercase text-xs md:text-sm mb-3 md:mb-4 block">Hot Right Now</span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 font-[family-name:var(--font-outfit)] leading-tight">Trending in Calgary</h2>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 font-[family-name:var(--font-outfit)] leading-tight">Trending in Metro Vancouver</h2>
             </div>
             <Link href="/services" className="text-slate-900 text-sm md:text-base font-bold border-b-2 border-emerald-500 pb-1 hover:text-emerald-600 hover:border-emerald-600 transition-all">
               View All Services →

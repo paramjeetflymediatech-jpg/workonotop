@@ -99,7 +99,7 @@ function emailLayout({ previewText, headerBg, headerIcon, headerTitle, body }) {
           <!-- Footer -->
           <tr>
             <td style="padding:24px 0;text-align:center;">
-              <p style="margin:0 0 4px;font-size:13px;color:#94a3b8;">© ${new Date().getFullYear()} WorkOnTap · Calgary, Alberta, Canada</p>
+              <p style="margin:0 0 4px;font-size:13px;color:#94a3b8;">© ${new Date().getFullYear()} WorkOnTap · Metro Vancouver, Canada</p>
               <p style="margin:0;font-size:12px;color:#cbd5e1;">This email was sent to you because you have an account on WorkOnTap.</p>
             </td>
           </tr>

@@ -64,6 +64,9 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             });
             formData.append('type', type);
 
+            console.log('📤 [Upload] Sending document:', { uri: uploadUri, type, label, filename });
+            console.log('🌐 [URL] Destination:', `${API_BASE_URL}/api/provider/onboarding/upload-document`);
+
             const res = await apiService.provider.onboarding.uploadDocument(formData, token);
 
             if (res.success) {
@@ -155,8 +158,13 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             showPremiumAlert(`Please upload the following required documents:\n\n• ${missing.join('\n• ')}`, 'Missing Documents');
             return;
         }
-        // Update local state so it doesn't show Document step on reload
-        updateUser({ onboarding_step: 4 });
+        // Update local state and DB so it doesn't show Document step on reload
+        try {
+            apiService.provider.onboarding.updateStep(3, token);
+        } catch (err) {
+            console.error('Failed to update step in DB:', err);
+        }
+        updateUser({ onboarding_step: 3 });
         navigation.navigate('BankLink', { 
             profile, 
             documents,

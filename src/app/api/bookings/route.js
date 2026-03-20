@@ -209,6 +209,11 @@ export async function PUT(request) {
       const updateParams = [];
 
       if (commission_percent !== undefined) {
+        if (current.commission_percent !== null) {
+          console.error(`[API PUT] Commission already set for ID: ${id}. Update rejected.`);
+          await connection.query('ROLLBACK');
+          return NextResponse.json({ success: false, message: 'Commission is already set and cannot be changed.' }, { status: 400 });
+        }
         const providerAmt = calcProviderAmount(current.service_price, commission_percent);
         console.log(`[API PUT] Updating commission: ${commission_percent}%, Provider Amount: ${providerAmt}`);
         updateFields.push('commission_percent = ?', 'provider_amount = ?');

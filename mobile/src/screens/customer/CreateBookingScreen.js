@@ -269,7 +269,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
                         style={styles.input}
                         value={bookingData.city}
                         onChangeText={txt => setBookingData({ ...bookingData, city: txt })}
-                        placeholder="e.g. Calgary"
+                        placeholder="e.g. Surrey"
                     />
                 </View>
                 <View style={{ flex: 1 }}>

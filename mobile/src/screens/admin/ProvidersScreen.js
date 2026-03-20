@@ -89,35 +89,64 @@ const ProvidersScreen = ({ navigation }) => {
     };
 
     const handleAction = (providerId, action, reason) => {
-        const title = action === 'approve' ? 'Approve Provider' : 'Reject Provider';
-        const message = reason
-            ? `Are you sure you want to reject this provider for: "${reason}"?`
-            : `Are you sure you want to ${action} this provider?`;
+        let title = '';
+        let message = '';
+        
+        if (action === 'approve') {
+            title = 'Approve Provider';
+            message = 'Are you sure you want to approve this provider?';
+        } else if (action === 'reject') {
+            title = 'Reject Provider';
+            message = reason 
+                ? `Are you sure you want to reject this provider for: "${reason}"?`
+                : 'Are you sure you want to reject this provider?';
+        } else if (action === 'reject_docs') {
+            title = 'Reject Documents';
+            message = `Are you sure you want to reject these documents for: "${reason}"? The provider will need to re-upload them.`;
+        }
 
         Alert.alert(title, message, [
             { text: 'Cancel', style: 'cancel' },
             {
-                text: action.toUpperCase(),
-                style: action === 'reject' ? 'destructive' : 'default',
+                text: action === 'approve' ? 'APPROVE' : 'REJECT',
+                style: action === 'approve' ? 'default' : 'destructive',
                 onPress: async () => {
+                    setUpdatingStatus(true);
                     try {
-                        const res = await api.put('/api/admin/providers', {
-                            providerId,
-                            action,
-                            rejectionReason: action === 'reject' ? (reason || 'Does not meet requirements') : undefined
-                        });
+                        let res;
+                        if (action === 'reject_docs') {
+                            res = await api.post(`/api/admin/providers/${providerId}/documents`, {
+                                action: 'reject_all',
+                                rejectionReason: reason
+                            });
+                        } else {
+                            res = await api.put('/api/admin/providers', {
+                                providerId,
+                                action,
+                                rejectionReason: action === 'reject' ? (reason || 'Does not meet requirements') : undefined
+                            });
+                        }
+
                         if (res.success) {
-                            Alert.alert('Success', `Provider ${action}ed successfully`);
+                            Alert.alert('Success', `Action completed successfully`);
                             setModalVisible(false);
+                            setShowRejectInput(false);
+                            setRejectionReason('');
                             fetchProviders();
+                        } else {
+                            Alert.alert('Error', res.message || 'Action failed');
                         }
                     } catch (error) {
-                        Alert.alert('Error', error.message);
+                        Alert.alert('Error', error.message || 'Something went wrong');
+                    } finally {
+                        setUpdatingStatus(false);
                     }
                 }
             }
         ]);
     };
+
+    const [rejectionType, setRejectionType] = useState('reject'); // 'reject' or 'reject_docs'
 
     const handleStatusUpdate = async (newStatus) => {
         if (!selectedProvider) return;
@@ -585,7 +614,7 @@ const ProvidersScreen = ({ navigation }) => {
                                             </View>
                                         </View>
 
-                                        {selectedProvider.status === 'pending' && (
+                                        {(selectedProvider.status === 'pending' || (selectedProvider.status === 'inactive' && selectedProvider.onboarding_completed === 1)) && (
                                             <View style={{ marginTop: verticalScale(10) }}>
                                                 {!showRejectInput ? (
                                                     <View style={styles.modalActionRow}>
@@ -593,32 +622,52 @@ const ProvidersScreen = ({ navigation }) => {
                                                             style={[styles.modalActionBtn, styles.approveBtn]}
                                                             onPress={() => handleAction(selectedProvider.id, 'approve')}
                                                         >
-                                                            <Text style={styles.actionBtnText}>Approve Provider</Text>
+                                                            <Text style={styles.actionBtnText}>Approve</Text>
+                                                        </TouchableOpacity>
+                                                        <TouchableOpacity
+                                                            style={[styles.modalActionBtn, { backgroundColor: '#f59e0b' }]}
+                                                            onPress={() => {
+                                                                setRejectionType('reject_docs');
+                                                                setShowRejectInput(true);
+                                                            }}
+                                                        >
+                                                            <Text style={styles.actionBtnText}>Reject Docs</Text>
                                                         </TouchableOpacity>
                                                         <TouchableOpacity
                                                             style={[styles.modalActionBtn, styles.rejectBtn]}
-                                                            onPress={() => setShowRejectInput(true)}
+                                                            onPress={() => {
+                                                                setRejectionType('reject');
+                                                                setShowRejectInput(true);
+                                                            }}
                                                         >
-                                                            <Text style={styles.actionBtnText}>Reject</Text>
+                                                            <Text style={styles.actionBtnText}>Reject Provider</Text>
                                                         </TouchableOpacity>
                                                     </View>
                                                 ) : (
-                                                    <View style={styles.rejectInputContainer}>
-                                                        <Text style={styles.rejectInputLabel}>Rejection Reason</Text>
+                                                    <View style={[styles.rejectInputContainer, rejectionType === 'reject_docs' && { backgroundColor: '#fff7ed', borderColor: '#fed7aa' }]}>
+                                                        <Text style={[styles.rejectInputLabel, rejectionType === 'reject_docs' && { color: '#c2410c' }]}>
+                                                            {rejectionType === 'reject_docs' ? 'Document Rejection Reason' : 'Provider Rejection Reason'}
+                                                        </Text>
                                                         <TextInput
-                                                            style={styles.rejectInput}
-                                                            placeholder="Enter reason for rejection..."
+                                                            style={[styles.rejectInput, rejectionType === 'reject_docs' && { borderColor: '#fb923c' }]}
+                                                            placeholder={rejectionType === 'reject_docs' ? "Explain what's wrong with the docs..." : "Enter reason for rejecting this provider..."}
                                                             placeholderTextColor="#94a3b8"
                                                             multiline
                                                             value={rejectionReason}
                                                             onChangeText={setRejectionReason}
                                                         />
                                                         <TouchableOpacity
-                                                            style={[styles.rejectSubmitBtn, { opacity: rejectionReason.trim() ? 1 : 0.6 }]}
+                                                            style={[
+                                                                styles.rejectSubmitBtn, 
+                                                                rejectionType === 'reject_docs' && { backgroundColor: '#ea580c' },
+                                                                { opacity: rejectionReason.trim() ? 1 : 0.6 }
+                                                            ]}
                                                             disabled={!rejectionReason.trim()}
-                                                            onPress={() => handleAction(selectedProvider.id, 'reject', rejectionReason)}
+                                                            onPress={() => handleAction(selectedProvider.id, rejectionType, rejectionReason)}
                                                         >
-                                                            <Text style={styles.rejectSubmitText}>Submit Rejection</Text>
+                                                            <Text style={styles.rejectSubmitText}>
+                                                                {rejectionType === 'reject_docs' ? 'Submit Doc Rejection' : 'Submit Rejection'}
+                                                            </Text>
                                                         </TouchableOpacity>
                                                         <TouchableOpacity
                                                             style={styles.cancelRejectBtn}

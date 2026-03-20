@@ -83,8 +83,8 @@ export default function ContactPage() {
                 <div className="text-2xl">📍</div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Office</h3>
-                  <p className="text-gray-600">123 4th Street SW</p>
-                  <p className="text-gray-600">Calgary, AB T2P 1K4</p>
+                  <p className="text-gray-600">745 Thurlow Street</p>
+                  <p className="text-gray-600">Vancouver, BC V6E 0C5</p>
                 </div>
               </div>
             </div>

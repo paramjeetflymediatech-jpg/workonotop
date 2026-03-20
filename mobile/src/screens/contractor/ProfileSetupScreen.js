@@ -11,14 +11,20 @@ import { useAuth } from '../../context/AuthContext';
 import PremiumAlert from '../../components/PremiumAlert';
 
 const SERVICE_AREAS = [
-    'Calgary NW', 'Calgary NE', 'Calgary SW', 'Calgary SE',
-    'Airdrie', 'Chestermere', 'Cochrane', 'Okotoks'
+    'Surrey', 'Delta', 'Langley', 'Richmond',
+    'Vancouver (North, West, South, East)', 'Burnaby',
+    'Coquitlam/Port Coquitlam', 'Abbotsford', 'New Westminster'
 ];
 
 const SKILLS = [
-    'Plumbing', 'Painting', 'Electrical', 'HVAC',
-    'Cleaning', 'Drywall', 'Appliance Repair', 'Moving',
-    'Carpentry', 'Flooring', 'Landscaping', 'Handyman'
+    'Cleaning (regular, deep, move out)',
+    'Exterior cleaning (pressure washing, gutters, windows)',
+    'Handyman',
+    'Furniture assembly',
+    'Movers',
+    'Junk removal',
+    'Yard work',
+    'Carpet wash'
 ];
 
 const ProfileSetupScreen = ({ navigation }) => {
@@ -101,8 +107,8 @@ const ProfileSetupScreen = ({ navigation }) => {
             if (response.success) {
                 // Update local user state so RootNavigator/IntroScreen knows we've progressed
                 await updateUser({ onboarding_step: 3 });
-                navigation.navigate('DocumentUpload', { 
-                    profile: { ...profile, ...data } 
+                navigation.navigate('DocumentUpload', {
+                    profile: { ...profile, ...data }
                 });
             } else {
                 showPremiumAlert(response.message || 'Failed to save profile. Please try again.');
@@ -153,13 +159,13 @@ const ProfileSetupScreen = ({ navigation }) => {
                 <Stepper />
 
                 <View style={styles.contentCard}>
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={moderateScale(24)} color="#1e293b" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Profile Setup</Text>
-                    <View style={{ width: moderateScale(40) }} />
-                </View>
+                    <View style={styles.header}>
+                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                            <Ionicons name="arrow-back" size={moderateScale(24)} color="#1e293b" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Profile Setup</Text>
+                        <View style={{ width: moderateScale(40) }} />
+                    </View>
 
                     {/* Bio */}
                     <View style={styles.inputGroup}>
@@ -218,7 +224,7 @@ const ProfileSetupScreen = ({ navigation }) => {
                         <Text style={styles.label}>City <Text style={styles.req}>*</Text></Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Calgary"
+                            placeholder="Surrey"
                             placeholderTextColor="#94a3b8"
                             value={profile.city}
                             onChangeText={(t) => setProfile({ ...profile, city: t })}
@@ -235,15 +241,23 @@ const ProfileSetupScreen = ({ navigation }) => {
                                 return (
                                     <TouchableOpacity
                                         key={area}
-                                        style={styles.checkboxItem}
+                                        style={[
+                                            styles.checkboxItem,
+                                            isSelected && styles.checkboxItemActive
+                                        ]}
                                         onPress={() => toggleSelection('serviceAreas', area)}
                                     >
-                                        <Ionicons
-                                            name={isSelected ? "checkbox" : "square-outline"}
-                                            size={moderateScale(20)}
-                                            color={isSelected ? "#0d9488" : "#94a3b8"}
-                                        />
-                                        <Text style={styles.checkboxLabel}>{area}</Text>
+                                        <View style={styles.checkboxRow}>
+                                            <Ionicons
+                                                name={isSelected ? "checkbox" : "square-outline"}
+                                                size={moderateScale(22)}
+                                                color={isSelected ? "#0d9488" : "#94a3b8"}
+                                            />
+                                            <Text style={[
+                                                styles.checkboxLabel,
+                                                isSelected && styles.checkboxLabelActive
+                                            ]}>{area}</Text>
+                                        </View>
                                     </TouchableOpacity>
                                 );
                             })}
@@ -259,15 +273,23 @@ const ProfileSetupScreen = ({ navigation }) => {
                                 return (
                                     <TouchableOpacity
                                         key={skill}
-                                        style={styles.checkboxItem}
+                                        style={[
+                                            styles.checkboxItem,
+                                            isSelected && styles.checkboxItemActive
+                                        ]}
                                         onPress={() => toggleSelection('skills', skill)}
                                     >
-                                        <Ionicons
-                                            name={isSelected ? "checkbox" : "square-outline"}
-                                            size={moderateScale(20)}
-                                            color={isSelected ? "#0d9488" : "#94a3b8"}
-                                        />
-                                        <Text style={styles.checkboxLabel}>{skill}</Text>
+                                        <View style={styles.checkboxRow}>
+                                            <Ionicons
+                                                name={isSelected ? "checkbox" : "square-outline"}
+                                                size={moderateScale(22)}
+                                                color={isSelected ? "#0d9488" : "#94a3b8"}
+                                            />
+                                            <Text style={[
+                                                styles.checkboxLabel,
+                                                isSelected && styles.checkboxLabelActive
+                                            ]}>{skill}</Text>
+                                        </View>
                                     </TouchableOpacity>
                                 );
                             })}
@@ -405,16 +427,31 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     checkboxItem: {
-        width: '50%',
+        width: '100%',
+        marginBottom: verticalScale(10),
+        padding: moderateScale(12),
+        borderRadius: moderateScale(10),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        backgroundColor: '#fff',
+    },
+    checkboxItemActive: {
+        borderColor: '#0d9488',
+        backgroundColor: '#f0fdfa',
+    },
+    checkboxRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: verticalScale(12),
-        paddingRight: scale(5),
     },
     checkboxLabel: {
-        fontSize: moderateScale(12),
+        fontSize: moderateScale(13),
         color: '#475569',
-        marginLeft: scale(8),
+        marginLeft: scale(10),
+        flex: 1,
+    },
+    checkboxLabelActive: {
+        color: '#0d9488',
+        fontWeight: '600',
     },
     nextBtn: {
         backgroundColor: '#0d9488',
