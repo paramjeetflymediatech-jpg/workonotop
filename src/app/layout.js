@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "src/context/AuthContext";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +33,18 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           {children}
         </AuthProvider>
+
+        {/* Ionicons Support */}
+        <Script 
+          type="module" 
+          src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js" 
+          strategy="afterInteractive"
+        />
+        <Script 
+          noModule 
+          src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js" 
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

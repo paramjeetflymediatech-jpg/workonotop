@@ -716,7 +716,13 @@ export default function ServicesPage() {
                   }
                 `}
               >
-                <span>{category.icon}</span>
+                <span>
+                  {category.icon && category.icon.includes('-') ? (
+                    <ion-icon name={category.icon}></ion-icon>
+                  ) : (
+                    category.icon
+                  )}
+                </span>
                 <span>{category.name}</span>
               </button>
             ))}
@@ -761,7 +767,15 @@ export default function ServicesPage() {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
-                            <span className="text-6xl group-hover:scale-125 transition-transform duration-500">{category?.icon || '🛠️'}</span>
+                            <span className="text-6xl group-hover:scale-125 transition-transform duration-500">
+                              {category?.icon && category.icon.includes('-') ? (
+                                <div className="text-teal-600 flex">
+                                  <ion-icon name={category.icon}></ion-icon>
+                                </div>
+                              ) : (
+                                category?.icon || '🛠️'
+                              )}
+                            </span>
                           </div>
                         )}
                         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 border border-white/20">
