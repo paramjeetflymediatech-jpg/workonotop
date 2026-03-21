@@ -49,7 +49,7 @@ const BankLinkScreen = ({ navigation, route }) => {
 
     const handleSkip = async () => {
         try {
-            await updateUser({ onboarding_step: 5 });
+            await updateUser({ onboarding_step: 4 });
             navigation.navigate('Review', { profile, documents, connected: false });
         } catch (err) {
             console.error('Skip state update error:', err);
@@ -77,10 +77,10 @@ const BankLinkScreen = ({ navigation, route }) => {
             try {
                 // Attempt to call stripeComplete to update backend status
                 await apiService.provider.onboarding.stripeComplete({}, token);
-                await updateUser({ onboarding_step: 5 });
+                await updateUser({ onboarding_step: 4 });
             } catch (err) {
                 console.warn('Silent failure updating stripe status:', err);
-                await updateUser({ onboarding_step: 5 });
+                await updateUser({ onboarding_step: 4 });
             }
 
             // Auto navigate to review after connection

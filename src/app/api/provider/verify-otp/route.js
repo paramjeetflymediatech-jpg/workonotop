@@ -13,18 +13,21 @@ export async function POST(request) {
             }, { status: 400 })
         }
 
-        console.log('🔍 OTP verification attempt for:', email)
+        const cleanEmail = (email || '').trim().toLowerCase();
+        const cleanOtp = (otp || '').toString().trim();
+
+        console.log(`🔍 DIAGNOSTIC: OTP verification for [${cleanEmail}] with OTP [${cleanOtp}]`);
 
         // Check if provider exists with valid token
         const providers = await execute(
             `SELECT id FROM service_providers 
-       WHERE email = ? 
-       AND reset_token = ? 
-       AND reset_token_expiry > NOW()`,
-            [email, otp]
+        WHERE LOWER(email) = ? 
+        AND reset_token = ? 
+        AND reset_token_expiry > NOW()`,
+            [cleanEmail, cleanOtp]
         )
 
-        console.log('📊 Verification result:', providers.length > 0 ? 'Success' : 'Failed')
+        console.log(`📊 DIAGNOSTIC: Verification result - Rows found: ${providers.length}`);
 
         if (providers.length === 0) {
             return NextResponse.json({
@@ -33,9 +36,11 @@ export async function POST(request) {
             }, { status: 400 })
         }
 
-        // ✅ Mark email as verified and clear reset token
+        // ✅ Mark email as verified, but don't clear reset token yet.
+        // The mobile ResetPasswordScreen needs this token to exist in the DB 
+        // when it calls /api/provider/reset-password in the next step.
         await execute(
-            `UPDATE service_providers SET email_verified = 1, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?`,
+            `UPDATE service_providers SET email_verified = 1 WHERE id = ?`,
             [providers[0].id]
         )
 

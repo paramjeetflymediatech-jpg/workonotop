@@ -20,6 +20,15 @@ export const AuthProvider = ({ children }) => {
                 const storedUser = await AsyncStorage.getItem('user');
                 const storedToken = await AsyncStorage.getItem('token');
 
+                let parsedUser = null;
+                if (storedUser) {
+                    try {
+                        parsedUser = JSON.parse(storedUser);
+                    } catch (e) {
+                        console.warn('[AuthContext] Corrupted user data in storage, ignoring...');
+                    }
+                }
+
                 if (storedToken) {
                     setToken(storedToken);
                     

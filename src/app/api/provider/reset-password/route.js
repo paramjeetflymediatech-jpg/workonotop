@@ -31,6 +31,10 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
+    // Clean inputs
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanOtp = (otp || '').toString().trim();
+
     connection = await getConnection()
     await connection.query('START TRANSACTION')
 
@@ -48,12 +52,34 @@ export async function POST(request) {
         providers = result;
       } else {
         // Mobile flow (Email + OTP)
+        console.log(`🔍 DIAGNOSTIC: Attempting reset for [${cleanEmail}] with OTP [${cleanOtp}]`);
+        
+        // 1. Get current state of this provider
+        const [currentState] = await connection.execute(
+          `SELECT id, email, reset_token, reset_token_expiry, NOW() as db_now 
+           FROM service_providers WHERE LOWER(email) = ?`,
+          [cleanEmail]
+        );
+
+        if (currentState.length === 0) {
+          console.log(`❌ DIAGNOSTIC: No provider found for email [${cleanEmail}]`);
+        } else {
+          const p = currentState[0];
+          const tokenMatch = p.reset_token === cleanOtp;
+          const notExpired = new Date(p.reset_token_expiry) > new Date(p.db_now);
+          console.log(`📊 DIAGNOSTIC: Provider ID: ${p.id}`);
+          console.log(`📊 DIAGNOSTIC: DB Token: [${p.reset_token}], Input OTP: [${cleanOtp}], MATCH: ${tokenMatch}`);
+          console.log(`📊 DIAGNOSTIC: DB Expiry: ${p.reset_token_expiry}, DB Now: ${p.db_now}, VALID: ${notExpired}`);
+          
+          if (!tokenMatch) console.log('💡 TIP: Check if verify-otp is prematurely clearing the token.');
+        }
+
         const [result] = await connection.execute(
           `SELECT id, email FROM service_providers 
-           WHERE email = ?
+           WHERE LOWER(email) = ?
            AND reset_token = ? 
            AND reset_token_expiry > NOW()`,
-          [email, otp]
+          [cleanEmail, cleanOtp]
         )
         providers = result;
       }

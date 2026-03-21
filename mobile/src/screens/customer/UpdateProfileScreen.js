@@ -7,9 +7,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '../../services/api';
 
 const UpdateProfileScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { user, token, updateUser } = useAuth();
     
     const [loading, setLoading] = useState(true);

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH, SCREEN_HEIGHT } from '../../utils/responsive';
 
-const WelcomeScreen = ({ onFinish }) => {
+const WelcomeScreen = ({ navigation }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
     const floatAnim = useRef(new Animated.Value(0)).current;
@@ -90,7 +90,7 @@ const WelcomeScreen = ({ onFinish }) => {
                 </Animated.View>
 
                 <Animated.View style={[styles.buttonWrapper, { opacity: buttonFadeAnim }]}>
-                    <TouchableOpacity style={styles.button} onPress={onFinish}>
+                    <TouchableOpacity style={styles.button} onPress={() => navigation.replace('AuthChoice')}>
                         <Text style={styles.buttonText}>Get Started</Text>
                     </TouchableOpacity>
                 </Animated.View>

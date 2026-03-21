@@ -41,7 +41,8 @@ export async function GET(request) {
     if (role === 'provider') {
       // Lookup in service_providers table
       const providers = await query(
-        `SELECT id, name, email, phone, status, specialty, 
+        `SELECT id, name, email, phone, status, specialty, bio, 
+                experience_years, city, location, service_areas, skills,
                 onboarding_step, onboarding_completed, avatar_url 
          FROM service_providers WHERE id = ?`,
         [userId]

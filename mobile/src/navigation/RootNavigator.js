@@ -12,6 +12,7 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import OtpVerificationScreen from '../screens/auth/OtpVerificationScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
+import WelcomeScreen from '../screens/auth/WelcomeScreen';
 
 // Main
 import BottomTabNavigator from './BottomTabNavigator';
@@ -49,6 +50,7 @@ import ChangePasswordScreen from '../screens/customer/ChangePasswordScreen';
 import InvoicesScreen from '../screens/customer/InvoicesScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
 import ChatScreen from '../screens/ChatScreen';
+import LegalScreen from '../screens/LegalScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -123,6 +125,7 @@ const RootNavigator = () => {
                             <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="CreateBooking" component={CreateBookingScreen} options={{ title: 'Book Service' }} />
                             <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} options={{ headerShown: false }} />
+                            <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: false }} />
 
                             {/* Contractor Onboarding (Still registered for deep links or manual re-entry if allowed) */}
                             <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
@@ -149,6 +152,7 @@ const RootNavigator = () => {
                 </>
             ) : (
                 <>
+                    <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="AuthChoice" component={AuthChoiceScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ProviderSignup" component={ProviderSignupScreen} options={{ headerShown: false }} />

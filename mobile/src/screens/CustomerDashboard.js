@@ -41,16 +41,19 @@ const CustomerDashboard = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [categories, setCategories] = useState([]);
     const [bookings, setBookings] = useState([]);
+    const [featuredServices, setFeaturedServices] = useState([]);
 
     const fetchCustomerData = useCallback(async () => {
         try {
-            const [categoriesRes, bookingsRes] = await Promise.all([
+            const [categoriesRes, bookingsRes, featuredRes] = await Promise.all([
                 api.get('/api/categories'),
-                api.get(`/api/customer/bookings?user_id=${user?.id}`)
+                api.get(`/api/customer/bookings?user_id=${user?.id}`),
+                api.get('/api/services?homepage=true&limit=6')
             ]);
-
+            
             setCategories(categoriesRes.data || []);
             setBookings(bookingsRes.data || []);
+            setFeaturedServices(featuredRes.data || []);
         } catch (error) {
             console.error('Error fetching customer data:', error);
         } finally {
@@ -188,7 +191,7 @@ const CustomerDashboard = ({ navigation }) => {
                                 <TouchableOpacity
                                     key={cat.id || cat._id}
                                     style={styles.catCard}
-                                    onPress={() => navigation.navigate('Services', { categoryId: cat.id || cat._id })}
+                                    onPress={() => navigation.navigate('Services', { categoryId: cat.id })}
                                     activeOpacity={0.7}
                                 >
                                     <View style={[styles.catIconWrap, { backgroundColor: '#fff' }]}>
@@ -204,6 +207,49 @@ const CustomerDashboard = ({ navigation }) => {
                         })}
                     </ScrollView>
                 </View>
+
+                {/* --- FEATURED SERVICES --- */}
+                {featuredServices.length > 0 && (
+                    <View style={styles.sectionSmall}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Featured Services</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('Services')}>
+                                <Text style={styles.viewAllBtn}>Explore</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.featuredScroll}
+                        >
+                            {featuredServices.map((service) => (
+                                <TouchableOpacity
+                                    key={service.id}
+                                    style={styles.featuredCard}
+                                    onPress={() => navigation.navigate('Details', { service })}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={styles.featuredImageContainer}>
+                                        <Image 
+                                            source={{ uri: service.image_url?.startsWith('http') ? service.image_url : `${API_BASE_URL}${service.image_url}` }} 
+                                            style={styles.featuredImage} 
+                                        />
+                                        <View style={styles.priceTag}>
+                                            <Text style={styles.priceTagText}>${service.base_price}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.featuredInfo}>
+                                        <Text style={styles.featuredName} numberOfLines={1}>{service.name}</Text>
+                                        <View style={styles.ratingRow}>
+                                            <Ionicons name="star" size={moderateScale(12)} color={ACCENT} />
+                                            <Text style={styles.ratingText}>4.9</Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
 
                 {/* --- ACTIVE BOOKINGS --- */}
                 <View style={[styles.section, { marginBottom: verticalScale(15) }]}>
@@ -478,6 +524,64 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(12),
         backgroundColor: PRIMARY,
         borderRadius: moderateScale(15),
+    },
+    /* Featured Services */
+    sectionSmall: { marginTop: verticalScale(20) },
+    featuredScroll: { paddingLeft: moderateScale(25), paddingRight: moderateScale(10), paddingBottom: verticalScale(10) },
+    featuredCard: {
+        width: moderateScale(160),
+        marginRight: scale(15),
+        backgroundColor: '#fff',
+        borderRadius: moderateScale(20),
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+    },
+    featuredImageContainer: {
+        width: '100%',
+        height: verticalScale(100),
+    },
+    featuredImage: {
+        width: '100%',
+        height: '100%',
+    },
+    priceTag: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    priceTagText: {
+        color: PRIMARY,
+        fontWeight: 'bold',
+        fontSize: moderateScale(12),
+    },
+    featuredInfo: {
+        padding: moderateScale(12),
+    },
+    featuredName: {
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        color: '#1e293b',
+        marginBottom: verticalScale(4),
+    },
+    ratingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    ratingText: {
+        fontSize: moderateScale(11),
+        color: '#64748b',
+        marginLeft: scale(4),
+        fontWeight: '600',
     },
     emptyBtnTxt: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(15) },
 });

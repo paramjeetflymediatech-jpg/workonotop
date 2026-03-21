@@ -93,7 +93,11 @@ const CustomDrawerContent = (props) => {
                 </View>
             </DrawerContentScrollView>
             <View style={styles.footer}>
-                <TouchableOpacity style={styles.logoutButton} onPress={handleLogoutPress}>
+                <TouchableOpacity 
+                    style={styles.logoutButton} 
+                    onPress={handleLogoutPress}
+                    activeOpacity={0.7}
+                >
                     <Ionicons name="log-out-outline" size={moderateScale(22)} color="#ef4444" />
                     <Text style={styles.logoutText}>Log out</Text>
                 </TouchableOpacity>
@@ -168,11 +172,12 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     footer: {
-        padding: moderateScale(5),
-        marginBottom: verticalScale(10),
-        paddingLeft: moderateScale(35),
+        padding: moderateScale(15),
+        paddingBottom: verticalScale(20), // Added bottom padding for home indicators
+        paddingLeft: moderateScale(25),
         borderTopWidth: 1,
         borderTopColor: '#f1f5f9',
+        backgroundColor: '#fff',
     },
     logoutButton: {
         flexDirection: 'row',

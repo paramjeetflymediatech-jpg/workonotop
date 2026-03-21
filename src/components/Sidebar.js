@@ -462,7 +462,7 @@ export default function Sidebar() {
       .then(d => {
         if (d.success) setOpenDisputeCount(d.data.summary.open_count || 0)
       })
-      .catch(() => {})
+      .catch(() => { })
 
     return () => {
       window.removeEventListener('toggleMobileSidebar', handleToggleMobile)
@@ -476,10 +476,10 @@ export default function Sidebar() {
     window.dispatchEvent(new Event('sidebarCollapsed'))
   }
 
- const handleLogout = async () => {
-  await fetch('/api/admin/logout', { method: 'POST' })
-  router.push('/admin/login')
-}
+  const handleLogout = async () => {
+    await fetch('/api/admin/logout', { method: 'POST' })
+    router.push('/admin/login')
+  }
 
 
   const menuItems = [
@@ -613,9 +613,9 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - DO NOT REMOVE flex-col, it fixes logout button visibility/overlap on smaller screens */}
       <div
-        className={`fixed left-0 top-0 h-screen border-r z-[95] overflow-hidden flex-shrink-0 transition-all duration-300 ease-in-out lg:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed left-0 top-0 h-screen border-r z-[95] overflow-hidden flex flex-col transition-all duration-300 ease-in-out lg:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
         style={{
           width: isCollapsed ? '80px' : '256px',
           backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
@@ -675,10 +675,8 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Navigation Menu */}
-        <div className="overflow-y-auto py-4" style={{
-          height: 'calc(100vh - 180px)',
-          scrollbarWidth: 'thin',
+        {/* Navigation Menu - Using flex flex-col and flex-1 to push footer to bottom naturally */}
+        <div className="flex-1 overflow-y-auto py-4 scrollbar-thin overflow-x-hidden" style={{
           scrollbarColor: isDarkMode ? '#475569 #1e293b' : '#94a3b8 #f1f5f9',
           paddingLeft: isCollapsed ? '8px' : '16px',
           paddingRight: isCollapsed ? '8px' : '16px'
@@ -744,8 +742,8 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Bottom Section */}
-        <div className="absolute bottom-0 left-0 right-0 border-t" style={{
+        {/* Bottom Section - Now part of flexbox flow (mt-auto) */}
+        <div className="mt-auto border-t pb-safe" style={{
           backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
           borderTopColor: isDarkMode ? '#1e293b' : '#e2e8f0',
           padding: isCollapsed ? '16px 8px' : '16px'
@@ -754,7 +752,7 @@ export default function Sidebar() {
             style={{
               color: isDarkMode ? '#94a3b8' : '#475569',
               background: 'transparent',
-              padding: isCollapsed ? '12px' : '1px 13px',
+              padding: isCollapsed ? '12px' : '12px 16px', // Restored padding
               justifyContent: isCollapsed ? 'center' : 'flex-start',
               gap: isCollapsed ? '0' : '12px'
             }}

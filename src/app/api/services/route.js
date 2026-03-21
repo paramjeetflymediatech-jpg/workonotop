@@ -1,13 +1,13 @@
 // app/api/services/route.js - OPTIONAL IMPROVEMENT
 import { NextResponse } from 'next/server'
-import { execute } from '@/lib/db'  // ✅ CHANGE: query → execute
+import { execute, query } from '@/lib/db'
 
 // GET all services
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const categoryId = searchParams.get('category_id')
+    const categoryId = searchParams.get('category_id') || searchParams.get('categoryId')
     const slug = searchParams.get('slug')
     const homepage = searchParams.get('homepage')
     const limit = searchParams.get('limit')
@@ -45,13 +45,13 @@ export async function GET(request) {
 
     sql += ' ORDER BY sc.display_order, s.name'
 
+    // ✅ Using query() for more flexible LIMIT handling
+    // We use parseInt to sanitize the limit and avoid SQL injection since LIMIT ? can fail in some MySQL execute versions
     if (limit) {
-      sql += ' LIMIT ?'
-      params.push(parseInt(limit))
+      sql += ` LIMIT ${parseInt(limit)}`
     }
 
-    // ✅ Using execute()
-    const services = await execute(sql, params)
+    const services = await query(sql, params)
 
     if ((id || slug) && services.length === 1) {
       return NextResponse.json({

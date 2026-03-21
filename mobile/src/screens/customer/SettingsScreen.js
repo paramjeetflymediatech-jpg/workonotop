@@ -12,8 +12,9 @@ import {
     Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -48,7 +49,7 @@ const SettingsScreen = ({ navigation }) => {
 
     const toggleSetting = async (key, value) => {
         const previousValue = settings[key];
-        
+
         // Optimistic update
         setSettings(prev => ({ ...prev, [key]: value }));
 
@@ -177,16 +178,37 @@ const SettingsScreen = ({ navigation }) => {
                         icon="globe-outline"
                         title="Language"
                         subtitle="English (US)"
+                        onPress={() => Alert.alert('Language', 'Language selection will be available in the next update.')}
                     />
                 </View>
 
                 <SectionHeader title="About" />
                 <View style={styles.sectionCard}>
-                    <SettingItem icon="document-text-outline" title="Terms of Service" color="#64748b" />
+                    <SettingItem 
+                        icon="document-text-outline" 
+                        title="Terms of Service" 
+                        color="#64748b" 
+                        onPress={() => navigation.navigate('Legal', { type: 'terms' })}
+                    />
                     <View style={styles.divider} />
-                    <SettingItem icon="shield-checkmark-outline" title="Privacy Policy" color="#64748b" />
+                    <SettingItem 
+                        icon="shield-checkmark-outline" 
+                        title="Privacy Policy" 
+                        color="#64748b" 
+                        onPress={() => navigation.navigate('Legal', { type: 'privacy' })}
+                    />
                     <View style={styles.divider} />
-                    <SettingItem icon="information-circle-outline" title="App Version" subtitle="v1.0.2" color="#64748b" />
+                    <SettingItem 
+                        icon="information-circle-outline" 
+                        title="About Us" 
+                        color="#64748b" 
+                        onPress={() => navigation.navigate('Legal', { type: 'about' })}
+                    />
+                    <View style={styles.divider} />
+                    <View style={styles.versionInfo}>
+                        <Text style={styles.versionLabel}>App Version</Text>
+                        <Text style={styles.versionValue}>v{Constants.expoConfig?.version || '1.0.0'}</Text>
+                    </View>
                 </View>
 
                 <View style={{ height: verticalScale(20) }} />
@@ -226,7 +248,24 @@ const styles = StyleSheet.create({
     settingInfo: { flex: 1 },
     settingTitle: { fontSize: moderateScale(15), fontWeight: '600', color: '#0f172a' },
     settingSubtitle: { fontSize: moderateScale(12), color: '#64748b', marginTop: verticalScale(2) },
-    divider: { height: 1, backgroundColor: '#f1f5f9', marginHorizontal: scale(16) }
+    divider: { height: 1, backgroundColor: '#f1f5f9', marginHorizontal: scale(16) },
+    versionInfo: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: scale(16),
+        backgroundColor: '#f8fafc',
+    },
+    versionLabel: {
+        fontSize: moderateScale(14),
+        color: '#64748b',
+        fontWeight: '500',
+    },
+    versionValue: {
+        fontSize: moderateScale(14),
+        color: '#0f172a',
+        fontWeight: 'bold',
+    }
 });
 
 export default SettingsScreen;

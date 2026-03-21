@@ -9,15 +9,33 @@ import { moderateScale, verticalScale, scale } from '../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 
 const ReviewScreen = ({ navigation, route }) => {
-    const { profile, documents, connected } = route.params || {};
-    const { updateUser } = useAuth();
+    const { token, user, updateUser } = useAuth();
+    
+    // Recovery logic: if profile is missing from params (e.g. on reload), 
+    // we use the data from the authenticated user object.
+    const profile = route.params?.profile || {
+        bio: user?.bio || '',
+        primarySpecialty: user?.specialty || '',
+        yearsExperience: String(user?.experience_years || ''),
+        businessAddress: user?.location || '',
+        city: user?.city || '',
+        serviceAreas: user?.service_areas ? (typeof user.service_areas === 'string' ? JSON.parse(user.service_areas) : user.service_areas) : [],
+        skills: user?.skills ? (typeof user.skills === 'string' ? JSON.parse(user.skills) : user.skills) : [],
+    };
+    const { documents, connected } = route.params || {};
     const [loading, setLoading] = useState(false);
 
     const submitApplication = async () => {
+        // 1. Final Validation Check
+        if (!profile?.bio || profile.bio.trim().length < 10) {
+            Alert.alert('Incomplete Profile', 'Your professional bio is missing or too short. Please go back to Profile Setup.');
+            return;
+        }
+
         setLoading(true);
         try {
             const profilePayload = {
-                bio: profile?.bio || '',
+                bio: profile?.bio?.trim() || '',
                 specialty: profile?.primarySpecialty || '',
                 experience_years: parseInt(profile?.yearsExperience || '1'),
                 city: profile?.city || '',

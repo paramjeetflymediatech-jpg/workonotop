@@ -106,7 +106,7 @@ const ProfileSetupScreen = ({ navigation }) => {
 
             if (response.success) {
                 // Update local user state so RootNavigator/IntroScreen knows we've progressed
-                await updateUser({ onboarding_step: 3 });
+                await updateUser({ onboarding_step: 2 });
                 navigation.navigate('DocumentUpload', {
                     profile: { ...profile, ...data }
                 });

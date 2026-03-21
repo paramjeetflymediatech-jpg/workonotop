@@ -14,8 +14,19 @@ import { Ionicons } from '@expo/vector-icons';
 import PremiumAlert from '../../components/PremiumAlert';
 
 const DocumentUploadScreen = ({ navigation, route }) => {
-    const { profile } = route.params || {};
-    const { token, updateUser } = useAuth();
+    const { token, updateUser, user } = useAuth();
+    
+    // Recovery logic: if profile is missing from params (e.g. on reload), 
+    // we use the data from the authenticated user object.
+    const profile = route.params?.profile || {
+        bio: user?.bio || '',
+        primarySpecialty: user?.specialty || '',
+        yearsExperience: String(user?.experience_years || ''),
+        businessAddress: user?.location || '',
+        city: user?.city || '',
+        serviceAreas: user?.service_areas ? (typeof user.service_areas === 'string' ? JSON.parse(user.service_areas) : user.service_areas) : [],
+        skills: user?.skills ? (typeof user.skills === 'string' ? JSON.parse(user.skills) : user.skills) : [],
+    };
     const [documents, setDocuments] = useState({
         profile_photo: null,
         id_proof: null,
