@@ -10,7 +10,7 @@ export async function GET(request) {
     const categoryId = searchParams.get('category_id') || searchParams.get('categoryId')
     const slug = searchParams.get('slug')
     const homepage = searchParams.get('homepage')
-    const limit = searchParams.get('limit')
+    const limitParams = searchParams.get('limit')
 
     let sql = `
       SELECT 
@@ -45,12 +45,15 @@ export async function GET(request) {
 
     sql += ' ORDER BY sc.display_order, s.name'
 
-    // ✅ Using query() for more flexible LIMIT handling
-    // We use parseInt to sanitize the limit and avoid SQL injection since LIMIT ? can fail in some MySQL execute versions
-    if (limit) {
-      sql += ` LIMIT ${parseInt(limit)}`
+    // Always sanitize LIMIT to prevent any issues with placeholders
+    if (limitParams) {
+      const parsedLimit = parseInt(limitParams)
+      if (!isNaN(parsedLimit)) {
+        sql += ` LIMIT ${parsedLimit}`
+      }
     }
 
+    // Use query() instead of execute() for queries with dynamic LIMIT or broad SELECTs
     const services = await query(sql, params)
 
     if ((id || slug) && services.length === 1) {

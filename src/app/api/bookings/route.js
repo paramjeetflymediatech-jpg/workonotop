@@ -157,6 +157,14 @@ export async function POST(request) {
           .catch(err => console.error('[Push] Notification Error:', err));
       }
 
+      // 🔔 Notify all admins (non-blocking)
+      execute("SELECT id FROM users WHERE role = 'admin'").then(admins => {
+        admins.forEach(admin => {
+          notifyUser(admin.id, 'New Booking Created', `New booking #${bookingNumber} for ${service_name}`, { bookingId, type: 'booking_created' }, execute, 'admin')
+            .catch(() => {});
+        });
+      }).catch(_ => {});
+
       return NextResponse.json({
         success: true,
         booking_id: bookingId,
