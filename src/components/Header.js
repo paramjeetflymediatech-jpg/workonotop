@@ -226,7 +226,7 @@ export default function Header() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Sign out?</h3>
-            <p className="text-sm text-gray-500 mb-5">You'll need to log in again to access your account.</p>
+            <p className="text-sm text-gray-500 mb-5">You&apos;ll need to log in again to access your account.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowLogoutConfirm(false)}
                 className="flex-1 py-2 border border-gray-200 text-gray-700 font-semibold rounded-xl">

@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../config';
 
 const DetailsScreen = ({ navigation, route }) => {
     const { user } = useAuth();
+    const { service, bookingId } = route.params || {};
     const [data, setData] = useState(service || null);
     const [loading, setLoading] = useState(!service);
     const [refreshing, setRefreshing] = useState(false);
