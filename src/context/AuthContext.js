@@ -5,6 +5,170 @@
 
 
 
+// 'use client';
+
+// import { createContext, useContext, useState, useEffect } from 'react';
+// import { useRouter } from 'next/navigation';
+
+// const AuthContext = createContext();
+
+// export function AuthProvider({ children }) {
+//   const router = useRouter();
+//   const [user, setUser] = useState(null);
+//   const [userType, setUserType] = useState(null); // 'customer' or 'provider'
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     checkAuth();
+//   }, []);
+
+//   const checkAuth = async () => {
+//     try {
+//       // First check customer auth via API
+//       const customerRes = await fetch('/api/auth/me');
+//       const customerData = await customerRes.json();
+      
+//       if (customerData.success) {
+//         setUser(customerData.user);
+//         setUserType('customer');
+//         setLoading(false);
+//         return;
+//       }
+
+//       // If no customer, check provider auth via cookie
+//       // You'll need to create a similar endpoint for providers
+//       const providerRes = await fetch('/api/provider/me');
+//       const providerData = await providerRes.json();
+      
+//       if (providerData.success) {
+//         setUser(providerData.provider);
+//         setUserType('provider');
+//       }
+//     } catch (error) {
+//       console.error('Auth check error:', error);
+//       setUser(null);
+//       setUserType(null);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const login = (userData, type = 'customer') => {
+//     setUser(userData);
+//     setUserType(type);
+//     // No localStorage - cookies are handled by the server
+//   };
+
+//   const logout = async (redirect = true) => {
+//     try {
+//       // Call appropriate logout endpoint based on user type
+//       if (userType === 'customer') {
+//         await fetch('/api/auth/logout', { method: 'POST' });
+//       } else if (userType === 'provider') {
+//         await fetch('/api/provider/logout', { method: 'POST' });
+//       }
+//     } catch (error) {
+//       console.error('Logout error:', error);
+//     } finally {
+//       setUser(null);
+//       setUserType(null);
+      
+//       if (redirect) {
+//         router.push('/');
+//       }
+//     }
+//   };
+
+//   // Helper to check if user is provider
+//   const isProvider = () => {
+//     return userType === 'provider';
+//   };
+
+//   // Helper to check if user is customer
+//   const isCustomer = () => {
+//     return userType === 'customer';
+//   };
+
+//   // Get dashboard link based on user type
+//   const getDashboardLink = () => {
+//     if (!user) return '/';
+//     return isProvider() ? '/provider/dashboard' : '/my-bookings';
+//   };
+
+//   // Get user display name
+//   const getUserDisplayName = () => {
+//     if (!user) return '';
+    
+//     if (isProvider()) {
+//       // Provider format - try different possible name fields
+//       return user.name || 
+//              user.business_name || 
+//              `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
+//              user.email || 
+//              'Provider';
+//     } else {
+//       // Customer format
+//       return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Customer';
+//     }
+//   };
+
+//   // Get user initials
+//   const getUserInitials = () => {
+//     if (!user) return 'U';
+    
+//     if (isProvider()) {
+//       // Try to get initials from name
+//       if (user.name) return user.name.charAt(0).toUpperCase();
+//       if (user.first_name) return user.first_name.charAt(0).toUpperCase();
+//       if (user.business_name) return user.business_name.charAt(0).toUpperCase();
+//     } else {
+//       if (user.first_name) return user.first_name.charAt(0).toUpperCase();
+//       if (user.last_name) return user.last_name.charAt(0).toUpperCase();
+//     }
+    
+//     // Fallback to email first character
+//     return user.email?.charAt(0)?.toUpperCase() || 'U';
+//   };
+
+//   return (
+//     <AuthContext.Provider value={{ 
+//       user, 
+//       userType,
+//       loading, 
+//       login, 
+//       logout,
+//       isProvider,
+//       isCustomer,
+//       getDashboardLink,
+//       getUserDisplayName,
+//       getUserInitials,
+//       checkAuth // Expose this to manually refresh auth state
+//     }}>
+//       {children}
+//     </AuthContext.Provider>
+//   );
+// }
+
+// export function useAuth() {
+//   const context = useContext(AuthContext);
+//   if (!context) {
+//     throw new Error('useAuth must be used within an AuthProvider');
+//   }
+//   return context;
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
@@ -15,7 +179,7 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [userType, setUserType] = useState(null); // 'customer' or 'provider'
+  const [userType, setUserType] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +188,28 @@ export function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      // First check customer auth via API
+      // Try unified auth endpoint first (handles all types)
+      const unifiedRes = await fetch('/api/auth/me');
+      const unifiedData = await unifiedRes.json();
+      
+      if (unifiedData.success) {
+        const userData = unifiedData.user;
+        setUser(userData);
+        
+        // Set userType based on role
+        if (userData.role === 'admin') {
+          setUserType('admin');
+        } else if (userData.role === 'provider') {
+          setUserType('provider');
+        } else {
+          setUserType('customer');
+        }
+        
+        setLoading(false);
+        return;
+      }
+
+      // Fallback: Check customer auth
       const customerRes = await fetch('/api/auth/me');
       const customerData = await customerRes.json();
       
@@ -35,8 +220,7 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      // If no customer, check provider auth via cookie
-      // You'll need to create a similar endpoint for providers
+      // Fallback: Check provider auth
       const providerRes = await fetch('/api/provider/me');
       const providerData = await providerRes.json();
       
@@ -56,16 +240,17 @@ export function AuthProvider({ children }) {
   const login = (userData, type = 'customer') => {
     setUser(userData);
     setUserType(type);
-    // No localStorage - cookies are handled by the server
   };
 
   const logout = async (redirect = true) => {
     try {
-      // Call appropriate logout endpoint based on user type
+      // Call appropriate logout endpoint
       if (userType === 'customer') {
         await fetch('/api/auth/logout', { method: 'POST' });
       } else if (userType === 'provider') {
         await fetch('/api/provider/logout', { method: 'POST' });
+      } else if (userType === 'admin') {
+        await fetch('/api/admin/logout', { method: 'POST' });
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -79,54 +264,53 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Helper to check if user is provider
-  const isProvider = () => {
-    return userType === 'provider';
-  };
+  const isProvider = () => userType === 'provider';
+  const isCustomer = () => userType === 'customer';
+  const isAdmin = () => userType === 'admin';
 
-  // Helper to check if user is customer
-  const isCustomer = () => {
-    return userType === 'customer';
-  };
-
-  // Get dashboard link based on user type
   const getDashboardLink = () => {
     if (!user) return '/';
-    return isProvider() ? '/provider/dashboard' : '/my-bookings';
+    if (isAdmin()) return '/admin';
+    if (isProvider()) return '/provider/dashboard';
+    return '/dashboard';
   };
 
-  // Get user display name
   const getUserDisplayName = () => {
     if (!user) return '';
     
+    if (isAdmin()) {
+      return user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Admin';
+    }
+    
     if (isProvider()) {
-      // Provider format - try different possible name fields
       return user.name || 
              user.business_name || 
              `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
              user.email || 
              'Provider';
-    } else {
-      // Customer format
-      return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Customer';
     }
+    
+    // Customer
+    return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Customer';
   };
 
-  // Get user initials
   const getUserInitials = () => {
     if (!user) return 'U';
     
+    if (isAdmin()) {
+      if (user.name) return user.name.charAt(0).toUpperCase();
+      if (user.first_name) return user.first_name.charAt(0).toUpperCase();
+    }
+    
     if (isProvider()) {
-      // Try to get initials from name
       if (user.name) return user.name.charAt(0).toUpperCase();
       if (user.first_name) return user.first_name.charAt(0).toUpperCase();
       if (user.business_name) return user.business_name.charAt(0).toUpperCase();
-    } else {
-      if (user.first_name) return user.first_name.charAt(0).toUpperCase();
-      if (user.last_name) return user.last_name.charAt(0).toUpperCase();
     }
     
-    // Fallback to email first character
+    if (user.first_name) return user.first_name.charAt(0).toUpperCase();
+    if (user.last_name) return user.last_name.charAt(0).toUpperCase();
+    
     return user.email?.charAt(0)?.toUpperCase() || 'U';
   };
 
@@ -139,10 +323,11 @@ export function AuthProvider({ children }) {
       logout,
       isProvider,
       isCustomer,
+      isAdmin,
       getDashboardLink,
       getUserDisplayName,
       getUserInitials,
-      checkAuth // Expose this to manually refresh auth state
+      checkAuth
     }}>
       {children}
     </AuthContext.Provider>

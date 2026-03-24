@@ -12,9 +12,16 @@ import {
 
 export default function Header() {
   const router = useRouter();
-  const {
-    user, logout, isProvider,
-    getDashboardLink, getUserDisplayName, getUserInitials
+  const { 
+    user, 
+    userType,
+    loading,
+    logout, 
+    isProvider,
+    isAdmin,
+    getDashboardLink, 
+    getUserDisplayName, 
+    getUserInitials 
   } = useAuth();
 
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -50,112 +57,76 @@ export default function Header() {
   const goToProSignup = () => { router.push('/provider/signup'); setMobileMenuOpen(false); setProDropdownOpen(false); };
   const handleLogout = () => { logout(true); setShowLogoutConfirm(false); };
 
+  // Don't render if loading
+  if (loading) {
+    return (
+      <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
+        <div className="w-full px-4 lg:px-8 h-16 flex items-center justify-between">
+          <div className="text-xl font-extrabold text-green-700">WorkOnTap</div>
+          <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+        </div>
+      </header>
+    );
+  }
+
+  const isLoggedIn = !!userType;
+
   return (
     <>
       <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
         <nav className="w-full px-4 lg:px-8 h-16 flex items-center justify-between gap-3">
 
-          {/* Logo */}
           <Link href="/" className="text-xl sm:text-2xl font-extrabold text-green-700 hover:text-green-800 transition tracking-tight flex-shrink-0">
             WorkOnTap
           </Link>
 
-          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-            {(!user || !isProvider()) && (
+            {(!isLoggedIn || !isProvider()) && (
               <Link href="/services" className="text-gray-600 hover:text-green-700 transition">Explore Services</Link>
             )}
-            {user && isProvider() && (
+            {isLoggedIn && (
               <Link href={getDashboardLink()} className="text-gray-600 hover:text-green-700 transition">Dashboard</Link>
             )}
             <Link href="/help" className="text-gray-600 hover:text-green-700 transition">Help Center</Link>
           </div>
 
-          {/* Desktop Auth */}
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
-            {user ? (
-              <>
-                {isProvider() && (
-                  <div className="flex items-center gap-2">
-                    <Link href={getDashboardLink()} className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden border border-blue-100">
-                        {user.avatar_url ? (
-                          <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          getUserInitials()
-                        )}
-                      </div>
-                      <div className="flex flex-col leading-none">
-                        <span className="text-sm font-semibold text-gray-900 truncate max-w-[120px]">{getUserDisplayName()}</span>
-                        <span className="text-xs font-medium text-blue-500">Pro Account</span>
-                      </div>
-                    </Link>
-                    <button onClick={() => setShowLogoutConfirm(true)}
-                      className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition">
-                      <LogOut className="h-4 w-4" /> Logout
-                    </button>
+            {isLoggedIn ? (
+              <div className="relative" ref={userMenuRef}>
+                <button onClick={() => setUserMenuOpen(p => !p)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition">
+                  <div className={`w-8 h-8 rounded-full ${isAdmin() ? 'bg-purple-600' : isProvider() ? 'bg-blue-600' : 'bg-green-600'} flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden`}>
+                    {getUserInitials()}
+                  </div>
+                  <div className="flex flex-col leading-none text-left">
+                    <span className="text-sm font-semibold text-gray-900 truncate max-w-[100px]">{getUserDisplayName()}</span>
+                    <span className={`text-xs font-medium ${isAdmin() ? 'text-purple-600' : isProvider() ? 'text-blue-500' : 'text-green-600'}`}>
+                      {isAdmin() ? 'Admin' : isProvider() ? 'Pro Account' : 'Customer'}
+                    </span>
+                  </div>
+                  <ChevronDown className={`h-3.5 w-3.5 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                    <div className="p-1.5">
+                      <Link href={getDashboardLink()} onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl transition">
+                        <Home className="h-4 w-4" /> Dashboard
+                      </Link>
+                    </div>
+                    <div className="border-t border-gray-100 p-1.5">
+                      <button onClick={() => { setUserMenuOpen(false); setShowLogoutConfirm(true); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition">
+                        <LogOut className="h-4 w-4" /> Logout
+                      </button>
+                    </div>
                   </div>
                 )}
-
-                {!isProvider() && (
-                  <div className="relative" ref={userMenuRef}>
-                    <button onClick={() => setUserMenuOpen(p => !p)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition">
-                      <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden border border-green-100">
-                        {user.image_url ? (
-                          <img src={user.image_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          getUserInitials()
-                        )}
-                      </div>
-                      <div className="flex flex-col leading-none text-left">
-                        <span className="text-sm font-semibold text-gray-900 truncate max-w-[100px]">{getUserDisplayName()}</span>
-                        <span className="text-xs font-medium text-green-600">Customer</span>
-                      </div>
-                      <ChevronDown className={`h-3.5 w-3.5 text-gray-400 transition-transform flex-shrink-0 ${userMenuOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {userMenuOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
-                        <div className="p-1.5 space-y-0.5">
-                          <Link href="/dashboard" onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition">
-                            <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <Home className="h-4 w-4 text-teal-600" />
-                            </div>
-                            <div><p className="font-semibold">Dashboard</p><p className="text-xs text-gray-400">Your overview</p></div>
-                          </Link>
-                          {/* <Link href="/profile" onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition">
-                            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <User className="h-4 w-4 text-green-600" />
-                            </div>
-                            <div><p className="font-semibold">My Profile</p><p className="text-xs text-gray-400">View & edit info</p></div>
-                          </Link> */}
-                          {/* <Link href="/my-bookings" onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition">
-                            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <BookOpen className="h-4 w-4 text-emerald-600" />
-                            </div>
-                            <div><p className="font-semibold">My Bookings</p><p className="text-xs text-gray-400">Track your jobs</p></div>
-                          </Link> */}
-                        </div>
-                        <div className="border-t border-gray-100 p-1.5">
-                          <button onClick={() => { setUserMenuOpen(false); setShowLogoutConfirm(true); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition">
-                            <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <LogOut className="h-4 w-4 text-red-500" />
-                            </div>
-                            <p className="font-semibold">Logout</p>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
+                {/* Login and Signup buttons remain same */}
                 <div className="relative" ref={loginRef}>
                   <button onClick={() => { setLoginDropdownOpen(p => !p); setProDropdownOpen(false); }}
                     className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-green-700 px-3 py-2 rounded-xl hover:bg-gray-50 transition">
@@ -165,18 +136,12 @@ export default function Header() {
                     <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
                       <div className="p-1.5">
                         <button onClick={() => openCustomerModal('login')}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition text-left">
-                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <User className="h-4 w-4 text-green-600" />
-                          </div>
-                          <div><p className="font-semibold">Customer Login</p><p className="text-xs text-gray-400">Book services</p></div>
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 rounded-xl transition text-left">
+                          <User className="h-4 w-4 text-green-600" /> Customer Login
                         </button>
                         <button onClick={goToProLogin}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition text-left">
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <LayoutDashboard className="h-4 w-4 text-blue-600" />
-                          </div>
-                          <div><p className="font-semibold">Pro Login</p><p className="text-xs text-gray-400">Manage your jobs</p></div>
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 rounded-xl transition text-left">
+                          <LayoutDashboard className="h-4 w-4 text-blue-600" /> Pro Login
                         </button>
                       </div>
                     </div>
@@ -192,18 +157,12 @@ export default function Header() {
                     <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
                       <div className="p-1.5">
                         <button onClick={() => openCustomerModal('signup')}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition text-left">
-                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <User className="h-4 w-4 text-green-600" />
-                          </div>
-                          <div><p className="font-semibold">Customer Sign Up</p><p className="text-xs text-gray-400">Book services near you</p></div>
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 rounded-xl transition text-left">
+                          <User className="h-4 w-4 text-green-600" /> Customer Sign Up
                         </button>
                         <button onClick={goToProSignup}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-xl transition text-left">
-                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <LayoutDashboard className="h-4 w-4 text-purple-600" />
-                          </div>
-                          <div><p className="font-semibold">Become a Pro</p><p className="text-xs text-gray-400">Start earning today</p></div>
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 rounded-xl transition text-left">
+                          <LayoutDashboard className="h-4 w-4 text-purple-600" /> Become a Pro
                         </button>
                       </div>
                     </div>
@@ -213,8 +172,7 @@ export default function Header() {
             )}
           </div>
 
-          {/* Mobile Toggle */}
-          <button className="md:hidden p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition flex-shrink-0"
+          <button className="md:hidden p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition"
             onClick={() => setMobileMenuOpen(p => !p)}>
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -222,117 +180,61 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 space-y-1">
-            {(!user || !isProvider()) && (
+          <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 space-y-2">
+            {(!isLoggedIn || !isProvider()) && (
               <Link href="/services" onClick={() => setMobileMenuOpen(false)}
-                className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-green-700 rounded-xl transition">
+                className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl">
                 Explore Services
               </Link>
             )}
-            {user && isProvider() && (
+            {isLoggedIn && (
               <Link href={getDashboardLink()} onClick={() => setMobileMenuOpen(false)}
-                className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-green-700 rounded-xl transition">
+                className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl">
                 Dashboard
               </Link>
             )}
             <Link href="/help" onClick={() => setMobileMenuOpen(false)}
-              className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-green-700 rounded-xl transition">
+              className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl">
               Help Center
             </Link>
-
-            <div className="border-t border-gray-100 pt-3 mt-1">
-              {user ? (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-2xl mb-2">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 overflow-hidden border ${isProvider() ? 'bg-blue-600 border-blue-100' : 'bg-green-600 border-green-100'}`}>
-                      {(isProvider() ? user.avatar_url : user.image_url) ? (
-                        <img src={isProvider() ? user.avatar_url : user.image_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        getUserInitials()
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm text-gray-900 truncate">{getUserDisplayName()}</p>
-                      <p className={`text-xs font-medium ${isProvider() ? 'text-blue-500' : 'text-green-600'}`}>
-                        {isProvider() ? 'Pro Account' : 'Customer'}
-                      </p>
-                    </div>
-                  </div>
-                  {!isProvider() && (
-                    <>
-                      <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition">
-                        <Home className="h-4 w-4 flex-shrink-0" /> Dashboard
-                      </Link>
-                      {/* <Link href="/profile" onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition">
-                        <User className="h-4 w-4 flex-shrink-0" /> My Profile
-                      </Link>
-                      <Link href="/my-bookings" onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition">
-                        <BookOpen className="h-4 w-4 flex-shrink-0" /> My Bookings
-                      </Link> */}
-                    </>
-                  )}
-                  <button onClick={() => { setMobileMenuOpen(false); setShowLogoutConfirm(true); }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 border border-red-100 text-red-600 text-sm font-semibold rounded-xl transition mt-1">
-                    <LogOut className="h-4 w-4" /> Logout
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="bg-green-50 border border-green-100 rounded-2xl p-3 space-y-2">
-                    <p className="text-xs font-semibold text-green-700 uppercase tracking-wider px-1">For Customers</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => openCustomerModal('login')}
-                        className="py-2.5 text-sm font-semibold text-green-700 border-2 border-green-600 rounded-xl hover:bg-green-100 transition">
-                        Log In
-                      </button>
-                      <button onClick={() => openCustomerModal('signup')}
-                        className="py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl transition">
-                        Sign Up
-                      </button>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 border border-gray-100 rounded-2xl p-3 space-y-2">
-                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-1">For Professionals</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={goToProLogin}
-                        className="py-2.5 text-sm font-semibold text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-100 transition">
-                        Pro Login
-                      </button>
-                      <button onClick={goToProSignup}
-                        className="py-2.5 text-sm font-semibold text-white bg-gray-800 hover:bg-gray-900 rounded-xl transition">
-                        Become a Pro
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            
+            {isLoggedIn && (
+              <button onClick={() => { setMobileMenuOpen(false); setShowLogoutConfirm(true); }}
+                className="w-full mt-4 px-4 py-2 bg-red-50 text-red-600 text-sm font-semibold rounded-xl">
+                Logout
+              </button>
+            )}
+            
+            {!isLoggedIn && (
+              <div className="pt-4 space-y-2">
+                <button onClick={() => openCustomerModal('login')}
+                  className="w-full px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-xl">
+                  Customer Login
+                </button>
+                <button onClick={goToProLogin}
+                  className="w-full px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold rounded-xl">
+                  Pro Login
+                </button>
+              </div>
+            )}
           </div>
         )}
       </header>
 
       {/* Logout Confirm */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
-            <div className="text-center mb-5">
-              <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <LogOut className="w-7 h-7 text-red-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-1">Sign out?</h3>
-              <p className="text-sm text-gray-500">You&apos;ll need to log in again to access your account.</p>
-            </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Sign out?</h3>
+            <p className="text-sm text-gray-500 mb-5">You'll need to log in again to access your account.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 py-2.5 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition text-sm">
+                className="flex-1 py-2 border border-gray-200 text-gray-700 font-semibold rounded-xl">
                 Cancel
               </button>
               <button onClick={handleLogout}
-                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition text-sm">
-                Yes, Sign Out
+                className="flex-1 py-2 bg-red-600 text-white font-semibold rounded-xl">
+                Sign Out
               </button>
             </div>
           </div>
