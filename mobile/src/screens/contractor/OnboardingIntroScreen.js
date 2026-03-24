@@ -28,18 +28,10 @@ const OnboardingIntroScreen = ({ navigation }) => {
 
     useEffect(() => {
         const onboardingCompleted = Number(user?.onboarding_completed) === 1;
-        const stripeComplete = Number(user?.stripe_onboarding_complete) === 1;
-
-        if (isFocused && !hasResumed.current && (!onboardingCompleted || !stripeComplete)) {
-            console.log('🔄 [Intro] Checking step:', currentStep, 'Stripe:', stripeComplete);
+        if (isFocused && !hasResumed.current && !onboardingCompleted) {
+            console.log('🔄 [Intro] Checking step:', currentStep);
             hasResumed.current = true;
             
-            // If onboarding is "done" but stripe is missing, force BankLink
-            if (onboardingCompleted && !stripeComplete) {
-                navigation.navigate('BankLink');
-                return;
-            }
-
             if (currentStep === 2) navigation.navigate('ProfileSetup');
             else if (currentStep === 3) navigation.navigate('DocumentUpload');
             else if (currentStep === 4) navigation.navigate('BankLink');

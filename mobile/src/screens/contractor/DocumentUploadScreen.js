@@ -117,19 +117,18 @@ const DocumentUploadScreen = ({ navigation, route }) => {
 
             // Create the file object for FormData
             const fileToUpload = {
-                uri: Platform.OS === 'android' ? uploadUri : uploadUri.replace('file://', ''),
+                uri: uploadUri, 
                 name: filename,
-                type: 'image/jpeg', // Always JPEG after manipulation
+                type: 'image/jpeg',
             };
+
+            // Ensure Android URI starts with file:// for fetch
+            if (Platform.OS === 'android' && !fileToUpload.uri.startsWith('file://')) {
+                fileToUpload.uri = `file://${fileToUpload.uri}`;
+            }
 
             formData.append('file', fileToUpload);
             formData.append('type', type);
-
-            console.log(`📤 [Upload] Starting: ${type}`, { 
-                uri: fileToUpload.uri, 
-                name: fileToUpload.name, 
-                type: fileToUpload.type 
-            });
 
             const res = await apiService.provider.onboarding.uploadDocument(formData, token);
 

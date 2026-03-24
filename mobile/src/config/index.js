@@ -1,15 +1,11 @@
-// export const APP_CONFIG = {
-//     APP_NAME: 'WorkOnTop Mobile',
-//     API_URL: 'https://api.workontop.com',
-//     VERSION: '1.0.0',
-// };
-
-
+import { Platform } from 'react-native';
 
 // Development (local testing)
+// 10.0.2.2 is the special alias for the host machine's localhost on Android Emulator
 
-export const API_BASE_URL = "http://192.168.1.38:3000";
+// const DEV_URL = Platform.OS === 'android' ? "http://10.0.2.2:3000" : "http://192.168.1.38:3000";
+
+// export const API_BASE_URL = DEV_URL;
 
 // Production
-
-// export const API_BASE_URL = "https://workontap.com";
+export const API_BASE_URL = "https://workontap.com";

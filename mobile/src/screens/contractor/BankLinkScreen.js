@@ -153,9 +153,19 @@ const BankLinkScreen = ({ navigation, route }) => {
                     )}
                 </TouchableOpacity>
 
+                {!connected && (
+                    <TouchableOpacity 
+                        style={styles.skipBtn} 
+                        onPress={() => navigation.navigate('Review', { profile, documents, connected: false })}
+                        disabled={loading}
+                    >
+                        <Text style={styles.skipBtnText}>Skip — Add bank account later</Text>
+                    </TouchableOpacity>
+                )}
+
                 <View style={styles.mandatoryNotice}>
                     <Ionicons name="information-circle-outline" size={moderateScale(16)} color="#64748b" />
-                    <Text style={styles.mandatoryText}>Stripe setup is mandatory for receiving payments.</Text>
+                    <Text style={styles.mandatoryText}>Stripe setup is recommended for receiving payments, but you can complete it after submission.</Text>
                 </View>
             </View>
 
@@ -223,6 +233,17 @@ const styles = StyleSheet.create({
     },
     btnDisabled: { opacity: 0.6 },
     stripeBtnText: { color: '#fff', fontSize: moderateScale(17), fontWeight: 'bold' },
+    skipBtn: {
+        marginTop: verticalScale(16),
+        paddingVertical: verticalScale(12),
+        alignItems: 'center',
+    },
+    skipBtnText: {
+        color: '#64748b',
+        fontSize: moderateScale(15),
+        fontWeight: '600',
+        textDecorationLine: 'underline',
+    },
     mandatoryNotice: { 
         flexDirection: 'row', 
         alignItems: 'center', 
@@ -236,7 +257,10 @@ const styles = StyleSheet.create({
         color: '#64748b', 
         fontSize: moderateScale(13), 
         marginLeft: scale(8),
-        fontStyle: 'italic'
+        fontStyle: 'italic',
+        lineHeight: moderateScale(18),
+        textAlign: 'center',
+        flex: 1,
     },
 });
 

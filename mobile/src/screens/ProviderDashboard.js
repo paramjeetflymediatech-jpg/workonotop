@@ -161,6 +161,30 @@ const ProviderDashboard = ({ navigation }) => {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#10b981" />
                 }
             >
+                {/* Stripe Pending Notice */}
+                {user?.role === 'provider' && user?.stripe_onboarding_complete !== 1 && (
+                    <View style={styles.stripeNotice}>
+                        <View style={styles.stripeNoticeHeader}>
+                            <Ionicons name="alert-circle" size={moderateScale(20)} color="#b45309" />
+                            <Text style={styles.stripeNoticeTitle}>Stripe connect pending complete</Text>
+                        </View>
+                        <Text style={styles.stripeNoticeDesc}>
+                            Link your bank account to receive payouts for completed jobs.
+                        </Text>
+                        <TouchableOpacity 
+                            style={styles.stripeFixBtn}
+                            onPress={() => navigation.navigate('BankLink')}
+                        >
+                            <Text style={styles.stripeFixText}>Link Account Now</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Status Banner */}
+                <View style={styles.takingOrdersBanner}>
+                    <View style={styles.takingOrdersDot} />
+                    <Text style={styles.takingOrdersText}>Taking orders in your area</Text>
+                </View>
 
 
 
@@ -413,6 +437,67 @@ const styles = StyleSheet.create({
     },
     detailsIcon: {
         padding: moderateScale(5),
+    },
+    stripeNotice: {
+        backgroundColor: '#fffbeb',
+        borderRadius: moderateScale(16),
+        padding: moderateScale(16),
+        marginBottom: verticalScale(20),
+        borderWidth: 1,
+        borderColor: '#fde68a',
+    },
+    stripeNoticeHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: verticalScale(6),
+    },
+    stripeNoticeTitle: {
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        color: '#92400e',
+        marginLeft: scale(8),
+    },
+    stripeNoticeDesc: {
+        fontSize: moderateScale(12),
+        color: '#b45309',
+        lineHeight: moderateScale(18),
+        marginBottom: verticalScale(12),
+    },
+    stripeFixBtn: {
+        backgroundColor: '#92400e',
+        paddingVertical: verticalScale(8),
+        paddingHorizontal: scale(16),
+        borderRadius: moderateScale(10),
+        alignSelf: 'flex-start',
+    },
+    stripeFixText: {
+        color: '#fff',
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+    },
+    takingOrdersBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f0fdfa',
+        paddingVertical: verticalScale(8),
+        paddingHorizontal: scale(12),
+        borderRadius: moderateScale(12),
+        marginBottom: verticalScale(20),
+        borderWidth: 1,
+        borderColor: '#ccfbf1',
+        alignSelf: 'flex-start',
+    },
+    takingOrdersDot: {
+        width: moderateScale(8),
+        height: moderateScale(8),
+        borderRadius: moderateScale(4),
+        backgroundColor: '#14b8a6',
+        marginRight: scale(8),
+    },
+    takingOrdersText: {
+        color: '#0f766e',
+        fontSize: moderateScale(12),
+        fontWeight: '600',
     },
     emptyContainer: {
         backgroundColor: '#fff',

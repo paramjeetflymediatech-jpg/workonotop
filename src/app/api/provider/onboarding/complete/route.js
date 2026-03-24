@@ -48,12 +48,6 @@ export async function POST(request) {
 
     console.log('📊 Stats:', { docsCount, stripeComplete });
 
-    if (!stripeComplete) {
-      return NextResponse.json(
-        { success: false, message: 'Please complete Stripe Bank Account setup before submitting.' },
-        { status: 400 }
-      );
-    }
 
     // Update provider
     await execute(

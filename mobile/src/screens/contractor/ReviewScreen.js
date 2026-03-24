@@ -161,17 +161,14 @@ const ReviewScreen = ({ navigation, route }) => {
                         </View>
                         <View style={styles.docStatusRow}>
                              <Ionicons
-                                 name={connected || user?.stripe_onboarding_complete === 1 ? "checkmark-circle" : "alert-circle"}
+                                 name={connected || user?.stripe_onboarding_complete === 1 ? "checkmark-circle" : "information-circle"}
                                  size={20}
-                                 color={connected || user?.stripe_onboarding_complete === 1 ? "#10b981" : "#ef4444"}
+                                 color={connected || user?.stripe_onboarding_complete === 1 ? "#10b981" : "#64748b"}
                              />
-                             <Text style={[
-                                 styles.docStatusText, 
-                                 (!connected && user?.stripe_onboarding_complete !== 1) && { color: '#ef4444', fontWeight: 'bold' }
-                             ]}>
+                             <Text style={styles.docStatusText}>
                                  {connected || user?.stripe_onboarding_complete === 1 
                                      ? 'Bank account linked with Stripe' 
-                                     : 'Bank account NOT linked (Required)'}
+                                     : 'Bank account not linked (Optional)'}
                              </Text>
                         </View>
                     </View>
@@ -185,10 +182,10 @@ const ReviewScreen = ({ navigation, route }) => {
                     <TouchableOpacity
                         style={[
                             styles.submitBtn, 
-                            (loading || (!connected && user?.stripe_onboarding_complete !== 1)) && styles.btnDisabled
+                            loading && styles.btnDisabled
                         ]}
                         onPress={submitApplication}
-                        disabled={loading || (!connected && user?.stripe_onboarding_complete !== 1)}
+                        disabled={loading}
                     >
                         {loading ? (
                             <ActivityIndicator color="#fff" />

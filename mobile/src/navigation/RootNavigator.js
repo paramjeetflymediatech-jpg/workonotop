@@ -89,7 +89,7 @@ const RootNavigator = () => {
                 <>
                     {/* Main App Stack - Order matters for standard navigation */}
                     {/* If provider is not onboarded, the onboarding screens come first */}
-                    {(user.role === 'provider' && (Number(user.onboarding_completed) !== 1 || Number(user.stripe_onboarding_complete) !== 1)) ? (
+                    {(user.role === 'provider' && Number(user.onboarding_completed) !== 1) ? (
                         <>
                             <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
