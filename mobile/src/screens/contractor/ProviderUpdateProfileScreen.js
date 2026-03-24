@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, SafeAreaView, ActivityIndicator, Alert, Platform, KeyboardAvoidingView, Image
+    ScrollView, SafeAreaView, ActivityIndicator, Alert, Platform, KeyboardAvoidingView, Image, RefreshControl
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +14,7 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
     const { user, updateUser, token } = useAuth();
     
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
     
@@ -34,7 +35,7 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
 
     const loadProfile = async () => {
         try {
-            setLoading(true);
+            if (!refreshing) setLoading(true);
             // Using /api/provider/me which we verified supports mobile tokens and returns full data
             const res = await apiService.provider.me(token);
             if (res.success && res.provider) {
@@ -60,7 +61,13 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
             Alert.alert('Error', 'Failed to load profile.');
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        loadProfile();
     };
 
     const pickImage = async () => {
@@ -145,7 +152,13 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                     <View style={{ width: moderateScale(40) }} />
                 </View>
 
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView 
+                    contentContainerStyle={styles.scrollContent} 
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" />
+                    }
+                >
                     
                     <View style={styles.imagePickerContainer}>
                         <TouchableOpacity onPress={pickImage} style={styles.imagePickerBubble}>

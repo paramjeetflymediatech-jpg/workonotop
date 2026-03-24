@@ -5,10 +5,6 @@ import { getMobileSession } from '@/lib/mobile-auth';
 
 export async function POST(request) {
   try {
-    console.log('='.repeat(60));
-    console.log('🚀 ONBOARDING COMPLETE API CALLED');
-    console.log('='.repeat(60));
-
     // 1. Check Mobile Session (via Authorization Header + DB)
     let decoded = await getMobileSession(request);
     let providerId = decoded?.providerId;
@@ -25,58 +21,40 @@ export async function POST(request) {
     }
 
     if (!decoded || !providerId) {
-      console.log('❌ Not authenticated');
       return NextResponse.json(
         { success: false, message: 'Not authenticated or session expired' },
         { status: 401 }
       );
     }
 
-    console.log('✅ Provider ID:', providerId);
+    const body = await request.json();
+    const { step } = body;
 
-    // First, check if documents are uploaded and stripe is complete
-    const providerData = await execute(
-      `SELECT 
-        (SELECT COUNT(*) FROM provider_documents WHERE provider_id = ?) as docs_count,
-        stripe_onboarding_complete
-       FROM service_providers WHERE id = ?`,
-      [providerId, providerId]
-    );
-
-    const docsCount = providerData[0]?.docs_count || 0;
-    const stripeComplete = providerData[0]?.stripe_onboarding_complete === 1;
-
-    console.log('📊 Stats:', { docsCount, stripeComplete });
-
-    if (!stripeComplete) {
+    if (!step) {
       return NextResponse.json(
-        { success: false, message: 'Please complete Stripe Bank Account setup before submitting.' },
+        { success: false, message: 'Step is required' },
         { status: 400 }
       );
     }
 
-    // Update provider
+    // Update the provider's current onboarding step
     await execute(
       `UPDATE service_providers 
        SET 
-           onboarding_completed = 1,
-           onboarding_step = 5,
-           status = 'pending',
+           onboarding_step = ?,
            updated_at = NOW()
        WHERE id = ?`,
-      [providerId]
+      [step, providerId]
     );
-
-    console.log('✅ Onboarding completed for provider:', providerId);
-    console.log('='.repeat(60));
 
     return NextResponse.json({
       success: true,
-      message: 'Onboarding completed. Your application is under review.'
+      message: 'Onboarding step updated successfully',
+      step: step
     });
 
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('Error updating onboarding step:', error);
     return NextResponse.json(
       { success: false, message: 'Server error: ' + error.message },
       { status: 500 }

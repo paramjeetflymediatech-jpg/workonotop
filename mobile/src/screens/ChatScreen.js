@@ -70,7 +70,7 @@ const ChatScreen = ({ navigation, route }) => {
     const fmtTime = (d) => new Date(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     const renderMessage = ({ item, index }) => {
-        const isMine = item.sender_type === myType;
+        const isMine = Number(item.sender_id) === Number(user?.id) && item.sender_type === myType;
         const prevItem = index > 0 ? messages[index - 1] : null;
         const showName = !isMine && (!prevItem || prevItem.sender_type !== item.sender_type);
 

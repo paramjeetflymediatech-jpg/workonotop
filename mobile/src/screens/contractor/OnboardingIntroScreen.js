@@ -27,15 +27,25 @@ const OnboardingIntroScreen = ({ navigation }) => {
     const currentStep = Number(user?.onboarding_step) || 1;
 
     useEffect(() => {
-        if (isFocused && !hasResumed.current && !user?.onboarding_completed) {
-            console.log('🔄 [Intro] Checking step:', currentStep);
+        const onboardingCompleted = Number(user?.onboarding_completed) === 1;
+        const stripeComplete = Number(user?.stripe_onboarding_complete) === 1;
+
+        if (isFocused && !hasResumed.current && (!onboardingCompleted || !stripeComplete)) {
+            console.log('🔄 [Intro] Checking step:', currentStep, 'Stripe:', stripeComplete);
             hasResumed.current = true;
+            
+            // If onboarding is "done" but stripe is missing, force BankLink
+            if (onboardingCompleted && !stripeComplete) {
+                navigation.navigate('BankLink');
+                return;
+            }
+
             if (currentStep === 2) navigation.navigate('ProfileSetup');
             else if (currentStep === 3) navigation.navigate('DocumentUpload');
             else if (currentStep === 4) navigation.navigate('BankLink');
             else if (currentStep === 5) navigation.navigate('Review');
         }
-    }, [isFocused, currentStep, user?.onboarding_completed]);
+    }, [isFocused, currentStep, user?.onboarding_completed, user?.stripe_onboarding_complete]);
 
     const handleGetStarted = () => {
         navigation.navigate('ProfileSetup');

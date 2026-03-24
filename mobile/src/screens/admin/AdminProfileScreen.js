@@ -11,7 +11,8 @@ import {
     TextInput,
     Alert,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -19,7 +20,15 @@ import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { api } from '../../utils/api';
 
 const AdminProfileScreen = ({ navigation }) => {
-    const { user, logout, updateUserInfo } = useAuth();
+    const { user, logout, updateUserInfo, refreshUser } = useAuth();
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await refreshUser();
+        setRefreshing(false);
+    };
+
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -69,7 +78,12 @@ const AdminProfileScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                <ScrollView contentContainerStyle={styles.content}>
+                <ScrollView 
+                    contentContainerStyle={styles.content}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" />
+                    }
+                >
                     <View style={styles.profileHeader}>
                         <View style={styles.avatarWrapper}>
                             <Image

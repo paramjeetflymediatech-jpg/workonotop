@@ -45,8 +45,9 @@ export default function ProviderResetPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      setError('Password must be at least 8 characters and contain both alphabets and special characters')
       return
     }
     
@@ -171,7 +172,7 @@ export default function ProviderResetPassword() {
                     className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Minimum 6 characters</p>
+                <p className="text-xs text-gray-400 mt-1">Min 8 chars, alphabets & special characters required</p>
               </div>
 
               {/* Confirm Password */}

@@ -7,7 +7,7 @@ export async function POST(request) {
   try {
     const authHeader = request.headers.get('Authorization');
     const token = authHeader ? authHeader.replace('Bearer ', '') : null;
-    
+
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
@@ -21,6 +21,11 @@ export async function POST(request) {
 
     if (!oldPassword || !newPassword) {
       return NextResponse.json({ success: false, message: 'Current and new passwords are required' }, { status: 400 });
+    }
+
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return NextResponse.json({ success: false, message: 'Password must be at least 8 characters and contain both alphabets and special characters' }, { status: 400 });
     }
 
     // 1. Fetch user to check current password

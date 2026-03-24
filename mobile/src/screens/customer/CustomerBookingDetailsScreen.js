@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, SafeAreaView, ScrollView,
-    TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions, Alert, TextInput
+    TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions, Alert, TextInput, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     const { user } = useAuth();
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [viewerVisible, setViewerVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [actionLoading, setActionLoading] = useState(null);
@@ -39,6 +40,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
 
     const fetchDetails = async () => {
         try {
+            if (!refreshing) setLoading(true);
             const res = await apiService.customer.getBookingDetails(bookingId, user?.id, user?.token);
             if (res && res.data) {
                 const b = Array.isArray(res.data) ? res.data[0] : res.data;
@@ -48,7 +50,13 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
             console.error('Error fetching booking details:', error);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchDetails();
     };
 
     const handleCancel = () => {
@@ -327,7 +335,13 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                 <View style={{ width: scale(40) }} />
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <ScrollView 
+                showsVerticalScrollIndicator={false} 
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color={PRIMARY} />
+                }
+            >
                 <View style={styles.cardInfo}>
                     <Text style={styles.serviceName}>{booking.service_name}</Text>
                     <Text style={styles.bookingNumber}>Booking #{booking.booking_number || booking.id}</Text>
@@ -640,7 +654,7 @@ const styles = StyleSheet.create({
     paymentStatusVal: { fontSize: moderateScale(16), color: PRIMARY, fontWeight: '900', letterSpacing: 1 },
 
     timelineRow: { flexDirection: 'row' },
-    timelineIndicator: { alignItems: 'center', width: moderateScale(30) },
+    timelineIndicator: { alignItems: 'center', width: scale(30) },
     timelineDot: { width: moderateScale(12), height: moderateScale(12), borderRadius: moderateScale(6), backgroundColor: PRIMARY, zIndex: 2 },
     timelineLine: { width: 2, flex: 1, backgroundColor: '#e2e8f0', marginVertical: verticalScale(4) },
     timelineContent: { flex: 1, paddingBottom: verticalScale(20), paddingTop: verticalScale(-2) },
@@ -653,13 +667,13 @@ const styles = StyleSheet.create({
     providerRating: { fontSize: moderateScale(13), color: '#64748b', marginLeft: 4 },
 
     /* Badge Styles */
-    badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(8) },
     badge: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
+        paddingHorizontal: scale(12),
+        paddingVertical: verticalScale(6),
+        borderRadius: moderateScale(20),
         backgroundColor: '#fff',
         borderWidth: 1,
         borderColor: '#e2e8f0',
@@ -668,12 +682,12 @@ const styles = StyleSheet.create({
         backgroundColor: PRIMARY,
         borderColor: PRIMARY,
     },
-    badgeText: { marginLeft: 4, fontSize: 12, fontWeight: '600', color: '#64748b' },
+    badgeText: { marginLeft: scale(4), fontSize: moderateScale(12), fontWeight: '600', color: '#64748b' },
     badgeTextActive: { color: '#fff' },
 
     /* Photo Grid */
-    photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    photoMini: { width: scale(80), height: scale(80), borderRadius: 12 },
+    photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(10) },
+    photoMini: { width: scale(80), height: scale(80), borderRadius: moderateScale(12) },
 
     /* Action Buttons */
     actionsRow: { gap: verticalScale(12), marginBottom: verticalScale(30), marginTop: verticalScale(4) },
@@ -729,18 +743,18 @@ const styles = StyleSheet.create({
 
     /* Rating Modal */
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-    modalContent: { backgroundColor: '#fff', width: '85%', borderRadius: 20, padding: 25, alignItems: 'center' },
-    modalCloseIcon: { position: 'absolute', top: 15, right: 15 },
-    modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#0f172a', marginBottom: 5, marginTop: 10 },
-    modalSubtitle: { fontSize: 13, color: '#64748b', textAlign: 'center', marginBottom: 20 },
-    starsRow: { flexDirection: 'row', marginBottom: 20 },
-    reviewInput: { width: '100%', borderColor: '#e2e8f0', borderWidth: 1, borderRadius: 12, padding: 15, textAlignVertical: 'top', fontSize: 14, color: '#334155', marginBottom: 20, backgroundColor: '#f8fafc' },
-    submitReviewBtn: { backgroundColor: PRIMARY, width: '100%', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-    submitReviewBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+    modalContent: { backgroundColor: '#fff', width: '85%', borderRadius: moderateScale(20), padding: moderateScale(25), alignItems: 'center' },
+    modalCloseIcon: { position: 'absolute', top: verticalScale(15), right: scale(15) },
+    modalTitle: { fontSize: moderateScale(20), fontWeight: 'bold', color: '#0f172a', marginBottom: verticalScale(5), marginTop: verticalScale(10) },
+    modalSubtitle: { fontSize: moderateScale(13), color: '#64748b', textAlign: 'center', marginBottom: verticalScale(20) },
+    starsRow: { flexDirection: 'row', marginBottom: verticalScale(20) },
+    reviewInput: { width: '100%', borderColor: '#e2e8f0', borderWidth: 1, borderRadius: moderateScale(12), padding: moderateScale(15), textAlignVertical: 'top', fontSize: moderateScale(14), color: '#334155', marginBottom: verticalScale(20), backgroundColor: '#f8fafc' },
+    submitReviewBtn: { backgroundColor: PRIMARY, width: '100%', paddingVertical: verticalScale(14), borderRadius: moderateScale(12), alignItems: 'center' },
+    submitReviewBtnText: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) },
 
     /* Dispute Modal */
-    disputeSubmitBtn: { backgroundColor: '#ef4444', width: '100%', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-    disputeSubmitBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
+    disputeSubmitBtn: { backgroundColor: '#ef4444', width: '100%', paddingVertical: verticalScale(14), borderRadius: moderateScale(12), alignItems: 'center' },
+    disputeSubmitBtnText: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }
 });
 
 export default CustomerBookingDetailsScreen;

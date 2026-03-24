@@ -24,10 +24,11 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
-    if (password.length < 6) {
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+    if (!passwordRegex.test(password)) {
       return NextResponse.json({
         success: false,
-        message: 'Password must be at least 6 characters'
+        message: 'Password must be at least 8 characters and contain both alphabets and special characters'
       }, { status: 400 })
     }
 
@@ -53,7 +54,7 @@ export async function POST(request) {
       } else {
         // Mobile flow (Email + OTP)
         console.log(`🔍 DIAGNOSTIC: Attempting reset for [${cleanEmail}] with OTP [${cleanOtp}]`);
-        
+
         // 1. Get current state of this provider
         const [currentState] = await connection.execute(
           `SELECT id, email, reset_token, reset_token_expiry, NOW() as db_now 
@@ -70,7 +71,7 @@ export async function POST(request) {
           console.log(`📊 DIAGNOSTIC: Provider ID: ${p.id}`);
           console.log(`📊 DIAGNOSTIC: DB Token: [${p.reset_token}], Input OTP: [${cleanOtp}], MATCH: ${tokenMatch}`);
           console.log(`📊 DIAGNOSTIC: DB Expiry: ${p.reset_token_expiry}, DB Now: ${p.db_now}, VALID: ${notExpired}`);
-          
+
           if (!tokenMatch) console.log('💡 TIP: Check if verify-otp is prematurely clearing the token.');
         }
 

@@ -75,9 +75,10 @@ const CustomerSignupScreen = ({ navigation }) => {
             return;
         }
 
-        // Password validation (min 6 chars)
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters.');
+        // Password validation (min 8 chars, alphabets + special chars)
+        const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+        if (!passwordRegex.test(password)) {
+            setError('Password must be at least 8 characters and contain both alphabets and special characters.');
             setShowError(true);
             return;
         }
@@ -258,7 +259,7 @@ const CustomerSignupScreen = ({ navigation }) => {
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            <SuccessModal 
+            <SuccessModal
                 visible={showSuccess}
                 title="Success"
                 message="Account created successfully! Please log in."
@@ -268,7 +269,7 @@ const CustomerSignupScreen = ({ navigation }) => {
                 }}
             />
 
-            <ErrorModal 
+            <ErrorModal
                 visible={showError}
                 title="Registration Error"
                 message={error}
@@ -302,7 +303,7 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(20),
         color: '#0f172a',
         fontWeight: 'bold',
-        
+
     },
     header: {
         marginBottom: verticalScale(15),

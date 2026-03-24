@@ -27,8 +27,8 @@ const ReviewScreen = ({ navigation, route }) => {
 
     const submitApplication = async () => {
         // 1. Final Validation Check
-        if (!profile?.bio || profile.bio.trim().length < 10) {
-            Alert.alert('Incomplete Profile', 'Your professional bio is missing or too short. Please go back to Profile Setup.');
+        if (!profile?.bio || profile.bio.trim().length < 50) {
+            Alert.alert('Incomplete Profile', 'Your professional bio must be at least 50 characters. Please go back to Profile Setup.');
             return;
         }
 
@@ -160,14 +160,19 @@ const ReviewScreen = ({ navigation, route }) => {
                             </TouchableOpacity>
                         </View>
                         <View style={styles.docStatusRow}>
-                            <Ionicons
-                                name={connected ? "checkmark-circle" : "alert-circle"}
-                                size={20}
-                                color={connected ? "#10b981" : "#f59e0b"}
-                            />
-                            <Text style={styles.docStatusText}>
-                                {connected ? 'Bank account linked with Stripe' : 'Bank linking skipped (Add later)'}
-                            </Text>
+                             <Ionicons
+                                 name={connected || user?.stripe_onboarding_complete === 1 ? "checkmark-circle" : "alert-circle"}
+                                 size={20}
+                                 color={connected || user?.stripe_onboarding_complete === 1 ? "#10b981" : "#ef4444"}
+                             />
+                             <Text style={[
+                                 styles.docStatusText, 
+                                 (!connected && user?.stripe_onboarding_complete !== 1) && { color: '#ef4444', fontWeight: 'bold' }
+                             ]}>
+                                 {connected || user?.stripe_onboarding_complete === 1 
+                                     ? 'Bank account linked with Stripe' 
+                                     : 'Bank account NOT linked (Required)'}
+                             </Text>
                         </View>
                     </View>
 
@@ -178,9 +183,12 @@ const ReviewScreen = ({ navigation, route }) => {
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.submitBtn, loading && styles.btnDisabled]}
+                        style={[
+                            styles.submitBtn, 
+                            (loading || (!connected && user?.stripe_onboarding_complete !== 1)) && styles.btnDisabled
+                        ]}
                         onPress={submitApplication}
-                        disabled={loading}
+                        disabled={loading || (!connected && user?.stripe_onboarding_complete !== 1)}
                     >
                         {loading ? (
                             <ActivityIndicator color="#fff" />

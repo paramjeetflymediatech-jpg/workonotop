@@ -277,17 +277,17 @@ function InputField({ label, name, type = 'text', icon: Icon, placeholder, value
 function PasswordStrength({ password }) {
   if (!password) return null;
 
+  const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
   const checks = [
-    { label: 'At least 6 characters', pass: password.length >= 6 },
-    { label: 'Uppercase letter (A-Z)', pass: /[A-Z]/.test(password) },
-    { label: 'Lowercase letter (a-z)', pass: /[a-z]/.test(password) },
-    { label: 'Number (0-9)', pass: /\d/.test(password) },
+    { label: 'At least 8 characters', pass: password.length >= 8 },
+    { label: 'Includes Alphabets', pass: /[a-zA-Z]/.test(password) },
+    { label: 'Special Character', pass: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
   ];
 
   const passed = checks.filter(c => c.pass).length;
-  const strength = passed <= 1 ? 'Weak' : passed === 2 ? 'Fair' : passed === 3 ? 'Good' : 'Strong';
-  const color = passed <= 1 ? 'bg-red-400' : passed === 2 ? 'bg-yellow-400' : passed === 3 ? 'bg-blue-400' : 'bg-green-500';
-  const textColor = passed <= 1 ? 'text-red-500' : passed === 2 ? 'text-yellow-600' : passed === 3 ? 'text-blue-500' : 'text-green-600';
+  const strength = passed <= 1 ? 'Weak' : passed === 2 ? 'Fair' : 'Strong';
+  const color = passed <= 1 ? 'bg-red-400' : passed === 2 ? 'bg-yellow-400' : 'bg-green-500';
+  const textColor = passed <= 1 ? 'text-red-500' : passed === 2 ? 'text-yellow-600' : 'text-green-600';
 
   return (
     <div className="mt-2 space-y-1.5">
@@ -371,11 +371,9 @@ export default function ProviderSignup() {
         return '';
 
       case 'password':
+        const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
         if (!value) return 'Password is required';
-        if (value.length < 6) return 'Minimum 6 characters required';
-        if (!/[A-Z]/.test(value)) return 'Must include at least one uppercase letter';
-        if (!/[a-z]/.test(value)) return 'Must include at least one lowercase letter';
-        if (!/\d/.test(value)) return 'Must include at least one number';
+        if (!passwordRegex.test(value)) return '8+ characters, alphabets and special chars required';
         return '';
 
       case 'confirmPassword':

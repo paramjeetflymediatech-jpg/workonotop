@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     SafeAreaView, Alert, ActivityIndicator, Image, StatusBar,
-    Dimensions
+    Dimensions, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -19,17 +19,27 @@ const JobDetailsScreen = ({ navigation, route }) => {
     const insets = useSafeAreaInsets();
     const [job, setJob] = useState(initialJob);
     const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
-    const fetchLatestJob = useCallback(async () => {
+    const fetchLatestJob = useCallback(async (isRefresh = false) => {
         try {
+            if (!isRefresh) setLoading(true);
             const res = await api.get(`/api/provider/jobs/${job.id}`);
             if (res.success && res.data) {
                 setJob(res.data);
             }
         } catch (err) {
             console.error('Error re-fetching job details:', err);
+        } finally {
+            if (!isRefresh) setLoading(false);
+            setRefreshing(false);
         }
     }, [job?.id]);
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchLatestJob(true);
+    };
 
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
@@ -114,7 +124,13 @@ const JobDetailsScreen = ({ navigation, route }) => {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" />
             
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
+            <ScrollView 
+                contentContainerStyle={styles.scrollContent} 
+                showsVerticalScrollIndicator={false} 
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#14b8a6" />
+                }
+            >
                 {/* Hero / Image Section */}
                 <View style={styles.heroContainer}>
                     {imageUrl ? (
@@ -380,11 +396,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row', justifyContent: 'space-between',
         paddingHorizontal: 20, zIndex: 10
     },
-    overlayBackBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
-    overlayChatBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
-    heroContent: { position: 'absolute', bottom: 20, left: 20, right: 20, height: '50%'},
-    statusBadge: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginBottom: 8 },
-    statusText: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+    overlayBackBtn: { width: moderateScale(40), height: moderateScale(40), borderRadius: moderateScale(20), backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+    overlayChatBtn: { width: moderateScale(40), height: moderateScale(40), borderRadius: moderateScale(20), backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+    heroContent: { position: 'absolute', bottom: verticalScale(20), left: scale(20), right: scale(20), height: '50%'},
+    statusBadge: { alignSelf: 'flex-start', paddingHorizontal: scale(12), paddingVertical: verticalScale(4), borderRadius: moderateScale(20), marginBottom: verticalScale(8) },
+    statusText: { fontSize: moderateScale(10), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
     serviceNameHero: { 
         fontSize: moderateScale(26), fontWeight: 'bold', color: '#fff', marginBottom: 6,
         textShadowColor: 'rgba(0, 0, 0, 0.75)',
@@ -397,59 +413,59 @@ const styles = StyleSheet.create({
     dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#64748b', marginHorizontal: 10 },
     bookingIdHero: { color: '#94a3b8', fontSize: 13 },
 
-    mainContent: { padding: 20, marginTop: -30, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
+    mainContent: { padding: moderateScale(20), marginTop: -verticalScale(30), backgroundColor: '#fff', borderTopLeftRadius: moderateScale(30), borderTopRightRadius: moderateScale(30) },
     earningsCard: {
-        backgroundColor: '#115e59', borderRadius: 24, padding: 20,
+        backgroundColor: '#115e59', borderRadius: moderateScale(24), padding: moderateScale(20),
         flexDirection: 'row', alignItems: 'center',
         elevation: 8, shadowColor: '#115e59', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15,
-        marginBottom: 30
+        marginBottom: verticalScale(30)
     },
     earningsInfo: { flex: 1.2 },
-    earningsLabel: { color: '#ccfbf1', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-    earningsValue: { color: '#fff', fontSize: 32, fontWeight: 'bold', marginTop: 4 },
-    earningsDivider: { width: 1, height: '70%', backgroundColor: 'rgba(255,255,255,0.2)', marginHorizontal: 20 },
-    earningsMeta: { flex: 0.8, gap: 12 },
+    earningsLabel: { color: '#ccfbf1', fontSize: moderateScale(12), fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+    earningsValue: { color: '#fff', fontSize: moderateScale(32), fontWeight: 'bold', marginTop: verticalScale(4) },
+    earningsDivider: { width: 1, height: '70%', backgroundColor: 'rgba(255,255,255,0.2)', marginHorizontal: scale(20) },
+    earningsMeta: { flex: 0.8, gap: verticalScale(12) },
     metaBox: { },
-    metaLabel: { color: '#99f6e4', fontSize: 10, fontWeight: '600' },
-    metaValue: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    metaLabel: { color: '#99f6e4', fontSize: moderateScale(10), fontWeight: '600' },
+    metaValue: { color: '#fff', fontSize: moderateScale(16), fontWeight: 'bold' },
 
-    section: { marginBottom: 30 },
-    sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#64748b', marginBottom: 12, marginLeft: 4 },
-    detailsCard: { backgroundColor: '#f8fafc', borderRadius: 24, padding: 18, borderWidth: 1, borderColor: '#f1f5f9' },
-    detailItem: { flexDirection: 'row', marginBottom: 18 },
+    section: { marginBottom: verticalScale(30) },
+    sectionTitle: { fontSize: moderateScale(14), fontWeight: 'bold', color: '#64748b', marginBottom: verticalScale(12), marginLeft: scale(4) },
+    detailsCard: { backgroundColor: '#f8fafc', borderRadius: moderateScale(24), padding: moderateScale(18), borderWidth: 1, borderColor: '#f1f5f9' },
+    detailItem: { flexDirection: 'row', marginBottom: verticalScale(18) },
     iconContainer: {
-        width: 44, height: 44, borderRadius: 14,
-        justifyContent: 'center', alignItems: 'center', marginRight: 14
+        width: moderateScale(44), height: moderateScale(44), borderRadius: moderateScale(14),
+        justifyContent: 'center', alignItems: 'center', marginRight: scale(14)
     },
     detailTextContainer: { flex: 1, justifyContent: 'center' },
-    detailLabel: { fontSize: 11, color: '#94a3b8', marginBottom: 2, fontWeight: '600', textTransform: 'uppercase' },
-    detailValue: { fontSize: 15, color: '#0f172a', fontWeight: '600' },
+    detailLabel: { fontSize: moderateScale(11), color: '#94a3b8', marginBottom: verticalScale(2), fontWeight: '600', textTransform: 'uppercase' },
+    detailValue: { fontSize: moderateScale(15), color: '#0f172a', fontWeight: '600' },
     
-    customerActions: { flexDirection: 'row', gap: 12, marginTop: 4, paddingLeft: 58 },
+    customerActions: { flexDirection: 'row', gap: scale(12), marginTop: verticalScale(4), paddingLeft: scale(58) },
     customerActionBtn: { 
-        flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 8,
-        borderRadius: 12, borderWidth: 1.5, borderColor: '#e0e7ff'
+        flexDirection: 'row', alignItems: 'center', gap: scale(6),
+        backgroundColor: '#fff', paddingHorizontal: scale(16), paddingVertical: verticalScale(8),
+        borderRadius: moderateScale(12), borderWidth: 1.5, borderColor: '#e0e7ff'
     },
-    customerActionText: { color: '#6366f1', fontWeight: 'bold', fontSize: 13 },
+    customerActionText: { color: '#6366f1', fontWeight: 'bold', fontSize: moderateScale(13) },
 
-    descriptionText: { fontSize: 15, color: '#334155', lineHeight: 24 },
-    extraDetails: { marginTop: 18, paddingTop: 18, borderTopWidth: 1, borderTopColor: '#e2e8f0', gap: 14 },
+    descriptionText: { fontSize: moderateScale(15), color: '#334155', lineHeight: moderateScale(24) },
+    extraDetails: { marginTop: verticalScale(18), paddingTop: verticalScale(18), borderTopWidth: 1, borderTopColor: '#e2e8f0', gap: verticalScale(14) },
     extraItem: { },
-    extraLabel: { fontSize: 13, fontWeight: 'bold', color: '#0f172a' },
-    extraValue: { fontSize: 14, color: '#64748b', marginTop: 4, lineHeight: 20 },
+    extraLabel: { fontSize: moderateScale(13), fontWeight: 'bold', color: '#0f172a' },
+    extraValue: { fontSize: moderateScale(14), color: '#64748b', marginTop: verticalScale(4), lineHeight: moderateScale(20) },
 
-    priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-    priceLabel: { color: '#64748b', fontSize: 14 },
-    priceValue: { color: '#0f172a', fontSize: 14, fontWeight: '600' },
-    totalRow: { marginTop: 8, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#e2e8f0' },
-    totalLabel: { fontSize: 16, fontWeight: 'bold', color: '#0f172a' },
-    totalValue: { fontSize: 20, fontWeight: 'bold', color: '#14b8a6' },
+    priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: verticalScale(12) },
+    priceLabel: { color: '#64748b', fontSize: moderateScale(14) },
+    priceValue: { color: '#0f172a', fontSize: moderateScale(14), fontWeight: '600' },
+    totalRow: { marginTop: verticalScale(8), paddingTop: verticalScale(16), borderTopWidth: 1, borderTopColor: '#e2e8f0' },
+    totalLabel: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#0f172a' },
+    totalValue: { fontSize: moderateScale(20), fontWeight: 'bold', color: '#14b8a6' },
     overtimeNotice: { 
-        marginTop: 16, backgroundColor: '#ecfeff', padding: 12, 
-        borderRadius: 12, flexDirection: 'row', gap: 8, alignItems: 'center'
+        marginTop: verticalScale(16), backgroundColor: '#ecfeff', padding: moderateScale(12), 
+        borderRadius: moderateScale(12), flexDirection: 'row', gap: scale(8), alignItems: 'center'
     },
-    overtimeNoticeText: { color: '#0e7490', fontSize: 12, fontWeight: '600', flex: 1 },
+    overtimeNoticeText: { color: '#0e7490', fontSize: moderateScale(12), fontWeight: '600', flex: 1 },
 
     /* Dispute Notice in Job Details */
     disputeNotice: {
@@ -495,28 +511,28 @@ const styles = StyleSheet.create({
     },
 
 
-    accessRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    accessRow: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(10) },
     accessBadge: {
         flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0fdfa',
-        paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, gap: 8,
+        paddingHorizontal: scale(14), paddingVertical: verticalScale(10), borderRadius: moderateScale(16), gap: scale(8),
         borderWidth: 1, borderColor: '#ccfbf1'
     },
     accessBadgeDisabled: { backgroundColor: '#f8fafc', borderColor: '#e2e8f0' },
-    accessBadgeText: { fontSize: 13, color: '#115e59', fontWeight: '700' },
+    accessBadgeText: { fontSize: moderateScale(13), color: '#115e59', fontWeight: '700' },
     accessBadgeTextDisabled: { color: '#94a3b8' },
 
     bottomActions: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        padding: 24, paddingBottom: 34, backgroundColor: '#fff', 
+        padding: moderateScale(24), paddingBottom: verticalScale(34), backgroundColor: '#fff', 
         borderTopWidth: 1, borderTopColor: '#f1f5f9'
     },
     primaryBtn: {
-        backgroundColor: '#14b8a6', paddingVertical: 18, borderRadius: 20,
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+        backgroundColor: '#14b8a6', paddingVertical: verticalScale(18), borderRadius: moderateScale(20),
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: scale(10),
         elevation: 10, shadowColor: '#14b8a6',
         shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 12
     },
-    primaryBtnText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+    primaryBtnText: { color: '#fff', fontSize: moderateScale(18), fontWeight: 'bold' },
     btnDisabled: { opacity: 0.7 }
 });
 

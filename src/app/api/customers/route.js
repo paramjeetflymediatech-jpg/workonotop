@@ -103,18 +103,38 @@ export async function PUT(request) {
       return NextResponse.json({ success: false, message: 'ID required' }, { status: 400 })
     }
 
-    const { first_name, last_name, phone, receive_offers, role } = await request.json()
+    const { first_name, last_name, phone, password, receive_offers, role } = await request.json()
+
+    let hashedPassword = null
+    if (password) {
+      const bcrypt = await import('bcryptjs')
+      hashedPassword = await bcrypt.hash(password, 10)
+    }
 
     if (role === 'provider') {
-      await execute(
-        `UPDATE service_providers SET name = ?, phone = ?, updated_at = NOW() WHERE id = ?`,
-        [`${first_name} ${last_name}`, phone || null, id]
-      )
+      if (hashedPassword) {
+        await execute(
+          `UPDATE service_providers SET name = ?, phone = ?, password = ?, updated_at = NOW() WHERE id = ?`,
+          [`${first_name} ${last_name}`, phone || null, hashedPassword, id]
+        )
+      } else {
+        await execute(
+          `UPDATE service_providers SET name = ?, phone = ?, updated_at = NOW() WHERE id = ?`,
+          [`${first_name} ${last_name}`, phone || null, id]
+        )
+      }
     } else {
-      await execute(
-        `UPDATE users SET first_name = ?, last_name = ?, phone = ?, receive_offers = ?, updated_at = NOW() WHERE id = ?`,
-        [first_name, last_name, phone || null, receive_offers ? 1 : 0, id]
-      )
+      if (hashedPassword) {
+        await execute(
+          `UPDATE users SET first_name = ?, last_name = ?, phone = ?, password_hash = ?, receive_offers = ?, updated_at = NOW() WHERE id = ?`,
+          [first_name, last_name, phone || null, hashedPassword, receive_offers ? 1 : 0, id]
+        )
+      } else {
+        await execute(
+          `UPDATE users SET first_name = ?, last_name = ?, phone = ?, receive_offers = ?, updated_at = NOW() WHERE id = ?`,
+          [first_name, last_name, phone || null, receive_offers ? 1 : 0, id]
+        )
+      }
     }
 
     return NextResponse.json({ success: true, message: 'User updated successfully' })

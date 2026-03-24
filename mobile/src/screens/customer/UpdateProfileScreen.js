@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, SafeAreaView, ActivityIndicator, Switch, Alert, Platform, KeyboardAvoidingView, Image
+    ScrollView, SafeAreaView, ActivityIndicator, Switch, Alert, Platform, KeyboardAvoidingView, Image, RefreshControl
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
@@ -15,6 +15,7 @@ const UpdateProfileScreen = ({ navigation }) => {
     const { user, token, updateUser } = useAuth();
     
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
     
@@ -32,7 +33,7 @@ const UpdateProfileScreen = ({ navigation }) => {
 
     const loadProfile = async () => {
         try {
-            setLoading(true);
+            if (!refreshing) setLoading(true);
             const res = await apiService.get(`/api/customers/${user.id}`, {}, token);
             if (res.success && res.data) {
                 setForm({
@@ -53,7 +54,13 @@ const UpdateProfileScreen = ({ navigation }) => {
             Alert.alert('Error', 'Failed to load profile.');
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        loadProfile();
     };
 
     const pickImage = async () => {
@@ -137,7 +144,13 @@ const UpdateProfileScreen = ({ navigation }) => {
                     <View style={{ width: moderateScale(40) }} />
                 </View>
 
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView 
+                    contentContainerStyle={styles.scrollContent} 
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" />
+                    }
+                >
                     
                     {/* Profile Image Picker */}
                     <View style={styles.imagePickerContainer}>

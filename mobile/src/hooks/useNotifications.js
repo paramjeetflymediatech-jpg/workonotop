@@ -56,12 +56,11 @@ export const useNotifications = (navigation, userRole) => {
         return () => {
             isStopped = true;
             const cleanup = async () => {
-                const Notifications = await import('expo-notifications');
                 if (notificationListener.current) {
-                    Notifications.removeNotificationSubscription(notificationListener.current);
+                    notificationListener.current.remove();
                 }
                 if (responseListener.current) {
-                    Notifications.removeNotificationSubscription(responseListener.current);
+                    responseListener.current.remove();
                 }
             };
             cleanup();

@@ -95,6 +95,8 @@ export async function POST(request, { params }) {
         `UPDATE service_providers
          SET documents_uploaded = 0,
              documents_verified = 0,
+             onboarding_completed = 0,
+             onboarding_step = 3,
              updated_at = NOW()
          WHERE id = ?`,
         [providerId]
