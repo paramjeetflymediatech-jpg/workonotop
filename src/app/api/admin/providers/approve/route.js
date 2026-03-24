@@ -118,8 +118,9 @@
 
 // app/api/admin/providers/route.js  (PUT only — add to your existing file)
 import { NextResponse } from 'next/server';
-import { withConnection } from '@/lib/db';
+import { execute, withConnection } from '@/lib/db';
 import { sendEmail, getApprovalEmailHtml, getRejectionEmailHtml } from '@/lib/email';
+import { notifyUser } from '@/lib/push';
 
 // ─── Schema reference ─────────────────────────────────────────────────────────
 // service_providers.status  enum('active','inactive','pending','rejected','suspended')
@@ -147,6 +148,9 @@ export async function PUT(request) {
         await connection.execute(
           `UPDATE service_providers
            SET status       = 'active',
+               email_verified = 1,
+               email_verification_token = NULL,
+               email_verification_expires = NULL,
                approved_at  = NOW(),
                updated_at   = NOW()
            WHERE id = ?`,
@@ -159,18 +163,17 @@ export async function PUT(request) {
           [providerId]
         );
         if (rows.length > 0) {
-          // Notification row (optional — only if provider_notifications table exists)
+          // Notification row
           try {
             await connection.execute(
-              `INSERT INTO provider_notifications (provider_id, type, title, message, data)
-               VALUES (?, 'account_approved', 'Account Approved!',
+              `INSERT INTO notifications (user_id, user_type, type, title, message, data)
+               VALUES (?, 'provider', 'account_approved', 'Account Approved!',
                        'Congratulations! Your account has been approved. You can now start accepting jobs.',
                        ?)`,
               [providerId, JSON.stringify({ approved: true })]
             );
           } catch (notifErr) {
-            // Table may not exist yet — log and continue
-            console.warn('⚠️ provider_notifications insert skipped:', notifErr.message);
+            console.warn('⚠️ notifications insert skipped:', notifErr.message);
           }
 
           try {
@@ -186,6 +189,19 @@ export async function PUT(request) {
         }
 
         await connection.commit();
+
+        // 🔔 Push notification to provider (non-blocking)
+        try {
+          notifyUser(
+            providerId,
+            '🎉 Account Approved!',
+            'Congratulations! Your WorkOnTap account is approved. You can now start accepting jobs.',
+            { type: 'account_approved' },
+            execute,
+            'provider'
+          ).catch(e => console.warn('[Push] provider approval notify error:', e.message));
+        } catch (_) {}
+
         return NextResponse.json({ success: true, message: 'Provider approved successfully' });
       }
 
@@ -226,6 +242,19 @@ export async function PUT(request) {
         }
 
         await connection.commit();
+
+        // 🔔 Push notification to provider (non-blocking)
+        try {
+          notifyUser(
+            providerId,
+            '❌ Application Update',
+            `Your WorkOnTap application was not approved. Reason: ${rejectionReason.trim()}`,
+            { type: 'account_rejected' },
+            execute,
+            'provider'
+          ).catch(e => console.warn('[Push] provider rejection notify error:', e.message));
+        } catch (_) {}
+
         return NextResponse.json({ success: true, message: 'Provider rejected and suspended' });
       }
 

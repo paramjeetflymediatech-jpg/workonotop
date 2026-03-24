@@ -8,7 +8,8 @@ import {
     FlatList,
     ActivityIndicator,
     RefreshControl,
-    StatusBar
+    StatusBar,
+    Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
@@ -23,7 +24,7 @@ const ReviewsScreen = ({ navigation }) => {
         try {
             const res = await api.get('/api/reviews');
             if (res.success) {
-                setReviews(res.data || []);
+                setReviews(res.data);
             }
         } catch (error) {
             console.error('Error fetching reviews:', error);
@@ -31,6 +32,33 @@ const ReviewsScreen = ({ navigation }) => {
             setLoading(false);
             setRefreshing(false);
         }
+    };
+
+    const handleDeleteReview = (id) => {
+        Alert.alert(
+            "Delete Review",
+            "Are you sure you want to delete this review?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const res = await api.delete(`/api/reviews?id=${id}`);
+                            if (res.success) {
+                                Alert.alert("Success", "Review deleted successfully");
+                                fetchReviews();
+                            } else {
+                                Alert.alert("Error", res.message || "Failed to delete review");
+                            }
+                        } catch (error) {
+                            console.error('Error deleting review:', error);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     useEffect(() => {
@@ -64,20 +92,25 @@ const ReviewsScreen = ({ navigation }) => {
                     <Text style={styles.avatarText}>{item.customer_name?.[0] || 'U'}</Text>
                 </View>
                 <View style={styles.reviewerInfo}>
-                    <Text style={styles.reviewerName}>{item.customer_name}</Text>
+                    <Text style={styles.reviewerName}>
+                        {item.is_anonymous ? 'Anonymous' : item.customer_name}
+                    </Text>
                     <View style={styles.starRow}>
                         {renderStars(item.rating)}
                         <Text style={styles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
                     </View>
                 </View>
-                <TouchableOpacity style={styles.deleteBtn}>
+                <TouchableOpacity 
+                    style={styles.deleteBtn}
+                    onPress={() => handleDeleteReview(item.id)}
+                >
                     <Ionicons name="trash-outline" size={moderateScale(18)} color="#ef4444" />
                 </TouchableOpacity>
             </View>
 
             <View style={styles.cardBody}>
                 <Text style={styles.serviceText}>Service: {item.service_name}</Text>
-                <Text style={styles.commentText}>"{item.comment}"</Text>
+                <Text style={styles.commentText}>"{item.review || 'No comment provided'}"</Text>
             </View>
 
             <View style={styles.cardFooter}>

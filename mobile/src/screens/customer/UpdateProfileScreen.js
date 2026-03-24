@@ -7,10 +7,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '../../services/api';
 
 const UpdateProfileScreen = ({ navigation }) => {
-    const { user, updateUser } = useAuth();
+    const insets = useSafeAreaInsets();
+    const { user, token, updateUser } = useAuth();
     
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -31,7 +33,7 @@ const UpdateProfileScreen = ({ navigation }) => {
     const loadProfile = async () => {
         try {
             setLoading(true);
-            const res = await apiService.get(`/api/customers/${user.id}`);
+            const res = await apiService.get(`/api/customers/${user.id}`, {}, token);
             if (res.success && res.data) {
                 setForm({
                     first_name: res.data.first_name || '',
@@ -90,9 +92,7 @@ const UpdateProfileScreen = ({ navigation }) => {
                 formData.append('profile_image', { uri: profileImage, name: filename, type });
             }
 
-            const res = await apiService.put(`/api/customers/${user.id}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const res = await apiService.put(`/api/customers/${user.id}`, formData, token);
 
             if (res.success) {
                 updateUser({
@@ -129,7 +129,7 @@ const UpdateProfileScreen = ({ navigation }) => {
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <View style={styles.header}>
+                <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(10)) }]}>
                     <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={moderateScale(24)} color="#0f172a" />
                     </TouchableOpacity>
@@ -250,8 +250,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: moderateScale(20),
-        paddingVertical: verticalScale(15),
-        marginTop: verticalScale(25),
+        paddingBottom: verticalScale(15),
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',

@@ -434,6 +434,21 @@ const tables = [
     INDEX idx_is_active (is_active),
     UNIQUE KEY uq_user_device (user_id, device_id),
     UNIQUE KEY uq_provider_device (provider_id, device_id)
+  )`,
+
+  // Table 18: notifications (Unified table for all user types)
+  `CREATE TABLE IF NOT EXISTS notifications (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    user_type ENUM('customer', 'provider', 'admin') NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    data JSON DEFAULT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_notification (user_id, user_type),
+    INDEX idx_created_at (created_at)
   )`
 ];
 
@@ -462,6 +477,7 @@ const alterations = [
   { table: 'service_providers', column: 'rejection_reason', sql: 'ALTER TABLE service_providers ADD COLUMN rejection_reason TEXT AFTER approved_at' },
   { table: 'service_providers', column: 'service_areas', sql: 'ALTER TABLE service_providers ADD COLUMN service_areas JSON AFTER rejection_reason' },
   { table: 'service_providers', column: 'skills', sql: 'ALTER TABLE service_providers ADD COLUMN skills JSON AFTER service_areas' },
+  { table: 'service_providers', column: 'is_available', sql: 'ALTER TABLE service_providers ADD COLUMN is_available TINYINT(1) DEFAULT 1' },
   { table: 'service_providers', column: 'reset_token', sql: 'ALTER TABLE service_providers ADD COLUMN reset_token VARCHAR(255) AFTER updated_at' },
   { table: 'service_providers', column: 'reset_token_expiry', sql: 'ALTER TABLE service_providers ADD COLUMN reset_token_expiry DATETIME AFTER reset_token' },
 
@@ -481,7 +497,15 @@ const alterations = [
   // users table additions
   { table: 'users', column: 'image_url', sql: 'ALTER TABLE users ADD COLUMN image_url VARCHAR(255) AFTER role' },
   // Fix job_time_slot truncation
-  { table: 'bookings', column: 'job_time_slot_varchar', sql: 'ALTER TABLE bookings MODIFY COLUMN job_time_slot VARCHAR(255) NOT NULL' }
+  { table: 'bookings', column: 'job_time_slot_varchar', sql: 'ALTER TABLE bookings MODIFY COLUMN job_time_slot VARCHAR(255) NOT NULL' },
+
+  // mobile_auth_users table additions/fixes
+  { table: 'mobile_auth_users', column: 'user_type_enum', sql: "ALTER TABLE mobile_auth_users MODIFY COLUMN user_type ENUM('customer', 'provider', 'admin') NOT NULL", type: 'modify' },
+  { table: 'mobile_auth_users', column: 'device_id', sql: "ALTER TABLE mobile_auth_users ADD COLUMN device_id VARCHAR(255) AFTER push_token_updated_at" },
+  { table: 'mobile_auth_users', column: 'device_name', sql: "ALTER TABLE mobile_auth_users ADD COLUMN device_name VARCHAR(255) AFTER device_id" },
+  { table: 'mobile_auth_users', column: 'device_platform', sql: "ALTER TABLE mobile_auth_users ADD COLUMN device_platform ENUM('ios', 'android', 'web') AFTER device_name" },
+  { table: 'mobile_auth_users', column: 'uq_user_device', sql: "ALTER TABLE mobile_auth_users ADD UNIQUE INDEX uq_user_device (user_id, device_id)", type: 'unique' },
+  { table: 'mobile_auth_users', column: 'uq_provider_device', sql: "ALTER TABLE mobile_auth_users ADD UNIQUE INDEX uq_provider_device (provider_id, device_id)", type: 'unique' }
 ];
 
 // =====================================================
@@ -507,7 +531,7 @@ async function runMigration() {
     console.log(`   ✓ Connected to database\n`);
 
     // Step 3: Create tables
-    console.log('🏗️  Step 2: Creating 17 tables...');
+    console.log(`🏗️  Step 2: Creating ${tables.length} tables...`);
     let createdCount = 0;
 
     for (const sql of tables) {
@@ -528,7 +552,7 @@ async function runMigration() {
         }
       }
     }
-    console.log(`   📊 Total tables created/verified: ${createdCount}/17\n`);
+    console.log(`   📊 Total tables created/verified: ${createdCount}/${tables.length}\n`);
 
     // Step 4: Run alterations (add missing columns and constraints)
     console.log('🔧 Step 3: Applying column alterations and constraints...');
@@ -560,6 +584,10 @@ async function runMigration() {
               throw err;
             }
           }
+        } else if (alt.type === 'modify') {
+          // Handle COLUMN modification (e.g. changing ENUM values)
+          await conn.execute(alt.sql);
+          console.log(`   ✓ Modified column: ${alt.table}.${alt.column}`);
         } else {
           // Handle column addition
           const [cols] = await conn.query(
@@ -638,7 +666,8 @@ async function runMigration() {
       'provider_documents', 'provider_bank_accounts', 'bookings',
       'chat_messages', 'booking_photos', 'booking_status_history',
       'booking_time_logs', 'job_photos', 'provider_reviews', 'invoices',
-      'provider_payouts', 'disputes', 'mobile_auth_users'
+      'provider_payouts', 'disputes', 'mobile_auth_users', 
+      'notifications'
     ];
 
     let totalColumns = 0;
@@ -674,7 +703,7 @@ async function runMigration() {
     console.log('✅ Migration completed successfully!');
     console.log('='.repeat(60));
     console.log(`   Database: ${DB_NAME}`);
-    console.log(`   Tables:   ${tableQueries.length}/17`);
+    console.log(`   Tables:   ${tableQueries.length}/18`);
     console.log(`   Total Columns: ${totalColumns}`);
     console.log('   ✓ UNIQUE constraint added to users.phone column');
     console.log('='.repeat(60) + '\n');

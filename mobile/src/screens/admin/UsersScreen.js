@@ -27,17 +27,39 @@ const UsersScreen = ({ navigation }) => {
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({ first_name: '', last_name: '', email: '', phone: '' });
     const [updating, setUpdating] = useState(false);
+    const [userType, setUserType] = useState('customer'); // 'customer' or 'provider'
 
     const fetchUsers = async () => {
+        setLoading(true);
         try {
-            const res = await api.get('/api/customers');
-            if (res.success) {
-                // Filter to only show users (customers), omitting admins/providers if any
-                const customers = (res.data || []).filter(u => u.role === 'user');
-                setUsers(customers);
+            if (userType === 'customer') {
+                const res = await api.get('/api/customers');
+                if (res.success) {
+                    // Filter to only show users (customers), omitting admins/providers if any
+                    const customers = (res.data || []).map(u => ({
+                        ...u,
+                        displayName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email,
+                        displayRole: 'Customer'
+                    })).filter(u => u.role === 'user');
+                    setUsers(customers);
+                }
+            } else {
+                const res = await api.get('/api/admin/providers');
+                if (res.success) {
+                    const providers = (res.data.providers || []).map(p => ({
+                        ...p,
+                        displayName: p.name || p.email,
+                        displayRole: 'Provider',
+                        // Map provider fields to match list item expectations
+                        first_name: p.name?.split(' ')[0] || '',
+                        last_name: p.name?.split(' ').slice(1).join(' ') || '',
+                        booking_count: p.total_reviews || 0
+                    }));
+                    setUsers(providers);
+                }
             }
         } catch (error) {
-            console.error('Error fetching users:', error);
+            console.error(`Error fetching ${userType}s:`, error);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -46,7 +68,7 @@ const UsersScreen = ({ navigation }) => {
 
     useEffect(() => {
         fetchUsers();
-    }, []);
+    }, [userType]);
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -54,9 +76,9 @@ const UsersScreen = ({ navigation }) => {
     };
 
     const filteredUsers = users.filter(user =>
-        user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        user.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.phone?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const openUserDetails = (user) => {
@@ -64,6 +86,7 @@ const UsersScreen = ({ navigation }) => {
         setFormData({
             first_name: user.first_name || '',
             last_name: user.last_name || '',
+            name: user.name || '',
             email: user.email || '',
             phone: user.phone || ''
         });
@@ -72,6 +95,11 @@ const UsersScreen = ({ navigation }) => {
     };
 
     const handleUpdate = async () => {
+        if (userType === 'provider') {
+            alert('Provider management is available in the Providers screen');
+            return;
+        }
+
         if (!formData.first_name || !formData.last_name || !formData.email) {
             alert('Please fill in required fields');
             return;
@@ -97,6 +125,11 @@ const UsersScreen = ({ navigation }) => {
     };
 
     const handleDelete = async () => {
+        if (userType === 'provider') {
+            alert('Provider management is available in the Providers screen');
+            return;
+        }
+
         import('react-native').then(({ Alert }) => {
             Alert.alert(
                 'Delete User',
@@ -137,12 +170,12 @@ const UsersScreen = ({ navigation }) => {
                     </Text>
                 </View>
                 <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{item.first_name} {item.last_name}</Text>
+                    <Text style={styles.userName}>{item.displayName}</Text>
                     <Text style={styles.userEmail}>{item.email}</Text>
                 </View>
                 <View style={styles.bookingBadge}>
                     <Text style={styles.bookingCount}>{item.booking_count || 0}</Text>
-                    <Text style={styles.bookingLabel}>Jobs</Text>
+                    <Text style={styles.bookingLabel}>{userType === 'customer' ? 'Jobs' : 'Reviews'}</Text>
                 </View>
             </View>
 
@@ -177,7 +210,7 @@ const UsersScreen = ({ navigation }) => {
                     <Ionicons name="search-outline" size={moderateScale(20)} color="#94a3b8" />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search users..."
+                        placeholder={userType === 'customer' ? "Search users..." : "Search providers..."}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         placeholderTextColor="#94a3b8"
@@ -188,6 +221,31 @@ const UsersScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     )}
                 </View>
+            </View>
+
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tab, userType === 'customer' && styles.activeTab]}
+                    onPress={() => setUserType('customer')}
+                >
+                    <Ionicons
+                        name="people-outline"
+                        size={moderateScale(18)}
+                        color={userType === 'customer' ? '#fff' : '#64748b'}
+                    />
+                    <Text style={[styles.tabText, userType === 'customer' && styles.activeTabText]}>Customers</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, userType === 'provider' && styles.activeTab]}
+                    onPress={() => setUserType('provider')}
+                >
+                    <Ionicons
+                        name="construct-outline"
+                        size={moderateScale(18)}
+                        color={userType === 'provider' ? '#fff' : '#64748b'}
+                    />
+                    <Text style={[styles.tabText, userType === 'provider' && styles.activeTabText]}>Providers</Text>
+                </TouchableOpacity>
             </View>
 
             {loading && !refreshing ? (
@@ -205,8 +263,12 @@ const UsersScreen = ({ navigation }) => {
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="people-outline" size={scale(60)} color="#e2e8f0" />
-                            <Text style={styles.emptyText}>No users found</Text>
+                            <Ionicons
+                                name={userType === 'customer' ? "people-outline" : "construct-outline"}
+                                size={scale(60)}
+                                color="#e2e8f0"
+                            />
+                            <Text style={styles.emptyText}>No {userType}s found</Text>
                         </View>
                     }
                 />
@@ -231,7 +293,7 @@ const UsersScreen = ({ navigation }) => {
                         </View>
 
                         {selectedUser && (
-                            <ScrollView showsVerticalScrollIndicator={false}>
+                            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: verticalScale(20) }}>
                                 {editMode ? (
                                     <View style={styles.editForm}>
                                         <Text style={styles.inputLabel}>First Name</Text>
@@ -267,14 +329,14 @@ const UsersScreen = ({ navigation }) => {
                                         />
 
                                         <View style={styles.editActionRow}>
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 style={[styles.modalActionBtn, styles.saveBtn]}
                                                 onPress={handleUpdate}
                                                 disabled={updating}
                                             >
                                                 {updating ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>Save Changes</Text>}
                                             </TouchableOpacity>
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 style={[styles.modalActionBtn, styles.cancelBtn]}
                                                 onPress={() => setEditMode(false)}
                                             >
@@ -287,14 +349,16 @@ const UsersScreen = ({ navigation }) => {
                                         <View style={styles.modalProfileHeader}>
                                             <View style={styles.largeAvatar}>
                                                 <Text style={styles.largeAvatarText}>
-                                                    {selectedUser.first_name?.[0]}{selectedUser.last_name?.[0]}
+                                                    {selectedUser.displayName?.[0]}
                                                 </Text>
                                             </View>
                                             <Text style={styles.modalUserName}>
-                                                {selectedUser.first_name} {selectedUser.last_name}
+                                                {selectedUser.displayName}
                                             </Text>
-                                            <View style={styles.roleBadge}>
-                                                <Text style={styles.roleText}>Customer</Text>
+                                            <View style={[styles.roleBadge, userType === 'provider' && { backgroundColor: '#f0fdfa' }]}>
+                                                <Text style={[styles.roleText, userType === 'provider' && { color: '#115e59' }]}>
+                                                    {userType === 'customer' ? 'Customer' : `Provider (${selectedUser.status})`}
+                                                </Text>
                                             </View>
                                         </View>
 
@@ -321,9 +385,15 @@ const UsersScreen = ({ navigation }) => {
                                             <View style={styles.statsRow}>
                                                 <View style={styles.statBox}>
                                                     <Text style={styles.statNumber}>{selectedUser.booking_count || 0}</Text>
-                                                    <Text style={styles.statLabel}>Total Jobs</Text>
+                                                    <Text style={styles.statLabel}>{userType === 'customer' ? 'Total Jobs' : 'Reviews'}</Text>
                                                 </View>
-                                                <View style={styles.statBox}>
+                                                {userType === 'provider' && (
+                                                    <View style={styles.statBox}>
+                                                        <Text style={styles.statNumber}>{parseFloat(selectedUser.avg_rating || 0).toFixed(1)}</Text>
+                                                        <Text style={styles.statLabel}>Rating ⭐</Text>
+                                                    </View>
+                                                )}
+                                                <View style={[styles.statBox, userType === 'provider' && { flex: 1.2 }]}>
                                                     <Ionicons name="calendar-outline" size={moderateScale(24)} color="#115e59" />
                                                     <Text style={styles.statLabel}>Joined Date</Text>
                                                     <Text style={styles.statDate}>
@@ -333,22 +403,35 @@ const UsersScreen = ({ navigation }) => {
                                             </View>
                                         </View>
 
-                                        <View style={styles.modalActionRow}>
-                                            <TouchableOpacity 
-                                                style={[styles.modalActionBtn, styles.editBtn]}
-                                                onPress={() => setEditMode(true)}
+                                        {userType === 'customer' ? (
+                                            <View style={styles.modalActionRow}>
+                                                <TouchableOpacity
+                                                    style={[styles.modalActionBtn, styles.editBtn]}
+                                                    onPress={() => setEditMode(true)}
+                                                >
+                                                    <Ionicons name="create-outline" size={moderateScale(20)} color="#fff" />
+                                                    <Text style={styles.actionBtnText}>Edit User</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[styles.modalActionBtn, styles.deleteBtn]}
+                                                    onPress={handleDelete}
+                                                >
+                                                    <Ionicons name="trash-outline" size={moderateScale(20)} color="#fff" />
+                                                    <Text style={styles.actionBtnText}>Delete</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        ) : (
+                                            <TouchableOpacity
+                                                style={[styles.modalActionBtn, styles.editBtn, { marginTop: 10 }]}
+                                                onPress={() => {
+                                                    setModalVisible(false);
+                                                    navigation.navigate('Providers');
+                                                }}
                                             >
-                                                <Ionicons name="create-outline" size={moderateScale(20)} color="#fff" />
-                                                <Text style={styles.actionBtnText}>Edit User</Text>
+                                                <Ionicons name="construct-outline" size={moderateScale(20)} color="#fff" />
+                                                <Text style={styles.actionBtnText}>Manage in Providers</Text>
                                             </TouchableOpacity>
-                                            <TouchableOpacity 
-                                                style={[styles.modalActionBtn, styles.deleteBtn]}
-                                                onPress={handleDelete}
-                                            >
-                                                <Ionicons name="trash-outline" size={moderateScale(20)} color="#fff" />
-                                                <Text style={styles.actionBtnText}>Delete</Text>
-                                            </TouchableOpacity>
-                                        </View>
+                                        )}
                                     </>
                                 )}
                             </ScrollView>
@@ -396,6 +479,36 @@ const styles = StyleSheet.create({
         color: '#0f172a',
     },
     loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    tabContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: scale(20),
+        paddingVertical: verticalScale(10),
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    tab: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: verticalScale(10),
+        borderRadius: moderateScale(10),
+        marginHorizontal: scale(5),
+        backgroundColor: '#f1f5f9',
+        gap: scale(8),
+    },
+    activeTab: {
+        backgroundColor: '#115e59',
+    },
+    tabText: {
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        color: '#64748b',
+    },
+    activeTabText: {
+        color: '#fff',
+    },
     listContent: { padding: scale(20) },
     card: {
         backgroundColor: '#fff',

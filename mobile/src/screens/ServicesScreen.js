@@ -98,21 +98,21 @@ const ServicesScreen = ({ navigation, route }) => {
     );
 
     const renderHeader = () => (
-        <View style={[styles.header, { paddingTop: insets.top + moderateScale(10) }]}>
+        <View style={[styles.header, { paddingTop: insets.top + moderateScale(5) }]}>
             <View style={styles.headerTop}>
                 {navigation.canGoBack() ? (
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={24} color="#fff" />
+                        <Ionicons name="arrow-back" size={moderateScale(24)} color="#fff" />
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.openDrawer()}>
-                        <Ionicons name="menu" size={24} color="#fff" />
+                        <Ionicons name="menu" size={moderateScale(24)} color="#fff" />
                     </TouchableOpacity>
                 )}
                 <Text style={styles.headerTitle}>
                     {categoryId ? 'Category Services' : 'Our Services'}
                 </Text>
-                <View style={{ width: 40 }} /> 
+                <View style={{ width: moderateScale(40) }} /> 
             </View>
 
             <View style={styles.searchBar}>
@@ -173,7 +173,7 @@ const ServicesScreen = ({ navigation, route }) => {
                             </Text>
                         </View>
                     }
-                    ListFooterComponent={<View style={{ height: verticalScale(100) }} />}
+                    ListFooterComponent={<View style={{ height: insets.bottom + verticalScale(100) }} />}
                 />
             )}
         </View>
@@ -205,15 +205,15 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     backBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
+        width: moderateScale(40),
+        height: moderateScale(40),
+        borderRadius: moderateScale(12),
         backgroundColor: 'rgba(255,255,255,0.2)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 22,
+        fontSize: moderateScale(22),
         fontWeight: 'bold',
         color: '#fff',
     },

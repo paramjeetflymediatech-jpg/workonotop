@@ -18,7 +18,8 @@ const CustomTabBar = memo(({ state, descriptors, navigation, role }) => {
     const insets = useSafeAreaInsets();
 
     // Adjust bottom padding based on device insets (handles gestures/keys)
-    const bottomPadding = insets.bottom > 0 ? insets.bottom : verticalScale(10);
+    // On devices with navigation keys, insets.bottom might be 0 but we still want some space
+    const bottomPadding = insets.bottom > 0 ? insets.bottom : verticalScale(15);
     const tabBarHeight = verticalScale(65) + bottomPadding;
 
     return (

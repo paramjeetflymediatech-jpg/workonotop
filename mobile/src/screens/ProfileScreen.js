@@ -51,21 +51,45 @@ const ProfileScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.menuContainer}>
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('MyBookings')}>
-                    <View style={styles.menuIconContainer}>
-                        <Ionicons name="calendar-outline" size={20} color="#115e59" />
-                    </View>
-                    <Text style={styles.menuText}>My Bookings</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
-                </TouchableOpacity>
+                {user?.role === 'customer' && (
+                    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('MyBookings')}>
+                        <View style={styles.menuIconContainer}>
+                            <Ionicons name="calendar-outline" size={20} color="#115e59" />
+                        </View>
+                        <Text style={styles.menuText}>My Bookings</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+                    </TouchableOpacity>
+                )}
 
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Invoices')}>
-                    <View style={styles.menuIconContainer}>
-                        <Ionicons name="document-text-outline" size={20} color="#115e59" />
-                    </View>
-                    <Text style={styles.menuText}>My Invoices</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
-                </TouchableOpacity>
+                {user?.role === 'provider' && (
+                    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Messages')}>
+                        <View style={styles.menuIconContainer}>
+                            <Ionicons name="chatbubbles-outline" size={20} color="#115e59" />
+                        </View>
+                        <Text style={styles.menuText}>My Messages</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+                    </TouchableOpacity>
+                )}
+
+                {user?.role === 'admin' && (
+                    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Job Requests')}>
+                        <View style={styles.menuIconContainer}>
+                            <Ionicons name="briefcase-outline" size={20} color="#115e59" />
+                        </View>
+                        <Text style={styles.menuText}>Job Requests</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+                    </TouchableOpacity>
+                )}
+
+                {(user?.role === 'customer' || user?.role === 'admin') && (
+                    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Invoices')}>
+                        <View style={styles.menuIconContainer}>
+                            <Ionicons name="document-text-outline" size={20} color="#115e59" />
+                        </View>
+                        <Text style={styles.menuText}>My Invoices</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+                    </TouchableOpacity>
+                )}
 
                 <TouchableOpacity 
                     style={styles.menuItem} 

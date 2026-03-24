@@ -41,16 +41,19 @@ const CustomerDashboard = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [categories, setCategories] = useState([]);
     const [bookings, setBookings] = useState([]);
+    const [featuredServices, setFeaturedServices] = useState([]);
 
     const fetchCustomerData = useCallback(async () => {
         try {
-            const [categoriesRes, bookingsRes] = await Promise.all([
+            const [categoriesRes, bookingsRes, featuredRes] = await Promise.all([
                 api.get('/api/categories'),
-                api.get(`/api/customer/bookings?user_id=${user?.id}`)
+                api.get(`/api/customer/bookings?user_id=${user?.id}`),
+                api.get('/api/services?homepage=true&limit=6')
             ]);
-
+            
             setCategories(categoriesRes.data || []);
             setBookings(bookingsRes.data || []);
+            setFeaturedServices(featuredRes.data || []);
         } catch (error) {
             console.error('Error fetching customer data:', error);
         } finally {
@@ -145,6 +148,22 @@ const CustomerDashboard = ({ navigation }) => {
                     </View>
                 </View>
 
+                {/* --- HELPERS --- */}
+                {(() => {
+                    const renderCategoryIcon = (icon) => {
+                        // Check if icon is an Ionicons name (likely ends with -outline or -sharp or is a known name)
+                        const isVectorIcon = icon && (icon.includes('-outline') || icon.includes('-sharp') || ['build', 'construct', 'bus', 'trash', 'leaf', 'brush', 'water'].some(k => icon.includes(k)));
+                        
+                        if (isVectorIcon) {
+                            return <Ionicons name={icon} size={moderateScale(32)} color={PRIMARY} />;
+                        }
+                        return <Text style={styles.catEmoji}>{icon || '🛠️'}</Text>;
+                    };
+
+                    return null; // This is just to define the helper within the scope if needed, 
+                                 // but actually it's better to define it outside or use it directly.
+                })()}
+
                 {/* --- CATEGORIES --- */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
@@ -160,25 +179,77 @@ const CustomerDashboard = ({ navigation }) => {
                         contentContainerStyle={styles.categoryScroll}
                     >
                         {(categories && categories.length > 0 ? categories : [
-                            { id: 1, name: 'Plumbing', icon: '🚰', color: '#3b82f6' },
-                            { id: 2, name: 'Electrical', icon: '⚡', color: '#f59e0b' },
-                            { id: 3, name: 'Cleaning', icon: '🧹', color: '#ec4899' },
-                            { id: 4, name: 'Painting', icon: '🎨', color: '#8b5cf6' },
-                            { id: 5, name: 'AC Repair', icon: '❄️', color: '#06b6d4' },
-                        ]).map((cat) => (
-                            <TouchableOpacity
-                                key={cat.id || cat._id}
-                                style={styles.catCard}
-                                onPress={() => navigation.navigate('Services', { categoryId: cat.id || cat._id })}
-                            >
-                                <View style={[styles.catIconWrap, { backgroundColor: (cat.color || PRIMARY) + '15' }]}>
-                                    <Text style={styles.catEmoji}>{cat.icon || '🛠️'}</Text>
-                                </View>
-                                <Text style={styles.catName}>{cat.name}</Text>
-                            </TouchableOpacity>
-                        ))}
+                            { id: 1, name: 'Plumbing', icon: 'water-outline', color: '#3b82f6' },
+                            { id: 2, name: 'Electrical', icon: 'flash-outline', color: '#f59e0b' },
+                            { id: 3, name: 'Cleaning', icon: 'brush-outline', color: '#ec4899' },
+                            { id: 4, name: 'Painting', icon: 'color-palette-outline', color: '#8b5cf6' },
+                            { id: 5, name: 'Maintenance', icon: 'build-outline', color: '#06b6d4' },
+                        ]).map((cat) => {
+                            const isVectorIcon = cat.icon && (cat.icon.includes('-outline') || cat.icon.includes('-sharp') || ['build', 'construct', 'bus', 'trash', 'leaf', 'brush', 'water'].some(k => cat.icon.includes(k)));
+                            
+                            return (
+                                <TouchableOpacity
+                                    key={cat.id || cat._id}
+                                    style={styles.catCard}
+                                    onPress={() => navigation.navigate('Services', { categoryId: cat.id })}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={[styles.catIconWrap, { backgroundColor: '#fff' }]}>
+                                        {isVectorIcon ? (
+                                            <Ionicons name={cat.icon} size={moderateScale(32)} color={PRIMARY} />
+                                        ) : (
+                                            <Text style={styles.catEmoji}>{cat.icon || '🛠️'}</Text>
+                                        )}
+                                    </View>
+                                    <Text style={styles.catName} numberOfLines={2}>{cat.name}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </ScrollView>
                 </View>
+
+                {/* --- FEATURED SERVICES --- */}
+                {featuredServices.length > 0 && (
+                    <View style={styles.sectionSmall}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Featured Services</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('Services')}>
+                                <Text style={styles.viewAllBtn}>Explore</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.featuredScroll}
+                        >
+                            {featuredServices.map((service) => (
+                                <TouchableOpacity
+                                    key={service.id}
+                                    style={styles.featuredCard}
+                                    onPress={() => navigation.navigate('Details', { service })}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={styles.featuredImageContainer}>
+                                        <Image 
+                                            source={{ uri: service.image_url?.startsWith('http') ? service.image_url : `${API_BASE_URL}${service.image_url}` }} 
+                                            style={styles.featuredImage} 
+                                        />
+                                        <View style={styles.priceTag}>
+                                            <Text style={styles.priceTagText}>${service.base_price}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.featuredInfo}>
+                                        <Text style={styles.featuredName} numberOfLines={1}>{service.name}</Text>
+                                        <View style={styles.ratingRow}>
+                                            <Ionicons name="star" size={moderateScale(12)} color={ACCENT} />
+                                            <Text style={styles.ratingText}>4.9</Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
 
                 {/* --- ACTIVE BOOKINGS --- */}
                 <View style={[styles.section, { marginBottom: verticalScale(15) }]}>
@@ -356,24 +427,33 @@ const styles = StyleSheet.create({
     viewAllBtn: { color: PRIMARY_LIGHT, fontWeight: '700', fontSize: moderateScale(14) },
 
     /* Category Scroll */
-    categoryScroll: { paddingLeft: moderateScale(25), paddingRight: moderateScale(10) },
+    categoryScroll: { paddingLeft: moderateScale(25), paddingRight: moderateScale(10), paddingBottom: verticalScale(10) },
     catCard: {
-        width: moderateScale(85),
-        marginRight: scale(15),
+        width: moderateScale(100),
+        marginRight: scale(12),
         alignItems: 'center',
-    },
-    catIconWrap: {
-        width: moderateScale(80),
-        height: moderateScale(80),
+        backgroundColor: '#fff',
+        padding: moderateScale(12),
         borderRadius: moderateScale(24),
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: verticalScale(10),
         borderWidth: 1,
         borderColor: '#f1f5f9',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
     },
-    catEmoji: { fontSize: moderateScale(34) },
-    catName: { fontSize: moderateScale(13), fontWeight: '600', color: '#475569', textAlign: 'center' },
+    catIconWrap: {
+        width: moderateScale(60),
+        height: moderateScale(60),
+        borderRadius: moderateScale(18),
+        backgroundColor: '#f0fdfa',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: verticalScale(12),
+    },
+    catEmoji: { fontSize: moderateScale(30) },
+    catName: { fontSize: moderateScale(12), fontWeight: '700', color: '#334155', textAlign: 'center', lineHeight: moderateScale(16) },
 
     /* Orders / Bookings */
     orderCard: {
@@ -444,6 +524,64 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(12),
         backgroundColor: PRIMARY,
         borderRadius: moderateScale(15),
+    },
+    /* Featured Services */
+    sectionSmall: { marginTop: verticalScale(20) },
+    featuredScroll: { paddingLeft: moderateScale(25), paddingRight: moderateScale(10), paddingBottom: verticalScale(10) },
+    featuredCard: {
+        width: moderateScale(160),
+        marginRight: scale(15),
+        backgroundColor: '#fff',
+        borderRadius: moderateScale(20),
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+    },
+    featuredImageContainer: {
+        width: '100%',
+        height: verticalScale(100),
+    },
+    featuredImage: {
+        width: '100%',
+        height: '100%',
+    },
+    priceTag: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    priceTagText: {
+        color: PRIMARY,
+        fontWeight: 'bold',
+        fontSize: moderateScale(12),
+    },
+    featuredInfo: {
+        padding: moderateScale(12),
+    },
+    featuredName: {
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        color: '#1e293b',
+        marginBottom: verticalScale(4),
+    },
+    ratingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    ratingText: {
+        fontSize: moderateScale(11),
+        color: '#64748b',
+        marginLeft: scale(4),
+        fontWeight: '600',
     },
     emptyBtnTxt: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(15) },
 });

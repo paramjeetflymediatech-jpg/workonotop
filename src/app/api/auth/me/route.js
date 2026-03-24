@@ -1,46 +1,85 @@
 import { NextResponse } from 'next/server';
-import { verify } from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 import { query } from '@/lib/db';
+import { getMobileSession } from '@/lib/mobile-auth';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
+/**
+ * Unified current user endpoint.
+ * Supports:
+ * 1. Mobile (Authorization Bearer Header)
+ * 2. Web (Cookies: customer_token, provider_token, adminAuth)
+ */
 export async function GET(request) {
   try {
-    // Get token from cookie
-    const token = request.cookies.get('customer_token')?.value;
+    // 1. Try Mobile Session
+    let decoded = await getMobileSession(request);
+    
+    // 2. Try Web Sessions
+    if (!decoded) {
+      const token = request.cookies.get('customer_token')?.value || 
+                    request.cookies.get('provider_token')?.value ||
+                    request.cookies.get('adminAuth')?.value;
+      
+      if (token) {
+        decoded = verifyToken(token);
+      }
+    }
 
-    if (!token) {
+    if (!decoded) {
       return NextResponse.json(
         { success: false, message: 'Not authenticated' },
         { status: 401 }
       );
     }
 
-    // Verify token
-    const decoded = verify(token, JWT_SECRET);
+    // Identify user and role from token
+    const userId = decoded.id || decoded.providerId;
+    const role = decoded.role || decoded.type;
 
-    // Get user from database
-    const users = await query(
-      'SELECT id, email, first_name, last_name, phone, role, image_url FROM users WHERE id = ?',
-      [decoded.id]
-    );
+    let userData = null;
 
-    if (users.length === 0) {
+    if (role === 'provider') {
+      // Lookup in service_providers table
+      const providers = await query(
+        `SELECT id, name, email, phone, status, specialty, bio, 
+                experience_years, city, location, service_areas, skills,
+                onboarding_step, onboarding_completed, avatar_url 
+         FROM service_providers WHERE id = ?`,
+        [userId]
+      );
+      if (providers.length > 0) {
+        userData = providers[0];
+        userData.role = 'provider';
+      }
+    } else {
+      // Lookup in users table (Customers and Admins)
+      const users = await query(
+        'SELECT id, email, first_name, last_name, phone, role, image_url FROM users WHERE id = ?',
+        [userId]
+      );
+      if (users.length > 0) {
+        userData = users[0];
+        // Ensure consistent role naming for frontend
+        if (userData.role === 'user') userData.role = 'customer';
+      }
+    }
+
+    if (!userData) {
       return NextResponse.json(
-        { success: false, message: 'User not found' },
-        { status: 401 }
+        { success: false, message: 'User profile not found' },
+        { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      user: users[0]
+      user: userData
     });
 
   } catch (error) {
-    console.error('Auth check error:', error);
+    console.error('Unified Auth Me Error:', error);
     return NextResponse.json(
-      { success: false, message: 'Invalid token' },
+      { success: false, message: 'Session expired or invalid token' },
       { status: 401 }
     );
   }

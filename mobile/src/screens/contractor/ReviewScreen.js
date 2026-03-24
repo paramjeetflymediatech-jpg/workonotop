@@ -9,15 +9,33 @@ import { moderateScale, verticalScale, scale } from '../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 
 const ReviewScreen = ({ navigation, route }) => {
-    const { profile, documents, connected } = route.params || {};
-    const { updateUser } = useAuth();
+    const { token, user, updateUser } = useAuth();
+    
+    // Recovery logic: if profile is missing from params (e.g. on reload), 
+    // we use the data from the authenticated user object.
+    const profile = route.params?.profile || {
+        bio: user?.bio || '',
+        primarySpecialty: user?.specialty || '',
+        yearsExperience: String(user?.experience_years || ''),
+        businessAddress: user?.location || '',
+        city: user?.city || '',
+        serviceAreas: user?.service_areas ? (typeof user.service_areas === 'string' ? JSON.parse(user.service_areas) : user.service_areas) : [],
+        skills: user?.skills ? (typeof user.skills === 'string' ? JSON.parse(user.skills) : user.skills) : [],
+    };
+    const { documents, connected } = route.params || {};
     const [loading, setLoading] = useState(false);
 
     const submitApplication = async () => {
+        // 1. Final Validation Check
+        if (!profile?.bio || profile.bio.trim().length < 10) {
+            Alert.alert('Incomplete Profile', 'Your professional bio is missing or too short. Please go back to Profile Setup.');
+            return;
+        }
+
         setLoading(true);
         try {
             const profilePayload = {
-                bio: profile?.bio || '',
+                bio: profile?.bio?.trim() || '',
                 specialty: profile?.primarySpecialty || '',
                 experience_years: parseInt(profile?.yearsExperience || '1'),
                 city: profile?.city || '',
@@ -99,7 +117,12 @@ const ReviewScreen = ({ navigation, route }) => {
                 <Stepper />
 
                 <View style={styles.contentCard}>
-                    <Text style={styles.mainTitle}>Final Review</Text>
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                            <Ionicons name="arrow-back" size={moderateScale(24)} color="#0d9488" />
+                        </TouchableOpacity>
+                        <Text style={styles.mainTitle}>Final Review</Text>
+                    </View>
                     <Text style={styles.subtitle}>Please check your details before submitting</Text>
 
                     <View style={styles.section}>
@@ -137,10 +160,10 @@ const ReviewScreen = ({ navigation, route }) => {
                             </TouchableOpacity>
                         </View>
                         <View style={styles.docStatusRow}>
-                            <Ionicons 
-                                name={connected ? "checkmark-circle" : "alert-circle"} 
-                                size={20} 
-                                color={connected ? "#10b981" : "#f59e0b"} 
+                            <Ionicons
+                                name={connected ? "checkmark-circle" : "alert-circle"}
+                                size={20}
+                                color={connected ? "#10b981" : "#f59e0b"}
                             />
                             <Text style={styles.docStatusText}>
                                 {connected ? 'Bank account linked with Stripe' : 'Bank linking skipped (Add later)'}
@@ -154,8 +177,8 @@ const ReviewScreen = ({ navigation, route }) => {
                         </Text>
                     </View>
 
-                    <TouchableOpacity 
-                        style={[styles.submitBtn, loading && styles.btnDisabled]} 
+                    <TouchableOpacity
+                        style={[styles.submitBtn, loading && styles.btnDisabled]}
                         onPress={submitApplication}
                         disabled={loading}
                     >
@@ -193,11 +216,34 @@ const styles = StyleSheet.create({
     stepLine: { width: scale(35), height: 1, backgroundColor: '#e2e8f0', marginHorizontal: -scale(8), zIndex: -1, alignSelf: 'center', marginTop: -verticalScale(18) },
     stepLineActive: { backgroundColor: '#0d9488' },
     contentCard: {
-        backgroundColor: '#fff', borderRadius: moderateScale(12),
-        padding: moderateScale(20), elevation: 2, shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4,
+        backgroundColor: '#fff',
+        borderRadius: moderateScale(12),
+        padding: moderateScale(20),
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
-    mainTitle: { fontSize: moderateScale(22), fontWeight: 'bold', color: '#0f172a', marginBottom: verticalScale(8) },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: verticalScale(10),
+    },
+    backButton: {
+        width: moderateScale(36),
+        height: moderateScale(36),
+        borderRadius: moderateScale(18),
+        backgroundColor: '#f1f5f9',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: scale(12),
+    },
+    mainTitle: {
+        fontSize: moderateScale(22),
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
     subtitle: { fontSize: moderateScale(14), color: '#64748b', marginBottom: verticalScale(24) },
     section: { marginBottom: verticalScale(24), borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingBottom: verticalScale(16) },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: verticalScale(12) },

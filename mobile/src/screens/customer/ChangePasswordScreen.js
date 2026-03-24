@@ -13,6 +13,7 @@ import {
     ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -20,6 +21,7 @@ import { useAuth } from '../../context/AuthContext';
 const PRIMARY = '#115e59';
 
 const ChangePasswordScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { token } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showOldPass, setShowOldPass] = useState(false);
@@ -75,12 +77,12 @@ const ChangePasswordScreen = ({ navigation }) => {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
             >
-                <View style={styles.header}>
+                <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(10)) }]}>
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={24} color="#0f172a" />
+                        <Ionicons name="arrow-back" size={moderateScale(24)} color="#0f172a" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Change Password</Text>
-                    <View style={{ width: 40 }} />
+                    <View style={{ width: moderateScale(40) }} />
                 </View>
 
                 <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -159,9 +161,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-        marginTop: verticalScale(25),
+        paddingHorizontal: scale(20),
+        paddingBottom: verticalScale(15),
+        backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',
     },

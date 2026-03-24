@@ -6,34 +6,40 @@ import {
     TextInput,
     TouchableOpacity,
     ActivityIndicator,
-    SafeAreaView,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Image
+    Image,
+    StatusBar
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { useRoute } from '@react-navigation/native';
 import { apiService } from '../../services/api';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
 import PasswordInput from '../../components/PasswordInput';
+import PremiumAlert from '../../components/PremiumAlert';
 
 const LoginScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const route = useRoute();
     const { type } = route.params || {};
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
     const { login } = useAuth();
+
+    const showPremiumAlert = (message, title = 'Login Failed', type = 'error') => {
+        setAlert({ visible: true, title, message, type });
+    };
 
     const handleLogin = async () => {
         if (!email || !password) {
-            setError('Please enter both email and password');
+            showPremiumAlert('Please enter both email and password');
             return;
         }
         setLoading(true);
-        setError('');
 
         try {
             // Dedicated mobile endpoint for multi-role support
@@ -49,10 +55,17 @@ const LoginScreen = ({ navigation }) => {
 
                 login(userData, response.token);
             } else {
-                setError(response.message || 'Invalid credentials');
+                showPremiumAlert(response.message || 'Invalid credentials');
             }
         } catch (err) {
-            setError('Connection failed. Please check your internet.');
+            if (err.status === 403 && err.data?.requiresVerification) {
+                navigation.navigate('EmailVerification', { 
+                    email: err.data.email || email,
+                    type: type || 'pro' 
+                });
+                return;
+            }
+            showPremiumAlert(err.message || 'Connection failed. Please check your internet.');
             console.error(err);
         } finally {
             setLoading(false);
@@ -63,7 +76,8 @@ const LoginScreen = ({ navigation }) => {
     const isVerySmallDevice = SCREEN_HEIGHT < 650;
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <StatusBar barStyle="dark-content" />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
@@ -93,7 +107,6 @@ const LoginScreen = ({ navigation }) => {
                     </View>
 
                     <View style={styles.form}>
-                        {error ? <Text style={styles.errorText}>{error}</Text> : null}
                         <View style={styles.inputContainer}>
                             <Text style={styles.label}>Email Address</Text>
                             <TextInput
@@ -149,7 +162,15 @@ const LoginScreen = ({ navigation }) => {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+
+            <PremiumAlert
+                visible={alert.visible}
+                title={alert.title}
+                message={alert.message}
+                type={alert.type}
+                onClose={() => setAlert({ ...alert, visible: false })}
+            />
+        </View>
     );
 };
 

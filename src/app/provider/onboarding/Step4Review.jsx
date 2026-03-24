@@ -22,7 +22,7 @@ export default function Step4Review({ formData, onBack, providerId, onComplete }
   const loadData = async () => {
     try {
       setLoadingDocs(true);
-      
+
       const profileRes = await fetch('/api/provider/me');
       const profileData = await profileRes.json();
       if (profileData.success && profileData.provider) {
@@ -162,10 +162,10 @@ export default function Step4Review({ formData, onBack, providerId, onComplete }
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Review Your Information</h2>
-      
+
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <p className="text-sm text-yellow-800">
-          <strong>Almost there!</strong> Please review your information before submitting. 
+          <strong>Almost there!</strong> Please review your information before submitting.
           Once submitted, our admin team will review your application within 24-48 hours.
         </p>
       </div>
@@ -178,7 +178,7 @@ export default function Step4Review({ formData, onBack, providerId, onComplete }
           </svg>
           Profile Information
         </h3>
-        <dl className="grid grid-cols-2 gap-3">
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="col-span-2 sm:col-span-1">
             <dt className="text-xs text-gray-500">Full Name</dt>
             <dd className="text-sm font-medium">{provider?.name || 'Not provided'}</dd>
@@ -321,11 +321,10 @@ export default function Step4Review({ formData, onBack, providerId, onComplete }
         <button
           onClick={handleSubmit}
           disabled={loading || !hasRequiredDocs}
-          className={`px-6 py-2 rounded-lg transition flex items-center gap-2 font-medium ${
-            !loading && hasRequiredDocs
+          className={`px-6 py-2 rounded-lg transition flex items-center gap-2 font-medium ${!loading && hasRequiredDocs
               ? 'bg-teal-600 text-white hover:bg-teal-700'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
+            }`}
         >
           {loading ? (
             <>

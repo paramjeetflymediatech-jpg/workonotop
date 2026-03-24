@@ -1,22 +1,28 @@
 import { NextResponse } from 'next/server';
 import { execute } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
+import { getMobileSession } from '@/lib/mobile-auth';
 
 export async function POST(request) {
   try {
-    const token = request.cookies.get('provider_token')?.value;
-    
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
-        { status: 401 }
-      );
+    // 1. Check Mobile Session
+    let decoded = await getMobileSession(request);
+    let providerId = decoded?.providerId;
+
+    // 2. Fallback to Web Session
+    if (!decoded) {
+      const token = request.cookies.get('provider_token')?.value;
+      if (token) {
+        decoded = verifyToken(token);
+        if (decoded && decoded.type === 'provider') {
+          providerId = decoded.providerId;
+        }
+      }
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded || decoded.type !== 'provider') {
+    if (!decoded || !providerId) {
       return NextResponse.json(
-        { success: false, message: 'Invalid token' },
+        { success: false, message: 'Not authenticated' },
         { status: 401 }
       );
     }
@@ -26,10 +32,10 @@ export async function POST(request) {
       `UPDATE service_providers 
        SET onboarding_completed = 1,
            onboarding_step = 5,
-           status = 'inactive',
+           status = 'pending',
            updated_at = NOW()
        WHERE id = ?`,
-      [decoded.providerId]
+      [providerId]
     );
 
     return NextResponse.json({

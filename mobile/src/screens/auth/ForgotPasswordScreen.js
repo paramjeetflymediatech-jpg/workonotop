@@ -88,7 +88,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                 const userType = res.type || type;
                 navigation.navigate('OtpVerification', { email, type: userType });
             } else {
-                setError(res.message || 'Something went wrong. Please try again.');
+                showError(res.message || 'Something went wrong. Please try again.');
             }
         } catch (err) {
             console.error('Forgot password error:', err);
@@ -174,7 +174,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                                 <Text style={styles.label}>Email Address</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="test@yopmail.com"
+                                    placeholder="Enter your email"
                                     value={email}
                                     onChangeText={setEmail}
                                     autoCapitalize="none"
@@ -238,11 +238,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: verticalScale(10),
+        marginTop: verticalScale(10),
     },
     backIcon: {
         fontSize: moderateScale(20),
         color: '#0f172a',
         fontWeight: 'bold',
+        
     },
     header: {
         alignItems: 'center',

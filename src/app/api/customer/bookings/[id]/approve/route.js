@@ -365,6 +365,12 @@ export async function POST(request, { params }) {
             [providerAmount, id]
           )
 
+          // ── Update invoice status ─────────────────────────────────────────
+          await connection.execute(
+            `UPDATE invoices SET status = 'paid' WHERE booking_id = ?`,
+            [id]
+          )
+
           await connection.execute(
             `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'completed', ?)`,
             [id, `✅ Customer approved. Charged: $${finalAmount.toFixed(2)} | Provider: $${providerAmount.toFixed(2)}`]

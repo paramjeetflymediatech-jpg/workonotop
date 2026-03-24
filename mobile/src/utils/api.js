@@ -74,5 +74,13 @@ export const api = {
             body: isFormData ? body : JSON.stringify(body)
         });
     },
+    patch: (endpoint, body, options) => {
+        const isFormData = body instanceof FormData;
+        return request(endpoint, {
+            ...options,
+            method: 'PATCH',
+            body: isFormData ? body : JSON.stringify(body)
+        });
+    },
     delete: (endpoint, options) => request(endpoint, { ...options, method: 'DELETE' }),
 };

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, SafeAreaView, ScrollView,
-    TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions
+    TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions, Alert, TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
 import { API_BASE_URL } from '../../config';
 
@@ -15,10 +16,17 @@ const BG_COLOR = '#f8fafc';
 const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     const { bookingId } = route.params;
     const insets = useSafeAreaInsets();
+    const { user } = useAuth();
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
     const [viewerVisible, setViewerVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [actionLoading, setActionLoading] = useState(null);
+    const [ratingVisible, setRatingVisible] = useState(false);
+    const [ratingValue, setRatingValue] = useState(5);
+    const [reviewText, setReviewText] = useState('');
+    const [disputeVisible, setDisputeVisible] = useState(false);
+    const [disputeText, setDisputeText] = useState('');
 
     useEffect(() => {
         fetchDetails();
@@ -31,7 +39,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
 
     const fetchDetails = async () => {
         try {
-            const res = await apiService.customer.getBookingDetails(bookingId);
+            const res = await apiService.customer.getBookingDetails(bookingId, user?.id, user?.token);
             if (res && res.data) {
                 const b = Array.isArray(res.data) ? res.data[0] : res.data;
                 setBooking(b);
@@ -40,6 +48,118 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
             console.error('Error fetching booking details:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCancel = () => {
+        Alert.alert(
+            'Cancel Booking',
+            'Are you sure you want to cancel this booking? This action cannot be undone.',
+            [
+                { text: 'Keep Booking', style: 'cancel' },
+                {
+                    text: 'Yes, Cancel',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const res = await apiService.post(
+                                `/api/customer/bookings/${bookingId}/cancel`,
+                                {},
+                                user?.token
+                            );
+                            if (res?.success) {
+                                Alert.alert('Cancelled', 'Your booking has been cancelled.', [
+                                    { text: 'OK', onPress: () => { fetchDetails(); } }
+                                ]);
+                            } else {
+                                Alert.alert('Error', res?.message || 'Could not cancel booking.');
+                            }
+                        } catch (e) {
+                            Alert.alert('Error', 'Failed to cancel booking.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const openChat = () => {
+        navigation.navigate('Chat', {
+            bookingId: booking.id,
+            bookingNumber: booking.booking_number || booking.id,
+            role: 'customer',
+            otherPartyName: booking.provider_name || 'Provider',
+        });
+    };
+
+    const handleApprove = async () => {
+        Alert.alert('Approve & Complete?', 'This will finalize the job and release payment to the professional.', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Approve & Pay', onPress: async () => {
+                    setActionLoading('approve');
+                    try {
+                        await apiService.post(`/api/customer/bookings/${bookingId}/approve`, { action: 'approve' }, user?.token);
+                        Alert.alert('Success!', 'The job is now completed successfully.', [
+                            { text: 'Rate Service', onPress: () => { fetchDetails(); setRatingVisible(true); } }
+                        ]);
+                    } catch (err) {
+                        Alert.alert('Error', 'Failed to approve. Please try again.');
+                    } finally {
+                        setActionLoading(null);
+                    }
+                }
+            }
+        ]);
+    };
+
+    const handleDispute = () => {
+        setDisputeVisible(true);
+    };
+
+    const submitDispute = async () => {
+        if (!disputeText.trim()) {
+            Alert.alert('Error', 'Please provide a reason for the dispute.');
+            return;
+        }
+
+        setActionLoading('dispute');
+        try {
+            await apiService.post(`/api/customer/bookings/${bookingId}/approve`, { 
+                action: 'dispute', 
+                dispute_reason: disputeText 
+            }, user?.token);
+            
+            Alert.alert('Dispute Opened', 'Our team will contact you shortly.', [
+                { text: 'OK', onPress: () => {
+                    setDisputeVisible(false);
+                    fetchDetails();
+                }}
+            ]);
+        } catch (err) {
+            Alert.alert('Error', 'Failed to open dispute. Please try again.');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const submitReview = async () => {
+        try {
+            setActionLoading('review');
+            await apiService.customer.submitReview({
+                booking_id: bookingId,
+                provider_id: booking.provider_id,
+                customer_id: user?.id,
+                rating: ratingValue,
+                review: reviewText
+            }, user?.token);
+            Alert.alert('Thank You!', 'Your review has been successfully submitted.');
+            setRatingVisible(false);
+            fetchDetails();
+        } catch (error) {
+            Alert.alert('Error', 'Failed to submit review. Please try again.');
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -64,6 +184,94 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                         resizeMode="contain" 
                     />
                 )}
+            </View>
+        </Modal>
+    );
+
+    const renderDisputeModal = () => (
+        <Modal
+            visible={disputeVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setDisputeVisible(false)}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <TouchableOpacity style={styles.modalCloseIcon} onPress={() => setDisputeVisible(false)}>
+                        <Ionicons name="close" size={24} color="#64748b" />
+                    </TouchableOpacity>
+                    <Text style={styles.modalTitle}>Open a Dispute</Text>
+                    <Text style={styles.modalSubtitle}>Please tell us why you are disputing this job. Our team will review it.</Text>
+                    
+                    <TextInput
+                        style={styles.reviewInput}
+                        placeholder="Describe the issue in detail..."
+                        multiline
+                        numberOfLines={6}
+                        value={disputeText}
+                        onChangeText={setDisputeText}
+                    />
+                    
+                    <TouchableOpacity 
+                        style={[styles.disputeSubmitBtn, actionLoading === 'dispute' && { opacity: 0.7 }]} 
+                        onPress={submitDispute}
+                        disabled={actionLoading === 'dispute'}
+                    >
+                        {actionLoading === 'dispute' ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                            <Text style={styles.disputeSubmitBtnText}>Submit Dispute</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    );
+
+    const renderRatingModal = () => (
+        <Modal
+            visible={ratingVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setRatingVisible(false)}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <TouchableOpacity style={styles.modalCloseIcon} onPress={() => setRatingVisible(false)}>
+                        <Ionicons name="close" size={24} color="#64748b" />
+                    </TouchableOpacity>
+                    <Text style={styles.modalTitle}>Rate Your Experience</Text>
+                    <Text style={styles.modalSubtitle}>How was the service provided by {booking?.provider_name}?</Text>
+                    
+                    <View style={styles.starsRow}>
+                        {[1, 2, 3, 4, 5].map(i => (
+                            <TouchableOpacity key={i} onPress={() => setRatingValue(i)}>
+                                <Ionicons name={i <= ratingValue ? "star" : "star-outline"} size={40} color="#f59e0b" style={{ marginHorizontal: 5 }} />
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                    
+                    <TextInput
+                        style={styles.reviewInput}
+                        placeholder="Write a brief review (optional)..."
+                        multiline
+                        numberOfLines={4}
+                        value={reviewText}
+                        onChangeText={setReviewText}
+                    />
+                    
+                    <TouchableOpacity 
+                        style={styles.submitReviewBtn} 
+                        onPress={submitReview}
+                        disabled={actionLoading === 'review'}
+                    >
+                        {actionLoading === 'review' ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                            <Text style={styles.submitReviewBtnText}>Submit Review</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
             </View>
         </Modal>
     );
@@ -303,7 +511,9 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                                         {idx !== booking.status_history.length - 1 && <View style={styles.timelineLine} />}
                                     </View>
                                     <View style={styles.timelineContent}>
-                                        <Text style={styles.timelineStatus}>{history.status.replace('_', ' ')}</Text>
+                                        <Text style={styles.timelineStatus}>
+                                            {history.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                        </Text>
                                         <Text style={styles.timelineDate}>{new Date(history.created_at).toLocaleString()}</Text>
                                     </View>
                                 </View>
@@ -322,8 +532,46 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     </View>
                 </View>
 
+                {/* Action Buttons */}
+                <View style={styles.actionsRow}>
+                    {['confirmed', 'in_progress'].includes(booking.status) && booking.provider_name && (
+                        <TouchableOpacity style={styles.chatBtn} onPress={openChat} activeOpacity={0.8}>
+                            <Ionicons name="chatbubble-ellipses-outline" size={moderateScale(18)} color="#fff" />
+                            <Text style={styles.chatBtnText}>Chat with Provider</Text>
+                        </TouchableOpacity>
+                    )}
+                    {booking.status === 'awaiting_approval' && (
+                        <>
+                            <TouchableOpacity style={styles.approveBtn} onPress={handleApprove} disabled={actionLoading === 'approve'}>
+                                {actionLoading === 'approve' ? <ActivityIndicator color="#fff" /> : (
+                                    <>
+                                        <Ionicons name="checkmark-circle-outline" size={moderateScale(18)} color="#fff" />
+                                        <Text style={styles.approveBtnText}>Approve & Complete</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.disputeBtn} onPress={handleDispute} disabled={actionLoading === 'dispute'}>
+                                {actionLoading === 'dispute' ? <ActivityIndicator color="#ef4444" /> : (
+                                    <>
+                                        <Ionicons name="warning-outline" size={moderateScale(18)} color="#ef4444" />
+                                        <Text style={styles.disputeBtnText}>Open Dispute</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </>
+                    )}
+                    {booking.status === 'pending' && (
+                        <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
+                            <Ionicons name="close-circle-outline" size={moderateScale(18)} color="#b91c1c" />
+                            <Text style={styles.cancelBtnText}>Cancel Booking</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
             </ScrollView>
             {renderImageViewer()}
+            {renderRatingModal()}
+            {renderDisputeModal()}
         </SafeAreaView>
     );
 };
@@ -427,6 +675,23 @@ const styles = StyleSheet.create({
     photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     photoMini: { width: scale(80), height: scale(80), borderRadius: 12 },
 
+    /* Action Buttons */
+    actionsRow: { gap: verticalScale(12), marginBottom: verticalScale(30), marginTop: verticalScale(4) },
+    chatBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: PRIMARY, borderRadius: moderateScale(14),
+        paddingVertical: verticalScale(14), paddingHorizontal: scale(20),
+        elevation: 2, shadowColor: PRIMARY, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6,
+    },
+    chatBtnText: { color: '#fff', fontWeight: '700', fontSize: moderateScale(15) },
+    cancelBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: '#fff', borderRadius: moderateScale(14),
+        borderWidth: 2, borderColor: '#fca5a5',
+        paddingVertical: verticalScale(14), paddingHorizontal: scale(20),
+    },
+    cancelBtnText: { color: '#b91c1c', fontWeight: '700', fontSize: moderateScale(15) },
+
     /* Viewer Styles */
     viewerContainer: {
         flex: 1,
@@ -445,6 +710,37 @@ const styles = StyleSheet.create({
         width: Dimensions.get('window').width,
         height: Dimensions.get('window').height * 0.8,
     },
+
+    /* Approve & Dispute Buttons */
+    approveBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: '#16a34a', borderRadius: moderateScale(14),
+        paddingVertical: verticalScale(14), paddingHorizontal: scale(20),
+        elevation: 2, shadowColor: '#16a34a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6,
+    },
+    approveBtnText: { color: '#fff', fontWeight: '700', fontSize: moderateScale(15) },
+    disputeBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: '#fff', borderRadius: moderateScale(14),
+        borderWidth: 2, borderColor: '#fca5a5',
+        paddingVertical: verticalScale(14), paddingHorizontal: scale(20),
+    },
+    disputeBtnText: { color: '#ef4444', fontWeight: '700', fontSize: moderateScale(15) },
+
+    /* Rating Modal */
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    modalContent: { backgroundColor: '#fff', width: '85%', borderRadius: 20, padding: 25, alignItems: 'center' },
+    modalCloseIcon: { position: 'absolute', top: 15, right: 15 },
+    modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#0f172a', marginBottom: 5, marginTop: 10 },
+    modalSubtitle: { fontSize: 13, color: '#64748b', textAlign: 'center', marginBottom: 20 },
+    starsRow: { flexDirection: 'row', marginBottom: 20 },
+    reviewInput: { width: '100%', borderColor: '#e2e8f0', borderWidth: 1, borderRadius: 12, padding: 15, textAlignVertical: 'top', fontSize: 14, color: '#334155', marginBottom: 20, backgroundColor: '#f8fafc' },
+    submitReviewBtn: { backgroundColor: PRIMARY, width: '100%', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+    submitReviewBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+
+    /* Dispute Modal */
+    disputeSubmitBtn: { backgroundColor: '#ef4444', width: '100%', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+    disputeSubmitBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
 });
 
 export default CustomerBookingDetailsScreen;

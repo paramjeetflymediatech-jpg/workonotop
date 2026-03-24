@@ -27,7 +27,7 @@ export default function FAQPage() {
     },
     {
       question: "What areas do you serve?",
-      answer: "We currently serve Calgary and surrounding areas. We're expanding to more cities soon!"
+      answer: "We currently serve Metro Vancouver and surrounding areas. We're expanding to more cities soon!"
     },
     {
       question: "How is the price calculated?",

@@ -147,7 +147,7 @@ const ServicesListScreen = ({ navigation }) => {
         try {
             const endpoint = '/api/services';
             const method = isEditMode ? 'put' : 'post';
-            
+
             const payload = isEditMode ? { ...newService, id: editingServiceId } : newService;
             const res = await api[method](endpoint, payload);
             if (res.success) {
@@ -193,13 +193,13 @@ const ServicesListScreen = ({ navigation }) => {
             is_popular: !!service.is_popular,
             is_active: !!service.is_active
         });
-        
+
         let preview = service.image_url;
         if (preview && !preview.startsWith('http')) {
             preview = `${API_BASE_URL}${preview}`;
         }
         setImagePreview(preview);
-        
+
         setIsEditMode(true);
         setIsAddModalOpen(true);
     };
@@ -210,8 +210,8 @@ const ServicesListScreen = ({ navigation }) => {
             `Are you sure you want to delete "${service.name}"? This action cannot be undone.`,
             [
                 { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: 'Delete', 
+                {
+                    text: 'Delete',
                     style: 'destructive',
                     onPress: async () => {
                         try {
@@ -250,16 +250,16 @@ const ServicesListScreen = ({ navigation }) => {
     );
 
     const renderServiceItem = ({ item }) => (
-        <TouchableOpacity 
+        <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('Details', { service: item, hideBooking: true })}
         >
             <View style={styles.cardHeader}>
                 <View style={styles.imagePlaceholder}>
                     {item.image_url ? (
-                        <Image 
-                            source={{ uri: item.image_url.startsWith('http') ? item.image_url : `${API_BASE_URL}${item.image_url}` }} 
-                            style={styles.serviceImage} 
+                        <Image
+                            source={{ uri: item.image_url.startsWith('http') ? item.image_url : `${API_BASE_URL}${item.image_url}` }}
+                            style={styles.serviceImage}
                         />
                     ) : (
                         <Ionicons name="settings-outline" size={moderateScale(30)} color="#115e59" />
@@ -283,14 +283,14 @@ const ServicesListScreen = ({ navigation }) => {
                     <Text style={styles.metaText}>{item.duration_minutes || 'Flexible'} min</Text>
                 </View>
                 <View style={styles.actionButtons}>
-                    <TouchableOpacity 
-                        style={[styles.actionIcon, { backgroundColor: '#f0fdf4' }]} 
+                    <TouchableOpacity
+                        style={[styles.actionIcon, { backgroundColor: '#f0fdf4' }]}
                         onPress={() => handleEditPress(item)}
                     >
                         <Ionicons name="pencil-outline" size={moderateScale(18)} color="#16a34a" />
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                        style={[styles.actionIcon, { backgroundColor: '#fef2f2' }]} 
+                    <TouchableOpacity
+                        style={[styles.actionIcon, { backgroundColor: '#fef2f2' }]}
                         onPress={() => handleDeletePress(item)}
                     >
                         <Ionicons name="trash-outline" size={moderateScale(18)} color="#dc2626" />
@@ -477,9 +477,9 @@ const ServicesListScreen = ({ navigation }) => {
                                 <Text style={styles.inputLabel}>Service Image</Text>
                                 <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
                                     {imagePreview ? (
-                                        <Image 
-                                            source={{ uri: imagePreview.startsWith('http') ? imagePreview : `${API_BASE_URL}${imagePreview}` }} 
-                                            style={styles.previewImage} 
+                                        <Image
+                                            source={{ uri: imagePreview.startsWith('http') ? imagePreview : `${API_BASE_URL}${imagePreview}` }}
+                                            style={styles.previewImage}
                                         />
                                     ) : (
                                         <View style={styles.imagePickerPlaceholder}>

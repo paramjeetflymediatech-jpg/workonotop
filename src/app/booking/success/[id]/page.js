@@ -388,6 +388,7 @@ export default function BookingSuccessPage({ params }) {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     if (bookingId) fetchBooking();
@@ -601,7 +602,7 @@ export default function BookingSuccessPage({ params }) {
                 <div>
                   <p className="text-sm font-semibold text-blue-800">⏱️ Overtime Rate: ${hourlyRate.toFixed(2)}/hour</p>
                   <p className="text-xs text-blue-700 mt-1 leading-relaxed">
-                    If the job runs longer than estimated, you'll be billed at <strong>${hourlyRate.toFixed(2)}/hr</strong> for extra time. 
+                    If the job runs longer than estimated, you&apos;ll be billed at <strong>${hourlyRate.toFixed(2)}/hr</strong> for extra time. 
                     You must approve any additional hours <em>before</em> they are worked.
                   </p>
                 </div>
@@ -690,7 +691,18 @@ export default function BookingSuccessPage({ params }) {
             </div>
             <div className="grid grid-cols-3 gap-2">
               {booking.photos.slice(0, 6).map((photo, i) => (
-                <img key={i} src={photo} alt={`Photo ${i + 1}`} className="w-full h-24 object-cover rounded-xl border border-gray-100" />
+                <div 
+                  key={i} 
+                  className="relative group cursor-pointer overflow-hidden rounded-xl border border-gray-100"
+                  onClick={() => setSelectedImage(photo)}
+                >
+                  <img 
+                    src={photo} 
+                    alt={`Photo ${i + 1}`} 
+                    className="w-full h-24 object-cover transition-transform duration-300 group-hover:scale-110" 
+                  />
+                  <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
               ))}
             </div>
           </div>
@@ -735,6 +747,32 @@ export default function BookingSuccessPage({ params }) {
         </div>
 
       </div>
+
+      {/* ── Photo Lightbox ────────────────────────────────────────────────── */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 md:p-10 animate-in fade-in duration-300"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button 
+            onClick={() => setSelectedImage(null)}
+            className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors group"
+          >
+            <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          <div className="relative max-w-5xl w-full h-full flex items-center justify-center">
+            <img 
+              src={selectedImage} 
+              alt="Full size" 
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

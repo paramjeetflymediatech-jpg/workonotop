@@ -422,7 +422,7 @@ export default function ReviewDocuments({ params }) {
             {provider?.bio && (
               <div className="col-span-2 sm:col-span-3">
                 <p className={`text-xs mb-0.5 ${subtext}`}>Bio</p>
-                <p className={`text-xs sm:text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>{provider.bio}</p>
+                <p className={`text-xs sm:text-sm leading-relaxed break-words ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>{provider.bio}</p>
               </div>
             )}
           </div>

@@ -1,7 +1,3 @@
-
-
-
-
 // lib/email.js - FIXED VERSION (Template same hai)
 import nodemailer from 'nodemailer';
 
@@ -103,7 +99,7 @@ function emailLayout({ previewText, headerBg, headerIcon, headerTitle, body }) {
           <!-- Footer -->
           <tr>
             <td style="padding:24px 0;text-align:center;">
-              <p style="margin:0 0 4px;font-size:13px;color:#94a3b8;">© ${new Date().getFullYear()} WorkOnTap · Calgary, Alberta, Canada</p>
+              <p style="margin:0 0 4px;font-size:13px;color:#94a3b8;">© ${new Date().getFullYear()} WorkOnTap · Metro Vancouver, Canada</p>
               <p style="margin:0;font-size:12px;color:#cbd5e1;">This email was sent to you because you have an account on WorkOnTap.</p>
             </td>
           </tr>
@@ -167,6 +163,44 @@ export function getVerificationEmailHtml(name, token) {
     headerBg: 'linear-gradient(135deg, #0f766e 0%, #0891b2 100%)',
     headerIcon: '✉️',
     headerTitle: 'Verify Your Email',
+    body,
+  });
+}
+
+// ─── OTP Verification Email (Mobile) ──────────────────────────────────────────
+export function getOtpVerificationEmailHtml(name, otp) {
+  const body = `
+    <p style="margin:0 0 8px;font-size:18px;font-weight:600;color:#0f172a;">Hi ${name} 👋</p>
+    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7;">
+      Welcome to <strong>WorkOnTap</strong>! Use the verification code below to complete your login or activation.
+    </p>
+    
+    <!-- OTP Code Box -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+      <tr>
+        <td align="center">
+          <div style="padding:20px 40px;background:#f8fafc;border:2px dashed #0891b2;border-radius:12px;display:inline-block;">
+            <span style="font-size:32px;font-weight:800;color:#0f766e;letter-spacing:8px;font-family:monospace;">${otp}</span>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:0 0 24px;font-size:14px;color:#64748b;text-align:center;">
+      This code will expire in 15 minutes.
+    </p>
+
+    <!-- Divider -->
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 24px;" />
+
+    <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;">If you didn't request this, you can safely ignore this email.</p>
+  `;
+
+  return emailLayout({
+    previewText: `Your WorkOnTap verification code: ${otp}`,
+    headerBg: 'linear-gradient(135deg, #0f766e 0%, #0891b2 100%)',
+    headerIcon: '🔐',
+    headerTitle: 'Verification Code',
     body,
   });
 }

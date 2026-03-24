@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "WorkOnTop",
-    "slug": "workontop",
+    "name": "WorkOnTap",
+    "slug": "workontap",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,6 +13,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.nh_aman.workontap",
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
@@ -21,12 +22,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#115E59",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
-      "package": "com.nh_aman.workontop",
+      "package": "com.nh_aman.workontap",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "android.permission.POST_NOTIFICATIONS"
@@ -49,8 +48,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "cb93d405-8a32-4885-935c-cd515c90e4ba"
+        "projectId": "e456dc0a-0d12-4ddd-b71c-2a59b72cebf7"
       }
-    }
+    },
+    "owner": "nh_aman"
   }
 }

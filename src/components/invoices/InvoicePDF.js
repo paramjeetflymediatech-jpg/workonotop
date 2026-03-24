@@ -231,7 +231,7 @@ const InvoicePDF = ({ booking, invoiceNumber, date }) => {
         <View style={styles.footer}>
           <Text>Thank you for choosing WorkOnTap!</Text>
           <Text style={{ marginTop: 5 }}>This is a digital receipt for your service booking.</Text>
-          <Text>WorkOnTap Inc. | Calgary, AB</Text>
+          <Text>WorkOnTap Inc. | Metro Vancouver, BC</Text>
         </View>
       </Page>
     </Document>

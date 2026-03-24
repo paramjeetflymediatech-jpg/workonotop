@@ -36,7 +36,7 @@ export default function ProviderLogin() {
         if (data.isRejected) {
           router.push(`/provider/rejected?reason=${encodeURIComponent(data.rejection_reason || '')}`);
         } else if (data.requiresVerification) {
-          router.push('/provider/verify-email-pending');
+          router.push(`/provider/verify-email-pending?email=${encodeURIComponent(email)}`);
         } else {
           setError(data.message || 'Login failed');
         }

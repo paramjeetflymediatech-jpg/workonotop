@@ -26,12 +26,14 @@ async function seedData() {
     // Insert categories and store their IDs
     console.log('Inserting categories...');
     const categories = [
-      { name: 'Cleaning', slug: 'cleaning', icon: '🧹', description: 'Professional cleaning services for your home', display_order: 1 },
-      { name: 'Indoors', slug: 'indoors', icon: '🏠', description: 'Interior maintenance and repairs', display_order: 2 },
-      { name: 'Install', slug: 'install', icon: '🔧', description: 'Installation services for appliances and fixtures', display_order: 3 },
-      { name: 'Repair', slug: 'repair', icon: '🛠️', description: 'Expert repair services', display_order: 4 },
-      { name: 'Outdoors', slug: 'outdoors', icon: '🌳', description: 'Outdoor maintenance and landscaping', display_order: 5 },
-      { name: 'Seasonal', slug: 'seasonal', icon: '❄️', description: 'Seasonal services and maintenance', display_order: 6 }
+      { name: 'Cleaning', slug: 'cleaning', icon: 'brush-outline', description: 'Professional cleaning services for your home', display_order: 1 },
+      { name: 'Plumbing', slug: 'plumbing', icon: 'water-outline', description: 'Plumbing repair and installation', display_order: 2 },
+      { name: 'Electrical', slug: 'electrical', icon: 'flash-outline', description: 'Electrical maintenance and fix', display_order: 3 },
+      { name: 'Repair', slug: 'repair', icon: 'build-outline', description: 'Expert general repair services', display_order: 4 },
+      { name: 'Smart Home', slug: 'smart-home', icon: 'hardware-chip-outline', description: 'Security and tech installations', display_order: 5 },
+      { name: 'Painting', slug: 'painting', icon: 'color-palette-outline', description: 'Interior and exterior painting', display_order: 6 },
+      { name: 'Outdoor', slug: 'outdoor', icon: 'leaf-outline', description: 'Landscaping and outdoor care', display_order: 7 },
+      { name: 'HVAC', slug: 'hvac', icon: 'thermometer-outline', description: 'Heating and cooling services', display_order: 8 }
     ];
 
     const categoryIds = {};
@@ -53,74 +55,101 @@ async function seedData() {
     console.log('Inserting services...');
 
     const services = [
-      // Category: Install (ID: categoryIds['Install'])
-      [categoryIds['Install'], 'Appliance Install', 'appliance-install',
-        'Professional appliance installation including dishwashers, washers, dryers, fridges, and more',
-        'Install dishwashers, washers, dryers, and more', 180.00, 90.00, 120, null, null, 0, 0, 0, 1],
+      // Category: Cleaning
+      [categoryIds['Cleaning'], 'Regular House Cleaning', 'house-cleaning',
+        'Standard house cleaning including vacuuming, dusting, and mopping of all living areas.',
+        'Trusted weekly cleaning', 80.00, 40.00, 120, 
+        'https://images.unsplash.com/photo-1581578731548-c64695cc6958?q=80&w=600', 
+        'Vacuuming,Mopping,Dusting', 1, 1, 1, 1],
+      [categoryIds['Cleaning'], 'Deep Kitchen Cleaning', 'kitchen-clean',
+        'Specialized deep cleaning for your kitchen including appliances, cabinets, and degreasing.',
+        'Restore your kitchen sparkle', 120.00, 60.00, 150, 
+        'https://images.unsplash.com/photo-1556911220-e15224bbafb0?q=80&w=600', 
+        'Oven Cleaning,Degreasing,Cabinets', 0, 0, 1, 1],
 
-      [categoryIds['Install'], 'Dishwasher Install', 'dishwasher-install',
-        'Expert dishwasher installation with proper plumbing connections',
-        'Professional dishwasher installation', 180.00, 0.00, 90, null, null, 0, 0, 0, 1],
+      // Category: Plumbing
+      [categoryIds['Plumbing'], 'Faucet & Leak Repair', 'faucet-repair',
+        'Professional fix for leaky faucets, bathroom fixtures, and minor pipe leaks.',
+        'Stop the drip', 90.00, 45.00, 60,
+        'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=600',
+        'Leaking,Fixtures,Kitchen', 1, 1, 1, 1],
+      [categoryIds['Plumbing'], 'Drain Unblocking', 'drain-clear',
+        'Safe and effective removal of clogs from sinks, toilets, and showers.',
+        'Clear running drains', 110.00, 55.00, 90,
+        'https://images.unsplash.com/photo-1542013936693-884638332954?q=80&w=600',
+        'Sinks,Toilets,Main Line', 0, 1, 0, 1],
 
-      [categoryIds['Install'], 'Washer/Dryer Install', 'washer-dryer-install',
-        'Complete washer and dryer installation service',
-        'Washer and dryer setup', 200.00, 100.00, 120, null, null, 0, 0, 0, 1],
-
-      [categoryIds['Install'], 'Range/Oven Install', 'range-oven-install',
-        'Safe installation of ranges and ovens',
-        'Range and oven installation', 220.00, 0.00, 120, null, null, 0, 0, 0, 1],
+      // Category: Electrical
+      [categoryIds['Electrical'], 'Outlet & Switch Repair', 'outlet-repair',
+        'Safe repair or replacement of faulty electrical outlets and wall switches.',
+        'Safe power connections', 100.00, 40.00, 60,
+        'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=600',
+        'Outlets,Switches,Safety', 1, 1, 1, 1],
+      [categoryIds['Electrical'], 'Lighting Installation', 'light-install',
+        'Professional installation of ceiling lights, chandeliers, or outdoor lighting.',
+        'Brighten your home', 150.00, 75.00, 120,
+        'https://images.unsplash.com/photo-1565814636199-ae8133055c1c?q=80&w=600',
+        'Fixtures,Wiring,Mounting', 0, 1, 0, 1],
 
       // Category: Repair
-      [categoryIds['Repair'], 'Appliance Repair', 'appliance-repair',
-        'Technicians will diagnose and advise on the best solution for your troubled appliance. For gas stoves/ranges, please request in the Gas Services category.',
-        'Appliance Repair in Calgary', 150.00, 100.00, 60,
-        'https://d1yejvhi932hco.cloudfront.net/production/service/images/26/und_image_328/f0c51697-8edf-4cee-8fed-91523c995ce3.png',
-        'Dishwasher Repair,Washer Repair,Dryer Repair,Range Repair,Fridge Repair,Hood Repair,Fan Repair,And much more!', 1, 0, 0, 1],
+      [categoryIds['Repair'], 'Appliance Diagnosis', 'appliance-check',
+        'Expert inspection of major household appliances to find the root cause of issues.',
+        'Expert appliance check', 80.00, 30.00, 45,
+        'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?q=80&w=600',
+        'Fridge,Washer,Dryer', 1, 0, 1, 1],
+      [categoryIds['Repair'], 'Furniture Assembly', 'furniture-assembly',
+        'Quick and professional assembly of any flat-pack furniture.',
+        'Get it built right', 120.00, 60.00, 120,
+        'https://images.unsplash.com/photo-1594489050100-3485d46e9640?q=80&w=600',
+        'Desks,Beds,Cabinets', 0, 0, 0, 1],
 
-      [categoryIds['Repair'], 'Bathtub & Shower Caulking', 'bathtub-&-shower-caulking',
-        'Recaulking joints around your bathtub, shower, backsplash & vanity ensures you\'re not letting water seep through, along with limiting dirt and mould build up. Pros remove old caulking and apply a fresh silicone caulk.',
-        'Bathtub & Shower Caulking in Calgary', 120.00, 60.00, 60,
-        'https://d1yejvhi932hco.cloudfront.net/production/service/images/80/und_image_328/c9641306-f647-41ad-895c-1ff4188d8614.jpg',
-        'Bathtub,Shower,Backsplash,Vanity,And much more!', 1, 0, 0, 1],
+      // Category: Smart Home
+      [categoryIds['Smart Home'], 'Smart Lock Install', 'smart-lock',
+        'Installation and app setup for all major smart door lock brands.',
+        'Keyless home security', 140.00, 70.00, 90,
+        'https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=600',
+        'Security,Mobile App,Digital', 1, 1, 0, 1],
+      [categoryIds['Smart Home'], 'Wi-Fi Network Setup', 'wifi-setup',
+        'Set up mesh Wi-Fi or extenders for seamless internet coverage at home.',
+        'Stronger internet signal', 160.00, 80.00, 120,
+        'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?q=80&w=600',
+        'Router,Mesh,Coverage', 0, 0, 1, 1],
 
-      [categoryIds['Repair'], 'Decks & Fences', 'decks-&-fences',
-        'Design, new builds and repair of decks and fences of all shapes, sizes and types of material preferred.',
-        'Decks & Fences in Calgary', 35.00, 10.00, 30,
-        'https://d1yejvhi932hco.cloudfront.net/production/service/images/42/und_image_328/53f5e849-f0fb-4944-82d6-e993a6223cd5.jpg',
-        'Deck Repair,New Deck Build,Fence Repair,New Fence Build,Deck & Fence Extensions,Post Replacement,Board Replacement,And much more!', 0, 0, 0, 1],
+      // Category: Painting
+      [categoryIds['Painting'], 'Single Room Painting', 'room-paint',
+        'Full service painting for one room including walls and minor prep.',
+        'Fresh color for your room', 300.00, 150.00, 240,
+        'https://images.unsplash.com/photo-1562564055-71e051d33c19?q=80&w=600',
+        'Walls,Sanding,Prep', 1, 0, 0, 1],
+      [categoryIds['Painting'], 'Trim & Door Painting', 'trim-paint',
+        'Painting of baseboards, window trims, and internal doors for a crisp finish.',
+        'Perfectly finished edges', 180.00, 90.00, 180,
+        'https://images.unsplash.com/photo-1481277542470-605612bd2d61?q=80&w=600',
+        'Trim,Doors,Detailing', 0, 1, 1, 1],
 
-      // Category: Cleaning
-      [categoryIds['Cleaning'], 'Appliance Setup', 'appliance-setup-pro',
-        'Appliance Install in Calgary',
-        'Appliance Install', 180.00, 90.00, 120,
-        'https://d1yejvhi932hco.cloudfront.net/production/service/images/34/und_image_328/57e5cfb2-5d12-481b-97de-c826e6b53e65.png',
-        'Dishwasher Install,Washer Install,Dryer Install,Range Install,Garbage Disposal Install,Fridge Install,Hood Fan Install,Appliance Uninstallation', 1, 0, 0, 1],
+      // Category: Outdoor
+      [categoryIds['Outdoor'], 'Lawn Mowing', 'lawn-mowing',
+        'Professional lawn cut with edging and grass removal for a clean look.',
+        'Clean manicured lawn', 70.00, 35.00, 90,
+        'https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?q=80&w=600',
+        'Mowing,Edging,Cleanup', 1, 1, 1, 1],
+      [categoryIds['Outdoor'], 'Pressure Washing', 'pressure-wash',
+        'Deep cleaning of decks, patios, and walkways using high-pressure water.',
+        'Restore outdoor surfaces', 120.00, 60.00, 120,
+        'https://images.unsplash.com/photo-1627850604058-52e40de1b847?q=80&w=600',
+        'Deck,Patio,Driveway', 0, 0, 0, 1],
 
-      [categoryIds['Cleaning'], 'Ac Installation', 'ac-installation',
-        'testing the service page creating test data',
-        'fix ac problem', 40.00, 90.00, 1, null, null, 0, 0, 0, 1],
-
-      // Category: Indoors
-      [categoryIds['Indoors'], 'Bathtub & Shower Caulking', 'bathtub-shower-caulking',
-        'Professional caulking services for bathrooms',
-        'Seal and waterproof your bathroom', 100.00, 0.00, 60, null, null, 0, 0, 0, 1],
-
-      [categoryIds['Indoors'], 'Furniture Assembly', 'furniture-assembly',
-        'Expert furniture assembly service',
-        'Assemble any furniture', 80.00, 40.00, 90, null, null, 0, 0, 0, 1],
-
-      // Category: Outdoors
-      [categoryIds['Outdoors'], 'Carpet & Upholstery', 'Carpet-&-Upholstery',
-        '$60/room is based on wall-to-wall carpet in bedrooms. Area rugs are $1.75/sqf (on-site), upholstery is $40/seat and steps are $4/step. Large common rooms, special stain treatments and off-site rug cleaning (if necessary) are extra and will be quoted by your Pro. $180 minimum applies to all jobs.',
-        'Carpet & Upholstery Cleaning in Calgary', 180.00, 60.00, 60,
-        'https://d1yejvhi932hco.cloudfront.net/production/service/images/10/und_image_328/8477d4a2-4db3-4fca-90bd-555ac20bdf2c.png',
-        'Carpets,Area Rugs,Sofa,Loveseats,Chairs,Sectional Couches,Stairs,Outdoor Furniture,And much more!', 0, 0, 0, 1],
-
-      [categoryIds['Outdoors'], 'Carpet & Upholstery Cleaning', 'carpet-&-upholstery-cleaning',
-        '$60/room is based on wall-to-wall carpet in bedrooms. Area rugs are $1.75/sqf (on-site), upholstery is $40/seat and steps are $4/step. Large common rooms, special stain treatments and off-site rug cleaning (if necessary) are extra and will be quoted by your Pro. $180 minimum applies to all jobs.',
-        'Carpet & Upholstery Cleaning in Calgary', 180.00, 60.00, 180,
-        'https://d1yejvhi932hco.cloudfront.net/production/service/images/10/und_image_328/8477d4a2-4db3-4fca-90bd-555ac20bdf2c.png',
-        'Carpets,Area Rugs,Sofa,Loveseats,Chairs,Sectional Couches,Stairs,Outdoor Furniture,And much more', 1, 0, 0, 1]
+      // Category: HVAC
+      [categoryIds['HVAC'], 'AC Maintenance', 'ac-tuneup',
+        'Annual checkup and cleaning of your air conditioning unit for optimal cooling.',
+        'Summer ready AC', 110.00, 55.00, 90,
+        'https://images.unsplash.com/photo-1631541909061-70e0883556fe?q=80&w=600',
+        'Inspection,Cleaning,Filters', 1, 1, 1, 1],
+      [categoryIds['HVAC'], 'Furnace Safety Check', 'furnace-check',
+        'Essential safety inspection for your heating system before the winter season.',
+        'Safe winter heating', 100.00, 50.00, 60,
+        'https://images.unsplash.com/photo-1504384764586-bb4cdc1707b0?q=80&w=600',
+        'Safety,Heating,Efficiency', 0, 1, 0, 1]
     ];
 
     let serviceCount = 0;

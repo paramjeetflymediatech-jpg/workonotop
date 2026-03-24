@@ -44,6 +44,17 @@ export async function POST(request, { params }) {
         )
 
         await connection.commit()
+
+        // 🔔 Notify new provider (non-blocking)
+        try {
+          const [[bookingData]] = await connection.execute('SELECT booking_number FROM bookings WHERE id = ?', [id]);
+          if (bookingData) {
+            import('@/lib/push').then(({ notifyUser }) => {
+              notifyUser(new_provider_id, 'New Job Assigned', `You have been reassigned to #${bookingData.booking_number}`, { bookingId: id, type: 'new_job' }, execute, 'provider').catch(() => {});
+            });
+          }
+        } catch (_) {}
+
         return NextResponse.json({ success: true, message: 'Provider reassigned successfully' })
       } catch (err) {
         await connection.rollback()

@@ -442,6 +442,7 @@
 import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
+import { notifyUser } from '@/lib/push'
 
 // ── GET: List available jobs ──────────────────────────────────────────────────
 export async function GET(request) {
@@ -658,6 +659,25 @@ export async function POST(request) {
       )
 
       await connection.query('COMMIT')
+
+      // 🔔 Notify customer that their booking was accepted (non-blocking)
+      try {
+        const bookingRows = await execute(
+          'SELECT user_id, booking_number FROM bookings WHERE id = ?',
+          [booking_id]
+        );
+        const booking = bookingRows[0];
+        if (booking?.user_id) {
+          notifyUser(
+            booking.user_id,
+            '✅ Provider Confirmed!',
+            `A provider has accepted your booking #${booking.booking_number || booking_id} for ${job.service_name}.`,
+            { bookingId: booking_id, type: 'booking_confirmed' },
+            execute,
+            'customer'
+          ).catch(e => console.warn('[Push] notify customer error:', e.message));
+        }
+      } catch (_) {}
 
       const basePrice    = parseFloat(job.service_price || 0)
       const commPct      = parseFloat(job.commission_percent || 0)

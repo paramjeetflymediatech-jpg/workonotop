@@ -6,16 +6,25 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale, scale } from '../../utils/responsive';
+import { apiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import PremiumAlert from '../../components/PremiumAlert';
 
 const SERVICE_AREAS = [
-    'Calgary NW', 'Calgary NE', 'Calgary SW', 'Calgary SE',
-    'Airdrie', 'Chestermere', 'Cochrane', 'Okotoks'
+    'Surrey', 'Delta', 'Langley', 'Richmond',
+    'Vancouver (North, West, South, East)', 'Burnaby',
+    'Coquitlam/Port Coquitlam', 'Abbotsford', 'New Westminster'
 ];
 
 const SKILLS = [
-    'Plumbing', 'Painting', 'Electrical', 'HVAC',
-    'Cleaning', 'Drywall', 'Appliance Repair', 'Moving',
-    'Carpentry', 'Flooring', 'Landscaping', 'Handyman'
+    'Cleaning (regular, deep, move out)',
+    'Exterior cleaning (pressure washing, gutters, windows)',
+    'Handyman',
+    'Furniture assembly',
+    'Movers',
+    'Junk removal',
+    'Yard work',
+    'Carpet wash'
 ];
 
 const ProfileSetupScreen = ({ navigation }) => {
@@ -29,6 +38,12 @@ const ProfileSetupScreen = ({ navigation }) => {
         skills: []
     });
     const [loading, setLoading] = useState(false);
+    const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
+    const { token, updateUser } = useAuth();
+
+    const showPremiumAlert = (message, title = '', type = 'error') => {
+        setAlert({ visible: true, title, message, type });
+    };
 
     const toggleSelection = (key, value) => {
         setProfile(prev => {
@@ -40,12 +55,70 @@ const ProfileSetupScreen = ({ navigation }) => {
         });
     };
 
-    const handleNext = () => {
-        if (!profile.bio || !profile.primarySpecialty || !profile.yearsExperience || !profile.businessAddress || !profile.city || profile.skills.length === 0) {
-            Alert.alert('Missing Info', 'Please fill in all required fields and select at least one skill.');
+    const handleNext = async () => {
+        const { bio, primarySpecialty, yearsExperience, businessAddress, city, serviceAreas, skills } = profile;
+
+        // 1. Basic empty check
+        if (!bio || !primarySpecialty || !yearsExperience || !businessAddress || !city) {
+            showPremiumAlert('Please fill in all required fields.', 'Missing Info');
             return;
         }
-        navigation.navigate('DocumentUpload', { profile });
+
+        // 2. Bio length validation (50-500)
+        const bioLength = bio.trim().length;
+        if (bioLength < 50) {
+            showPremiumAlert(`Professional bio must be at least 50 characters. Current: ${bioLength}`, 'Bio Too Short');
+            return;
+        }
+
+        // 3. Experience range validation (0-50)
+        const exp = Number(yearsExperience);
+        if (isNaN(exp) || exp < 0 || exp > 50) {
+            showPremiumAlert('Years of experience must be between 0 and 50.', 'Invalid Experience');
+            return;
+        }
+
+        // 4. Service Areas (at least one)
+        if (serviceAreas.length === 0) {
+            showPremiumAlert('Please select at least one service area.', 'Service Areas');
+            return;
+        }
+
+        // 5. Skills (at least one)
+        if (skills.length === 0) {
+            showPremiumAlert('Please select at least one skill.', 'Skills');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const data = {
+                bio: bio.trim(),
+                specialty: primarySpecialty,
+                experience_years: exp,
+                location: businessAddress,
+                city: city,
+                service_areas: serviceAreas,
+                skills: skills
+            };
+
+            const response = await apiService.provider.onboarding.updateProfile(data, token);
+
+            if (response.success) {
+                // Update local user state so RootNavigator/IntroScreen knows we've progressed
+                await updateUser({ onboarding_step: 2 });
+                navigation.navigate('DocumentUpload', {
+                    profile: { ...profile, ...data }
+                });
+            } else {
+                showPremiumAlert(response.message || 'Failed to save profile. Please try again.');
+            }
+        } catch (error) {
+            console.error('Profile save error:', error);
+            showPremiumAlert('Connection error. Please check your internet.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const Stepper = () => (
@@ -86,7 +159,13 @@ const ProfileSetupScreen = ({ navigation }) => {
                 <Stepper />
 
                 <View style={styles.contentCard}>
-                    <Text style={styles.mainTitle}>Profile Information</Text>
+                    <View style={styles.header}>
+                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                            <Ionicons name="arrow-back" size={moderateScale(24)} color="#1e293b" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Profile Setup</Text>
+                        <View style={{ width: moderateScale(40) }} />
+                    </View>
 
                     {/* Bio */}
                     <View style={styles.inputGroup}>
@@ -145,7 +224,7 @@ const ProfileSetupScreen = ({ navigation }) => {
                         <Text style={styles.label}>City <Text style={styles.req}>*</Text></Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Calgary"
+                            placeholder="Surrey"
                             placeholderTextColor="#94a3b8"
                             value={profile.city}
                             onChangeText={(t) => setProfile({ ...profile, city: t })}
@@ -162,15 +241,23 @@ const ProfileSetupScreen = ({ navigation }) => {
                                 return (
                                     <TouchableOpacity
                                         key={area}
-                                        style={styles.checkboxItem}
+                                        style={[
+                                            styles.checkboxItem,
+                                            isSelected && styles.checkboxItemActive
+                                        ]}
                                         onPress={() => toggleSelection('serviceAreas', area)}
                                     >
-                                        <Ionicons
-                                            name={isSelected ? "checkbox" : "square-outline"}
-                                            size={moderateScale(20)}
-                                            color={isSelected ? "#0d9488" : "#94a3b8"}
-                                        />
-                                        <Text style={styles.checkboxLabel}>{area}</Text>
+                                        <View style={styles.checkboxRow}>
+                                            <Ionicons
+                                                name={isSelected ? "checkbox" : "square-outline"}
+                                                size={moderateScale(22)}
+                                                color={isSelected ? "#0d9488" : "#94a3b8"}
+                                            />
+                                            <Text style={[
+                                                styles.checkboxLabel,
+                                                isSelected && styles.checkboxLabelActive
+                                            ]}>{area}</Text>
+                                        </View>
                                     </TouchableOpacity>
                                 );
                             })}
@@ -186,28 +273,52 @@ const ProfileSetupScreen = ({ navigation }) => {
                                 return (
                                     <TouchableOpacity
                                         key={skill}
-                                        style={styles.checkboxItem}
+                                        style={[
+                                            styles.checkboxItem,
+                                            isSelected && styles.checkboxItemActive
+                                        ]}
                                         onPress={() => toggleSelection('skills', skill)}
                                     >
-                                        <Ionicons
-                                            name={isSelected ? "checkbox" : "square-outline"}
-                                            size={moderateScale(20)}
-                                            color={isSelected ? "#0d9488" : "#94a3b8"}
-                                        />
-                                        <Text style={styles.checkboxLabel}>{skill}</Text>
+                                        <View style={styles.checkboxRow}>
+                                            <Ionicons
+                                                name={isSelected ? "checkbox" : "square-outline"}
+                                                size={moderateScale(22)}
+                                                color={isSelected ? "#0d9488" : "#94a3b8"}
+                                            />
+                                            <Text style={[
+                                                styles.checkboxLabel,
+                                                isSelected && styles.checkboxLabelActive
+                                            ]}>{skill}</Text>
+                                        </View>
                                     </TouchableOpacity>
                                 );
                             })}
                         </View>
                     </View>
 
-                    <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-                        <Text style={styles.nextBtnText}>Continue to Documents</Text>
+                    <TouchableOpacity
+                        style={[styles.nextBtn, loading && { opacity: 0.7 }]}
+                        onPress={handleNext}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.nextBtnText}>Continue to Documents</Text>
+                        )}
                     </TouchableOpacity>
 
                     <Text style={styles.stepFooter}>Step 1 of 4</Text>
                 </View>
             </ScrollView>
+
+            <PremiumAlert
+                visible={alert.visible}
+                title={alert.title}
+                message={alert.message}
+                type={alert.type}
+                onClose={() => setAlert({ ...alert, visible: false })}
+            />
         </SafeAreaView>
     );
 };
@@ -246,19 +357,39 @@ const styles = StyleSheet.create({
     /* Content Card */
     contentCard: {
         backgroundColor: '#fff',
-        borderRadius: moderateScale(12),
+        borderRadius: moderateScale(16),
         padding: moderateScale(20),
-        elevation: 2,
+        elevation: 3,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowRadius: 8,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: verticalScale(20),
+    },
+    backButton: {
+        width: moderateScale(40),
+        height: moderateScale(40),
+        borderRadius: moderateScale(20),
+        backgroundColor: '#f8fafc',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerTitle: {
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+        color: '#0f172a',
     },
     mainTitle: {
-        fontSize: moderateScale(22),
+        fontSize: moderateScale(24),
         fontWeight: 'bold',
         color: '#0f172a',
         marginBottom: verticalScale(20),
+        textAlign: 'center',
     },
     inputGroup: { marginBottom: verticalScale(15) },
     row: { flexDirection: 'row', marginBottom: verticalScale(5) },
@@ -296,16 +427,31 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     checkboxItem: {
-        width: '50%',
+        width: '100%',
+        marginBottom: verticalScale(10),
+        padding: moderateScale(12),
+        borderRadius: moderateScale(10),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        backgroundColor: '#fff',
+    },
+    checkboxItemActive: {
+        borderColor: '#0d9488',
+        backgroundColor: '#f0fdfa',
+    },
+    checkboxRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: verticalScale(12),
-        paddingRight: scale(5),
     },
     checkboxLabel: {
-        fontSize: moderateScale(12),
+        fontSize: moderateScale(13),
         color: '#475569',
-        marginLeft: scale(8),
+        marginLeft: scale(10),
+        flex: 1,
+    },
+    checkboxLabelActive: {
+        color: '#0d9488',
+        fontWeight: '600',
     },
     nextBtn: {
         backgroundColor: '#0d9488',

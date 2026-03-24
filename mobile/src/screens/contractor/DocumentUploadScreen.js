@@ -2,64 +2,117 @@ import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
     ScrollView, SafeAreaView, Alert, Image, ActivityIndicator,
-    Platform
+    Platform, Modal
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { api } from '../../utils/api';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { apiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../config';
 import { moderateScale, verticalScale, scale } from '../../utils/responsive';
+import { Ionicons } from '@expo/vector-icons';
+import PremiumAlert from '../../components/PremiumAlert';
 
 const DocumentUploadScreen = ({ navigation, route }) => {
-    const { profile } = route.params || {};
+    const { token, updateUser, user } = useAuth();
+    
+    // Recovery logic: if profile is missing from params (e.g. on reload), 
+    // we use the data from the authenticated user object.
+    const profile = route.params?.profile || {
+        bio: user?.bio || '',
+        primarySpecialty: user?.specialty || '',
+        yearsExperience: String(user?.experience_years || ''),
+        businessAddress: user?.location || '',
+        city: user?.city || '',
+        serviceAreas: user?.service_areas ? (typeof user.service_areas === 'string' ? JSON.parse(user.service_areas) : user.service_areas) : [],
+        skills: user?.skills ? (typeof user.skills === 'string' ? JSON.parse(user.skills) : user.skills) : [],
+    };
     const [documents, setDocuments] = useState({
+        profile_photo: null,
         id_proof: null,
         trade_license: null,
         insurance: null,
     });
     const [loading, setLoading] = useState(false);
+    const [uploadingSlots, setUploadingSlots] = useState({
+        id_proof: false,
+        trade_license: false,
+        insurance: false,
+    });
+    const [globalLoading, setGlobalLoading] = useState(false);
+    const [loadingText, setLoadingText] = useState('Uploading...');
+    const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
+    const [viewerVisible, setViewerVisible] = useState(false);
+    const [viewerImage, setViewerImage] = useState(null);
+
+    const showPremiumAlert = (message, title = '', type = 'error') => {
+        setAlert({ visible: true, title, message, type });
+    };
 
     const uploadFile = async (uri, type, label) => {
-        setLoading(true);
+        setUploadingSlots(prev => ({ ...prev, [type]: true }));
+        setGlobalLoading(true);
+        setLoadingText(`Optimizing & Uploading ${label}...`);
         try {
+            // --- IMAGE COMPRESSION ---
+            // Reduce file size significantly before upload
+            const manipulatedImage = await ImageManipulator.manipulateAsync(
+                uri,
+                [{ resize: { width: 800 } }], // Reduced from 1000 for better stability
+                { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG } // Reduced from 0.6
+            );
+            const uploadUri = manipulatedImage.uri;
+
             const formData = new FormData();
-            const filename = uri.split('/').pop();
+            const filename = uploadUri.split('/').pop();
             const match = /\.(\w+)$/.exec(filename);
             const ext = match ? `image/${match[1]}` : 'image';
 
             formData.append('file', {
-                uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
+                uri: Platform.OS === 'android' ? uploadUri : uploadUri.replace('file://', ''),
                 name: filename,
-                type: ext === 'image/pdf' ? 'application/pdf' : 'image/jpeg',
+                type: 'image/jpeg', // Always JPEG after manipulation
             });
             formData.append('type', type);
 
-            const res = await api.post('/api/provider/onboarding/upload-document', formData);
+            console.log('📤 [Upload] Sending document:', { uri: uploadUri, type, label, filename });
+            console.log('🌐 [URL] Destination:', `${API_BASE_URL}/api/provider/onboarding/upload-document`);
+
+            const res = await apiService.provider.onboarding.uploadDocument(formData, token);
 
             if (res.success) {
-                setDocuments(prev => ({ ...prev, [type]: res.fileUrl || uri }));
-                Alert.alert('Success', `${label} uploaded successfully.`);
+                const finalUrl = res.fileUrl.startsWith('http') 
+                    ? res.fileUrl 
+                    : `${API_BASE_URL}${res.fileUrl}`;
+                
+                setDocuments(prev => ({ ...prev, [type]: finalUrl }));
             } else {
                 throw new Error(res.message || 'Upload failed');
             }
         } catch (err) {
             console.error(`Upload error (${type}):`, err);
-            Alert.alert('Upload Failed', err.message || 'Something went wrong while uploading.');
+            showPremiumAlert(err.message || 'Something went wrong while uploading.', 'Upload Failed');
         } finally {
-            setLoading(false);
+            setUploadingSlots(prev => ({ ...prev, [type]: false }));
+            setGlobalLoading(false);
         }
     };
 
     const pickDocument = async (key, label) => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
-            Alert.alert('Permission Required', 'Please allow access to your photo library.');
+            showPremiumAlert('Please allow access to your photo library.', 'Permission Required');
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false,
-            quality: 0.8,
+            quality: 0.7,
+            maxWidth: 1200,
+            maxHeight: 1200,
         });
         if (!result.canceled) {
+            setUploadingSlots(prev => ({ ...prev, [key]: true })); // Start loading immediately after pick
             await uploadFile(result.assets[0].uri, key, label);
         }
     };
@@ -67,33 +120,68 @@ const DocumentUploadScreen = ({ navigation, route }) => {
     const takePhoto = async (key, label) => {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
-            Alert.alert('Permission Required', 'Please allow camera access.');
+            showPremiumAlert('Please allow camera access.', 'Permission Required');
             return;
         }
         const result = await ImagePicker.launchCameraAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false,
-            quality: 0.8,
+            quality: 0.7,
+            maxWidth: 1200,
+            maxHeight: 1200,
         });
         if (!result.canceled) {
+            setUploadingSlots(prev => ({ ...prev, [key]: true })); // Start loading immediately after photo
             await uploadFile(result.assets[0].uri, key, label);
         }
     };
 
     const showPickOptions = (key, label) => {
-        Alert.alert(`Upload ${label}`, 'Choose source', [
-            { text: 'Camera', onPress: () => takePhoto(key, label) },
-            { text: 'Gallery', onPress: () => pickDocument(key, label) },
-            { text: 'Cancel', style: 'cancel' },
-        ]);
+        if (documents[key]) {
+            Alert.alert(`Manage ${label}`, 'Choose action', [
+                { text: 'View Document', onPress: () => { setViewerImage(documents[key]); setViewerVisible(true); } },
+                { text: 'Upload New', onPress: () => {
+                    Alert.alert(`Upload ${label}`, 'Choose source', [
+                        { text: 'Camera', onPress: () => takePhoto(key, label) },
+                        { text: 'Gallery', onPress: () => pickDocument(key, label) },
+                        { text: 'Cancel', style: 'cancel' },
+                    ]);
+                }},
+                { text: 'Cancel', style: 'cancel' },
+            ]);
+        } else {
+            Alert.alert(`Upload ${label}`, 'Choose source', [
+                { text: 'Camera', onPress: () => takePhoto(key, label) },
+                { text: 'Gallery', onPress: () => pickDocument(key, label) },
+                { text: 'Cancel', style: 'cancel' },
+            ]);
+        }
     };
 
     const handleNext = () => {
-        if (!documents.id_proof || !documents.trade_license) {
-            Alert.alert('Required Documents', 'Please upload your ID and License photo.');
+        const { profile_photo, id_proof, insurance } = documents;
+        if (!profile_photo || !id_proof || !insurance) {
+            let missing = [];
+            if (!profile_photo) missing.push('Profile Photo');
+            if (!id_proof) missing.push('Government ID');
+            if (!insurance) missing.push('Insurance Document');
+            
+            showPremiumAlert(`Please upload the following required documents:\n\n• ${missing.join('\n• ')}`, 'Missing Documents');
             return;
         }
-        navigation.navigate('BankLink', { profile, documents });
+        // Update local state and DB so it doesn't show Document step on reload
+        try {
+            apiService.provider.onboarding.updateStep(3, token);
+        } catch (err) {
+            console.error('Failed to update step in DB:', err);
+        }
+        updateUser({ onboarding_step: 3 });
+        navigation.navigate('BankLink', { 
+            profile, 
+            documents,
+            profilePhoto: profile_photo,
+            skills: profile.skills || []
+        });
     };
 
     const Stepper = () => (
@@ -131,11 +219,16 @@ const DocumentUploadScreen = ({ navigation, route }) => {
     const DocUploadCard = ({ docKey, label, icon, description, required }) => (
         <TouchableOpacity
             style={styles.docCard}
-            onPress={() => showPickOptions(docKey, label)}
+            onPress={() => !uploadingSlots[docKey] && showPickOptions(docKey, label)}
+            disabled={uploadingSlots[docKey]}
         >
-            {documents[docKey] ? (
+            {uploadingSlots[docKey] ? (
+                <View style={[styles.docCardInner, { height: verticalScale(110), justifyContent: 'center' }]}>
+                    <ActivityIndicator size="large" color="#0d9488" />
+                    <Text style={[styles.docDesc, { marginTop: 10 }]}>Uploading {label}...</Text>
+                </View>
+            ) : documents[docKey] ? (
                 <>
-
                     <Image source={{ uri: documents[docKey] }} style={styles.docPreview} />
                     <View style={styles.docCardOverlay}>
                         <Text style={styles.docCardLabel}>{label}</Text>
@@ -154,19 +247,75 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             )}
         </TouchableOpacity>
     );
+    const LoadingModal = () => (
+        <Modal transparent visible={globalLoading} animationType="fade">
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <ActivityIndicator size="large" color="#0d9488" />
+                    <Text style={styles.modalText}>{loadingText}</Text>
+                    <Text style={styles.modalSubtext}>Please wait, this may take a moment.</Text>
+                </View>
+            </View>
+        </Modal>
+    );
+
+    const ImagePreviewModal = () => (
+        <Modal 
+            visible={viewerVisible} 
+            transparent={false} 
+            animationType="slide"
+            onRequestClose={() => setViewerVisible(false)}
+        >
+            <SafeAreaView style={styles.viewerContainer}>
+                <View style={styles.viewerHeader}>
+                    <TouchableOpacity 
+                        style={styles.viewerCloseBtn} 
+                        onPress={() => setViewerVisible(false)}
+                    >
+                        <Ionicons name="close" size={moderateScale(30)} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.viewerTitle}>Document Preview</Text>
+                </View>
+                <View style={styles.viewerContent}>
+                    {viewerImage && (
+                        <Image 
+                            source={{ uri: viewerImage }} 
+                            style={styles.viewerImage} 
+                            resizeMode="contain" 
+                        />
+                    )}
+                </View>
+            </SafeAreaView>
+        </Modal>
+    );
 
     return (
         <SafeAreaView style={styles.container}>
+            <LoadingModal />
+            <ImagePreviewModal />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                 <Stepper />
 
                 <View style={styles.contentCard}>
-                    <Text style={styles.mainTitle}>Upload Documents</Text>
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                            <Ionicons name="arrow-back" size={moderateScale(24)} color="#115e59" />
+                        </TouchableOpacity>
+                        <Text style={styles.mainTitle}>Upload Documents</Text>
+                    </View>
                     <Text style={styles.subtitle}>Our team needs these to verify your identity</Text>
 
                     <View style={styles.infoBox}>
                         <Text style={styles.infoText}>🔒 Your documents are encrypted and only used for verification. They are never shared publicly.</Text>
                     </View>
+
+                    <DocUploadCard
+                        docKey="profile_photo"
+                        label="Profile Photo"
+                        icon="👤"
+                        description="Clear, professional photo of yourself"
+                        required
+                    />
 
                     <DocUploadCard
                         docKey="id_proof"
@@ -177,18 +326,18 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                     />
 
                     <DocUploadCard
-                        docKey="trade_license"
-                        label="Trade License / Certification"
-                        icon="📜"
-                        description="Professional license or trade certificate"
+                        docKey="insurance"
+                        label="Insurance Document"
+                        icon="🛡️"
+                        description="Liability insurance certificate"
                         required
                     />
 
                     <DocUploadCard
-                        docKey="insurance"
-                        label="Insurance Document"
-                        icon="🛡️"
-                        description="Liability insurance (optional)"
+                        docKey="trade_license"
+                        label="Trade License / Certification"
+                        icon="📜"
+                        description="Professional license or trade certificate (optional)"
                         required={false}
                     />
 
@@ -199,6 +348,14 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                     <Text style={styles.stepFooter}>Step 2 of 4</Text>
                 </View>
             </ScrollView>
+
+            <PremiumAlert
+                visible={alert.visible}
+                title={alert.title}
+                message={alert.message}
+                type={alert.type}
+                onClose={() => setAlert({ ...alert, visible: false })}
+            />
         </SafeAreaView>
     );
 };
@@ -247,11 +404,24 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
     },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: verticalScale(10),
+    },
+    backButton: {
+        width: moderateScale(36),
+        height: moderateScale(36),
+        borderRadius: moderateScale(18),
+        backgroundColor: '#f1f5f9',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: scale(12),
+    },
     mainTitle: {
         fontSize: moderateScale(22),
         fontWeight: 'bold',
         color: '#0f172a',
-        marginBottom: verticalScale(8),
     },
     subtitle: {
         fontSize: moderateScale(14),
@@ -296,6 +466,69 @@ const styles = StyleSheet.create({
         color: '#94a3b8',
         fontSize: moderateScale(12),
         marginTop: verticalScale(20),
+    },
+    /* Modal Styles */
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        padding: moderateScale(30),
+        borderRadius: moderateScale(20),
+        alignItems: 'center',
+        width: '80%',
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+    },
+    modalText: {
+        marginTop: verticalScale(20),
+        fontSize: moderateScale(16),
+        fontWeight: 'bold',
+        color: '#0f172a',
+        textAlign: 'center',
+    },
+    modalSubtext: {
+        marginTop: verticalScale(10),
+        fontSize: moderateScale(13),
+        color: '#64748b',
+        textAlign: 'center',
+    },
+    /* Viewer Styles */
+    viewerContainer: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    viewerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: moderateScale(16),
+        backgroundColor: 'rgba(0,0,0,0.8)',
+    },
+    viewerCloseBtn: {
+        padding: moderateScale(5),
+    },
+    viewerTitle: {
+        flex: 1,
+        textAlign: 'center',
+        color: '#fff',
+        fontSize: moderateScale(16),
+        fontWeight: 'bold',
+        marginRight: moderateScale(30),
+    },
+    viewerContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    viewerImage: {
+        width: '100%',
+        height: '100%',
     }
 });
 

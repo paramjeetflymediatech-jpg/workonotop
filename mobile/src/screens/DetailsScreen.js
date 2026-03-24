@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIn
 import { scale, verticalScale, moderateScale } from '../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { apiService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 
 const DetailsScreen = ({ navigation, route }) => {
+    const { user } = useAuth();
     const { service, bookingId } = route.params || {};
     const [data, setData] = useState(service || null);
     const [loading, setLoading] = useState(!service);
@@ -18,7 +20,7 @@ const DetailsScreen = ({ navigation, route }) => {
 
     const fetchBookingDetails = async () => {
         try {
-            const res = await apiService.customer.getBookingDetails(bookingId);
+            const res = await apiService.customer.getBookingDetails(bookingId, user?.id, user?.token);
             if (res && res.data) {
                 // Backend returns an array [booking], take the first one
                 const bookingData = Array.isArray(res.data) ? res.data[0] : res.data;

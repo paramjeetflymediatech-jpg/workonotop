@@ -364,11 +364,11 @@ export default function Step3Stripe({ initialData, onNext, onBack, providerId, p
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleStripeConnect}
               disabled={loading}
-              className="flex-1 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 
+              className="w-full sm:flex-1 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 
                          disabled:bg-gray-400 disabled:cursor-not-allowed transition font-medium"
             >
               {loading ? 'Connecting...' : 'Connect with Stripe'}
@@ -377,7 +377,7 @@ export default function Step3Stripe({ initialData, onNext, onBack, providerId, p
             <button
               onClick={handleSkip}
               disabled={loading}
-              className="flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-lg 
+              className="w-full sm:flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-lg 
                          hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed 
                          transition font-medium"
             >

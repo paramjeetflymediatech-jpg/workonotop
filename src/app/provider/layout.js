@@ -459,7 +459,7 @@ export default function ProviderLayout({ children }) {
         return;
       }
 
-      if (!prov.email_verified) {
+      if (!prov.email_verified && prov.status !== 'active') {
         router.push('/provider/verify-email-pending');
         return;
       }

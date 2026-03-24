@@ -147,7 +147,7 @@ export default function Step2Documents({ onNext, onBack }) {
     
     const labels = {
       approved: '✓ Verified',
-      pending: '⏳ Pending Review',
+      pending: '⏳ Pending ',
       rejected: '✗ Rejected'
     };
     
@@ -195,54 +195,54 @@ export default function Step2Documents({ onNext, onBack }) {
       
       <div className="space-y-4">
         {Object.entries(DOC_TYPES).map(([type, config]) => (
-          <div key={type} className="border rounded-lg p-4 bg-white">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center">
-                  <span className="text-2xl mr-2">{config.icon}</span>
-                  <label className="font-medium text-gray-900">
+          <div key={type} className="border rounded-lg p-3 md:p-4 bg-white shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xl md:text-2xl flex-shrink-0">{config.icon}</span>
+                  <label className="font-semibold text-gray-900 text-sm md:text-base truncate">
                     {config.label}
                     {config.required && <span className="text-red-500 ml-1">*</span>}
                   </label>
                   {getStatusBadge(type)}
                 </div>
-                <p className="text-sm text-gray-500 mt-1">{config.help}</p>
+                <p className="text-xs md:text-sm text-gray-500 mt-1 line-clamp-2">{config.help}</p>
                 
                 {documents[type] && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-[10px] md:text-xs text-gray-400 mt-1 truncate max-w-[200px] md:max-w-md">
                     File: {documents[type].split('/').pop()}
                   </p>
                 )}
               </div>
               
-              <div className="ml-4">
+              <div className="flex flex-shrink-0 items-center gap-3">
                 {documents[type] ? (
                   <div className="relative">
-                    <div className={`w-16 h-16 rounded-lg flex items-center justify-center border-2 ${
+                    <div className={`w-12 h-12 md:w-16 md:h-16 rounded-lg flex items-center justify-center border-2 ${
                       documentStatus[type] === 'approved' ? 'border-green-500 bg-green-50' :
                       documentStatus[type] === 'rejected' ? 'border-red-500 bg-red-50' :
                       'border-teal-500 bg-teal-50'
                     }`}>
                       {documentStatus[type] === 'approved' && (
-                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6 md:w-8 md:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                       )}
                       {documentStatus[type] === 'rejected' && (
-                        <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6 md:w-8 md:h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       )}
                       {(!documentStatus[type] || documentStatus[type] === 'pending') && (
-                        <span className="text-2xl">📄</span>
+                        <span className="text-xl md:text-2xl">📄</span>
                       )}
                     </div>
                     <button
                       onClick={() => fileInputRefs[type].current.click()}
-                      className="absolute -bottom-2 -right-2 bg-teal-600 text-white p-1 rounded-full hover:bg-teal-700"
+                      className="absolute -bottom-1 -right-1 bg-teal-600 text-white p-1 rounded-full hover:bg-teal-700 shadow-sm"
                       title="Replace file"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
                     </button>
@@ -251,9 +251,9 @@ export default function Step2Documents({ onNext, onBack }) {
                   <button
                     onClick={() => fileInputRefs[type].current.click()}
                     disabled={uploading[type]}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+                    className="px-3 py-1.5 md:px-4 md:py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 disabled:opacity-50 transition"
                   >
-                    {uploading[type] ? 'Uploading...' : 'Upload'}
+                    {uploading[type] ? '...' : 'Upload'}
                   </button>
                 )}
                 

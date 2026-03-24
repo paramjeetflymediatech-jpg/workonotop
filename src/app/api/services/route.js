@@ -1,16 +1,16 @@
 // app/api/services/route.js - OPTIONAL IMPROVEMENT
 import { NextResponse } from 'next/server'
-import { execute } from '@/lib/db'  // ✅ CHANGE: query → execute
+import { execute, query } from '@/lib/db'
 
 // GET all services
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const categoryId = searchParams.get('category_id')
+    const categoryId = searchParams.get('category_id') || searchParams.get('categoryId')
     const slug = searchParams.get('slug')
     const homepage = searchParams.get('homepage')
-    const limit = searchParams.get('limit')
+    const limitParams = searchParams.get('limit')
 
     let sql = `
       SELECT 
@@ -45,13 +45,16 @@ export async function GET(request) {
 
     sql += ' ORDER BY sc.display_order, s.name'
 
-    if (limit) {
-      sql += ' LIMIT ?'
-      params.push(parseInt(limit))
+    // Always sanitize LIMIT to prevent any issues with placeholders
+    if (limitParams) {
+      const parsedLimit = parseInt(limitParams)
+      if (!isNaN(parsedLimit)) {
+        sql += ` LIMIT ${parsedLimit}`
+      }
     }
 
-    // ✅ Using execute()
-    const services = await execute(sql, params)
+    // Use query() instead of execute() for queries with dynamic LIMIT or broad SELECTs
+    const services = await query(sql, params)
 
     if ((id || slug) && services.length === 1) {
       return NextResponse.json({

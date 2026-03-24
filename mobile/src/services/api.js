@@ -8,6 +8,12 @@ import { API_BASE_URL } from '../config';
  * @param {Object} options - Fetch options including method, body, params, and token
  * @returns {Promise<Object>} - The parsed JSON response
  */
+let logoutHandler = null;
+
+export const setLogoutHandler = (handler) => {
+    logoutHandler = handler;
+};
+
 const request = async (endpoint, options = {}) => {
     try {
         const { params, token, ...fetchOptions } = options;
@@ -45,7 +51,21 @@ const request = async (endpoint, options = {}) => {
         // Handle unsuccessful responses
         if (!response.ok) {
             console.error(`❌ [API Error] ${response.status} ${endpoint}:`, data.message || 'Unknown error');
-            throw new Error(data.message || `Request failed with status ${response.status}`);
+            
+            // Auto-logout triggers:
+            // 401 = Unauthorized (Invalid token)
+            // 404 = Not Found (Critical profiles missing, especially on load)
+            if (response.status === 401 || (response.status === 404 && data.message?.toLowerCase().includes('not found'))) {
+                if (logoutHandler) {
+                    console.log('🚪 [API Service] Session invalid or profile missing. Triggering global logout...');
+                    logoutHandler();
+                }
+            }
+            
+            const error = new Error(data.message || `Request failed with status ${response.status}`);
+            error.data = data;
+            error.status = response.status;
+            throw error;
         }
 
         console.log(`✅ [API Success] ${endpoint}`);
@@ -171,9 +191,10 @@ export const apiService = {
          */
         onboarding: {
             updateProfile: (data, token) => request('/api/provider/onboarding/profile', { method: 'POST', body: JSON.stringify(data), token }),
-            uploadDocument: (data, token) => request('/api/provider/onboarding/upload-document', { method: 'POST', body: JSON.stringify(data), token }),
+            uploadDocument: (data, token) => request('/api/provider/onboarding/upload-document', { method: 'POST', body: data, token }),
             complete: (token) => request('/api/provider/onboarding/complete', { method: 'POST', token }),
-            createStripeAccount: (token) => request('/api/provider/onboarding/create-stripe-account', { method: 'POST', token }),
+            createStripeAccount: (data, token) => request('/api/provider/onboarding/create-stripe-account', { method: 'POST', body: JSON.stringify(data), token }),
+            stripeComplete: (data, token) => request('/api/provider/onboarding/stripe-complete', { method: 'POST', body: JSON.stringify(data), token }),
         },
 
         /**

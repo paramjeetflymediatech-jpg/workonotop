@@ -28,14 +28,18 @@ export async function GET(request) {
 
         const summarySql = `
       SELECT 
-        SUM(total_amount) as total_revenue,
-        SUM(commission_amount) as total_commission,
-        SUM(provider_earnings) as total_payouts,
-        COUNT(*) as total_invoices
-      FROM invoices
-      ${whereClause}
+        SUM(COALESCE(i.total_amount, b.service_price, 0)) as total_revenue,
+        SUM(COALESCE(i.commission_amount, (CAST(NULLIF(b.service_price, '') AS DECIMAL(10,2)) * CAST(NULLIF(b.commission_percent, '') AS DECIMAL(10,2)) / 100), 0)) as total_commission,
+        SUM(COALESCE(i.provider_earnings, (CAST(NULLIF(b.service_price, '') AS DECIMAL(10,2)) * (100 - CAST(NULLIF(b.commission_percent, '') AS DECIMAL(10,2))) / 100), 0)) as total_payouts,
+        COUNT(b.id) as total_invoices
+      FROM bookings b
+      LEFT JOIN invoices i ON b.id = i.booking_id
+      WHERE b.status = 'completed'
+      ${providerId ? ' AND b.provider_id = ?' : ''}
     `
-        const [summary] = await execute(summarySql, params)
+        // Add providerId to params for summary if present
+        const summaryParams = providerId ? [...params, providerId] : params
+        const [summary] = await execute(summarySql, summaryParams)
 
         const invoicesSql = `
       SELECT i.*, sp.name as provider_name 

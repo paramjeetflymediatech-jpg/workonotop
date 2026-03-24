@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { apiService } from '../services/api';
+import { apiService, setLogoutHandler } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -20,12 +20,50 @@ export const AuthProvider = ({ children }) => {
                 const storedUser = await AsyncStorage.getItem('user');
                 const storedToken = await AsyncStorage.getItem('token');
 
-                if (storedUser && storedToken) {
-                    const parsedUser = JSON.parse(storedUser);
-                    setUser(parsedUser);
+                let parsedUser = null;
+                if (storedUser) {
+                    try {
+                        parsedUser = JSON.parse(storedUser);
+                    } catch (e) {
+                        console.warn('[AuthContext] Corrupted user data in storage, ignoring...');
+                    }
+                }
+
+                if (storedToken) {
                     setToken(storedToken);
-                    // Register push token for returning session
-                    registerPushToken(parsedUser);
+                    
+                    try {
+                        console.log('🔄 [AuthContext] Refreshing session from server...');
+                        const response = await apiService.auth.me(storedToken);
+                        
+                        if (response.success && response.user) {
+                            const freshUser = response.user;
+                            
+                            // Re-standardize 'user' to 'customer' for mobile consistency
+                            if (freshUser.role === 'user') freshUser.role = 'customer';
+                            
+                            console.log(`✅ [AuthContext] Refreshed: ${freshUser.role} (Step ${freshUser.onboarding_step})`);
+                            
+                            setUser(freshUser);
+                            await AsyncStorage.setItem('user', JSON.stringify(freshUser));
+                            registerPushToken(freshUser);
+                        } else {
+                            console.log('🚪 [AuthContext] Refresh failed, logging out...');
+                            await logout();
+                        }
+                    } catch (apiError) {
+                        const isAuthError = apiError.message?.toLowerCase().includes('not found') || 
+                                           apiError.message?.toLowerCase().includes('unauthorized') ||
+                                           apiError.message?.toLowerCase().includes('expired');
+                        
+                        if (isAuthError) {
+                            console.log('🚪 [AuthContext] Critical auth error during refresh, logging out...');
+                            await logout();
+                        } else if (storedUser) {
+                            console.log('⚠️ [AuthContext] Network/other error during refresh, using cache');
+                            setUser(JSON.parse(storedUser));
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load auth data:', error);
@@ -35,7 +73,12 @@ export const AuthProvider = ({ children }) => {
         };
 
         loadAuthData();
-    }, []);
+        
+        // Register global logout handler for 401/404 errors
+        setLogoutHandler(logout);
+
+        return () => setLogoutHandler(null);
+    }, [logout]);
 
     /**
      * Dynamically loads expo-notifications and registers the push token.
