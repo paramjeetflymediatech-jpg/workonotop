@@ -89,7 +89,7 @@ const RootNavigator = () => {
                 <>
                     {/* Main App Stack - Order matters for standard navigation */}
                     {/* If provider is not onboarded, the onboarding screens come first */}
-                    {(user.role === 'provider' && Number(user.onboarding_completed) !== 1) ? (
+                    {(user.role === 'provider' && (Number(user.onboarding_completed) !== 1 || Number(user.stripe_onboarding_complete) !== 1)) ? (
                         <>
                             <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
@@ -99,11 +99,8 @@ const RootNavigator = () => {
                             <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Main" component={ProviderDrawerNavigator} options={{ headerShown: false }} />
                         </>
-                    ) : user.role === 'provider' && user.status === 'pending' ? (
-                        <>
-                            <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Main" component={ProviderDrawerNavigator} options={{ headerShown: false }} />
-                        </>
+                    ) : (user.role === 'provider' && (user.status === 'pending' || user.status === 'rejected' || user.status === 'suspended' || user.status === 'inactive')) ? (
+                        <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
                     ) : (
                         <>
                             {user.role === 'admin' ? (
@@ -172,5 +169,6 @@ const styles = StyleSheet.create({
         flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff',
     },
 });
+
 
 export default RootNavigator;

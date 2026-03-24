@@ -76,16 +76,11 @@
 //     }
     
 //     // Password
+//     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
 //     if (!formData.password) {
 //       newErrors.password = 'Password is required';
-//     } else if (formData.password.length < 8) {
-//       newErrors.password = 'Password must be at least 8 characters';
-//     } else if (!/[A-Z]/.test(formData.password)) {
-//       newErrors.password = 'Password must contain at least one uppercase letter';
-//     } else if (!/[a-z]/.test(formData.password)) {
-//       newErrors.password = 'Password must contain at least one lowercase letter';
-//     } else if (!/[0-9]/.test(formData.password)) {
-//       newErrors.password = 'Password must contain at least one number';
+//     } else if (!passwordRegex.test(formData.password)) {
+//       newErrors.password = 'Password must be at least 8 characters and contain both alphabets and special characters';
 //     }
     
 //     // Confirm Password
@@ -389,20 +384,9 @@
 //             {formData.password && formData.password.length > 0 && (
 //               <div className="text-xs space-y-1 bg-gray-50 p-2 rounded-lg">
 //                 <p className="text-gray-600 font-medium mb-1">Password requirements:</p>
-//                 <div className="grid grid-cols-2 gap-1">
-//                   <span className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}>
-//                     ✓ At least 8 characters
+//                   <span className={/^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
+//                     ✓ At least 8 characters with alphabets & special chars
 //                   </span>
-//                   <span className={/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
-//                     ✓ One uppercase letter
-//                   </span>
-//                   <span className={/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
-//                     ✓ One lowercase letter
-//                   </span>
-//                   <span className={/[0-9]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
-//                     ✓ One number
-//                   </span>
-//                 </div>
 //               </div>
 //             )}
 

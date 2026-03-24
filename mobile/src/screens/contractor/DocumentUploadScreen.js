@@ -12,7 +12,6 @@ import { API_BASE_URL } from '../../config';
 import { moderateScale, verticalScale, scale } from '../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import PremiumAlert from '../../components/PremiumAlert';
-
 const DocumentUploadScreen = ({ navigation, route }) => {
     const { token, updateUser, user } = useAuth();
     
@@ -44,6 +43,49 @@ const DocumentUploadScreen = ({ navigation, route }) => {
     const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
     const [viewerVisible, setViewerVisible] = useState(false);
     const [viewerImage, setViewerImage] = useState(null);
+    const [rejectionReasons, setRejectionReasons] = useState({});
+    const [hasRejections, setHasRejections] = useState(false);
+
+    // Fetch existing documents on mount to check for rejections
+    React.useEffect(() => {
+        const fetchExistingDocs = async () => {
+            if (!token) return;
+            try {
+                const res = await apiService.provider.onboarding.getDocuments(token);
+                if (res.success && res.documents?.length > 0) {
+                    const newDocs = { ...documents };
+                    const reasons = {};
+                    let foundRejection = false;
+
+                    res.documents.forEach(doc => {
+                        const url = doc.document_url.startsWith('http') 
+                            ? doc.document_url 
+                            : `${API_BASE_URL}${doc.document_url}`;
+                        
+                        if (doc.document_type in newDocs) {
+                            newDocs[doc.document_type] = url;
+                            if (doc.status === 'rejected') {
+                                reasons[doc.document_type] = doc.rejection_reason;
+                                foundRejection = true;
+                            }
+                        }
+                    });
+
+                    setDocuments(newDocs);
+                    setRejectionReasons(reasons);
+                    setHasRejections(foundRejection);
+                    
+                    if (foundRejection) {
+                        console.log('⚠️ [DocUpload] Found rejected documents:', reasons);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch existing documents:', err);
+            }
+        };
+
+        fetchExistingDocs();
+    }, [token]);
 
     const showPremiumAlert = (message, title = '', type = 'error') => {
         setAlert({ visible: true, title, message, type });
@@ -64,34 +106,53 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             const uploadUri = manipulatedImage.uri;
 
             const formData = new FormData();
-            const filename = uploadUri.split('/').pop();
-            const match = /\.(\w+)$/.exec(filename);
-            const ext = match ? `image/${match[1]}` : 'image';
+            
+            // Normalize filename and extension for Android compatibility
+            let filename = uploadUri.split('/').pop() || `upload-${Date.now()}.jpg`;
+            
+            // Ensure filename has an extension, default to .jpg if missing
+            if (!filename.includes('.')) {
+                filename += '.jpg';
+            }
 
-            formData.append('file', {
+            // Create the file object for FormData
+            const fileToUpload = {
                 uri: Platform.OS === 'android' ? uploadUri : uploadUri.replace('file://', ''),
                 name: filename,
                 type: 'image/jpeg', // Always JPEG after manipulation
-            });
+            };
+
+            formData.append('file', fileToUpload);
             formData.append('type', type);
 
-            console.log('📤 [Upload] Sending document:', { uri: uploadUri, type, label, filename });
-            console.log('🌐 [URL] Destination:', `${API_BASE_URL}/api/provider/onboarding/upload-document`);
+            console.log(`📤 [Upload] Starting: ${type}`, { 
+                uri: fileToUpload.uri, 
+                name: fileToUpload.name, 
+                type: fileToUpload.type 
+            });
 
             const res = await apiService.provider.onboarding.uploadDocument(formData, token);
 
             if (res.success) {
+                console.log(`✅ [Upload] Success: ${type}`, res.fileUrl);
                 const finalUrl = res.fileUrl.startsWith('http') 
                     ? res.fileUrl 
                     : `${API_BASE_URL}${res.fileUrl}`;
                 
                 setDocuments(prev => ({ ...prev, [type]: finalUrl }));
             } else {
+                console.error(`❌ [Upload] Server Error: ${type}`, res.message);
                 throw new Error(res.message || 'Upload failed');
             }
         } catch (err) {
-            console.error(`Upload error (${type}):`, err);
-            showPremiumAlert(err.message || 'Something went wrong while uploading.', 'Upload Failed');
+            console.error(`🔥 [Upload] Error (${type}):`, err);
+            // More descriptive error for 'Network request failed'
+            let errorMsg = err.message || 'Something went wrong while uploading.';
+            if (errorMsg.includes('Network request failed')) {
+                errorMsg = 'Network request failed. This can happen with large files or unstable connections. Please try again.';
+            }
+            
+            showPremiumAlert(errorMsg, 'Upload Failed');
         } finally {
             setUploadingSlots(prev => ({ ...prev, [type]: false }));
             setGlobalLoading(false);
@@ -245,6 +306,12 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                     </View>
                 </View>
             )}
+            {rejectionReasons[docKey] && (
+                <View style={styles.errorReasonContainer}>
+                    <Ionicons name="alert-circle-outline" size={moderateScale(14)} color="#dc2626" />
+                    <Text style={styles.errorReasonText}>Rejected: {rejectionReasons[docKey]}</Text>
+                </View>
+            )}
         </TouchableOpacity>
     );
     const LoadingModal = () => (
@@ -304,6 +371,18 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                         <Text style={styles.mainTitle}>Upload Documents</Text>
                     </View>
                     <Text style={styles.subtitle}>Our team needs these to verify your identity</Text>
+
+                    {hasRejections && (
+                        <View style={styles.rejectionNotice}>
+                            <View style={styles.rejectionHeader}>
+                                <Ionicons name="alert-circle" size={moderateScale(24)} color="#dc2626" />
+                                <Text style={styles.rejectionTitle}>Documents Rejected</Text>
+                            </View>
+                            <Text style={styles.rejectionText}>
+                                Some of your documents were not approved. Please review the reasons below and re-upload the correct files.
+                            </Text>
+                        </View>
+                    )}
 
                     <View style={styles.infoBox}>
                         <Text style={styles.infoText}>🔒 Your documents are encrypted and only used for verification. They are never shared publicly.</Text>
@@ -499,6 +578,47 @@ const styles = StyleSheet.create({
         color: '#64748b',
         textAlign: 'center',
     },
+    /* Rejection Styles */
+    rejectionNotice: {
+        backgroundColor: '#fef2f2',
+        borderRadius: moderateScale(12),
+        padding: moderateScale(16),
+        marginBottom: verticalScale(20),
+        borderWidth: 1,
+        borderColor: '#fecaca',
+    },
+    rejectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: verticalScale(8),
+    },
+    rejectionTitle: {
+        fontSize: moderateScale(16),
+        fontWeight: 'bold',
+        color: '#991b1b',
+        marginLeft: scale(8),
+    },
+    rejectionText: {
+        fontSize: moderateScale(13),
+        color: '#b91c1c',
+        lineHeight: moderateScale(20),
+    },
+    errorReasonContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff1f2',
+        paddingHorizontal: moderateScale(12),
+        paddingVertical: verticalScale(8),
+        borderTopWidth: 1,
+        borderTopColor: '#fecaca',
+    },
+    errorReasonText: {
+        fontSize: moderateScale(12),
+        color: '#e11d48',
+        fontWeight: '600',
+        marginLeft: scale(6),
+        flex: 1,
+    },
     /* Viewer Styles */
     viewerContainer: {
         flex: 1,
@@ -529,7 +649,7 @@ const styles = StyleSheet.create({
     viewerImage: {
         width: '100%',
         height: '100%',
-    }
+    },
 });
 
 export default DocumentUploadScreen;

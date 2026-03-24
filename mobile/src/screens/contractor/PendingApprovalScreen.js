@@ -86,6 +86,20 @@ const PendingApprovalScreen = ({ navigation }) => {
                     desc: 'Unfortunately, your application was not approved. Please contact support for more information.',
                     actionText: 'Contact Support', action: () => { },
                 };
+            case 'suspended':
+                return {
+                    icon: '🚫', color: '#6b7280', bgColor: '#f3f4f6',
+                    title: 'Account Suspended', borderColor: '#6b7280',
+                    desc: 'Your account has been suspended. Please contact administration for further details.',
+                    actionText: 'Contact Support', action: () => { },
+                };
+            case 'inactive':
+                return {
+                    icon: '⏳', color: '#f59e0b', bgColor: '#fffbeb',
+                    title: 'Awaiting Approval', borderColor: '#f59e0b',
+                    desc: 'Your documentation is complete. Our team is currently reviewing your profile.',
+                    actionText: 'Refresh Status', action: handleRefresh,
+                };
             default:
                 return {
                     icon: '⏳', color: '#f59e0b', bgColor: '#fffbeb',

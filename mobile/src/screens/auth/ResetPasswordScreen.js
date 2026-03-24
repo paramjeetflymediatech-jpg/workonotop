@@ -29,9 +29,9 @@ const ResetPasswordScreen = ({ navigation, route }) => {
             return;
         }
 
-        const minLength = type === 'pro' ? 6 : 8;
-        if (password.length < minLength) {
-            Alert.alert('Error', `Password must be at least ${minLength} characters.`);
+        const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+        if (!passwordRegex.test(password)) {
+            Alert.alert('Error', 'Password must be at least 8 characters and contain both alphabets and special characters.');
             return;
         }
 

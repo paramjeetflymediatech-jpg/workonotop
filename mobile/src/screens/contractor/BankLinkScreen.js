@@ -47,15 +47,7 @@ const BankLinkScreen = ({ navigation, route }) => {
         }
     };
 
-    const handleSkip = async () => {
-        try {
-            await updateUser({ onboarding_step: 4 });
-            navigation.navigate('Review', { profile, documents, connected: false });
-        } catch (err) {
-            console.error('Skip state update error:', err);
-            navigation.navigate('Review', { profile, documents, connected: false });
-        }
-    };
+
 
     const submitApplication = async () => {
         // ... (rest of the function remains similar but ensure it's used correctly)
@@ -161,9 +153,10 @@ const BankLinkScreen = ({ navigation, route }) => {
                     )}
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-                    <Text style={styles.skipText}>Skip — Add bank account later</Text>
-                </TouchableOpacity>
+                <View style={styles.mandatoryNotice}>
+                    <Ionicons name="information-circle-outline" size={moderateScale(16)} color="#64748b" />
+                    <Text style={styles.mandatoryText}>Stripe setup is mandatory for receiving payments.</Text>
+                </View>
             </View>
 
             <PremiumAlert
@@ -230,8 +223,21 @@ const styles = StyleSheet.create({
     },
     btnDisabled: { opacity: 0.6 },
     stripeBtnText: { color: '#fff', fontSize: moderateScale(17), fontWeight: 'bold' },
-    skipBtn: { alignItems: 'center', marginTop: verticalScale(16) },
-    skipText: { color: '#94a3b8', fontSize: moderateScale(14), textDecorationLine: 'underline' },
+    mandatoryNotice: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        marginTop: verticalScale(24),
+        backgroundColor: '#f8fafc',
+        padding: moderateScale(12),
+        borderRadius: moderateScale(10),
+    },
+    mandatoryText: { 
+        color: '#64748b', 
+        fontSize: moderateScale(13), 
+        marginLeft: scale(8),
+        fontStyle: 'italic'
+    },
 });
 
 export default BankLinkScreen;

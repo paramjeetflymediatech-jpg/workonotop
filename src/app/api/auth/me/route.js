@@ -43,7 +43,8 @@ export async function GET(request) {
       const providers = await query(
         `SELECT id, name, email, phone, status, specialty, bio, 
                 experience_years, city, location, service_areas, skills,
-                onboarding_step, onboarding_completed, avatar_url 
+                onboarding_step, onboarding_completed, avatar_url,
+                stripe_onboarding_complete, stripe_account_id
          FROM service_providers WHERE id = ?`,
         [userId]
       );

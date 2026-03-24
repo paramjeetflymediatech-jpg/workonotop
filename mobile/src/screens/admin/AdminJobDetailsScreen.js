@@ -2,7 +2,7 @@ import React from 'react';
 import {
     View, Text, StyleSheet, SafeAreaView, ScrollView,
     TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions,
-    TextInput, Alert
+    TextInput, Alert, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
@@ -20,13 +20,21 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
 
     const [currentBooking, setCurrentBooking] = React.useState(booking);
     const [loading, setLoading] = React.useState(true);
+    const [refreshing, setRefreshing] = React.useState(false);
     const [commissionValue, setCommissionValue] = React.useState('');
     const [isEditingCommission, setIsEditingCommission] = React.useState(false);
     const [savingCommission, setSavingCommission] = React.useState(false);
+    
+    // New states for provider assignment and restart
+    const [tradespeople, setTradespeople] = React.useState([]);
+    const [selectedProvider, setSelectedProvider] = React.useState('');
+    const [updating, setUpdating] = React.useState(false);
+    const [assignModalVisible, setAssignModalVisible] = React.useState(false);
 
     const fetchBookingDetails = async () => {
         if (!booking?.id) return;
         try {
+            if (!refreshing) setLoading(true);
             const res = await api.get(`/api/bookings/${booking.id}`);
             if (res.success) {
                 setCurrentBooking(res.data);
@@ -37,11 +45,27 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
             console.error('Error fetching booking details:', error);
         } finally {
             setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchBookingDetails();
+    };
+
+    const loadTradespeople = async () => {
+        try {
+            const res = await api.get('/api/provider?status=active');
+            if (res.success) setTradespeople(res.data || []);
+        } catch (error) {
+            console.error('Error loading tradespeople:', error);
         }
     };
 
     React.useEffect(() => {
         fetchBookingDetails();
+        loadTradespeople();
     }, []);
 
     const handleSaveCommission = async () => {
@@ -75,6 +99,70 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
         } finally {
             setSavingCommission(false);
         }
+    };
+
+    const handleAssignProvider = async () => {
+        if (!selectedProvider) {
+            Alert.alert('Error', 'Please select a provider.');
+            return;
+        }
+        if (currentBooking.commission_percent == null) {
+            Alert.alert('Warning', 'Set commission first before assigning a provider.');
+            return;
+        }
+
+        setUpdating(true);
+        try {
+            const res = await api.put(`/api/bookings?id=${currentBooking.id}`, {
+                provider_id: selectedProvider,
+                status: 'matching'
+            });
+
+            if (res.success) {
+                Alert.alert('Success', 'Provider assigned and status set to Matching.');
+                setAssignModalVisible(false);
+                fetchBookingDetails();
+            } else {
+                Alert.alert('Error', res.message || 'Failed to assign provider.');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Request failed.');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleRestartBooking = async () => {
+        Alert.alert(
+            'Restart Booking',
+            'This will remove the current provider and reset the status to pending. Proceed?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Restart',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setUpdating(true);
+                        try {
+                            const res = await api.put(`/api/bookings?id=${currentBooking.id}`, {
+                                provider_id: null,
+                                status: 'pending'
+                            });
+                            if (res.success) {
+                                Alert.alert('Success', 'Booking restarted successfully.');
+                                fetchBookingDetails();
+                            } else {
+                                Alert.alert('Error', res.message || 'Failed to restart.');
+                            }
+                        } catch (error) {
+                            Alert.alert('Error', 'Request failed.');
+                        } finally {
+                            setUpdating(false);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const renderImageViewer = () => (
@@ -161,7 +249,13 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                 <View style={{ width: moderateScale(24) }} />
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <ScrollView 
+                showsVerticalScrollIndicator={false} 
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" />
+                }
+            >
                 
                 <View style={styles.mainInfoCard}>
                     <Text style={styles.bookingNumber}>#{currentBooking.booking_number || currentBooking.id}</Text>
@@ -250,6 +344,47 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                 </View>
 
                 <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Provider Assignment</Text>
+                    <View style={styles.card}>
+                        {currentBooking.provider_name ? (
+                            <View style={styles.providerCard}>
+                                <View style={styles.providerHeader}>
+                                    <View style={[styles.iconContainer, { backgroundColor: '#f0fdf4' }]}>
+                                        <Ionicons name="construct" size={moderateScale(20)} color="#16a34a" />
+                                    </View>
+                                    <View style={styles.detailInfo}>
+                                        <Text style={styles.detailLabel}>Assigned Provider</Text>
+                                        <Text style={styles.detailValue}>{currentBooking.provider_name}</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.providerDetails}>
+                                    {!!currentBooking.provider_email && (
+                                        <Text style={styles.providerSubText}>📧 {currentBooking.provider_email}</Text>
+                                    )}
+                                    {!!currentBooking.provider_phone && (
+                                        <Text style={styles.providerSubText}>📱 {currentBooking.provider_phone}</Text>
+                                    )}
+                                </View>
+                            </View>
+                        ) : (
+                            <View style={styles.unassignedContainer}>
+                                <Ionicons name="warning-outline" size={moderateScale(24)} color="#d97706" />
+                                <Text style={styles.unassignedText}>No provider assigned yet.</Text>
+                                <TouchableOpacity 
+                                    style={[styles.assignButton, currentBooking.commission_percent === null && styles.disabledBtn]} 
+                                    onPress={() => setAssignModalVisible(true)}
+                                    disabled={currentBooking.commission_percent === null}
+                                >
+                                    <Text style={styles.assignButtonText}>
+                                        {currentBooking.commission_percent === null ? 'Set Commission First' : 'Assign Manually'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+                </View>
+
+                <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Customer Information</Text>
                     <View style={styles.card}>
                         <View style={styles.detailItem}>
@@ -284,6 +419,47 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                                     </View>
                                 </View>
                             </>
+                        )}
+                    </View>
+                </View>
+
+                {currentBooking.status === 'disputed' && (
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: '#dc2626' }]}>Dispute Resolution</Text>
+                        <View style={styles.card}>
+                            <Text style={styles.disputeNote}>This booking is currently disputed. You can restart it to remove the provider and allow others to pick it up.</Text>
+                            <TouchableOpacity 
+                                style={styles.restartButton} 
+                                onPress={handleRestartBooking}
+                                disabled={updating}
+                            >
+                                {updating ? <ActivityIndicator color="#fff" /> : <Text style={styles.restartButtonText}>Restart Booking</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Status Timeline</Text>
+                    <View style={styles.card}>
+                        {currentBooking.status_history && currentBooking.status_history.length > 0 ? (
+                            <View style={styles.timeline}>
+                                {currentBooking.status_history.map((item, index) => (
+                                    <View key={index} style={styles.timelineItem}>
+                                        <View style={styles.timelineLine}>
+                                            <View style={styles.timelineDot} />
+                                            {index !== currentBooking.status_history.length - 1 && <View style={styles.timelineConnector} />}
+                                        </View>
+                                        <View style={styles.timelineContent}>
+                                            <Text style={styles.timelineStatus}>{item.status.replace('_', ' ').toUpperCase()}</Text>
+                                            {!!item.notes && <Text style={styles.timelineNotes}>{item.notes}</Text>}
+                                            <Text style={styles.timelineDate}>{new Date(item.created_at).toLocaleString()}</Text>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        ) : (
+                            <Text style={styles.emptyTimeline}>No history available.</Text>
                         )}
                     </View>
                 </View>
@@ -435,6 +611,45 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                         </View>
                 </View>
                 </View>
+                <Modal
+                    visible={assignModalVisible}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => setAssignModalVisible(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.assignModal}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Assign Provider</Text>
+                                <TouchableOpacity onPress={() => setAssignModalVisible(false)}>
+                                    <Ionicons name="close" size={24} color="#64748b" />
+                                </TouchableOpacity>
+                            </View>
+                            <ScrollView style={styles.providerList}>
+                                {tradespeople.map((p) => (
+                                    <TouchableOpacity 
+                                        key={p.id} 
+                                        style={[styles.providerItem, selectedProvider === p.id && styles.selectedProviderItem]}
+                                        onPress={() => setSelectedProvider(p.id)}
+                                    >
+                                        <View style={styles.providerInfoRow}>
+                                            <Text style={styles.providerItemName}>{p.name || `${p.first_name} ${p.last_name}`}</Text>
+                                            {p.rating && <Text style={styles.providerItemRating}>⭐ {parseFloat(p.rating).toFixed(1)}</Text>}
+                                        </View>
+                                        <Text style={styles.providerItemSub}>{p.email}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                            <TouchableOpacity 
+                                style={[styles.confirmAssignBtn, (!selectedProvider || updating) && styles.disabledBtn]}
+                                onPress={handleAssignProvider}
+                                disabled={!selectedProvider || updating}
+                            >
+                                {updating ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmAssignBtnText}>Confirm Assignment</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
                 {renderImageViewer()}
             </ScrollView>
         </SafeAreaView>

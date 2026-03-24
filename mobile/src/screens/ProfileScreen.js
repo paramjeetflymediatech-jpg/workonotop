@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
@@ -8,12 +8,19 @@ import { API_BASE_URL } from '../config';
 import LogoutConfirmationModal from '../components/LogoutConfirmationModal';
 
 const ProfileScreen = ({ navigation }) => {
-    const { user, logout } = useAuth();
+    const { user, logout, refreshUser } = useAuth();
     const insets = useSafeAreaInsets();
 
     const firstName = user?.first_name || user?.name || 'User';
 
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await refreshUser();
+        setRefreshing(false);
+    };
 
     const handleLogoutPress = () => setLogoutModalVisible(true);
     const handleLogoutCancel = () => setLogoutModalVisible(false);
@@ -23,7 +30,13 @@ const ProfileScreen = ({ navigation }) => {
     };
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+            style={styles.container} 
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" />
+            }
+        >
             <TouchableOpacity 
                 onPress={() => navigation.goBack()}
                 style={{ position: 'absolute', top: verticalScale(20), left: 0, zIndex: 10, padding: 10 }}

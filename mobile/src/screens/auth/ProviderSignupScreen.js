@@ -73,9 +73,10 @@ const ProviderSignupScreen = ({ navigation }) => {
             return;
         }
 
-        // Password validation (min 6 chars)
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters.');
+        // Password validation (min 8 chars, alphabets + special chars)
+        const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+        if (!passwordRegex.test(password)) {
+            setError('Password must be at least 8 characters and contain both alphabets and special characters.');
             setShowError(true);
             return;
         }
@@ -243,14 +244,14 @@ const ProviderSignupScreen = ({ navigation }) => {
                 message="Please check your email to verify your account before logging in."
                 onOk={() => {
                     setShowSuccess(false);
-                    navigation.navigate('EmailVerification', { 
+                    navigation.navigate('EmailVerification', {
                         email: formData.email.toLowerCase().trim(),
-                        type: 'pro' 
+                        type: 'pro'
                     });
                 }}
             />
 
-            <ErrorModal 
+            <ErrorModal
                 visible={showError}
                 title="Registration Error"
                 message={error}

@@ -86,8 +86,9 @@
 //     if (password !== confirmPassword) {
 //       setAuthError('Passwords do not match'); return;
 //     }
-//     if (password.length < 8) {
-//       setAuthError('Password must be at least 8 characters'); return;
+//     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+//     if (!passwordRegex.test(password)) {
+//       setAuthError('Password must be at least 8 characters and contain both alphabets and special characters'); return;
 //     }
 
 //     // Phone check
@@ -536,8 +537,9 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
     },
     phone: (v) => validatePhone(v),
     password: (v) => {
+      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
       if (!v)             return 'Password is required';
-      if (v.length < 8)   return 'Minimum 8 characters';
+      if (!passwordRegex.test(v)) return 'Must be 8+ chars with alphabets & special chars';
       if (v.length > 128) return 'Password is too long';
       return null;
     },

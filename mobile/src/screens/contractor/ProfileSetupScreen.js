@@ -67,7 +67,7 @@ const ProfileSetupScreen = ({ navigation }) => {
         // 2. Bio length validation (50-500)
         const bioLength = bio.trim().length;
         if (bioLength < 50) {
-            showPremiumAlert(`Professional bio must be at least 50 characters. Current: ${bioLength}`, 'Bio Too Short');
+            showPremiumAlert(`Professional bio must be at least 50 characters. Current: ${bioLength}`, 'Invalid Bio');
             return;
         }
 

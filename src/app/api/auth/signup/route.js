@@ -142,19 +142,20 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function POST(request) {
   try {
-    const { 
-      first_name, 
-      last_name, 
-      email,   
-      phone, 
+    const {
+      first_name,
+      last_name,
+      email,
+      phone,
       password,
       hear_about,
-      receive_offers 
+      receive_offers
     } = await request.json()
 
-    if (!first_name || !last_name || !email || !password) {
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+    if (!passwordRegex.test(password)) {
       return NextResponse.json(
-        { success: false, message: 'All required fields must be filled' },
+        { success: false, message: 'Password must be at least 8 characters and contain both alphabets and special characters' },
         { status: 400 }
       )
     }
@@ -170,7 +171,7 @@ export async function POST(request) {
 
     // ✅ Check if email exists in service_providers table
     const existingProvider = await query(
-      'SELECT id FROM service_providers WHERE email = ?', 
+      'SELECT id FROM service_providers WHERE email = ?',
       [email]
     )
     if (existingProvider.length > 0) {
@@ -198,12 +199,12 @@ export async function POST(request) {
        (first_name, last_name, email, phone, password_hash, hear_about, receive_offers, role) 
        VALUES (?, ?, ?, ?, ?, ?, ?, 'user')`,
       [
-        first_name, 
-        last_name, 
-        email.toLowerCase().trim(), 
-        phone || null, 
-        hashedPassword, 
-        hear_about || null, 
+        first_name,
+        last_name,
+        email.toLowerCase().trim(),
+        phone || null,
+        hashedPassword,
+        hear_about || null,
         receive_offers ? 1 : 0
       ]
     )
@@ -214,12 +215,12 @@ export async function POST(request) {
     )
 
     const token = jwt.sign(
-      { 
-        id: newUser[0].id, 
+      {
+        id: newUser[0].id,
         email: newUser[0].email,
         first_name: newUser[0].first_name,
         last_name: newUser[0].last_name,
-        role: 'user' 
+        role: 'user'
       },
       JWT_SECRET,
       { expiresIn: '7d' }

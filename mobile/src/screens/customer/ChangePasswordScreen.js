@@ -47,15 +47,16 @@ const ChangePasswordScreen = ({ navigation }) => {
             return;
         }
 
-        if (newPassword.length < 6) {
-            Alert.alert('Error', 'New password must be at least 6 characters.');
+        const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            Alert.alert('Error', 'New password must be at least 8 characters and contain both alphabets and special characters.');
             return;
         }
 
         try {
             setLoading(true);
             const res = await apiService.auth.changePassword({ oldPassword, newPassword }, token);
-            
+
             if (res.success) {
                 Alert.alert('Success', 'Password updated successfully.', [
                     { text: 'OK', onPress: () => navigation.goBack() }
@@ -73,7 +74,7 @@ const ChangePasswordScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
             >
@@ -142,8 +143,8 @@ const ChangePasswordScreen = ({ navigation }) => {
                         </View>
                     </View>
 
-                    <TouchableOpacity 
-                        style={[styles.btn, loading && styles.btnDisabled]} 
+                    <TouchableOpacity
+                        style={[styles.btn, loading && styles.btnDisabled]}
                         onPress={handleUpdate}
                         disabled={loading}
                     >

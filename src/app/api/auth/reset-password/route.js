@@ -14,8 +14,9 @@ export async function POST(request) {
             return NextResponse.json({ success: false, message: 'Valid token or Email/OTP required' }, { status: 400 })
         }
 
-        if (newPassword.length < 8) {
-            return NextResponse.json({ success: false, message: 'Password must be at least 8 characters' }, { status: 400 })
+        const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            return NextResponse.json({ success: false, message: 'Password must be at least 8 characters and contain both alphabets and special characters' }, { status: 400 })
         }
 
         // Find user with matching valid token/OTP

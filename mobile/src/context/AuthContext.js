@@ -183,6 +183,22 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    const refreshUser = useCallback(async () => {
+        if (!token) return;
+        try {
+            const response = await apiService.auth.me(token);
+            if (response.success && response.user) {
+                const freshUser = response.user;
+                if (freshUser.role === 'user') freshUser.role = 'customer';
+                setUser(freshUser);
+                await AsyncStorage.setItem('user', JSON.stringify(freshUser));
+                return freshUser;
+            }
+        } catch (error) {
+            console.error('[AuthContext] Manual refresh failed:', error);
+        }
+    }, [token]);
+
     const updateUser = useCallback(async (updatedData) => {
         try {
             // 1. Update In-Memory State
@@ -211,8 +227,9 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         logout,
-        updateUser
-    }), [user, token, loading, login, logout, updateUser]);
+        updateUser,
+        refreshUser
+    }), [user, token, loading, login, logout, updateUser, refreshUser]);
 
     return (
         <AuthContext.Provider value={value}>

@@ -69,7 +69,7 @@ export async function PUT(request) {
         return NextResponse.json({ success: true, message: 'Status updated' })
       }
       // otherwise admin is updating provider profile fields
-      const { name, email, phone, specialty, city, rating, total_jobs, bio, location } = body
+      const { name, email, phone, password, specialty, city, rating, total_jobs, bio, location } = body
       if (!name || !email || !phone) {
         return NextResponse.json({ success: false, message: 'Name, email and phone are required' }, { status: 400 })
       }
@@ -81,18 +81,39 @@ export async function PUT(request) {
       if (existing.length > 0) {
         return NextResponse.json({ success: false, message: 'Email already in use' }, { status: 400 })
       }
-      await execute(
-        `UPDATE service_providers SET
-           name = ?, email = ?, phone = ?, specialty = ?,
-           city = ?, rating = COALESCE(?, rating),
-           total_jobs = COALESCE(?, total_jobs),
-           bio = ?, location = ?, updated_at = NOW()
-         WHERE id = ?`,
-        [name, email, phone, specialty || null, city || null,
-         rating != null ? parseFloat(rating) : null,
-         total_jobs != null ? parseInt(total_jobs) : null,
-         bio || null, location || null, id]
-      )
+
+      let hashedPassword = null
+      if (password) {
+        const bcrypt = await import('bcryptjs')
+        hashedPassword = await bcrypt.hash(password, 10)
+      }
+      if (hashedPassword) {
+        await execute(
+          `UPDATE service_providers SET
+             name = ?, email = ?, phone = ?, password = ?, specialty = ?,
+             city = ?, rating = COALESCE(?, rating),
+             total_jobs = COALESCE(?, total_jobs),
+             bio = ?, location = ?, updated_at = NOW()
+           WHERE id = ?`,
+          [name, email, phone, hashedPassword, specialty || null, city || null,
+            rating != null ? parseFloat(rating) : null,
+            total_jobs != null ? parseInt(total_jobs) : null,
+            bio || null, location || null, id]
+        )
+      } else {
+        await execute(
+          `UPDATE service_providers SET
+             name = ?, email = ?, phone = ?, specialty = ?,
+             city = ?, rating = COALESCE(?, rating),
+             total_jobs = COALESCE(?, total_jobs),
+             bio = ?, location = ?, updated_at = NOW()
+           WHERE id = ?`,
+          [name, email, phone, specialty || null, city || null,
+            rating != null ? parseFloat(rating) : null,
+            total_jobs != null ? parseInt(total_jobs) : null,
+            bio || null, location || null, id]
+        )
+      }
       return NextResponse.json({ success: true, message: 'Provider updated' })
     }
 

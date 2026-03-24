@@ -36,9 +36,10 @@ const ProvidersScreen = ({ navigation }) => {
     const [viewerVisible, setViewerVisible] = useState(false);
     const [viewerImage, setViewerImage] = useState(null);
     const [editMode, setEditMode] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '' });
     const [updating, setUpdating] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const statuses = [
         { id: 'all', label: 'All' },
@@ -91,13 +92,13 @@ const ProvidersScreen = ({ navigation }) => {
     const handleAction = (providerId, action, reason) => {
         let title = '';
         let message = '';
-        
+
         if (action === 'approve') {
             title = 'Approve Provider';
             message = 'Are you sure you want to approve this provider?';
         } else if (action === 'reject') {
             title = 'Reject Provider';
-            message = reason 
+            message = reason
                 ? `Are you sure you want to reject this provider for: "${reason}"?`
                 : 'Are you sure you want to reject this provider?';
         } else if (action === 'reject_docs') {
@@ -129,7 +130,12 @@ const ProvidersScreen = ({ navigation }) => {
 
                         if (res.success) {
                             Alert.alert('Success', `Action completed successfully`);
-                            setModalVisible(false);
+                            
+                            // Update selected provider in local state to reflect change in modal immediately
+                            const newStatus = action === 'approve' ? 'active' : (action === 'reject' ? 'rejected' : selectedProvider.status);
+                            const updatedProvider = { ...selectedProvider, status: newStatus };
+                            setSelectedProvider(updatedProvider);
+                            
                             setShowRejectInput(false);
                             setRejectionReason('');
                             fetchProviders();
@@ -204,7 +210,8 @@ const ProvidersScreen = ({ navigation }) => {
         setFormData({
             name: provider.name || '',
             email: provider.email || '',
-            phone: provider.phone || ''
+            phone: provider.phone || '',
+            password: ''
         });
         setEditMode(false);
         setProviderDocs([]);
@@ -445,6 +452,26 @@ const ProvidersScreen = ({ navigation }) => {
                                             placeholder="Phone"
                                             keyboardType="phone-pad"
                                         />
+                                        <Text style={styles.inputLabel}>New Password</Text>
+                                        <View style={styles.passwordInputContainer}>
+                                            <TextInput
+                                                style={styles.passwordTextInput}
+                                                value={formData.password}
+                                                onChangeText={(text) => setFormData({ ...formData, password: text })}
+                                                placeholder="New Password"
+                                                secureTextEntry={!showPassword}
+                                            />
+                                            <TouchableOpacity
+                                                style={styles.eyeButton}
+                                                onPress={() => setShowPassword(!showPassword)}
+                                            >
+                                                <Ionicons
+                                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                                    size={moderateScale(20)}
+                                                    color="#64748b"
+                                                />
+                                            </TouchableOpacity>
+                                        </View>
 
                                         <View style={styles.editActionRow}>
                                             <TouchableOpacity
@@ -614,9 +641,23 @@ const ProvidersScreen = ({ navigation }) => {
                                             </View>
                                         </View>
 
-                                        {(selectedProvider.status === 'pending' || (selectedProvider.status === 'inactive' && selectedProvider.onboarding_completed === 1)) && (
+                                        {(selectedProvider.status === 'pending' || (selectedProvider.status === 'inactive' && selectedProvider.onboarding_completed === 1) || selectedProvider.status === 'active' || selectedProvider.status === 'rejected') && (
                                             <View style={{ marginTop: verticalScale(10) }}>
-                                                {!showRejectInput ? (
+                                                {selectedProvider.status === 'active' ? (
+                                                    <View style={[styles.modalActionRow, { justifyContent: 'center' }]}>
+                                                        <View style={[styles.modalActionBtn, styles.approveBtn, { opacity: 0.8, flexDirection: 'row', gap: 8 }]}>
+                                                            <Ionicons name="checkmark-circle" size={moderateScale(20)} color="#fff" />
+                                                            <Text style={styles.actionBtnText}>Already Approved</Text>
+                                                        </View>
+                                                    </View>
+                                                ) : selectedProvider.status === 'rejected' ? (
+                                                    <View style={[styles.modalActionRow, { justifyContent: 'center' }]}>
+                                                        <View style={[styles.modalActionBtn, styles.rejectBtn, { opacity: 0.8, flexDirection: 'row', gap: 8 }]}>
+                                                            <Ionicons name="close-circle" size={moderateScale(20)} color="#fff" />
+                                                            <Text style={styles.actionBtnText}>Provider Rejected</Text>
+                                                        </View>
+                                                    </View>
+                                                ) : !showRejectInput ? (
                                                     <View style={styles.modalActionRow}>
                                                         <TouchableOpacity
                                                             style={[styles.modalActionBtn, styles.approveBtn]}
@@ -640,7 +681,7 @@ const ProvidersScreen = ({ navigation }) => {
                                                                 setShowRejectInput(true);
                                                             }}
                                                         >
-                                                            <Text style={styles.actionBtnText}>Reject Provider</Text>
+                                                            <Text style={styles.actionBtnText}>Reject</Text>
                                                         </TouchableOpacity>
                                                     </View>
                                                 ) : (
@@ -658,7 +699,7 @@ const ProvidersScreen = ({ navigation }) => {
                                                         />
                                                         <TouchableOpacity
                                                             style={[
-                                                                styles.rejectSubmitBtn, 
+                                                                styles.rejectSubmitBtn,
                                                                 rejectionType === 'reject_docs' && { backgroundColor: '#ea580c' },
                                                                 { opacity: rejectionReason.trim() ? 1 : 0.6 }
                                                             ]}
@@ -1100,6 +1141,28 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(15),
         color: '#0f172a',
         marginBottom: verticalScale(15),
+    },
+    passwordInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: moderateScale(10),
+        marginBottom: verticalScale(15),
+        paddingLeft: scale(12),
+    },
+    passwordTextInput: {
+        flex: 1,
+        paddingVertical: scale(12),
+        fontSize: moderateScale(15),
+        color: '#0f172a',
+    },
+    eyeButton: {
+        paddingRight: scale(12),
+        paddingLeft: scale(8),
+        height: '100%',
+        justifyContent: 'center',
     },
     editActionRow: {
         flexDirection: 'row',

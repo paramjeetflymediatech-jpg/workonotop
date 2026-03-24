@@ -192,6 +192,8 @@ export const apiService = {
         onboarding: {
             updateProfile: (data, token) => request('/api/provider/onboarding/profile', { method: 'POST', body: JSON.stringify(data), token }),
             uploadDocument: (data, token) => request('/api/provider/onboarding/upload-document', { method: 'POST', body: data, token }),
+            updateStep: (step, token) => request('/api/provider/onboarding/update-step', { method: 'POST', body: JSON.stringify({ step }), token }),
+            getDocuments: (token) => request('/api/provider/onboarding/documents', { method: 'GET', token }),
             complete: (token) => request('/api/provider/onboarding/complete', { method: 'POST', token }),
             createStripeAccount: (data, token) => request('/api/provider/onboarding/create-stripe-account', { method: 'POST', body: JSON.stringify(data), token }),
             stripeComplete: (data, token) => request('/api/provider/onboarding/stripe-complete', { method: 'POST', body: JSON.stringify(data), token }),

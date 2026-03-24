@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { scale, verticalScale, moderateScale } from '../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { apiService } from '../services/api';
@@ -8,9 +8,9 @@ import { API_BASE_URL } from '../config';
 
 const DetailsScreen = ({ navigation, route }) => {
     const { user } = useAuth();
-    const { service, bookingId } = route.params || {};
     const [data, setData] = useState(service || null);
     const [loading, setLoading] = useState(!service);
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         if (bookingId && !service) {
@@ -20,6 +20,7 @@ const DetailsScreen = ({ navigation, route }) => {
 
     const fetchBookingDetails = async () => {
         try {
+            if (!refreshing) setLoading(true);
             const res = await apiService.customer.getBookingDetails(bookingId, user?.id, user?.token);
             if (res && res.data) {
                 // Backend returns an array [booking], take the first one
@@ -30,6 +31,14 @@ const DetailsScreen = ({ navigation, route }) => {
             console.error("Error fetching details", error);
         } finally {
             setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    const onRefresh = () => {
+        if (bookingId) {
+            setRefreshing(true);
+            fetchBookingDetails();
         }
     };
 
@@ -56,7 +65,12 @@ const DetailsScreen = ({ navigation, route }) => {
 
     return (
         <View style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView 
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    bookingId ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" /> : null
+                }
+            >
                 {(data.image_url || data.service_image) ? (
                     <Image 
                         source={{ 

@@ -186,11 +186,12 @@ export async function POST(request) {
       );
     }
 
-    if (password.length < 6) {
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+    if (!passwordRegex.test(password)) {
       return NextResponse.json(
-        { success: false, message: 'Password must be at least 6 characters' },
+        { success: false, message: 'Password must be at least 8 characters and contain both alphabets and special characters' },
         { status: 400 }
-      );
+      )
     }
 
     // Check if email exists in service_providers table
@@ -207,7 +208,7 @@ export async function POST(request) {
 
     // ✅ Check if email exists in users (customer) table
     const existingUser = await execute(
-      'SELECT id FROM users WHERE email = ?', 
+      'SELECT id FROM users WHERE email = ?',
       [email]
     );
     if (existingUser.length > 0) {
@@ -250,7 +251,7 @@ export async function POST(request) {
       // 📱 Mobile Flow: Generate 6-digit OTP
       otp = Math.floor(100000 + Math.random() * 900000).toString();
       const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-      
+
       await connection.execute(
         `UPDATE service_providers SET reset_token = ?, reset_token_expiry = ? WHERE id = ?`,
         [otp, otpExpiry, providerId]
@@ -283,7 +284,7 @@ export async function POST(request) {
           text: `Welcome to WorkOnTap! Verify your email: ${process.env.NEXT_PUBLIC_APP_URL}/provider/verify-email?token=${finalToken}`,
         };
       }
-      
+
       const emailResult = await sendEmail(emailOptions);
       if (emailResult.success) {
         console.log('✅ Verification email sent to:', email);

@@ -14,7 +14,7 @@ import {
     Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { moderateScale, verticalScale } from '../../utils/responsive';
+import { moderateScale, scale, verticalScale } from '../../utils/responsive';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
@@ -50,10 +50,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
         job_time_slot: '',
         address_line1: user?.address || '',
         address_line2: '',
-        city: '',
-        postal_code: '',
         job_description: '',
-        instructions: '',
         timing_constraints: '',
         parking_access: false,
         elevator_access: false,
@@ -128,17 +125,23 @@ const CreateBookingScreen = ({ navigation, route }) => {
     };
 
     const nextStep = async () => {
-        if (step === 1 && (!bookingData.address_line1 || !bookingData.postal_code || !bookingData.city)) {
-            Alert.alert('Fields Required', 'Address, City and Postal Code are required.');
+        if (step === 1 && !bookingData.address_line1) {
+            Alert.alert('Fields Required', 'Service Address is required.');
             return;
         }
         if (step === 2 && (!bookingData.job_date || !bookingData.job_time_slot)) {
             Alert.alert('Selection Required', 'Please select a date and time slot.');
             return;
         }
-        if (step === 3 && (!bookingData.phone || !bookingData.job_description)) {
-            Alert.alert('Fields Required', 'Phone and Job Description are required.');
-            return;
+        if (step === 3) {
+            if (!bookingData.phone || !bookingData.job_description || !bookingData.timing_constraints) {
+                Alert.alert('Fields Required', 'Phone, Job Description, and Timing Constraints are required.');
+                return;
+            }
+            if (bookingData.job_description.trim().length < 50) {
+                Alert.alert('Details Needed', 'Please provide a more detailed job description (at least 50 characters).');
+                return;
+            }
         }
 
         if (step === 4) {
@@ -259,30 +262,9 @@ const CreateBookingScreen = ({ navigation, route }) => {
                 style={styles.input}
                 value={bookingData.address_line1}
                 onChangeText={txt => setBookingData({ ...bookingData, address_line1: txt })}
-                placeholder="Street address"
+                placeholder="Full address (Street, City, Province, Postal Code)"
             />
 
-            <View style={styles.row}>
-                <View style={{ flex: 1, marginRight: 10 }}>
-                    <Text style={styles.label}>City *</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={bookingData.city}
-                        onChangeText={txt => setBookingData({ ...bookingData, city: txt })}
-                        placeholder="e.g. Surrey"
-                    />
-                </View>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.label}>Postal Code *</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={bookingData.postal_code}
-                        onChangeText={txt => setBookingData({ ...bookingData, postal_code: txt })}
-                        placeholder="T2P 2M1"
-                        autoCapitalize="characters"
-                    />
-                </View>
-            </View>
             <View style={{ height: 40 }} />
         </ScrollView>
     );
@@ -346,6 +328,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
             />
 
             <Text style={styles.label}>Job Description *</Text>
+            <Text style={styles.labelHelper}>Please describe the job in detail (at least 50 characters).</Text>
             <TextInput
                 style={[styles.input, styles.textArea]}
                 value={bookingData.job_description}
@@ -356,6 +339,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
             />
 
             <Text style={styles.label}>Job Photos (Optional)</Text>
+            <Text style={styles.labelHelper}>You can upload up to 5 photos to help the professional understand the job.</Text>
             <View style={styles.photoList}>
                 {bookingData.photos.map((url, index) => (
                     <View key={index} style={styles.photoWrapper}>
@@ -375,7 +359,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
                 )}
             </View>
 
-            <Text style={styles.label}>Timing Constraints</Text>
+            <Text style={styles.label}>Timing Constraints *</Text>
             <TextInput
                 style={styles.input}
                 value={bookingData.timing_constraints}
@@ -383,13 +367,6 @@ const CreateBookingScreen = ({ navigation, route }) => {
                 placeholder="e.g. Must be done before 2 PM"
             />
 
-            <Text style={styles.label}>Special Instructions</Text>
-            <TextInput
-                style={styles.input}
-                value={bookingData.instructions}
-                onChangeText={txt => setBookingData({ ...bookingData, instructions: txt })}
-                placeholder="Gate code, hidden key, etc."
-            />
 
             <View style={styles.switchRow}>
                 <Text style={styles.switchLabel}>Street Parking Available?</Text>
@@ -449,7 +426,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     <Text style={styles.reviewLabel}>LOCATION</Text>
                     <View style={styles.reviewRow}>
                         <Ionicons name="location-outline" size={16} color="#64748b" />
-                        <Text style={styles.reviewText}>{bookingData.address_line1}, {bookingData.city}, {bookingData.postal_code}</Text>
+                        <Text style={styles.reviewText}>{bookingData.address_line1}</Text>
                     </View>
                 </View>
 
@@ -467,21 +444,13 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     </View>
                 ) : null}
 
-                {(bookingData.timing_constraints || bookingData.instructions) ? (
+                {bookingData.timing_constraints ? (
                     <View style={styles.reviewSection}>
                         <Text style={styles.reviewLabel}>EXTRA DETAILS</Text>
-                        {bookingData.timing_constraints ? (
-                            <View style={styles.reviewRow}>
-                                <Ionicons name="hourglass-outline" size={14} color="#64748b" />
-                                <Text style={styles.reviewText}>Limits: {bookingData.timing_constraints}</Text>
-                            </View>
-                        ) : null}
-                        {bookingData.instructions ? (
-                            <View style={styles.reviewRow}>
-                                <Ionicons name="information-circle-outline" size={14} color="#64748b" />
-                                <Text style={styles.reviewText}>Notes: {bookingData.instructions}</Text>
-                            </View>
-                        ) : null}
+                        <View style={styles.reviewRow}>
+                            <Ionicons name="hourglass-outline" size={14} color="#64748b" />
+                            <Text style={styles.reviewText}>Limits: {bookingData.timing_constraints}</Text>
+                        </View>
                     </View>
                 ) : null}
 
@@ -629,62 +598,63 @@ const CreateBookingScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
     header: { padding: moderateScale(20), marginTop: verticalScale(25), borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#fff' },
-    progressTrack: { height: 6, backgroundColor: '#f1f5f9', borderRadius: 3, marginBottom: 12 },
-    progressBar: { height: '100%', backgroundColor: PRIMARY, borderRadius: 3 },
+    progressTrack: { height: moderateScale(6), backgroundColor: '#f1f5f9', borderRadius: moderateScale(3), marginBottom: verticalScale(12) },
+    progressBar: { height: '100%', backgroundColor: PRIMARY, borderRadius: moderateScale(3) },
     headerInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    stepIndicator: { fontSize: 12, color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' },
-    stepTitle: { fontSize: 16, fontWeight: 'bold', color: '#0f172a' },
+    stepIndicator: { fontSize: moderateScale(12), color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' },
+    stepTitle: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#0f172a' },
 
     stepContainer: { flex: 1, padding: moderateScale(20) },
-    sectionTitle: { fontSize: 22, fontWeight: '800', color: '#0f172a', marginBottom: 20 },
-    label: { fontSize: 14, fontWeight: 'bold', color: '#475569', marginBottom: 8, marginTop: 15 },
+    sectionTitle: { fontSize: moderateScale(22), fontWeight: '800', color: '#0f172a', marginBottom: verticalScale(20) },
+    label: { fontSize: moderateScale(14), fontWeight: 'bold', color: '#0f172a', marginBottom: verticalScale(2), marginTop: verticalScale(15) },
+    labelHelper: { fontSize: moderateScale(12), color: '#64748b', marginBottom: verticalScale(10) },
     dateSelector: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 18,
+        padding: moderateScale(18),
         backgroundColor: '#f8fafc',
-        borderRadius: 16,
+        borderRadius: moderateScale(16),
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        marginBottom: 10,
+        marginBottom: verticalScale(10),
     },
-    dateText: { marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#1e293b' },
-    slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    dateText: { marginLeft: scale(12), fontSize: moderateScale(16), fontWeight: '600', color: '#1e293b' },
+    slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(10) },
     slotBtn: {
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderRadius: 12,
+        paddingHorizontal: scale(16),
+        paddingVertical: verticalScale(12),
+        borderRadius: moderateScale(12),
         backgroundColor: '#fff',
         borderWidth: 1,
         borderColor: '#e2e8f0',
         minWidth: '45%',
     },
     slotBtnActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
-    slotText: { color: '#64748b', fontSize: 14, textAlign: 'center' },
+    slotText: { color: '#64748b', fontSize: moderateScale(14), textAlign: 'center' },
     slotTextActive: { color: '#fff', fontWeight: 'bold' },
 
     input: {
-        padding: 15,
+        padding: moderateScale(15),
         backgroundColor: '#f8fafc',
-        borderRadius: 12,
+        borderRadius: moderateScale(12),
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        fontSize: 16,
+        fontSize: moderateScale(16),
         color: '#1e293b',
     },
-    textArea: { height: 120, textAlignVertical: 'top' },
-    row: { flexDirection: 'row', marginTop: 5 },
-    switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, paddingVertical: 5 },
-    switchLabel: { fontSize: 16, color: '#1e293b', fontWeight: '500' },
+    textArea: { height: verticalScale(120), textAlignVertical: 'top' },
+    row: { flexDirection: 'row', marginTop: verticalScale(5) },
+    switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: verticalScale(20), paddingVertical: verticalScale(5) },
+    switchLabel: { fontSize: moderateScale(16), color: '#1e293b', fontWeight: '500' },
 
-    photoList: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
+    photoList: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(10), marginTop: verticalScale(10) },
     photoWrapper: { position: 'relative' },
-    photo: { width: 80, height: 80, borderRadius: 12 },
-    removePhotoBtn: { position: 'absolute', top: -5, right: -5, backgroundColor: '#fff', borderRadius: 10 },
+    photo: { width: scale(80), height: scale(80), borderRadius: moderateScale(12) },
+    removePhotoBtn: { position: 'absolute', top: -verticalScale(5), right: -scale(5), backgroundColor: '#fff', borderRadius: moderateScale(10) },
     addPhotoBtn: {
-        width: 80,
-        height: 80,
-        borderRadius: 12,
+        width: scale(80),
+        height: scale(80),
+        borderRadius: moderateScale(12),
         borderWidth: 2,
         borderStyle: 'dashed',
         borderColor: '#cbd5e1',
@@ -692,12 +662,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#f8fafc'
     },
-    addPhotoText: { fontSize: 10, color: PRIMARY, fontWeight: 'bold', marginTop: 5 },
+    addPhotoText: { fontSize: moderateScale(10), color: PRIMARY, fontWeight: 'bold', marginTop: verticalScale(5) },
 
     reviewCard: {
-        padding: 20,
+        padding: moderateScale(20),
         backgroundColor: '#f8fafc',
-        borderRadius: 24,
+        borderRadius: moderateScale(24),
         borderWidth: 1,
         borderColor: '#e2e8f0',
         shadowColor: '#000',
@@ -707,67 +677,67 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-    reviewTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', flex: 1 },
-    reviewPrice: { fontSize: 20, fontWeight: 'bold', color: PRIMARY },
-    divider: { height: 1, backgroundColor: '#e2e8f0', marginVertical: 20 },
-    reviewSection: { marginBottom: 15 },
-    reviewLabel: { fontSize: 10, fontWeight: '900', color: '#94a3b8', letterSpacing: 1, marginBottom: 5 },
-    reviewRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-    reviewText: { marginLeft: 8, fontSize: 15, color: '#334155', fontWeight: '500' },
+    reviewTitle: { fontSize: moderateScale(18), fontWeight: 'bold', color: '#0f172a', flex: 1 },
+    reviewPrice: { fontSize: moderateScale(20), fontWeight: 'bold', color: PRIMARY },
+    divider: { height: 1, backgroundColor: '#e2e8f0', marginVertical: verticalScale(20) },
+    reviewSection: { marginBottom: verticalScale(15) },
+    reviewLabel: { fontSize: moderateScale(10), fontWeight: '900', color: '#94a3b8', letterSpacing: 1, marginBottom: verticalScale(5) },
+    reviewRow: { flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(5) },
+    reviewText: { marginLeft: scale(8), fontSize: moderateScale(15), color: '#334155', fontWeight: '500' },
 
-    photoListMini: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 5 },
-    photoMini: { width: 45, height: 45, borderRadius: 8 },
+    photoListMini: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(6), marginTop: verticalScale(5) },
+    photoMini: { width: scale(45), height: scale(45), borderRadius: moderateScale(8) },
 
     /* Payment Card */
     paymentCard: {
         backgroundColor: '#f8fafc',
-        borderRadius: 20,
-        padding: 20,
+        borderRadius: moderateScale(20),
+        padding: moderateScale(20),
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        marginBottom: 20,
+        marginBottom: verticalScale(20),
     },
-    paymentCardTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', marginBottom: 15 },
-    paymentRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-    paymentLabel: { fontSize: 14, color: '#64748b' },
-    paymentValue: { fontSize: 14, fontWeight: '600', color: '#0f172a' },
-    totalRow: { borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 15, marginTop: 5 },
-    totalLabel: { fontSize: 16, fontWeight: 'bold', color: '#0f172a' },
-    totalPrice: { fontSize: 20, fontWeight: 'bold', color: PRIMARY },
-    paymentNote: { fontSize: 12, color: '#94a3b8', marginTop: 15, fontStyle: 'italic', lineHeight: 18 },
+    paymentCardTitle: { fontSize: moderateScale(18), fontWeight: 'bold', color: '#0f172a', marginBottom: verticalScale(15) },
+    paymentRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: verticalScale(10) },
+    paymentLabel: { fontSize: moderateScale(14), color: '#64748b' },
+    paymentValue: { fontSize: moderateScale(14), fontWeight: '600', color: '#0f172a' },
+    totalRow: { borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: verticalScale(15), marginTop: verticalScale(5) },
+    totalLabel: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#0f172a' },
+    totalPrice: { fontSize: moderateScale(20), fontWeight: 'bold', color: PRIMARY },
+    paymentNote: { fontSize: moderateScale(12), color: '#94a3b8', marginTop: verticalScale(15), fontStyle: 'italic', lineHeight: moderateScale(18) },
 
     infobox: {
         flexDirection: 'row',
         backgroundColor: '#f0fdfa',
-        padding: 18,
-        borderRadius: 16,
+        padding: moderateScale(18),
+        borderRadius: moderateScale(16),
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#ccfbf1',
     },
-    infoboxText: { flex: 1, marginLeft: 12, fontSize: 13, color: '#0f766e', lineHeight: 18, fontWeight: '500' },
+    infoboxText: { flex: 1, marginLeft: scale(12), fontSize: moderateScale(13), color: '#0f766e', lineHeight: moderateScale(18), fontWeight: '500' },
 
     webviewContainer: {
         flex: 1,
-        marginTop: 20,
-        minHeight: 600,
+        marginTop: verticalScale(20),
+        minHeight: verticalScale(600),
         backgroundColor: 'transparent'
     },
 
     footer: {
         flexDirection: 'row',
-        padding: 20,
+        padding: moderateScale(20),
         borderTopWidth: 1,
         borderTopColor: '#f1f5f9',
-        gap: 12,
+        gap: scale(12),
         backgroundColor: '#fff',
     },
-    backBtn: { flex: 1, paddingVertical: 16, alignItems: 'center', borderRadius: 14, backgroundColor: '#f1f5f9' },
-    backBtnText: { fontWeight: 'bold', color: '#475569', fontSize: 16 },
-    nextBtn: { flex: 2, paddingVertical: 16, alignItems: 'center', borderRadius: 14, backgroundColor: PRIMARY },
-    nextBtnText: { fontWeight: 'bold', color: '#fff', fontSize: 16 },
-    confirmBtn: { flex: 2, paddingVertical: 16, alignItems: 'center', borderRadius: 14, backgroundColor: PRIMARY },
-    confirmBtnText: { fontWeight: 'bold', color: '#fff', fontSize: 16 },
+    backBtn: { flex: 1, paddingVertical: verticalScale(16), alignItems: 'center', borderRadius: moderateScale(14), backgroundColor: '#f1f5f9' },
+    backBtnText: { fontWeight: 'bold', color: '#475569', fontSize: moderateScale(16) },
+    nextBtn: { flex: 2, paddingVertical: verticalScale(16), alignItems: 'center', borderRadius: moderateScale(14), backgroundColor: PRIMARY },
+    nextBtnText: { fontWeight: 'bold', color: '#fff', fontSize: moderateScale(16) },
+    confirmBtn: { flex: 2, paddingVertical: verticalScale(16), alignItems: 'center', borderRadius: moderateScale(14), backgroundColor: PRIMARY },
+    confirmBtnText: { fontWeight: 'bold', color: '#fff', fontSize: moderateScale(16) },
     disabledBtn: { opacity: 0.6 },
 
     /* Viewer Styles */

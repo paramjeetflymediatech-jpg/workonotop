@@ -1,12 +1,28 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from '../utils/responsive';
 
 const HomeScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
+    const { refreshUser } = useAuth();
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await refreshUser();
+        setRefreshing(false);
+    };
+
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView 
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" />
+                }
+            >
                 <View style={[styles.header, { marginTop: Math.max(insets.top, verticalScale(10)) }]}>
                 <Text style={styles.title}>WorkOnTop</Text>
                 <Text style={styles.subtitle}>Stay on top of every job</Text>
