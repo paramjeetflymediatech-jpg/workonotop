@@ -164,7 +164,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                         <Text style={styles.subtitle}>
                             {isSubmitted
                                 ? "Check your email for reset instructions."
-                                : `Enter your ${type === 'pro' ? 'Pro' : 'Customer'} email to reset your password.`}
+                                : `Enter your ${type === 'pro' || type === 'provider' ? 'Provider' : 'Customer'} email to reset your password.`}
                         </Text>
                     </View>
 
