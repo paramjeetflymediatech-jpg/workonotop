@@ -281,7 +281,7 @@ export default function ProviderForgotPassword() {
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Forgot Password?</h1>
             <p className="text-emerald-100 text-sm">
-              Enter your email and we'll send you reset instructions.
+              Enter your email and we&apos;ll send you reset instructions.
             </p>
           </div>
 
@@ -294,19 +294,19 @@ export default function ProviderForgotPassword() {
                 </div>
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Check your email</h2>
                 <p className="text-gray-500 text-sm mb-6">
-                  We've sent a password reset link to:<br />
+                  We&apos;ve sent a password reset link to:<br />
                   <strong className="text-gray-700 break-all">{submittedEmail}</strong>
                 </p>
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 text-left">
                   <p className="text-xs text-blue-700 font-medium mb-2 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    Didn't receive the email?
+                    Didn&apos;t receive the email?
                   </p>
                   <ul className="text-xs text-blue-600 space-y-1 list-disc pl-4">
                     <li>Check your spam/junk folder</li>
                     <li>Make sure you entered the correct email address</li>
                     <li>Wait a few minutes and try again</li>
-                    <li>If you still don't see it, contact support</li>
+                    <li>If you still don&apos;t see it, contact support</li>
                   </ul>
                 </div>
                 <div className="space-y-3">
@@ -395,7 +395,7 @@ export default function ProviderForgotPassword() {
                 {/* Sign Up Link */}
                 <div className="text-center pt-2">
                   <p className="text-xs text-gray-400">
-                    Don't have an account?{' '}
+                    Don&apos;t have an account?{' '}
                     <Link href="/provider/signup" className="text-emerald-600 hover:text-emerald-700 font-medium">
                       Sign up here
                     </Link>
