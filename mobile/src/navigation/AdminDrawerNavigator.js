@@ -11,6 +11,7 @@ import AnalyticsScreen from '../screens/admin/AnalyticsScreen';
 import EarningsScreen from '../screens/admin/EarningsScreen';
 import DisputesScreen from '../screens/admin/DisputesScreen';
 import SettingsScreen from '../screens/admin/SettingsScreen';
+import AdminDeletionRequestsScreen from '../screens/admin/AdminDeletionRequestsScreen';
 import CustomDrawerContent from '../components/CustomDrawerContent';
 
 const Drawer = createDrawerNavigator();
@@ -38,6 +39,7 @@ const AdminDrawerNavigator = () => {
             <Drawer.Screen name="Analytics" component={AnalyticsScreen} />
             <Drawer.Screen name="Earnings" component={EarningsScreen} />
             <Drawer.Screen name="Disputes" component={DisputesScreen} />
+            <Drawer.Screen name="DeletionRequests" component={AdminDeletionRequestsScreen} options={{ title: 'Deletion Requests' }} />
             <Drawer.Screen name="Settings" component={SettingsScreen} />
         </Drawer.Navigator>
     );

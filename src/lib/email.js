@@ -355,6 +355,83 @@ export function getRejectionEmailHtml(name, reason) {
   });
 }
 
+// ─── Data Deletion Request Emails ──────────────────────────────────────────────
+export function getDeletionRequestReceivedEmailHtml(email) {
+  const body = `
+    <p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">Data Deletion Request Received</p>
+    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7;">
+      We have received your request to permanently delete your account and associated data for the email address: <strong>${email}</strong>.
+    </p>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <p style="margin:0;font-size:14px;color:#64748b;">
+        Our team is currently reviewing your request. This process typically takes 3-5 business days. You will receive another email once the request has been processed.
+      </p>
+    </div>
+    <p style="margin:0;font-size:14px;color:#64748b;">
+      If you did not make this request, please contact us immediately at 
+      <a href="mailto:support@workontap.com" style="color:#0891b2;text-decoration:none;">support@workontap.com</a>.
+    </p>
+  `;
+
+  return emailLayout({
+    previewText: `We've received your data deletion request for ${email}`,
+    headerBg: 'linear-gradient(135deg, #475569 0%, #1e293b 100%)',
+    headerIcon: '🗑️',
+    headerTitle: 'Request Received',
+    body,
+  });
+}
+
+export function getDeletionRequestProcessedEmailHtml(email) {
+  const body = `
+    <p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">Data Deletion Completed</p>
+    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7;">
+      Your request to delete data associated with <strong>${email}</strong> has been successfully processed.
+    </p>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <p style="margin:0;font-size:14px;color:#166534;">
+        All your personal information, job history, and account settings have been permanently removed from our active systems.
+      </p>
+    </div>
+    <p style="margin:0;font-size:14px;color:#64748b;">
+      Thank you for being a part of WorkOnTap. If you change your mind, you are always welcome to create a new account in the future.
+    </p>
+  `;
+
+  return emailLayout({
+    previewText: `Your data deletion request for ${email} has been processed`,
+    headerBg: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+    headerIcon: '✅',
+    headerTitle: 'Deletion Processed',
+    body,
+  });
+}
+
+export function getDeletionRequestCancelledEmailHtml(email) {
+  const body = `
+    <p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">Data Deletion Request Cancelled</p>
+    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7;">
+      Your request to delete data associated with <strong>${email}</strong> has been cancelled.
+    </p>
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <p style="margin:0;font-size:14px;color:#9a3412;">
+        Your account and data remain intact. If this was a mistake or you have questions about why the request was cancelled, please contact our support team.
+      </p>
+    </div>
+    <p style="margin:0;font-size:14px;color:#64748b;">
+      Contact support at <a href="mailto:support@workontap.com" style="color:#0891b2;text-decoration:none;">support@workontap.com</a>.
+    </p>
+  `;
+
+  return emailLayout({
+    previewText: `Your data deletion request for ${email} has been cancelled`,
+    headerBg: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+    headerIcon: '🚫',
+    headerTitle: 'Request Cancelled',
+    body,
+  });
+}
+
 // ─── Welcome Email (kept for backward compat) ─────────────────────────────────
 export function getWelcomeEmailHtml(name) {
   return getApprovalEmailHtml(name);

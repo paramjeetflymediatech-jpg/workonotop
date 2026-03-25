@@ -47,6 +47,7 @@ const CustomDrawerContent = (props) => {
         { label: 'Analytics', icon: 'bar-chart-outline', route: 'Analytics' },
         { label: 'Earnings', icon: 'wallet-outline', route: 'Earnings' },
         { label: 'Disputes', icon: 'alert-circle-outline', route: 'Disputes' },
+        { label: 'Deletion Requests', icon: 'trash-outline', route: 'DeletionRequests' },
         { label: 'Settings', icon: 'options-outline', route: 'Settings' },
     ];
 

@@ -130,6 +130,14 @@ const ProfileScreen = ({ navigation }) => {
                     <Text style={styles.menuText}>Help & Support</Text>
                     <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
                 </TouchableOpacity>
+
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('DataDeletion')}>
+                    <View style={styles.menuIconContainer}>
+                        <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                    </View>
+                    <Text style={styles.menuText}>Data Deletion Request</Text>
+                    <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+                </TouchableOpacity>
             </View>
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogoutPress}>

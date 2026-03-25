@@ -51,6 +51,7 @@ import InvoicesScreen from '../screens/customer/InvoicesScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
 import ChatScreen from '../screens/ChatScreen';
 import LegalScreen from '../screens/LegalScreen';
+import DataDeletionScreen from '../screens/DataDeletionScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -145,6 +146,9 @@ const RootNavigator = () => {
 
                     {/* Chat Screen - accessible by both Customer and Provider */}
                     <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+
+                    {/* Data Deletion Screen */}
+                    <Stack.Screen name="DataDeletion" component={DataDeletionScreen} options={{ headerShown: false }} />
 
                 </>
             ) : (

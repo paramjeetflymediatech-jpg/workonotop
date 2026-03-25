@@ -49,24 +49,34 @@ export async function POST(request) {
     console.log('📊 Stats:', { docsCount, stripeComplete });
 
 
+    const isMobile = !!(await getMobileSession(request));
+
     // Update provider
     await execute(
       `UPDATE service_providers 
        SET 
            onboarding_completed = 1,
            onboarding_step = 5,
-           status = 'pending',
+           status = CASE WHEN ? = 1 AND status = 'active' THEN 'active' ELSE 'pending' END,
            updated_at = NOW()
        WHERE id = ?`,
+      [isMobile ? 1 : 0, providerId]
+    );
+
+    // Get updated status for response
+    const provider = await execute(
+      `SELECT status FROM service_providers WHERE id = ?`,
       [providerId]
     );
+    const newStatus = provider[0]?.status || 'pending';
 
     console.log('✅ Onboarding completed for provider:', providerId);
     console.log('='.repeat(60));
 
     return NextResponse.json({
       success: true,
-      message: 'Onboarding completed. Your application is under review.'
+      message: newStatus === 'active' ? 'Profile updated successfully.' : 'Onboarding completed. Your application is under review.',
+      status: newStatus
     });
 
   } catch (error) {

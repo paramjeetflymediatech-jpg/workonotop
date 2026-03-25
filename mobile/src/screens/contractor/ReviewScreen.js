@@ -56,11 +56,19 @@ const ReviewScreen = ({ navigation, route }) => {
             console.log('✅ Completion Response:', res);
 
             if (res.success) {
-                // Update local auth context
+                // Update local auth context with fresh status from server
                 if (updateUser) {
-                    await updateUser({ onboarding_completed: 1, status: 'pending' });
+                    await updateUser({ 
+                        onboarding_completed: 1, 
+                        status: res.status || 'pending' 
+                    });
                 }
-                // Navigator will auto-switch to PendingApproval stack
+                
+                if (res.status === 'active') {
+                    Alert.alert('Success', 'Your profile and payment details have been updated successfully.');
+                    navigation.navigate('Dashboard');
+                }
+                // If status is 'pending', the navigator will auto-switch to PendingApproval stack
             } else {
                 throw new Error(res.message || 'Completion failed');
             }

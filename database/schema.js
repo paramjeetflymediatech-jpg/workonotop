@@ -435,7 +435,6 @@ const tables = [
     UNIQUE KEY uq_user_device (user_id, device_id),
     UNIQUE KEY uq_provider_device (provider_id, device_id)
   )`,
-
   // Table 18: notifications (Unified table for all user types)
   `CREATE TABLE IF NOT EXISTS notifications (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -449,6 +448,18 @@ const tables = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_notification (user_id, user_type),
     INDEX idx_created_at (created_at)
+  )`,
+
+  // Table 19: deletion_requests
+  `CREATE TABLE IF NOT EXISTS deletion_requests (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    email VARCHAR(255) NOT NULL,
+    reason TEXT,
+    status ENUM('pending', 'processed', 'cancelled') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_email (email),
+    INDEX idx_status (status)
   )`
 ];
 
@@ -667,7 +678,7 @@ async function runMigration() {
       'chat_messages', 'booking_photos', 'booking_status_history',
       'booking_time_logs', 'job_photos', 'provider_reviews', 'invoices',
       'provider_payouts', 'disputes', 'mobile_auth_users', 
-      'notifications'
+      'notifications', 'deletion_requests'
     ];
 
     let totalColumns = 0;
@@ -703,7 +714,7 @@ async function runMigration() {
     console.log('✅ Migration completed successfully!');
     console.log('='.repeat(60));
     console.log(`   Database: ${DB_NAME}`);
-    console.log(`   Tables:   ${tableQueries.length}/18`);
+    console.log(`   Tables:   ${tableQueries.length}/19`);
     console.log(`   Total Columns: ${totalColumns}`);
     console.log('   ✓ UNIQUE constraint added to users.phone column');
     console.log('='.repeat(60) + '\n');

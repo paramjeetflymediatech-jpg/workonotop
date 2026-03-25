@@ -36,10 +36,9 @@ const ProvidersScreen = ({ navigation }) => {
     const [viewerVisible, setViewerVisible] = useState(false);
     const [viewerImage, setViewerImage] = useState(null);
     const [editMode, setEditMode] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
     const [updating, setUpdating] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
 
     const statuses = [
         { id: 'all', label: 'All' },
@@ -160,7 +159,6 @@ const ProvidersScreen = ({ navigation }) => {
         const statusLabels = {
             active: 'Active',
             inactive: 'Inactive',
-            suspended: 'Suspended',
             pending: 'Pending',
             rejected: 'Rejected'
         };
@@ -210,8 +208,7 @@ const ProvidersScreen = ({ navigation }) => {
         setFormData({
             name: provider.name || '',
             email: provider.email || '',
-            phone: provider.phone || '',
-            password: ''
+            phone: provider.phone || ''
         });
         setEditMode(false);
         setProviderDocs([]);
@@ -452,27 +449,6 @@ const ProvidersScreen = ({ navigation }) => {
                                             placeholder="Phone"
                                             keyboardType="phone-pad"
                                         />
-                                        <Text style={styles.inputLabel}>New Password</Text>
-                                        <View style={styles.passwordInputContainer}>
-                                            <TextInput
-                                                style={styles.passwordTextInput}
-                                                value={formData.password}
-                                                onChangeText={(text) => setFormData({ ...formData, password: text })}
-                                                placeholder="New Password"
-                                                secureTextEntry={!showPassword}
-                                            />
-                                            <TouchableOpacity
-                                                style={styles.eyeButton}
-                                                onPress={() => setShowPassword(!showPassword)}
-                                            >
-                                                <Ionicons
-                                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                                                    size={moderateScale(20)}
-                                                    color="#64748b"
-                                                />
-                                            </TouchableOpacity>
-                                        </View>
-
                                         <View style={styles.editActionRow}>
                                             <TouchableOpacity
                                                 style={[styles.modalActionRowBtn, styles.saveBtn]}
@@ -586,32 +562,11 @@ const ProvidersScreen = ({ navigation }) => {
                                         </View>
 
                                         <View style={styles.detailSection}>
-                                            <Text style={styles.sectionTitle}>Admin Actions</Text>
-                                            <View style={styles.adminActionRowLayout}>
-                                                <TouchableOpacity
-                                                    style={[styles.adminActionBtn, styles.editProviderBtn]}
-                                                    onPress={() => setEditMode(true)}
-                                                >
-                                                    <Ionicons name="create-outline" size={moderateScale(20)} color="#fff" />
-                                                    <Text style={styles.adminActionBtnText}>Edit</Text>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    style={[styles.adminActionBtn, styles.deleteProviderBtn]}
-                                                    onPress={handleDelete}
-                                                >
-                                                    <Ionicons name="trash-outline" size={moderateScale(20)} color="#fff" />
-                                                    <Text style={styles.adminActionBtnText}>Delete</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
-
-                                        <View style={styles.detailSection}>
                                             <Text style={styles.sectionTitle}>Update Status</Text>
                                             <View style={styles.statusButtonsGrid}>
                                                 {[
                                                     { id: 'active', label: 'Active', color: '#10b981' },
                                                     { id: 'inactive', label: 'Inactive', color: '#f59e0b' },
-                                                    { id: 'suspended', label: 'Suspended', color: '#ef4444' },
                                                     { id: 'rejected', label: 'Rejected', color: '#64748b' },
                                                     { id: 'pending', label: 'Pending', color: '#6366f1' }
                                                 ].map((s) => (
@@ -638,6 +593,26 @@ const ProvidersScreen = ({ navigation }) => {
                                                         )}
                                                     </TouchableOpacity>
                                                 ))}
+                                            </View>
+                                        </View>
+
+                                         <View style={styles.detailSection}>
+                                            <Text style={styles.sectionTitle}>Admin Actions</Text>
+                                            <View style={styles.adminActionRowLayout}>
+                                                <TouchableOpacity
+                                                    style={[styles.adminActionBtn, styles.editProviderBtn]}
+                                                    onPress={() => setEditMode(true)}
+                                                >
+                                                    <Ionicons name="create-outline" size={moderateScale(20)} color="#fff" />
+                                                    <Text style={styles.adminActionBtnText}>Edit</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[styles.adminActionBtn, styles.deleteProviderBtn]}
+                                                    onPress={handleDelete}
+                                                >
+                                                    <Ionicons name="trash-outline" size={moderateScale(20)} color="#fff" />
+                                                    <Text style={styles.adminActionBtnText}>Delete</Text>
+                                                </TouchableOpacity>
                                             </View>
                                         </View>
 

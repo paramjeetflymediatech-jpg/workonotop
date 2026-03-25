@@ -25,10 +25,9 @@ const UsersScreen = ({ navigation }) => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [editMode, setEditMode] = useState(false);
-    const [formData, setFormData] = useState({ first_name: '', last_name: '', email: '', phone: '', password: '' });
+    const [formData, setFormData] = useState({ first_name: '', last_name: '', email: '', phone: '' });
     const [updating, setUpdating] = useState(false);
     const [userType, setUserType] = useState('customer'); // 'customer' or 'provider'
-    const [showPassword, setShowPassword] = useState(false);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -89,8 +88,7 @@ const UsersScreen = ({ navigation }) => {
             last_name: user.last_name || '',
             name: user.name || '',
             email: user.email || '',
-            phone: user.phone || '',
-            password: ''
+            phone: user.phone || ''
         });
         setEditMode(false);
         setModalVisible(true);
@@ -329,26 +327,6 @@ const UsersScreen = ({ navigation }) => {
                                             placeholder="Phone"
                                             keyboardType="phone-pad"
                                         />
-                                        <Text style={styles.inputLabel}>New Password</Text>
-                                        <View style={styles.passwordInputContainer}>
-                                            <TextInput
-                                                style={styles.passwordTextInput}
-                                                value={formData.password}
-                                                onChangeText={(text) => setFormData({ ...formData, password: text })}
-                                                placeholder="New Password"
-                                                secureTextEntry={!showPassword}
-                                            />
-                                            <TouchableOpacity
-                                                style={styles.eyeButton}
-                                                onPress={() => setShowPassword(!showPassword)}
-                                            >
-                                                <Ionicons
-                                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                                                    size={moderateScale(20)}
-                                                    color="#64748b"
-                                                />
-                                            </TouchableOpacity>
-                                        </View>
 
                                         <View style={styles.editActionRow}>
                                             <TouchableOpacity
