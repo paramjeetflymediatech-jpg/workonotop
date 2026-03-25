@@ -1,7 +1,3 @@
-
-
-
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -209,19 +205,6 @@ export default function Users() {
     } catch { showMessage('error', 'Failed to update customer') }
   }
 
-  const updateProviderStatus = async (providerId, newStatus, providerName) => {
-    const statusLabels = { active: 'Active', inactive: 'Inactive', suspended: 'Suspended', pending: 'Pending', rejected: 'Rejected' }
-    const statusColors = { active: '#10b981', inactive: '#f59e0b', suspended: '#ef4444', pending: '#6366f1', rejected: '#64748b' }
-    const result = await Swal.fire({ title: 'Change Provider Status?', html: `Change <strong>${providerName}</strong>'s status to <strong>${statusLabels[newStatus] || newStatus}</strong>?`, icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, Change It', cancelButtonText: 'Cancel', confirmButtonColor: statusColors[newStatus] || '#14b8a6', cancelButtonColor: '#64748b' })
-    if (!result.isConfirmed) return
-    try {
-      const res = await fetch(`/api/provider?id=${providerId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
-      const data = await res.json()
-      if (data.success) { Swal.fire({ title: 'Status Updated!', text: `${providerName} is now ${statusLabels[newStatus] || newStatus}.`, icon: 'success', confirmButtonColor: '#14b8a6', timer: 2000, showConfirmButton: false }); loadAllUsers() }
-      else { Swal.fire({ title: 'Error', text: data.message || 'Failed to update status', icon: 'error', confirmButtonColor: '#14b8a6' }) }
-    } catch { Swal.fire({ title: 'Error', text: 'Failed to update provider status', icon: 'error', confirmButtonColor: '#14b8a6' }) }
-  }
-
   const deleteProvider = async (providerId) => {
     const result = await Swal.fire({ title: 'Delete Provider? ⚠️', html: `Removing this provider will delete <strong>all associated jobs, reviews, earnings, and uploads</strong>. This cannot be undone.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, delete', cancelButtonText: 'Cancel', confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b', reverseButtons: true, focusCancel: true })
     if (!result.isConfirmed) return
@@ -277,11 +260,23 @@ export default function Users() {
       in_progress: 'bg-purple-500/20 text-purple-600 dark:text-purple-400',
       completed: 'bg-green-500/20 text-green-600 dark:text-green-400',
       cancelled: 'bg-red-500/20 text-red-600 dark:text-red-400',
+      active: 'bg-green-500/20 text-green-600 dark:text-green-400',
+      inactive: 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400',
+      suspended: 'bg-red-500/20 text-red-600 dark:text-red-400',
+      rejected: 'bg-red-500/20 text-red-600 dark:text-red-400',
+    }
+    return map[status] || 'bg-gray-500/20 text-gray-600 dark:text-gray-400'
+  }
+
+  const getStatusBadgeStyle = (status) => {
+    const badges = {
       active: 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30',
       inactive: 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
       suspended: 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30',
+      pending: 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30',
+      rejected: 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30',
     }
-    return map[status] || 'bg-gray-500/20 text-gray-600 dark:text-gray-400'
+    return badges[status] || 'bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30'
   }
 
   const card = `rounded-xl shadow-lg border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`
@@ -372,8 +367,8 @@ export default function Users() {
               <ChevronDown className={`w-4 h-4 transition-transform ${showMobileFilter ? 'rotate-180' : ''}`} />
             </button>
             <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-  {providerFilter !== 'all' ? `Showing: ${providerFilter}` : 'All providers'}
-</span>
+              {providerFilter !== 'all' ? `Showing: ${providerFilter}` : 'All providers'}
+            </span>
           </div>
 
           {/* Filter Buttons */}
@@ -573,7 +568,7 @@ export default function Users() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border flex-shrink-0 ${getStatusColor(p.status)}`}>{p.status}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border flex-shrink-0 ${getStatusBadgeStyle(p.status)}`}>{p.status}</span>
                         </div>
                         <p className={`text-xs truncate mb-2 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{p.email}</p>
                         <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
@@ -631,15 +626,10 @@ export default function Users() {
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4"><span className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{p.total_jobs || 0}</span></td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4" onClick={e => e.stopPropagation()}>
-                      <select value={p.status} onChange={e => updateProviderStatus(p.id, e.target.value, p.name)}
-                        className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium border cursor-pointer ${p.status === 'active' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30' : p.status === 'suspended' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30' : p.status === 'inactive' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30' : isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-gray-100 text-gray-700 border-gray-200'} focus:outline-none focus:ring-2 focus:ring-teal-500`}>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="suspended">Suspended</option>
-                        <option value="pending">Pending</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium border ${getStatusBadgeStyle(p.status)}`}>
+                        {p.status?.toUpperCase()}
+                      </span>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4" onClick={e => e.stopPropagation()}>
                       <div className="flex justify-end">
@@ -673,7 +663,7 @@ export default function Users() {
                 <div className="flex-1 min-w-0">
                   <h3 className={`text-base sm:text-xl font-bold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{selectedProvider.name}</h3>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(selectedProvider.status)}`}>{selectedProvider.status}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusBadgeStyle(selectedProvider.status)}`}>{selectedProvider.status}</span>
                     <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>#{selectedProvider.id}</span>
                   </div>
                 </div>
@@ -840,13 +830,6 @@ export default function Users() {
             </div>
 
             <div className={`p-4 sm:p-5 border-t flex flex-col xs:flex-row justify-end gap-2 sm:gap-3 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-              <select value={selectedProvider.status}
-                onChange={e => { updateProviderStatus(selectedProvider.id, e.target.value, selectedProvider.name); setSelectedProvider({ ...selectedProvider, status: e.target.value }) }}
-                className={`px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm border ${isDarkMode ? 'bg-slate-800 text-white border-slate-700' : 'bg-gray-50 text-gray-900 border-gray-200'} focus:outline-none focus:ring-2 focus:ring-teal-500`}>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
-              </select>
               <button onClick={() => setIsProviderDetailsOpen(false)}
                 className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                 Close
@@ -1062,4 +1045,3 @@ export default function Users() {
     </div>
   )
 }
-
