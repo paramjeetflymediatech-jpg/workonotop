@@ -26,6 +26,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [error, setError] = useState(null);
+    const [inputError, setInputError] = useState(null);
     const modalFade = useRef(new Animated.Value(0)).current;
     const modalScale = useRef(new Animated.Value(0.8)).current;
 
@@ -62,15 +63,16 @@ const ForgotPasswordScreen = ({ navigation }) => {
     };
 
     const handleReset = async () => {
+        setInputError(null);
         if (!email) {
-            showError('Please enter your email address.');
+            setInputError('Please enter your email address.');
             return;
         }
 
         // Basic email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            showError('Please enter a valid email address.');
+            setInputError('Please enter a valid email address.');
             return;
         }
 
@@ -88,11 +90,21 @@ const ForgotPasswordScreen = ({ navigation }) => {
                 const userType = res.type || type;
                 navigation.navigate('OtpVerification', { email, type: userType });
             } else {
-                showError(res.message || 'Something went wrong. Please try again.');
+                const errMsg = res.message || 'Something went wrong. Please try again.';
+                if (errMsg.toLowerCase().includes('no account found')) {
+                    setInputError(errMsg);
+                } else {
+                    showError(errMsg);
+                }
             }
         } catch (err) {
             console.error('Forgot password error:', err);
-            showError('Something went wrong. Please try again later.');
+            const errMsg = err.message || 'Something went wrong. Please try again later.';
+            if (errMsg.toLowerCase().includes('no account found')) {
+                setInputError(errMsg);
+            } else {
+                showError(errMsg);
+            }
         } finally {
             setLoading(false);
         }
@@ -173,14 +185,20 @@ const ForgotPasswordScreen = ({ navigation }) => {
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>Email Address</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, inputError && styles.inputError]}
                                     placeholder="Enter your email"
                                     value={email}
-                                    onChangeText={setEmail}
+                                    onChangeText={(txt) => {
+                                        setEmail(txt);
+                                        if (inputError) setInputError(null);
+                                    }}
                                     autoCapitalize="none"
                                     keyboardType="email-address"
                                     placeholderTextColor="#94a3b8"
                                 />
+                                {inputError && (
+                                    <Text style={styles.errorText}>{inputError}</Text>
+                                )}
                             </View>
 
                             <TouchableOpacity
@@ -289,6 +307,16 @@ const styles = StyleSheet.create({
         padding: moderateScale(16),
         fontSize: moderateScale(16),
         color: '#0f172a',
+    },
+    inputError: {
+        borderColor: '#ef4444',
+        backgroundColor: '#fff1f2',
+    },
+    errorText: {
+        color: '#ef4444',
+        fontSize: moderateScale(13),
+        marginTop: verticalScale(6),
+        fontWeight: '500',
     },
     button: {
         backgroundColor: '#115e59',

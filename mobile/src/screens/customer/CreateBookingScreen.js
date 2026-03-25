@@ -262,7 +262,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
                 style={styles.input}
                 value={bookingData.address_line1}
                 onChangeText={txt => setBookingData({ ...bookingData, address_line1: txt })}
-                placeholder="Full address (Street, City, Province, Postal Code)"
+                placeholder="Full address (Street, City, Province, Postal)"
             />
 
             <View style={{ height: 40 }} />
