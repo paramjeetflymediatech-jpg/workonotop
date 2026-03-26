@@ -133,7 +133,7 @@ const ContractorJobsScreen = ({ navigation }) => {
                                 </View>
                                 <View style={styles.jobMeta}>
                                     <Text style={styles.metaItem}>📅 {jobDate}</Text>
-                                    <Text style={styles.metaItem}>💰 ${amount.toFixed(2)}</Text>
+                                    <Text style={styles.metaItem}>💰 £{amount.toFixed(2)}</Text>
                                 </View>
                                 {job.customer_first_name && (
                                     <Text style={styles.customerName}>

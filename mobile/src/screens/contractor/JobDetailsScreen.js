@@ -109,7 +109,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
                 isTotal && styles.totalValue,
                 isHighlight && { color: '#ef4444' }
             ]}>
-                {typeof value === 'number' ? `$${value.toFixed(2)}` : value}
+                {typeof value === 'number' ? `£${value.toFixed(2)}` : value}
             </Text>
         </View>
     );
@@ -180,13 +180,13 @@ const JobDetailsScreen = ({ navigation, route }) => {
                     <View style={styles.earningsCard}>
                         <View style={styles.earningsInfo}>
                             <Text style={styles.earningsLabel}>Your Net Earnings</Text>
-                            <Text style={styles.earningsValue}>${parseFloat(job.display_amount ?? job.provider_amount ?? 0).toFixed(2)}</Text>
+                            <Text style={styles.earningsValue}>£{parseFloat(job.display_amount ?? job.provider_amount ?? 0).toFixed(2)}</Text>
                         </View>
                         <View style={styles.earningsDivider} />
                         <View style={styles.earningsMeta}>
                             <View style={styles.metaBox}>
                                 <Text style={styles.metaLabel}>Base Pay</Text>
-                                <Text style={styles.metaValue}>${parseFloat(job.pricing?.provider_base_earnings || job.provider_amount || 0).toFixed(2)}</Text>
+                                <Text style={styles.metaValue}>£{parseFloat(job.pricing?.provider_base_earnings || job.provider_amount || 0).toFixed(2)}</Text>
                             </View>
                             <View style={styles.metaBox}>
                                 <Text style={styles.metaLabel}>Duration</Text>
@@ -297,7 +297,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
                             {job.pricing?.has_overtime && (
                                 <PriceRow 
                                     label="Overtime Rate (Net)" 
-                                    value={`$${parseFloat(job.pricing?.net_overtime_rate || 0).toFixed(2)} / hr`} 
+                                    value={`£${parseFloat(job.pricing?.net_overtime_rate || 0).toFixed(2)} / hr`} 
                                 />
                             )}
                             <PriceRow label="Total Estimated Pay" value={parseFloat(job.provider_amount || 0)} isTotal />

@@ -52,6 +52,7 @@ import PlaceholderScreen from '../screens/PlaceholderScreen';
 import ChatScreen from '../screens/ChatScreen';
 import LegalScreen from '../screens/LegalScreen';
 import DataDeletionScreen from '../screens/DataDeletionScreen';
+import NotificationSettingsScreen from '../screens/settings/NotificationSettingsScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -90,50 +91,51 @@ const RootNavigator = () => {
                 <>
                     {/* Main App Stack - Order matters for standard navigation */}
                     {/* If provider is not onboarded, the onboarding screens come first */}
-                    {(user.role === 'provider' && Number(user.onboarding_completed) !== 1) ? (
+                    {/* Provider Logic */}
+                    {user.role === 'provider' ? (
                         <>
-                            <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
+                            {Number(user.onboarding_completed) !== 1 ? (
+                                // 1. Not finished onboarding yet
+                                <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
+                            ) : (user.status === 'pending' || user.status === 'rejected' || user.status === 'suspended' || user.status === 'inactive') ? (
+                                // 2. Onboarded but awaiting admin approval or restricted
+                                <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
+                            ) : (
+                                // 3. Fully active provider
+                                <Stack.Screen name="Main" component={ProviderDrawerNavigator} options={{ headerShown: false }} />
+                            )}
+                            
+                            {/* Provider auxiliary screens (available in all states) */}
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="Review" component={ReviewScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Main" component={ProviderDrawerNavigator} options={{ headerShown: false }} />
-                        </>
-                    ) : (user.role === 'provider' && (user.status === 'pending' || user.status === 'rejected' || user.status === 'suspended' || user.status === 'inactive')) ? (
-                        <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
-                    ) : (
-                        <>
-                            {user.role === 'admin' ? (
-                                <Stack.Screen name="Main" component={AdminDrawerNavigator} options={{ headerShown: false }} />
-                            ) : user.role === 'provider' ? (
-                                <Stack.Screen name="Main" component={ProviderDrawerNavigator} options={{ headerShown: false }} />
-                            ) : (
-                                <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
-                            )}
-                            <Stack.Screen name="AdminJobDetails" component={AdminJobDetailsScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="CustomerBookingDetails" component={CustomerBookingDetailsScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Details" component={DetailsScreen} />
-                            <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ headerShown: false }} />
                             <Stack.Screen name="ProviderUpdateProfile" component={ProviderUpdateProfileScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ headerShown: false }} />
+                        </>
+                    ) : user.role === 'admin' ? (
+                        <Stack.Screen name="Main" component={AdminDrawerNavigator} options={{ headerShown: false }} />
+                    ) : (
+                        // Customer Logic
+                        <>
+                            <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
                             <Stack.Screen name="CreateBooking" component={CreateBookingScreen} options={{ title: 'Book Service' }} />
                             <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: false }} />
-
-                            {/* Contractor Onboarding (Still registered for deep links or manual re-entry if allowed) */}
-                            <Stack.Screen name="ProviderOnboarding" component={OnboardingIntroScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="BankLink" component={BankLinkScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Review" component={ReviewScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} options={{ headerShown: false }} />
                         </>
                     )}
+
+                    {/* Shared Screens across all roles (when authenticated) */}
+                    <Stack.Screen name="AdminJobDetails" component={AdminJobDetailsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="CustomerBookingDetails" component={CustomerBookingDetailsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Details" component={DetailsScreen} />
+                    <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="DataDeletion" component={DataDeletionScreen} options={{ headerShown: false }} />
 
                     {/* Contractor Job Flow */}
                     <Stack.Screen name="ContractorJobs" component={ContractorJobsScreen} options={{ title: 'Jobs' }} />
@@ -146,9 +148,6 @@ const RootNavigator = () => {
 
                     {/* Chat Screen - accessible by both Customer and Provider */}
                     <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
-
-                    {/* Data Deletion Screen */}
-                    <Stack.Screen name="DataDeletion" component={DataDeletionScreen} options={{ headerShown: false }} />
 
                 </>
             ) : (
