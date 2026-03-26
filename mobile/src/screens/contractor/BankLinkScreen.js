@@ -12,11 +12,12 @@ import PremiumAlert from '../../components/PremiumAlert';
 
 const BankLinkScreen = ({ navigation, route }) => {
     const { profile, profilePhoto, skills, documents } = route.params || {};
-    const { user, token, updateUser } = useAuth();
+    const { user, token, updateUser, refreshUser } = useAuth();
     const [stripeUrl, setStripeUrl] = useState(null);
     const [loading, setLoading] = useState(false);
     const [webLoading, setWebLoading] = useState(true);
-    const [connected, setConnected] = useState(false);
+    const isConnected = user?.stripe_onboarding_complete == 1 || user?.stripe_onboarding_complete === true || user?.stripe_onboarding_complete === '1';
+    const [connected, setConnected] = useState(isConnected);
     const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
 
     const showPremiumAlert = (message, title = '', type = 'error') => {
@@ -67,16 +68,32 @@ const BankLinkScreen = ({ navigation, route }) => {
             setConnected(true);
             
             try {
-                // Attempt to call stripeComplete to update backend status
-                await apiService.provider.onboarding.stripeComplete({}, token);
-                await updateUser({ onboarding_step: 4 });
+                // Extract accountId from URL if present
+                let accountId = null;
+                if (url.includes('account_id=')) {
+                    const match = url.match(/account_id=([^&]+)/);
+                    if (match) accountId = match[1];
+                }
+
+                console.log('🔄 [Stripe] Finalizing with Account ID:', accountId);
+
+                // 1. Tell backend to verify/complete the Stripe setup
+                await apiService.provider.onboarding.stripeComplete({ accountId }, token);
+                
+                // 2. Refresh entire user object from backend to get stripe_onboarding_complete status
+                await refreshUser();
             } catch (err) {
-                console.warn('Silent failure updating stripe status:', err);
-                await updateUser({ onboarding_step: 4 });
+                console.warn('Silent failure finalizing Stripe status:', err);
+                // Fallback: at least try to refresh if stripeComplete failed but user might be updated
+                await refreshUser();
             }
 
-            // Auto navigate to review after connection
-            navigation.navigate('Review', { profile, documents, connected: true });
+            // Auto navigate based on onboarding status
+            if (Number(user?.onboarding_completed) === 1) {
+                navigation.navigate('Main');
+            } else {
+                navigation.navigate('Review', { profile, documents, connected: true });
+            }
         }
     };
 
@@ -140,7 +157,9 @@ const BankLinkScreen = ({ navigation, route }) => {
                 <TouchableOpacity
                     style={[styles.stripeBtn, loading && styles.btnDisabled]}
                     onPress={connected 
-                        ? () => navigation.navigate('Review', { profile, documents, connected: true }) 
+                        ? (Number(user?.onboarding_completed) === 1 
+                            ? () => navigation.navigate('Main')
+                            : () => navigation.navigate('Review', { profile, documents, connected: true }))
                         : openStripeOnboarding}
                     disabled={loading}
                 >
@@ -156,7 +175,9 @@ const BankLinkScreen = ({ navigation, route }) => {
                 {!connected && (
                     <TouchableOpacity 
                         style={styles.skipBtn} 
-                        onPress={() => navigation.navigate('Review', { profile, documents, connected: false })}
+                        onPress={Number(user?.onboarding_completed) === 1 
+                            ? () => navigation.navigate('Main')
+                            : () => navigation.navigate('Review', { profile, documents, connected: false })}
                         disabled={loading}
                     >
                         <Text style={styles.skipBtnText}>Skip — Add bank account later</Text>

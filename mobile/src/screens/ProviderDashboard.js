@@ -21,9 +21,9 @@ const TEAL_DARK = '#134e4a';
 const TEAL_LIGHT = '#14b8a6';
 
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-GB', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'GBP',
         minimumFractionDigits: 0,
     }).format(amount || 0);
 };

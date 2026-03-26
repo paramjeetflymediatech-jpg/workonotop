@@ -88,20 +88,9 @@ const SettingsScreen = ({ navigation }) => {
                 <View style={styles.sectionCard}>
                     <SettingItem
                         icon="notifications-outline"
-                        title="Push Notifications"
-                        subtitle="Alerts for new bookings/disputes"
-                        type="switch"
-                        value={notifications}
-                        onValueChange={setNotifications}
-                    />
-                    <View style={styles.divider} />
-                    <SettingItem
-                        icon="mail-outline"
-                        title="Email Reports"
-                        subtitle="Daily platform performance summary"
-                        type="switch"
-                        value={emailAlerts}
-                        onValueChange={setEmailAlerts}
+                        title="Notification Preferences"
+                        subtitle="Manage Push and Email Reports"
+                        onPress={() => navigation.navigate('NotificationSettings')}
                     />
                 </View>
 

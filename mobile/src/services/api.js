@@ -33,7 +33,10 @@ const request = async (endpoint, options = {}) => {
             headers: {
                 ...(!isFormData && { 'Content-Type': 'application/json' }),
                 // Attach Bearer token if available
-                ...(token && { 'Authorization': `Bearer ${token}` }),
+                ...(token && { 
+                    'Authorization': `Bearer ${token}`,
+                    'Cookie': `token=${token}; provider_token=${token}; admin_token=${token}`
+                }),
                 ...fetchOptions.headers,
             },
         });

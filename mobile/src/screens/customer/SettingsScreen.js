@@ -138,33 +138,13 @@ const SettingsScreen = ({ navigation }) => {
                 <View style={styles.sectionCard}>
                     <SettingItem
                         icon="notifications-outline"
-                        title="Push Notifications"
-                        subtitle="Receive alerts on your device"
-                        type="switch"
-                        value={settings.push_notifications_enabled}
-                        onValueChange={(val) => toggleSetting('push_notifications_enabled', val)}
-                    />
-                    <View style={styles.divider} />
-                    <SettingItem
-                        icon="mail-outline"
-                        title="Email Updates"
-                        subtitle="Receive news and offers"
-                        type="switch"
-                        value={settings.receive_offers}
-                        onValueChange={(val) => toggleSetting('receive_offers', val)}
-                    />
-                    <View style={styles.divider} />
-                    <SettingItem
-                        icon="calendar-outline"
-                        title="Booking Reminders"
-                        subtitle="Alerts for upcoming services"
-                        type="switch"
-                        value={settings.booking_reminders_enabled}
-                        onValueChange={(val) => toggleSetting('booking_reminders_enabled', val)}
+                        title="Notification Preferences"
+                        subtitle="Manage Push, Email, and Reminders"
+                        onPress={() => navigation.navigate('NotificationSettings')}
                     />
                 </View>
 
-                <SectionHeader title="Preferences" />
+                {/* <SectionHeader title="Preferences" />
                 <View style={styles.sectionCard}>
                     <SettingItem
                         icon="moon-outline"
@@ -180,7 +160,7 @@ const SettingsScreen = ({ navigation }) => {
                         subtitle="English (US)"
                         onPress={() => Alert.alert('Language', 'Language selection will be available in the next update.')}
                     />
-                </View>
+                </View> */}
 
                 <SectionHeader title="About" />
                 <View style={styles.sectionCard}>

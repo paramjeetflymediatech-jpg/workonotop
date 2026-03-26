@@ -9,8 +9,9 @@ import { useAuth } from '../../context/AuthContext';
 import { moderateScale, verticalScale } from '../../utils/responsive';
 
 const PendingApprovalScreen = ({ navigation }) => {
-    const { logout, updateUser } = useAuth();
+    const { logout, updateUser, user } = useAuth();
     const [status, setStatus] = useState('pending');
+    const [provider, setProvider] = useState(null);
     const [loading, setLoading] = useState(true);
     const [checkingCount, setCheckingCount] = useState(0);
     const rotateAnim = React.useRef(new Animated.Value(0)).current;
@@ -37,19 +38,19 @@ const PendingApprovalScreen = ({ navigation }) => {
 
     const checkStatus = async () => {
         try {
-            const res = await api.get('/api/provider/status');
-            const providerStatus = (res.status || res.data?.status || 'pending').toLowerCase();
-
-            if (providerStatus !== status) {
+            const res = await api.get('/api/provider/me');
+            if (res.success && res.provider) {
+                const prov = res.provider;
+                setProvider(prov);
+                const providerStatus = (prov.status || 'pending').toLowerCase();
                 setStatus(providerStatus);
-                // If they are now approved, update AuthContext to allow access to Main
-                if (providerStatus === 'approved' && updateUser) {
-                    await updateUser({ status: 'approved' });
+
+                if (providerStatus === 'active' && updateUser) {
+                    await updateUser({ ...prov, status: 'active' });
                 }
             }
         } catch (err) {
             console.error('Status check failed:', err);
-            setStatus('pending');
         } finally {
             setLoading(false);
         }
@@ -72,12 +73,13 @@ const PendingApprovalScreen = ({ navigation }) => {
 
     const getStatusConfig = () => {
         switch (status) {
+            case 'active':
             case 'approved':
                 return {
                     icon: '🎉', color: '#10b981', bgColor: '#f0fdf4',
                     title: "You're Approved!", borderColor: '#10b981',
                     desc: 'Congratulations! Your application has been approved. You can now start accepting jobs.',
-                    actionText: 'Go to Dashboard', action: () => { /* RootNavigator will handle this via state update */ },
+                    actionText: 'Go to Dashboard', action: () => { /* Handled by state change */ },
                 };
             case 'rejected':
                 return {
@@ -93,18 +95,11 @@ const PendingApprovalScreen = ({ navigation }) => {
                     desc: 'Your account has been suspended. Please contact administration for further details.',
                     actionText: 'Contact Support', action: () => { },
                 };
-            case 'inactive':
-                return {
-                    icon: '⏳', color: '#f59e0b', bgColor: '#fffbeb',
-                    title: 'Awaiting Approval', borderColor: '#f59e0b',
-                    desc: 'Your documentation is complete. Our team is currently reviewing your profile.',
-                    actionText: 'Refresh Status', action: handleRefresh,
-                };
             default:
                 return {
                     icon: '⏳', color: '#f59e0b', bgColor: '#fffbeb',
                     title: 'Application Pending', borderColor: '#f59e0b',
-                    desc: 'Our team is reviewing your application. This usually takes 1-2 business days. We will notify you by email.',
+                    desc: "Our team is reviewing your application. This usually takes 24–48 hours. We'll notify you by email.",
                     actionText: 'Refresh Status', action: handleRefresh,
                 };
         }
@@ -130,20 +125,36 @@ const PendingApprovalScreen = ({ navigation }) => {
                     <Text style={styles.statusDesc}>{cfg.desc}</Text>
                 </View>
 
-                {status === 'pending' && (
+                {['pending', 'inactive'].includes(status) && (
                     <View style={styles.stepsCard}>
-                        <Text style={styles.stepsTitle}>What happens next?</Text>
+                        <Text style={styles.stepsTitle}>Application Progress</Text>
                         {[
-                            { step: '1', text: 'Our team reviews your documents', done: true },
-                            { step: '2', text: 'Background check (if required)', done: false },
-                            { step: '3', text: 'Approval email sent to you', done: false },
-                            { step: '4', text: 'Start accepting jobs!', done: false },
-                        ].map((item) => (
-                            <View key={item.step} style={styles.stepRow}>
-                                <View style={[styles.stepBall, item.done && styles.stepBallDone]}>
-                                    <Text style={styles.stepNum}>{item.done ? '✓' : item.step}</Text>
+                            { label: 'Email Verified', desc: 'Your email has been confirmed', done: true },
+                            { label: 'Profile Completed', desc: 'Your information has been saved', done: true },
+                            { label: 'Documents Uploaded', desc: 'Documents submitted for review', done: true },
+                            {
+                                label: 'Payment Setup',
+                                desc: (provider?.stripe_onboarding_complete == 1 || provider?.stripe_onboarding_complete === true || provider?.stripe_onboarding_complete === '1')
+                                    ? 'Stripe account connected'
+                                    : 'Stripe setup — recommended for payouts',
+                                done: (provider?.stripe_onboarding_complete == 1 || provider?.stripe_onboarding_complete === true || provider?.stripe_onboarding_complete === '1'),
+                                skipped: !(provider?.stripe_onboarding_complete == 1 || provider?.stripe_onboarding_complete === true || provider?.stripe_onboarding_complete === '1'),
+                            },
+                            { label: 'Admin Review', desc: 'Application under review', done: false, current: true },
+                        ].map((s, i) => (
+                            <View key={i} style={styles.stepRow}>
+                                <View style={[
+                                    styles.stepBall, 
+                                    s.done && styles.stepBallDone,
+                                    s.current && styles.stepBallCurrent,
+                                    s.skipped && styles.stepBallSkipped
+                                ]}>
+                                    <Text style={styles.stepNum}>{s.done ? '✓' : s.skipped ? '!' : (i + 1)}</Text>
                                 </View>
-                                <Text style={styles.stepText}>{item.text}</Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={[styles.stepText, s.current && styles.stepTextCurrent]}>{s.label}</Text>
+                                    <Text style={styles.stepSubText}>{s.desc}</Text>
+                                </View>
                             </View>
                         ))}
                     </View>
@@ -194,8 +205,13 @@ const styles = StyleSheet.create({
         marginRight: moderateScale(14),
     },
     stepBallDone: { backgroundColor: '#10b981' },
+    stepBallCurrent: { backgroundColor: '#fff7ed', borderWidth: 1, borderColor: '#f59e0b' },
+    stepBallSkipped: { backgroundColor: '#fff7ed' },
     stepNum: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(13) },
-    stepText: { fontSize: moderateScale(14), color: '#475569', flex: 1 },
+    stepNumCurrent: { color: '#f59e0b' },
+    stepText: { fontSize: moderateScale(14), color: '#475569', fontWeight: '500' },
+    stepTextCurrent: { color: '#b45309', fontWeight: 'bold' },
+    stepSubText: { fontSize: moderateScale(11), color: '#94a3b8', marginTop: 2 },
     actionBtn: {
         padding: moderateScale(18), borderRadius: moderateScale(16),
         alignItems: 'center', marginBottom: verticalScale(12),

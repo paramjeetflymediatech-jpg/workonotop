@@ -14,21 +14,24 @@ import { useAuth } from '../context/AuthContext';
 import { scale, verticalScale, moderateScale } from '../utils/responsive';
 import LogoutConfirmationModal from './LogoutConfirmationModal';
 
-const DrawerItem = ({ label, icon, onPress, active }) => (
+const DrawerItem = ({ label, icon, onPress, active, isLocked }) => (
     <TouchableOpacity
-        style={[styles.drawerItem, active && styles.activeDrawerItem]}
+        style={[styles.drawerItem, active && styles.activeDrawerItem, isLocked && styles.lockedItem]}
         onPress={onPress}
         activeOpacity={0.7}
     >
         <Ionicons
             name={icon}
             size={moderateScale(22)}
-            color={active ? '#115e59' : '#64748b'}
+            color={active ? '#115e59' : isLocked ? '#94a3b8' : '#64748b'}
             style={styles.drawerIcon}
         />
-        <Text style={[styles.drawerLabel, active && styles.activeDrawerLabel]}>
+        <Text style={[styles.drawerLabel, active && styles.activeDrawerLabel, isLocked && styles.lockedLabel]}>
             {label}
         </Text>
+        {isLocked && (
+            <Ionicons name="lock-closed" size={moderateScale(14)} color="#94a3b8" style={{ marginLeft: 'auto' }} />
+        )}
     </TouchableOpacity>
 );
 
@@ -61,6 +64,9 @@ const CustomDrawerContent = (props) => {
         { label: 'Profile', icon: 'person-outline', route: 'Profile' },
     ];
 
+    const stripeConnected = user?.role === 'provider' && (user?.stripe_onboarding_complete == 1 || user?.stripe_onboarding_complete === true || user?.stripe_onboarding_complete === '1');
+    const restrictedPaths = ['Messages', 'Earnings'];
+
     const menuItems = user?.role === 'admin' ? adminMenuItems : (user?.role === 'provider' ? providerMenuItems : []);
 
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
@@ -82,15 +88,43 @@ const CustomDrawerContent = (props) => {
             </View>
             <DrawerContentScrollView {...props} contentContainerStyle={styles.drawerContent}>
                 <View style={styles.menuContainer}>
-                    {menuItems.map((item, index) => (
-                        <DrawerItem
-                            key={index}
-                            label={item.label}
-                            icon={item.icon}
-                            active={currentRoute === item.route}
-                            onPress={() => props.navigation.navigate(item.route)}
-                        />
-                    ))}
+                    {user?.role === 'provider' && !stripeConnected && (
+                        <View style={styles.stripeNotice}>
+                            <View style={styles.stripeHeader}>
+                                <Ionicons name="alert-circle" size={moderateScale(16)} color="#b45309" />
+                                <Text style={styles.stripeTitle}>Stripe not connected</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => props.navigation.navigate('BankLink')}>
+                                <Text style={styles.stripeLink}>Connect now →</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                    {menuItems.map((item, index) => {
+                        const isLocked = user?.role === 'provider' && !stripeConnected && restrictedPaths.includes(item.route);
+                        return (
+                            <DrawerItem
+                                key={index}
+                                label={item.label}
+                                icon={item.icon}
+                                active={currentRoute === item.route}
+                                isLocked={isLocked}
+                                onPress={() => {
+                                    if (isLocked) {
+                                        Alert.alert(
+                                            'Stripe Required',
+                                            'Please connect your Stripe account to access this feature.',
+                                            [
+                                                { text: 'Later', style: 'cancel' },
+                                                { text: 'Connect Now', onPress: () => props.navigation.navigate('BankLink') }
+                                            ]
+                                        );
+                                    } else {
+                                        props.navigation.navigate(item.route);
+                                    }
+                                }}
+                            />
+                        );
+                    })}
                 </View>
             </DrawerContentScrollView>
             <View style={styles.footer}>
@@ -191,6 +225,38 @@ const styles = StyleSheet.create({
         color: '#ef4444',
         fontWeight: '600',
     },
+    stripeNotice: {
+        backgroundColor: '#fffbeb',
+        margin: moderateScale(10),
+        padding: moderateScale(12),
+        borderRadius: moderateScale(12),
+        borderWidth: 1,
+        borderColor: '#fde68a',
+    },
+    stripeHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: verticalScale(4),
+    },
+    stripeTitle: {
+        fontSize: moderateScale(13),
+        fontWeight: '700',
+        color: '#92400e',
+        marginLeft: scale(6),
+    },
+    stripeLink: {
+        fontSize: moderateScale(12),
+        color: '#b45309',
+        textDecorationLine: 'underline',
+        fontWeight: '600',
+        marginLeft: scale(22),
+    },
+    lockedItem: {
+        opacity: 0.6,
+    },
+    lockedLabel: {
+        color: '#94a3b8',
+    }
 });
 
 export default CustomDrawerContent;
