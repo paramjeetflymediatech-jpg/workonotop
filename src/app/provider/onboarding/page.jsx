@@ -71,18 +71,18 @@ function OnboardingContent() {
           setFormData(prev => ({ ...prev, stripeOnboardingComplete: true }));
         }
 
-        if (prov.onboarding_completed === 1) {
-          if (prov.status === 'active') {
-            const urlStep = stepParam ? parseInt(stepParam) : null;
-            if (!prov.stripe_onboarding_complete && urlStep === 3) {
-              setCurrentStep(3);
-              setLoading(false);
-              return;
-            }
-            router.push('/provider/dashboard');
+        if (prov.status === 'active') {
+          // If they are on step 3 and haven't connected Stripe, let them stay
+          if (stepParam === '3' && !prov.stripe_onboarding_complete) {
+            setCurrentStep(3);
+            setLoading(false);
             return;
           }
+          router.push('/provider/dashboard');
+          return;
+        }
 
+        if (prov.onboarding_completed === 1) {
           if (!prov.documents_uploaded) {
             const urlStep = stepParam ? parseInt(stepParam) : null;
             if (urlStep === 2) {
