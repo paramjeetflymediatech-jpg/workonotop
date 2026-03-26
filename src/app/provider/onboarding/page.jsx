@@ -72,6 +72,12 @@ function OnboardingContent() {
         }
 
         if (prov.status === 'active') {
+          // If they are on step 3 and haven't connected Stripe, let them stay
+          if (stepParam === '3' && !prov.stripe_onboarding_complete) {
+            setCurrentStep(3);
+            setLoading(false);
+            return;
+          }
           router.push('/provider/dashboard');
           return;
         }

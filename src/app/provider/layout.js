@@ -133,12 +133,21 @@ export default function ProviderLayout({ children }) {
       // ── Fully active provider (High priority) ───────────────────────────────
       if (prov.status === 'active') {
         setProvider(prov);
-        setStripeConnected(prov.stripe_onboarding_complete || false);
+        const isStripeOnboarded = !!prov.stripe_onboarding_complete;
+        setStripeConnected(isStripeOnboarded);
         
         // If they are on a "locked" path, send them to dashboard
         const restrictedPaths = ['/provider/onboarding', '/provider/pending', '/provider/rejected', '/provider/verify-email-pending'];
         if (restrictedPaths.some(p => pathname.startsWith(p))) {
-          router.replace('/provider/dashboard');
+          // Exception: Allow Step 3 (Stripe) if not onboarded yet
+          const urlParams = new URLSearchParams(window.location.search);
+          const currentStep = urlParams.get('step');
+          
+          if (pathname === '/provider/onboarding' && currentStep === '3' && !isStripeOnboarded) {
+             // Keep them on onboarding step 3
+          } else {
+            router.replace('/provider/dashboard');
+          }
         }
         
         setLoading(false);
