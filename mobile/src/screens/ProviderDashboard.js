@@ -57,7 +57,7 @@ const ProviderDashboard = ({ navigation }) => {
         try {
             const res = await api.get('/api/provider/availability');
             if (res?.success) setIsAvailable(res.is_available);
-        } catch (_) {}
+        } catch (_) { }
     }, []);
 
     const toggleAvailability = async () => {
@@ -121,11 +121,11 @@ const ProviderDashboard = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
-            
+
             {/* Header */}
             <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(15)) }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => navigation.openDrawer()}
                         style={styles.menuBtn}
                     >
@@ -136,9 +136,9 @@ const ProviderDashboard = ({ navigation }) => {
                         <Text style={styles.nameText}>Hi, {user?.name || 'Partner'}</Text>
                     </View>
                 </View>
-                <View style={[styles.statusToggle, { 
-                    backgroundColor: isAvailable ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', 
-                    borderColor: isAvailable ? 'rgba(255,255,255,0.2)' : 'transparent' 
+                <View style={[styles.statusToggle, {
+                    backgroundColor: isAvailable ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                    borderColor: isAvailable ? 'rgba(255,255,255,0.2)' : 'transparent'
                 }]}>
                     <Switch
                         value={isAvailable}
@@ -171,7 +171,7 @@ const ProviderDashboard = ({ navigation }) => {
                         <Text style={styles.stripeNoticeDesc}>
                             Link your bank account to receive payouts for completed jobs.
                         </Text>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.stripeFixBtn}
                             onPress={() => navigation.navigate('BankLink')}
                         >
@@ -222,7 +222,7 @@ const ProviderDashboard = ({ navigation }) => {
                                     <Text style={styles.jobTime}>{job.status?.replace('_', ' ')}</Text>
                                     <Text style={styles.jobLocation}>Earning: {formatCurrency(job.provider_amount)}</Text>
                                 </View>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={styles.detailsIcon}
                                     onPress={() => navigation.navigate('JobDetails', { job })}
                                 >
@@ -268,8 +268,8 @@ const styles = StyleSheet.create({
         padding: moderateScale(20),
     },
     header: {
-        flexDirection: 'row', 
-        alignItems: 'center', 
+        flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: TEAL_DARK,
         paddingHorizontal: scale(20),
