@@ -62,9 +62,9 @@ export default function Header() {
   if (loading) {
     return (
       <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
-        <div className="container mx-auto px-6 max-w-7xl h-16 flex items-center justify-between">
+        <div className="container mx-auto px-6 max-w-7xl h-20 flex items-center justify-between">
           <Link href="/">
-            <Image src="/logo.png" alt="Logo" width={120} height={40} className="object-contain" />
+            <Image src="/logo.png" alt="Logo" width={180} height={60} className="object-contain" />
           </Link>
           <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
         </div>
@@ -77,10 +77,10 @@ export default function Header() {
   return (
     <>
       <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
-        <nav className="container mx-auto px-6 max-w-7xl h-16 flex items-center justify-between gap-3">
+        <nav className="container mx-auto px-6 max-w-7xl h-20 flex items-center justify-between gap-3">
 
           <Link href="/" className="flex-shrink-0">
-            <Image src="/logo.png" alt="Logo" width={140} height={45} className="object-contain hover:opacity-90 transition" priority />
+            <Image src="/logo.png" alt="Logo" width={200} height={65} className="object-contain hover:opacity-90 transition" priority />
           </Link>
 
           <div className="hidden md:flex items-center gap-6 text-sm font-medium">

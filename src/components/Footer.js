@@ -37,7 +37,7 @@ export default function Footer() {
           {/* Col 1 - Logo + Description + Social */}
           <div className="lg:col-span-1">
             <Link href="/" className="inline-flex items-center mb-4">
-              <Image src="/logo.png" alt="Logo" width={160} height={50} className="object-contain" />
+              <Image src="/logo.png" alt="Logo" width={240} height={75} className="object-contain" />
             </Link>
             <p className="text-sm text-gray-500 leading-relaxed mb-5">
               Work On Top connects you with skilled and trusted local tradespeople for every job, big or small. Our mission is to provide dependable service, fair pricing, and complete customer satisfaction. Whatever your repair, upgrade, or service need may be, we deliver solutions that are quick, easy, and handled with professionalism.
