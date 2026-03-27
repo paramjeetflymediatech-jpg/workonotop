@@ -216,13 +216,13 @@ export default function Sidebar() {
           {!isCollapsed ? (
             <div className="flex-1 min-w-0">
               <Link href="/admin">
-                <Image src="/logo.png" alt="Logo" width={140} height={45} className="object-contain" />
+                <Image src={isDarkMode ? "/logo2.png" : "/logo.png"} alt="Logo" width={140} height={45} className="object-contain" />
               </Link>
             </div>
           ) : (
             <div className="w-full flex justify-center">
               <Link href="/admin">
-                <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
+                <Image src={isDarkMode ? "/logo2.png" : "/logo.png"} alt="Logo" width={32} height={32} className="object-contain" />
               </Link>
             </div>
           )}

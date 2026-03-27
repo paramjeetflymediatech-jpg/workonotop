@@ -63,7 +63,7 @@ export default function AdminLogin() {
 
         <div className="relative z-10">
           <Link href="/">
-            <Image src="/logo.png" alt="Logo" width={160} height={50} className="object-contain" />
+            <Image src="/logo2.png" alt="Logo" width={160} height={50} className="object-contain" />
           </Link>
         </div>
 
