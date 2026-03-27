@@ -235,7 +235,7 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                             style={styles.input}
                             value={form.city}
                             onChangeText={(text) => setForm({ ...form, city: text })}
-                            placeholder="e.g. Surrey"
+                            placeholder="e.g. Toronto"
                         />
                     </View>
 

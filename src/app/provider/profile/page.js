@@ -9,9 +9,11 @@ import {
 } from 'lucide-react';
 
 const SERVICE_AREAS = [
-  'Surrey', 'Delta', 'Langley', 'Richmond', 
-  'Vancouver (North, West, South, East)', 'Burnaby', 
-  'Coquitlam/Port Coquitlam', 'Abbotsford', 'New Westminster'
+  'Toronto', 'North York', 'Scarborough', 'Etobicoke', 'East York', 'York',
+  'Mississauga', 'Brampton', 'Vaughan', 'Markham', 'Richmond Hill',
+  'Aurora', 'Newmarket', 'King', 'East Gwillimbury', 'Georgina',
+  'Whitchurch-Stouffville', 'Oakville', 'Burlington', 'Halton Hills',
+  'Milton', 'Caledon', 'Pickering', 'Ajax', 'Whitby', 'Oshawa'
 ];
 
 const SKILLS = [
@@ -313,7 +315,7 @@ export default function ProviderProfile() {
 
             <h2 className="text-lg font-bold text-gray-900">{provider?.name}</h2>
             <p className="text-sm text-green-600 font-medium mt-0.5">{provider?.specialty || 'Service Professional'}</p>
-            <p className="text-xs text-gray-400 mt-1">{provider?.city || 'Surrey'}</p>
+            <p className="text-xs text-gray-400 mt-1">{provider?.city || 'Toronto'}</p>
 
             <div className={`inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full text-xs font-semibold ${
               provider?.status === 'active'
@@ -449,7 +451,7 @@ export default function ProviderProfile() {
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">City</label>
                 {editing
-                  ? <input name="city" value={formData.city} onChange={handleChange} className={inputClass('city')} placeholder="e.g. Surrey" />
+                  ? <input name="city" value={formData.city} onChange={handleChange} className={inputClass('city')} placeholder="e.g. Toronto" />
                   : <div className={readonlyClass}>{provider?.city || '—'}</div>
                 }
               </div>

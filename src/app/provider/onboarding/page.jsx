@@ -19,7 +19,7 @@ function OnboardingContent() {
     bio: '',
     specialty: '',
     experience_years: '',
-    city: 'Surrey',
+    city: 'Toronto',
     location: '',
     service_areas: [],
     skills: [],
@@ -60,7 +60,7 @@ function OnboardingContent() {
             bio: prov.bio || '',
             specialty: prov.specialty || '',
             experience_years: prov.experience_years || '',
-            city: prov.city || 'Surrey',
+            city: prov.city || 'Toronto',
             location: prov.location || '',
             service_areas: Array.isArray(prov.service_areas) ? prov.service_areas : [],
             skills: Array.isArray(prov.skills) ? prov.skills : []

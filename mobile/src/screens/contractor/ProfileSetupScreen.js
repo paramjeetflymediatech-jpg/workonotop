@@ -11,9 +11,11 @@ import { useAuth } from '../../context/AuthContext';
 import PremiumAlert from '../../components/PremiumAlert';
 
 const SERVICE_AREAS = [
-    'Surrey', 'Delta', 'Langley', 'Richmond',
-    'Vancouver (North, West, South, East)', 'Burnaby',
-    'Coquitlam/Port Coquitlam', 'Abbotsford', 'New Westminster'
+    'Toronto', 'North York', 'Scarborough', 'Etobicoke', 'East York', 'York',
+    'Mississauga', 'Brampton', 'Vaughan', 'Markham', 'Richmond Hill',
+    'Aurora', 'Newmarket', 'King', 'East Gwillimbury', 'Georgina',
+    'Whitchurch-Stouffville', 'Oakville', 'Burlington', 'Halton Hills',
+    'Milton', 'Caledon', 'Pickering', 'Ajax', 'Whitby', 'Oshawa'
 ];
 
 const SKILLS = [
@@ -224,7 +226,7 @@ const ProfileSetupScreen = ({ navigation }) => {
                         <Text style={styles.label}>City <Text style={styles.req}>*</Text></Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Surrey"
+                            placeholder="Toronto"
                             placeholderTextColor="#94a3b8"
                             value={profile.city}
                             onChangeText={(t) => setProfile({ ...profile, city: t })}

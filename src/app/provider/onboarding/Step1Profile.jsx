@@ -14,9 +14,11 @@
 import { useState } from 'react';
 
 const SERVICE_AREAS = [
-  'Surrey', 'Delta', 'Langley', 'Richmond', 
-  'Vancouver (North, West, South, East)', 'Burnaby', 
-  'Coquitlam/Port Coquitlam', 'Abbotsford', 'New Westminster'
+  'Toronto', 'North York', 'Scarborough', 'Etobicoke', 'East York', 'York',
+  'Mississauga', 'Brampton', 'Vaughan', 'Markham', 'Richmond Hill',
+  'Aurora', 'Newmarket', 'King', 'East Gwillimbury', 'Georgina',
+  'Whitchurch-Stouffville', 'Oakville', 'Burlington', 'Halton Hills',
+  'Milton', 'Caledon', 'Pickering', 'Ajax', 'Whitby', 'Oshawa'
 ];
 
 const SKILLS = [
@@ -212,7 +214,7 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
           onChange={handleChange}
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500
             ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
-          placeholder="Enter your city (e.g., Surrey, Vancouver)"
+          placeholder="Enter your city (e.g., Toronto, Brampton)"
         />
         {errors.city && <p className="mt-1 text-sm text-red-500">{errors.city}</p>}
         <p className="mt-1 text-xs text-gray-500">
