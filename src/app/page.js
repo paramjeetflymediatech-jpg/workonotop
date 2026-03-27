@@ -264,7 +264,7 @@ export default function HomePage() {
       <input
         type="text"
         placeholder={placeholder || 'What do you need fixed?'}
-        className="w-full bg-transparent border-none outline-none text-black placeholder:text-slate-400 text-lg md:text-xl"
+        className="w-full bg-transparent border-none outline-none text-black placeholder:text-black text-lg md:text-xl"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         onKeyDown={handleKeyDown}
