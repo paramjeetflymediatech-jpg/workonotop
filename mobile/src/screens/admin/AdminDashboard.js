@@ -127,7 +127,6 @@ const AdminDashboard = ({ navigation }) => {
                     </TouchableOpacity>
 
                     <View style={styles.headerCenter}>
-                        {/* <Text style={styles.headerLabel}>Admin Panel</Text> */}
                         <Text style={styles.headerName}>Welcome back, {adminName}</Text>
                     </View>
 

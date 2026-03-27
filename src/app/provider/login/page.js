@@ -55,8 +55,8 @@ export default function ProviderLogin() {
       {/* Left panel - branding */}
       <div className="hidden lg:flex flex-col justify-between w-2/5 bg-gradient-to-br from-green-700 to-teal-700 p-12 text-white">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">WorkOnTap</h1>
-          <p className="mt-2 text-green-200 text-sm">Pro Dashboard</p>
+          {/* <h1 className="text-3xl font-bold tracking-tight">WorkOnTap</h1> */}
+          {/* <p className="mt-2 text-green-200 text-sm">Pro Dashboard</p> */}
         </div>
         <div>
           <div className="space-y-6">
@@ -75,7 +75,7 @@ export default function ProviderLogin() {
             ))}
           </div>
         </div>
-        <p className="text-green-300 text-sm">© 2025 WorkOnTap. All rights reserved.</p>
+        <p className="text-green-300 text-sm"></p>
       </div>
 
       {/* Right panel - form */}

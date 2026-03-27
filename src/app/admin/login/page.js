@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 
 export default function AdminLogin() {
   const router = useRouter()
@@ -11,31 +13,31 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
-// app/admin/login/page.js — only the handleLogin function changes
-const handleLogin = async (e) => {
-  e.preventDefault()
-  setError('')
-  setLoading(true)
-  try {
-    const res = await fetch('/api/admin/login', {  // ✅ /auth removed
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
-    const data = await res.json()
-    if (data.success) {
-      // ✅ no localStorage — JWT lives in httpOnly cookie
-      router.push('/admin')
-      router.refresh()
-    } else {
-      setError(data.message || 'Invalid credentials')
+  // app/admin/login/page.js — only the handleLogin function changes
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/login', {  // ✅ /auth removed
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        // ✅ no localStorage — JWT lives in httpOnly cookie
+        router.push('/admin')
+        router.refresh()
+      } else {
+        setError(data.message || 'Invalid credentials')
+      }
+    } catch {
+      setError('An error occurred. Please try again.')
+    } finally {
+      setLoading(false)
     }
-  } catch {
-    setError('An error occurred. Please try again.')
-  } finally {
-    setLoading(false)
   }
-}
 
   return (
     <div className="min-h-screen flex" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
@@ -59,12 +61,10 @@ const handleLogin = async (e) => {
           ))}
         </div>
 
-        {/* Logo */}
         <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-white font-bold text-lg">W</div>
-            <span className="text-white font-bold text-xl tracking-tight">WorkOnTap</span>
-          </div>
+          <Link href="/">
+            <Image src="/logo.png" alt="Logo" width={160} height={50} className="object-contain" />
+          </Link>
         </div>
 
         {/* Center content */}
@@ -108,11 +108,10 @@ const handleLogin = async (e) => {
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-gray-50">
         <div className="w-full max-w-md">
 
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-3 mb-10">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white text-base"
-              style={{ background: 'linear-gradient(135deg, #0f766e, #0891b2)' }}>W</div>
-            <span className="font-bold text-gray-900 text-lg tracking-tight">WorkOnTap</span>
+          <div className="lg:hidden mb-10">
+            <Link href="/">
+              <Image src="/logo.png" alt="Logo" width={140} height={45} className="object-contain" />
+            </Link>
           </div>
 
           {/* Heading */}

@@ -30,6 +30,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Home, Briefcase, DollarSign, User, LogOut, Menu, X, ChevronRight, MessageCircle, AlertCircle, Star } from 'lucide-react';
 
 const STRIPE_REQUIRED_PATHS = ['/provider/chats', '/provider/earnings'];
@@ -135,21 +136,21 @@ export default function ProviderLayout({ children }) {
         setProvider(prov);
         const isStripeOnboarded = !!prov.stripe_onboarding_complete;
         setStripeConnected(isStripeOnboarded);
-        
+
         // If they are on a "locked" path, send them to dashboard
         const restrictedPaths = ['/provider/onboarding', '/provider/pending', '/provider/rejected', '/provider/verify-email-pending'];
         if (restrictedPaths.some(p => pathname.startsWith(p))) {
           // Exception: Allow Step 3 (Stripe) if not onboarded yet
           const urlParams = new URLSearchParams(window.location.search);
           const currentStep = urlParams.get('step');
-          
+
           if (pathname === '/provider/onboarding' && currentStep === '3' && !isStripeOnboarded) {
-             // Keep them on onboarding step 3
+            // Keep them on onboarding step 3
           } else {
             router.replace('/provider/dashboard');
           }
         }
-        
+
         setLoading(false);
         return;
       }
@@ -200,13 +201,13 @@ export default function ProviderLayout({ children }) {
   };
 
   const navItems = [
-    { href: '/provider/dashboard',      label: 'Dashboard',      icon: Home },
-    { href: '/provider/available-jobs', label: 'Available Jobs',  icon: Briefcase },
-    { href: '/provider/jobs',           label: 'My Jobs',         icon: Briefcase },
-    { href: '/provider/chats',          label: 'Messages',        icon: MessageCircle, stripeRequired: true },
-    { href: '/provider/payouts',        label: 'Earnings',        icon: DollarSign,    stripeRequired: true },
-    { href: '/provider/ratings',        label: 'Ratings',         icon: Star },
-    { href: '/provider/profile',        label: 'Profile',         icon: User },
+    { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/provider/available-jobs', label: 'Available Jobs', icon: Briefcase },
+    { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
+    { href: '/provider/chats', label: 'Messages', icon: MessageCircle, stripeRequired: true },
+    { href: '/provider/payouts', label: 'Earnings', icon: DollarSign, stripeRequired: true },
+    { href: '/provider/ratings', label: 'Ratings', icon: Star },
+    { href: '/provider/profile', label: 'Profile', icon: User },
   ];
 
   if (loading) return (
@@ -245,15 +246,13 @@ export default function ProviderLayout({ children }) {
           handleNavClick(e, item.href);
           if (isMobile && !isLocked) setMobileMenuOpen(false);
         }}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group w-full ${
-          isActive ? 'bg-green-50 text-green-700'
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group w-full ${isActive ? 'bg-green-50 text-green-700'
           : isLocked ? 'text-gray-400 hover:bg-amber-50 cursor-pointer'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-        }`}
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`}
       >
-        <Icon className={`h-4 w-4 flex-shrink-0 ${
-          isActive ? 'text-green-600' : isLocked ? 'text-gray-300' : 'text-gray-400 group-hover:text-gray-600'
-        }`} />
+        <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-green-600' : isLocked ? 'text-gray-300' : 'text-gray-400 group-hover:text-gray-600'
+          }`} />
 
         {(isMobile || !sidebarCollapsed) && <span className="flex-1">{item.label}</span>}
 
@@ -281,7 +280,9 @@ export default function ProviderLayout({ children }) {
       <aside className={`hidden lg:flex flex-col fixed top-0 left-0 h-full bg-white border-r border-gray-100 shadow-sm z-40 transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
         <div className={`flex items-center h-16 border-b border-gray-100 px-4 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!sidebarCollapsed && (
-            <Link href="/provider/dashboard" className="text-xl font-bold text-green-700 tracking-tight">WorkOnTap</Link>
+            <Link href="/provider/dashboard">
+              <Image src="/logo.png" alt="Logo" width={140} height={45} className="object-contain" />
+            </Link>
           )}
           <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
@@ -340,7 +341,9 @@ export default function ProviderLayout({ children }) {
       {/* Mobile Sidebar */}
       <aside className={`lg:hidden fixed top-0 left-0 h-full w-64 bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100">
-          <Link href="/provider/dashboard" className="text-xl font-bold text-green-700">WorkOnTap</Link>
+          <Link href="/provider/dashboard">
+            <Image src="/logo.png" alt="Logo" width={140} height={45} className="object-contain" />
+          </Link>
           <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100">
             <X className="h-5 w-5" />
           </button>
@@ -390,7 +393,9 @@ export default function ProviderLayout({ children }) {
           <button onClick={() => setMobileMenuOpen(true)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100">
             <Menu className="h-5 w-5" />
           </button>
-          <Link href="/provider/dashboard" className="ml-3 text-lg font-bold text-green-700">WorkOnTap</Link>
+          <Link href="/provider/dashboard" className="ml-3">
+            <Image src="/logo.png" alt="Logo" width={120} height={40} className="object-contain" />
+          </Link>
           {!stripeConnected && (
             <Link href="/provider/onboarding?step=3"
               className="ml-auto flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-2.5 py-1.5 rounded-full font-semibold border border-amber-200">

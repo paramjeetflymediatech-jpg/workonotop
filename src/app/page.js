@@ -175,48 +175,40 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans antialiased text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans antialiased text-slate-900 overflow-x-hidden">
       <Header />
 
       {/* Unique Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-slate-900 text-white">
-        {/* Abstract Background Elements */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/20 rounded-full blur-[120px] animate-pulse"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-amber-500/10 rounded-full blur-[100px]"></div>
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}></div>
-        </div>
+      <section className="relative min-h-[calc(100vh-64px)] flex items-center overflow-hidden bg-white">
 
-        <div className="container mx-auto px-6 relative z-10 py-20">
+        <div className="container mx-auto px-6 max-w-7xl relative z-10 py-20">
           <div className="flex flex-col lg:flex-row items-center gap-16">
             {/* Left Content */}
             <div className="flex-1 text-center lg:text-left relative z-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-6 backdrop-blur-sm animate-fadeIn">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                5,000+ Verified Pros Ready
-              </div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 border border-brand/30 text-[#15803D] text-sm font-medium mb-6 backdrop-blur-sm animate-fadeIn">
+  <span className="relative flex h-2 w-2">
+    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brandLight opacity-75"></span>
+    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
+  </span>
+  5,000+ Verified Pros Ready
+</div>
 
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-[family-name:var(--font-outfit)] leading-[1.1] mb-8 tracking-tight min-h-[100px] md:min-h-[140px] lg:min-h-[160px]">
                 Your Home, <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
+                <span className="text-transparent bg-clip-text bg-[#15803D]">
                   {heroText || '\u00A0'}
                 </span>
                 <span className="text-emerald-400 animate-pulse">|</span>
               </h1>
 
-              <p className="text-lg md:text-xl text-slate-300 mb-10 max-w-xl lg:mx-0 mx-auto leading-relaxed">
+              <p className="text-lg md:text-xl mb-10 max-w-xl lg:mx-0 mx-auto leading-relaxed">
                 Connect with the city&apos;s finest tradespeople in minutes.
                 Transparent pricing, instant booking, and guaranteed quality.
               </p>
 
               {/* Floating Search Bar */}
-              <div className="relative max-w-2xl lg:mx-0 mx-auto group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+              {/* <div className="relative max-w-2xl lg:mx-0 mx-auto group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
                 <div
                   className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 flex items-center hover:bg-white/15 transition-all duration-300"
                 >
@@ -237,9 +229,67 @@ export default function HomePage() {
                     Search
                   </button>
                 </div>
-              </div>
+              </div> */}
 
-              <div className="mt-8 flex flex-wrap items-center gap-6 justify-center lg:justify-start text-sm text-slate-400">
+
+              <div className="relative max-w-2xl lg:mx-0 mx-auto group">
+  
+  {/* Glow Border */}
+  <div className="absolute -inset-1 rounded-2xl opacity-30 group-hover:opacity-60 transition duration-700"
+    style={{
+      background: "linear-gradient(90deg, #15803D, #22c55e)"
+    }}
+  ></div>
+
+  {/* Main Box */}
+  <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 flex items-center hover:bg-white/15 transition-all duration-300">
+
+    {/* Input Area */}
+    <div className="flex items-center flex-1 px-4 py-3">
+      
+      {/* Icon */}
+      <svg
+        className="w-6 h-6 mr-3"
+        style={{ color: "#15803D" }}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        />
+      </svg>
+
+      {/* Input */}
+      <input
+        type="text"
+        placeholder={placeholder || 'What do you need fixed?'}
+        className="w-full bg-transparent border-none outline-none text-black placeholder:text-slate-400 text-lg md:text-xl"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        onKeyDown={handleKeyDown}
+      />
+    </div>
+
+    {/* Button */}
+    <button
+      onClick={handleSearchClick}
+      className="font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-xl transition-all active:scale-95 text-sm sm:text-base mr-2 sm:mr-0"
+      style={{
+        backgroundColor: "#15803D",
+        color: "#ECFDF5",
+        boxShadow: "0 10px 25px rgba(21, 128, 61, 0.4)"
+      }}
+      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#166534"}
+      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#15803D"}
+    >
+      Search
+    </button>
+
+  </div>
+</div>
+
+              <div className="mt-8 flex flex-wrap items-center gap-6 justify-center lg:justify-start text-sm">
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                   No hidden fees
@@ -252,7 +302,7 @@ export default function HomePage() {
             </div>
 
             {/* Right Side - Responsive Background/Visual */}
-            <div className="absolute inset-0 z-0 lg:relative lg:flex-1 lg:z-10 mt-12 lg:mt-0 overflow-hidden lg:overflow-visible opacity-25 lg:opacity-100 flex items-center justify-center">
+            <div className="absolute inset-0 z-0 lg:relative lg:flex-1 lg:z-10 mt-12 lg:mt-0 overflow-hidden lg:overflow-visible opacity-25 lg:opacity-100 flex items-center lg:justify-end justify-center">
               {/* White Gradient Background behind image */}
               <div className="absolute inset-x-0 lg:inset-0 transform scale-150 lg:scale-110"></div>
 
@@ -281,22 +331,42 @@ export default function HomePage() {
 
       {/* Sleek Ticker/Stats Section */}
       <section className="py-24 bg-slate-50">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
             <div className="group">
-              <div className="text-4xl md:text-6xl font-light text-slate-900 mb-2 font-[family-name:var(--font-outfit)] group-hover:text-emerald-500 transition-colors duration-500">500k<span className="text-emerald-500 font-bold">+</span></div>
+              <div className="text-4xl md:text-6xl font-light text-slate-900 mb-2 font-[family-name:var(--font-outfit)] group-hover:text-[#15803D] transition-colors duration-500">500k<span className="text-[#15803D] font-bold">+</span></div>
               <div className="text-slate-500 uppercase tracking-[0.2em] text-sm font-semibold">Jobs Completed Locally</div>
-              <div className="w-12 h-0.5 bg-slate-200 mx-auto mt-6 group-hover:w-24 group-hover:bg-emerald-500 transition-all duration-500"></div>
+              <div className="w-12 h-0.5 bg-slate-200 mx-auto mt-6 group-hover:w-24 group-hover:bg-[#15803D] transition-all duration-500"></div>
             </div>
             <div className="group">
-              <div className="text-4xl md:text-6xl font-light text-slate-900 mb-2 font-[family-name:var(--font-outfit)] group-hover:text-emerald-500 transition-colors duration-500">96<span className="text-emerald-500 font-bold">%</span></div>
+              <div className="text-4xl md:text-6xl font-light text-slate-900 mb-2 font-[family-name:var(--font-outfit)] group-hover:text-[#15803D] transition-colors duration-500">96<span className="text-[#15803D] font-bold">%</span></div>
               <div className="text-slate-500 uppercase tracking-[0.2em] text-sm font-semibold">Client Satisfaction</div>
-              <div className="w-12 h-0.5 bg-slate-200 mx-auto mt-6 group-hover:w-24 group-hover:bg-emerald-500 transition-all duration-500"></div>
+              <div className="w-12 h-0.5 bg-slate-200 mx-auto mt-6 group-hover:w-24 group-hover:bg-[#15803D] transition-all duration-500"></div>
             </div>
             <div className="group">
-              <div className="text-4xl md:text-6xl font-light text-slate-900 mb-2 font-[family-name:var(--font-outfit)] group-hover:text-emerald-500 transition-colors duration-500">4.8<span className="text-emerald-500 font-bold">★</span></div>
+              <div className="text-4xl md:text-6xl font-light text-slate-900 mb-2 font-[family-name:var(--font-outfit)] group-hover:text-[#15803D] transition-colors duration-500">4.8<span className="text-[#15803D] font-bold">★</span></div>
               <div className="text-slate-500 uppercase tracking-[0.2em] text-sm font-semibold">Average Pro Rating</div>
-              <div className="w-12 h-0.5 bg-slate-200 mx-auto mt-6 group-hover:w-24 group-hover:bg-emerald-500 transition-all duration-500"></div>
+              <div className="w-12 h-0.5 bg-slate-200 mx-auto mt-6 group-hover:w-24 group-hover:bg-[#15803D] transition-all duration-500"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Video "How it Works" Section */}
+      <section className="py-12 bg-white relative">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="max-w-5xl mx-auto">
+            <div className="relative rounded-[3rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-[12px] border-white group">
+              <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none"></div>
+              <video 
+                src="/video/how-it-works.mp4" 
+                className="w-full h-auto object-cover"
+                autoPlay 
+                muted 
+                loop 
+                playsInline
+                controls
+              />
             </div>
           </div>
         </div>
@@ -304,7 +374,7 @@ export default function HomePage() {
 
       {/* Interactive "How it Works" */}
       <section className="py-24 bg-white relative overflow-hidden">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 max-w-7xl">
           <div className="max-w-2xl mx-auto text-center mb-12 md:mb-20">
             <span className="text-emerald-600 font-bold tracking-widest uppercase text-xs md:text-sm mb-3 md:mb-4 block">Process</span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 font-[family-name:var(--font-outfit)] leading-tight">How WorkOnTap works</h2>
@@ -341,7 +411,7 @@ export default function HomePage() {
 
       {/* Asymmetrical Service Grid */}
       <section className="py-24 bg-slate-100">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 max-w-7xl">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 md:mb-16 gap-4 md:gap-6">
             <div className="max-w-2xl">
               <span className="text-emerald-600 font-bold tracking-widest uppercase text-xs md:text-sm mb-3 md:mb-4 block">Hot Right Now</span>
@@ -404,7 +474,7 @@ export default function HomePage() {
 
       {/* Why Choose Us & Premium Testimonials Combined */}
       <section className="py-24 bg-white">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center mb-32">
             <div>
               <span className="text-emerald-600 font-bold tracking-widest uppercase text-sm mb-4 block">Our Story</span>
@@ -431,7 +501,7 @@ export default function HomePage() {
               <div className="aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl skew-y-1">
                 <img src="/whychooseus.jpg" alt="Quality Work" className="w-full h-full object-cover" />
               </div>
-              <div className="absolute -bottom-10 -right-10 bg-emerald-500 text-slate-900 p-8 rounded-[2rem] shadow-xl max-w-xs hidden md:block">
+              <div className="absolute -bottom-10 -right-10 bg-[#16A34A] text-slate-900 p-8 rounded-[2rem] shadow-xl max-w-xs hidden md:block text-white">
                 <div className="text-4xl font-black mb-2">10+</div>
                 <div className="font-bold">Service Categories</div>
                 <div className="text-sm opacity-80">Covering everything from plumbing to landscaping.</div>
@@ -457,7 +527,7 @@ export default function HomePage() {
                   </div>
                   <p className="text-xl text-slate-700 italic mb-8 leading-relaxed">&quot;{t.text}&quot;</p>
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-slate-900 font-bold shadow-lg">
+                    <div className="w-12 h-12 rounded-full bg-[#16A34A] flex items-center justify-center text-white font-bold ">
                       {t.name.charAt(0)}
                     </div>
                     <div>
@@ -506,6 +576,9 @@ export default function HomePage() {
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
+        }
+        :global(html, body) {
+          overflow-x: hidden;
         }
       `}</style>
     </div>

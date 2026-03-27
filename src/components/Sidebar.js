@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAdminTheme } from '../app/admin/layout'
 
 export default function Sidebar() {
@@ -214,21 +215,15 @@ export default function Sidebar() {
         >
           {!isCollapsed ? (
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent truncate">
-                WorkOnTap
-              </h1>
-              <p className="text-xs mt-1 truncate" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>
-                Admin Panel
-              </p>
+              <Link href="/admin">
+                <Image src="/logo.png" alt="Logo" width={140} height={45} className="object-contain" />
+              </Link>
             </div>
           ) : (
             <div className="w-full flex justify-center">
-              <h1 className="text-2xl font-bold" style={{
-                background: 'linear-gradient(to right, #14b8a6, #06b6d4)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>W</h1>
+              <Link href="/admin">
+                <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
+              </Link>
             </div>
           )}
 

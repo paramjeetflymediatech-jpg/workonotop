@@ -216,9 +216,18 @@ export default function Users() {
     } catch { showMessage('error', 'Failed to delete provider') }
   }
 
-  const openEditProvider = () => {
-    if (!selectedProvider) return
-    setProviderForm({ name: selectedProvider.name || '', email: selectedProvider.email || '', phone: selectedProvider.phone || '', specialty: selectedProvider.specialty || '', city: selectedProvider.city || '', status: selectedProvider.status || 'pending' })
+  const openEditProvider = (p = null) => {
+    const providerToEdit = p || selectedProvider
+    if (!providerToEdit) return
+    if (p) setSelectedProvider(p)
+    setProviderForm({ 
+      name: providerToEdit.name || '', 
+      email: providerToEdit.email || '', 
+      phone: providerToEdit.phone || '', 
+      specialty: providerToEdit.specialty || '', 
+      city: providerToEdit.city || '', 
+      status: providerToEdit.status || 'pending' 
+    })
     setIsEditProviderOpen(true)
   }
 
@@ -632,9 +641,17 @@ export default function Users() {
                       </span>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4" onClick={e => e.stopPropagation()}>
-                      <div className="flex justify-end">
+                      <div className="flex items-center justify-end gap-1">
                         <button onClick={() => loadProviderDetails(p)} className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:opacity-90 transition whitespace-nowrap">
                           View
+                        </button>
+                        <button onClick={() => openEditProvider(p)}
+                          className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500'}`}>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+                        <button onClick={() => deleteProvider(p.id)}
+                          className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-red-400' : 'hover:bg-red-50 text-gray-500 hover:text-red-600'}`}>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
                       </div>
                     </td>

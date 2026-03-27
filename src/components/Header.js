@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from 'src/context/AuthContext';
 import CustomerAuthModal from '../components/CustomerAuthModal';
@@ -12,16 +13,16 @@ import {
 
 export default function Header() {
   const router = useRouter();
-  const { 
-    user, 
+  const {
+    user,
     userType,
     loading,
-    logout, 
+    logout,
     isProvider,
     isAdmin,
-    getDashboardLink, 
-    getUserDisplayName, 
-    getUserInitials 
+    getDashboardLink,
+    getUserDisplayName,
+    getUserInitials
   } = useAuth();
 
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -61,8 +62,10 @@ export default function Header() {
   if (loading) {
     return (
       <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
-        <div className="w-full px-4 lg:px-8 h-16 flex items-center justify-between">
-          <div className="text-xl font-extrabold text-green-700">WorkOnTap</div>
+        <div className="container mx-auto px-6 max-w-7xl h-16 flex items-center justify-between">
+          <Link href="/">
+            <Image src="/logo.png" alt="Logo" width={120} height={40} className="object-contain" />
+          </Link>
           <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
         </div>
       </header>
@@ -74,10 +77,10 @@ export default function Header() {
   return (
     <>
       <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
-        <nav className="w-full px-4 lg:px-8 h-16 flex items-center justify-between gap-3">
+        <nav className="container mx-auto px-6 max-w-7xl h-16 flex items-center justify-between gap-3">
 
-          <Link href="/" className="text-xl sm:text-2xl font-extrabold text-green-700 hover:text-green-800 transition tracking-tight flex-shrink-0">
-            WorkOnTap
+          <Link href="/" className="flex-shrink-0">
+            <Image src="/logo.png" alt="Logo" width={140} height={45} className="object-contain hover:opacity-90 transition" priority />
           </Link>
 
           <div className="hidden md:flex items-center gap-6 text-sm font-medium">
@@ -197,14 +200,14 @@ export default function Header() {
               className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl">
               Help Center
             </Link>
-            
+
             {isLoggedIn && (
               <button onClick={() => { setMobileMenuOpen(false); setShowLogoutConfirm(true); }}
                 className="w-full mt-4 px-4 py-2 bg-red-50 text-red-600 text-sm font-semibold rounded-xl">
                 Logout
               </button>
             )}
-            
+
             {!isLoggedIn && (
               <div className="pt-4 space-y-2">
                 <button onClick={() => openCustomerModal('login')}

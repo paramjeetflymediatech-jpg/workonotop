@@ -88,7 +88,7 @@ export default function ServiceDetailPage({ params }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-500 border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#16A34A] border-t-transparent"></div>
       </div>
     );
   }
@@ -98,7 +98,7 @@ export default function ServiceDetailPage({ params }) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Service not found</h2>
-          <Link href="/services" className="text-green-700 hover:underline">
+          <Link href="/services" className="text-[#16A34A] hover:underline">
             Browse all services
           </Link>
         </div>
@@ -111,23 +111,23 @@ export default function ServiceDetailPage({ params }) {
      <Header/>
       
       <div className="bg-gray-50 border-b border-gray-200 py-3">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 max-w-7xl">
           <div className="flex items-center text-sm text-gray-600">
-            <Link href="/" className="hover:text-green-700 transition">Home</Link>
+            <Link href="/" className="hover:text-[#16A34A] transition">Home</Link>
             <span className="mx-2">›</span>
-            <Link href="/services" className="hover:text-green-700 transition">Services</Link>
+            <Link href="/services" className="hover:text-[#16A34A] transition">Services</Link>
             <span className="mx-2">›</span>
             <span className="text-gray-900 font-medium">{service.name}</span>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 md:py-12">
+      <div className="container mx-auto px-6 max-w-7xl py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
           
           <div className="lg:col-span-2">
-            <div className="mb-6 md:mb-8 rounded-2xl overflow-hidden shadow-lg">
-              <div className="h-56 sm:h-64 md:h-72 flex items-center justify-center relative bg-gradient-to-br from-green-100 to-emerald-100">
+            <div className="mb-6 md:mb-8 rounded-2xl overflow-hidden shadow-lg border border-slate-100">
+              <div className="h-56 sm:h-64 md:h-72 flex items-center justify-center relative bg-gradient-to-br from-[#16A34A]/5 to-[#16A34A]/10">
                 {service.image_url ? (
                   <img 
                     src={service.image_url} 
@@ -140,7 +140,7 @@ export default function ServiceDetailPage({ params }) {
                   </span>
                 )}
                 <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium text-gray-700 shadow-md border border-gray-200">
-                  <span className="text-green-700 font-bold">{service.category_name || 'General'}</span>
+                  <span className="text-[#16A34A] font-bold">{service.category_name || 'General'}</span>
                 </div>
               </div>
             </div>
@@ -150,12 +150,12 @@ export default function ServiceDetailPage({ params }) {
                 {service.name}
               </h1>
               <div className="flex items-center gap-4">
-                <span className="text-green-700 font-semibold">⚡ Get a confirmed job in minutes</span>
+                <span className="text-[#16A34A] font-semibold">⚡ Get a confirmed job in minutes</span>
               </div>
             </div>
 
             {service.description && (
-              <div className="bg-green-50/50 rounded-2xl p-6 md:p-8 mb-8 border border-green-100">
+              <div className="bg-[#16A34A]/5 rounded-2xl p-6 md:p-8 mb-8 border border-[#16A34A]/10">
                 <p className="text-gray-800 text-lg leading-relaxed break-words">
                   {service.description}
                 </p>
@@ -165,13 +165,13 @@ export default function ServiceDetailPage({ params }) {
             {useCases.length > 0 && (
               <div className="mb-10">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 flex items-center">
-                  <span className="bg-green-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg mr-3">✓</span>
+                  <span className="bg-[#16A34A] text-white w-8 h-8 rounded-full flex items-center justify-center text-lg mr-3">✓</span>
                   Customers use this service for
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {useCases.map((item, index) => (
-                    <div key={index} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-green-50 transition">
-                      <svg className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <div key={index} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-[#16A34A]/5 transition">
+                      <svg className="w-6 h-6 text-[#16A34A] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                       <span className="text-gray-800 font-medium">{item}</span>
@@ -183,28 +183,28 @@ export default function ServiceDetailPage({ params }) {
               </div>
             )}
 
-            <div className="mb-10 bg-white rounded-2xl border border-gray-200 p-6 md:p-8 shadow-sm">
+            <div className="mb-10 bg-white rounded-2xl border border-gray-200 p-6 md:p-8 shadow-sm text-slate-900">
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8 flex items-center">
-                <span className="bg-green-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg mr-3">⚡</span>
+                <span className="bg-[#16A34A] text-white w-8 h-8 rounded-full flex items-center justify-center text-lg mr-3">⚡</span>
                 How WorkOnTap works
               </h2>
               <div className="space-y-8">
                 <div className="flex items-start space-x-4">
-                  <div className="bg-green-700 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-md">1</div>
+                  <div className="bg-[#16A34A] text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-md">1</div>
                   <div className="pt-1">
                     <h3 className="font-bold text-xl text-gray-800 mb-2">Tell us what you need</h3>
                     <p className="text-gray-600">Select a date, time, and describe your job — takes 2 minutes.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
-                  <div className="bg-green-700 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-md">2</div>
+                  <div className="bg-[#16A34A] text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-md">2</div>
                   <div className="pt-1">
                     <h3 className="font-bold text-xl text-gray-800 mb-2">Get matched instantly</h3>
                     <p className="text-gray-600">Submit your request and get matched with a certified WorkOnTap pro in minutes — average 10 min response.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
-                  <div className="bg-green-700 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-md">3</div>
+                  <div className="bg-[#16A34A] text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-md">3</div>
                   <div className="pt-1">
                     <h3 className="font-bold text-xl text-gray-800 mb-2">Chat & confirm</h3>
                     <p className="text-gray-600">Discuss details with your pro before the job begins. Pay securely after you&apos;re 100% satisfied.</p>
@@ -213,16 +213,16 @@ export default function ServiceDetailPage({ params }) {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-800 to-green-700 rounded-2xl p-6 md:p-8 text-white shadow-xl">
+            <div className="bg-gradient-to-br from-[#16A34A] to-[#15803D] rounded-2xl p-6 md:p-8 text-white shadow-xl">
               <div className="flex flex-col sm:flex-row items-center gap-6">
                 <div className="text-6xl">🛡️</div>
                 <div className="flex-1 text-center sm:text-left">
                   <h3 className="text-2xl font-bold mb-2">Homeowner Protection Promise</h3>
-                  <p className="text-green-100 mb-4">
+                  <p className="text-white/90 mb-4">
                     Every WorkOnTap pro is licensed, background-checked, and well-rated. 
                     If your experience isn&apos;t perfect, we&apos;ll make it right — 100% guaranteed.
                   </p>
-                  <Link href="/guarantee" className="inline-flex items-center bg-white text-green-800 px-6 py-3 rounded-full font-semibold hover:bg-green-50 transition shadow-lg">
+                  <Link href="/guarantee" className="inline-flex items-center bg-white text-[#16A34A] px-6 py-3 rounded-full font-semibold hover:bg-green-50 transition shadow-lg">
                     Learn more
                     <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -235,38 +235,38 @@ export default function ServiceDetailPage({ params }) {
 
           <div className="lg:col-span-1">
             <div className="sticky top-24">
-              <div className="bg-white rounded-2xl border-2 border-green-100 overflow-hidden shadow-xl hover:shadow-2xl transition-shadow">
-                <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-5">
+              <div className="bg-white rounded-2xl border-2 border-[#16A34A]/20 overflow-hidden shadow-xl hover:shadow-2xl transition-shadow text-slate-900">
+                <div className="bg-gradient-to-r from-[#16A34A] to-[#15803D] px-6 py-5">
                   <h3 className="text-2xl font-bold text-white flex items-center">
                     <span className="mr-2">📋</span>
                     Book this job
                   </h3>
-                  <p className="text-green-100 text-sm mt-1">Get a confirmed pro in minutes</p>
+                  <p className="text-white/80 text-sm mt-1">Get a confirmed pro in minutes</p>
                 </div>
                 
                 <div className="p-6">
                   <div className="mb-6">
                     <p className="text-sm text-gray-600 mb-2 flex items-center">
-                      <span className="text-green-700 mr-1">✓</span> 
+                      <span className="text-[#16A34A] mr-1">✓</span> 
                       Transparent, upfront pricing
-                      <Link href="/pricing" className="text-green-700 underline ml-1 text-xs font-medium">
+                      <Link href="/pricing" className="text-[#16A34A] underline ml-1 text-xs font-medium">
                         Learn more
                       </Link>
                     </p>
                     
-                    <div className="bg-green-50 rounded-xl p-5 border-2 border-green-200">
+                    <div className="bg-[#16A34A]/5 rounded-xl p-5 border-2 border-[#16A34A]/10">
                       <div className="text-center">
                         <div className="text-sm uppercase tracking-wider text-gray-600 mb-1">Starting at</div>
-                        <div className="text-4xl md:text-5xl font-extrabold text-green-800">
+                        <div className="text-4xl md:text-5xl font-extrabold text-[#16A34A]">
                           ${formatPrice(service.base_price)}
                         </div>
                         <div className="text-sm text-gray-600 mt-2">For the first appointment</div>
                         {service.additional_price > 0 && (
                           <>
-                            <div className="border-t border-green-200 my-3"></div>
+                            <div className="border-t border-[#16A34A]/20 my-3"></div>
                             <div className="flex justify-between items-center">
                               <span className="text-gray-700">Additional</span>
-                              <span className="font-bold text-green-800">+${formatPrice(service.additional_price)}</span>
+                              <span className="font-bold text-[#16A34A]">+${formatPrice(service.additional_price)}</span>
                             </div>
                           </>
                         )}
@@ -298,7 +298,7 @@ export default function ServiceDetailPage({ params }) {
                       Where do you need service?
                     </label>
                     <div 
-                      className="flex items-center p-3 border-2 border-gray-200 rounded-xl hover:border-green-500 transition cursor-pointer bg-white"
+                      className="flex items-center p-3 border-2 border-gray-200 rounded-xl hover:border-[#16A34A] transition cursor-pointer bg-white"
                       onClick={() => setAddressModalOpen(true)}
                     >
                       <span className="text-sm flex-1 line-clamp-1">{selectedAddress}</span>
@@ -312,13 +312,13 @@ export default function ServiceDetailPage({ params }) {
                   </div>
 
                   <Link href={`/booking/schedule?service=${service.id}`}>
-                    <button className="w-full bg-gradient-to-r from-green-700 to-green-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:from-green-800 hover:to-green-700 transition-all duration-300 transform hover:scale-[1.02]">
+                    <button className="w-full bg-gradient-to-r from-[#16A34A] to-[#15803D] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-[#16A34A]/20 transition-all duration-300 transform hover:scale-[1.02]">
                       Get Started — Free Quote
                     </button>
                   </Link>
 
                   <p className="text-xs text-center text-gray-500 mt-3 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-green-600 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-4 h-4 text-[#16A34A] mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
                     You won&apos;t be charged until the job is complete
@@ -367,8 +367,8 @@ export default function ServiceDetailPage({ params }) {
 
       {relatedServices.length > 0 && (
         <section className="bg-gray-50/80 py-12 md:py-16 mt-8 border-t border-gray-200">
-          <div className="container mx-auto px-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8 text-center">
+          <div className="container mx-auto px-6 max-w-7xl">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8 text-center font-[family-name:var(--font-outfit)]">
               You might also need
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -376,9 +376,9 @@ export default function ServiceDetailPage({ params }) {
                 <Link 
                   key={item.id}
                   href={`/services/${item.slug}`}
-                  className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                  className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:shadow-[#16A34A]/5 transition-all duration-300 hover:-translate-y-1 border border-slate-100"
                 >
-                  <div className="h-32 bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <div className="h-32 bg-gradient-to-br from-[#16A34A]/5 to-[#16A34A]/10 flex items-center justify-center">
                     {item.image_url ? (
                       <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                     ) : (
@@ -387,11 +387,11 @@ export default function ServiceDetailPage({ params }) {
                       </span>
                     )}
                   </div>
-                  <div className="p-4">
-                    <h3 className="font-bold text-gray-800 group-hover:text-green-700 transition line-clamp-1">
+                  <div className="p-4 text-slate-900">
+                    <h3 className="font-bold text-gray-800 group-hover:text-[#16A34A] transition line-clamp-1">
                       {item.name}
                     </h3>
-                    <p className="text-green-700 font-semibold text-sm mt-1">
+                    <p className="text-[#16A34A] font-semibold text-sm mt-1">
                       Starting at ${formatPrice(item.base_price)}
                     </p>
                   </div>

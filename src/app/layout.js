@@ -21,6 +21,9 @@ const outfit = Outfit({
 export const metadata = {
   title: "WorkOnTap - Home Maintenance Services",
   description: "Book trusted local pros for your home maintenance needs",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({ children }) {
