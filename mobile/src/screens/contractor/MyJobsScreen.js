@@ -4,6 +4,7 @@ import {
     ActivityIndicator, SafeAreaView, RefreshControl, StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { DrawerActions } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../utils/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -113,8 +114,8 @@ const MyJobsScreen = ({ navigation }) => {
 
             {/* Header */}
             <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(15)) }]}>
-                <TouchableOpacity onPress={() => navigation.openDrawer ? navigation.openDrawer() : navigation.goBack()} style={styles.menuBtn}>
-                    <Ionicons name={navigation.openDrawer ? "menu-outline" : "arrow-back"} size={moderateScale(26)} color="#fff" />
+                <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} style={styles.menuBtn}>
+                    <Ionicons name="menu-outline" size={moderateScale(26)} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>My Jobs</Text>
                 <View style={{ width: moderateScale(40) }} />

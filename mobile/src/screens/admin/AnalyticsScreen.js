@@ -46,9 +46,9 @@ const AnalyticsScreen = ({ navigation }) => {
     };
 
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-GB', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'GBP',
+            currency: 'USD',
             minimumFractionDigits: 0,
         }).format(amount);
     };

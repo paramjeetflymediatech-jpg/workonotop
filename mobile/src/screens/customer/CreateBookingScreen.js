@@ -490,48 +490,28 @@ const CreateBookingScreen = ({ navigation, route }) => {
     );
 
     const renderStep5 = () => (
-        <ScrollView 
-            style={styles.stepContainer} 
-            contentContainerStyle={{ paddingBottom: 40 }}
-            showsVerticalScrollIndicator={false}
-        >
-            <Text style={styles.sectionTitle}>Payment & Authorization</Text>
-
-            <View style={styles.paymentCard}>
-                <Text style={styles.paymentCardTitle}>Order Summary</Text>
-
-                <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>{service.name}</Text>
-                    <Text style={styles.paymentValue}>${parseFloat(service.base_price || service.price || 0).toFixed(2)}</Text>
-                </View>
-
-                {service.additional_price > 0 && (
-                    <View style={styles.paymentRow}>
-                        <Text style={styles.paymentLabel}>⏱️ Overtime</Text>
-                        <Text style={styles.paymentValue}>
-                            ${parseFloat(service.additional_price).toFixed(2)}/hr (max 2hr = ${(parseFloat(service.additional_price) * 2).toFixed(2)})
+        <View style={styles.stepContainer}>
+            <View style={{ marginBottom: 15 }}>
+                <Text style={styles.sectionTitle}>Payment & Authorization</Text>
+                
+                <View style={[styles.paymentCard, { padding: 15, marginBottom: 10 }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontWeight: '700', fontSize: 16, color: '#0f172a' }}>Total Amount</Text>
+                        <Text style={{ fontWeight: '800', fontSize: 20, color: PRIMARY }}>
+                            ${(parseFloat(service.base_price || service.price || 0) + (parseFloat(service.additional_price || 0) * 2)).toFixed(2)}
                         </Text>
                     </View>
-                )}
-
-                <View style={[styles.paymentRow, styles.totalRow]}>
-                    <View>
-                        <Text style={styles.totalLabel}>Total Hold Amount</Text>
-                        <Text style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                            (Includes 2hr Overtime Authorization)
-                        </Text>
-                    </View>
-                    <Text style={styles.totalPrice}>
-                        ${(parseFloat(service.base_price || service.price || 0) + (parseFloat(service.additional_price || 0) * 2)).toFixed(2)}
+                    <Text style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+                        Includes base price + 2hr overtime authorization hold.
                     </Text>
                 </View>
-            </View>
 
-            <View style={styles.infobox}>
-                <Ionicons name="shield-checkmark-outline" size={20} color="#0f766e" />
-                <Text style={styles.infoboxText}>
-                    Secure payment processed via Stripe. Your card information is never stored on our servers.
-                </Text>
+                <View style={[styles.infobox, { padding: 12 }]}>
+                    <Ionicons name="shield-checkmark-outline" size={16} color="#0f766e" />
+                    <Text style={[styles.infoboxText, { fontSize: 11 }]}>
+                        Securely processed via Stripe. Card details are never stored.
+                    </Text>
+                </View>
             </View>
 
             {paymentUrl ? (
@@ -540,9 +520,10 @@ const CreateBookingScreen = ({ navigation, route }) => {
                         source={{ uri: paymentUrl }}
                         onMessage={handleWebViewMessage}
                         showsVerticalScrollIndicator={true}
-                        bounces={true}
+                        bounces={false}
                         scrollEnabled={true}
                         style={{ backgroundColor: 'transparent' }}
+                        nestedScrollEnabled={true}
                     />
                 </View>
             ) : (
@@ -550,7 +531,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     <Text>Loading secure payment gateway...</Text>
                 </View>
             )}
-        </ScrollView>
+        </View>
     );
 
     return (
@@ -719,8 +700,7 @@ const styles = StyleSheet.create({
 
     webviewContainer: {
         flex: 1,
-        marginTop: verticalScale(20),
-        minHeight: verticalScale(600),
+        marginTop: verticalScale(10),
         backgroundColor: 'transparent'
     },
 

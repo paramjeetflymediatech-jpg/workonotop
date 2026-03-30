@@ -37,9 +37,9 @@ const EarningsScreen = ({ navigation }) => {
     const onRefresh = () => { setRefreshing(true); fetchEarnings(); };
 
     const fmt = (val) =>
-        new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(val || 0);
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
 
-    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
     const balances = data?.balances || {};
     const payouts = data?.payouts || [];

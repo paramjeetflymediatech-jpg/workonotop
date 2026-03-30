@@ -32,8 +32,8 @@ export async function GET(request, { params }) {
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
       LEFT JOIN disputes d ON b.id = d.booking_id
-      WHERE b.id = ? AND b.provider_id = ?`,
-      [id, decoded.providerId]  // Note: using providerId
+      WHERE b.id = ? AND (b.provider_id = ? OR (b.provider_id IS NULL AND b.status IN ('pending', 'matching')))`,
+      [id, decoded.providerId]  // decoded.providerId used for assigned jobs
     )
 
     if (jobs.length === 0) {

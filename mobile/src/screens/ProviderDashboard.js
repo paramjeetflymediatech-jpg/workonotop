@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { DrawerActions } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../utils/responsive';
@@ -21,9 +22,9 @@ const TEAL_DARK = '#134e4a';
 const TEAL_LIGHT = '#14b8a6';
 
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-GB', {
+    return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'GBP',
+        currency: 'USD',
         minimumFractionDigits: 0,
     }).format(amount || 0);
 };
@@ -126,7 +127,7 @@ const ProviderDashboard = ({ navigation }) => {
             <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(15)) }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TouchableOpacity
-                        onPress={() => navigation.openDrawer()}
+                        onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
                         style={styles.menuBtn}
                     >
                         <Ionicons name="menu-outline" size={moderateScale(26)} color="#fff" />
@@ -198,7 +199,7 @@ const ProviderDashboard = ({ navigation }) => {
                     <Text style={styles.jobsSubtitle}>
                         You have {dashboardData.availableJobsCount} jobs matching your skills nearby
                     </Text>
-                    <TouchableOpacity style={styles.viewJobsButton} onPress={() => navigation.navigate('ContractorJobs')}>
+                    <TouchableOpacity style={styles.viewJobsButton} onPress={() => navigation.navigate('AvailableJobs')}>
                         <Text style={styles.viewJobsText}>View Available Jobs</Text>
                     </TouchableOpacity>
                 </View>

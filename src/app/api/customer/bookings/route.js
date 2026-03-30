@@ -157,6 +157,14 @@ export async function POST(request) {
     )
     booking.photos = photos.map(p => p.photo_url)
 
+    // Fetch provider-uploaded job photos (before/after)
+    const jobPhotos = await execute(
+      `SELECT photo_url, photo_type FROM job_photos WHERE booking_id = ? ORDER BY photo_type, uploaded_at`,
+      [booking_id]
+    )
+    booking.before_photos = jobPhotos.filter(p => p.photo_type === 'before')
+    booking.after_photos = jobPhotos.filter(p => p.photo_type === 'after')
+
     const statusHistory = await execute(
       `SELECT * FROM booking_status_history 
        WHERE booking_id = ? 

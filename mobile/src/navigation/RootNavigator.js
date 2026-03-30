@@ -278,7 +278,6 @@ const RootNavigator = () => {
             />
 
             {/* ── Provider job & profile screens ────────────────────────── */}
-            <Stack.Screen name="ContractorJobs"        component={ContractorJobsScreen}        options={{ title: 'Jobs' }} />
             <Stack.Screen name="MyJobs"                component={MyJobsScreen}                options={{ headerShown: false }} />
             <Stack.Screen name="JobDetails"            component={JobDetailsScreen}            options={{ headerShown: false }} />
             <Stack.Screen name="StartJob"              component={StartJobScreen}              options={{ headerShown: false }} />

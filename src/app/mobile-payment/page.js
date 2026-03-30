@@ -100,9 +100,9 @@ function PaymentContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 font-sans antialiased pb-10">
-      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-        <div className="mb-6 flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+    <div className="min-h-screen bg-gray-50 p-2 font-sans antialiased pb-4">
+      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+        <div className="mb-4 flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
           <span className="text-sm font-semibold text-gray-700">Total Authorization</span>
           <span className="text-xl font-bold text-[#115e59]">${parseFloat(amount || 0).toFixed(2)}</span>
         </div>

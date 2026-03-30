@@ -28,6 +28,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     const [reviewText, setReviewText] = useState('');
     const [disputeVisible, setDisputeVisible] = useState(false);
     const [disputeText, setDisputeText] = useState('');
+    const [photos, setPhotos] = useState({ before: [], after: [], customer: [] });
 
     useEffect(() => {
         fetchDetails();
@@ -41,10 +42,17 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     const fetchDetails = async () => {
         try {
             if (!refreshing) setLoading(true);
-            const res = await apiService.customer.getBookingDetails(bookingId, user?.id, user?.token);
+            const res = await apiService.customer.getBookingDetails(bookingId, user?.token);
             if (res && res.data) {
                 const b = Array.isArray(res.data) ? res.data[0] : res.data;
                 setBooking(b);
+                
+                // API returns: before_photos = [{url, uploaded_at}], after_photos = [{url, uploaded_at}], photos = [string]
+                setPhotos({
+                    before: b.before_photos || [],
+                    after: b.after_photos || [],
+                    customer: (b.photos || []).map(p => typeof p === 'string' ? { url: p } : p)
+                });
             }
         } catch (error) {
             console.error('Error fetching booking details:', error);
@@ -108,8 +116,12 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     setActionLoading('approve');
                     try {
                         await apiService.post(`/api/customer/bookings/${bookingId}/approve`, { action: 'approve' }, user?.token);
+                        // Wait 1s for DB to update status to 'completed' before allowing review
+                        await new Promise(r => setTimeout(r, 1000));
+                        await fetchDetails();
                         Alert.alert('Success!', 'The job is now completed successfully.', [
-                            { text: 'Rate Service', onPress: () => { fetchDetails(); setRatingVisible(true); } }
+                            { text: 'Rate Service', onPress: () => setRatingVisible(true) },
+                            { text: 'Skip', style: 'cancel' }
                         ]);
                     } catch (err) {
                         Alert.alert('Error', 'Failed to approve. Please try again.');
@@ -155,11 +167,12 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
         try {
             setActionLoading('review');
             await apiService.customer.submitReview({
-                booking_id: bookingId,
+                booking_id: parseInt(bookingId),   // must be int — API validates
                 provider_id: booking.provider_id,
                 customer_id: user?.id,
                 rating: ratingValue,
-                review: reviewText
+                review: reviewText,
+                is_anonymous: 0
             }, user?.token);
             Alert.alert('Thank You!', 'Your review has been successfully submitted.');
             setRatingVisible(false);
@@ -320,9 +333,28 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
         : null;
 
     const basePrice = parseFloat(booking.service_price || 0);
-    const authAmount = booking.authorized_amount ? parseFloat(booking.authorized_amount) : basePrice;
-    const overtimeEarnings = parseFloat(booking.overtime_earnings || 0);
-    const totalAmount = basePrice + overtimeEarnings;
+    const overtimeRate = parseFloat(booking.additional_price || 0);
+    const actualMinutes = parseInt(booking.actual_duration_minutes || 0);
+    const standardMinutes = parseInt(booking.standard_duration_minutes || 60);
+    
+    const overtimeHoldAmount = overtimeRate * 2;
+    const authAmount = booking.authorized_amount ? parseFloat(booking.authorized_amount) : (basePrice + overtimeHoldAmount);
+    const isOvertime = actualMinutes > standardMinutes && overtimeRate > 0;
+    const overtimeMinutes = isOvertime ? Math.min(actualMinutes - standardMinutes, 120) : 0;
+    const overtimeCost = isOvertime ? Math.round((overtimeRate * overtimeMinutes / 60) * 100) / 100 : 0;
+    const totalAmount = basePrice + overtimeCost;
+
+    const statusConfig = {
+        pending: { label: 'Pending', color: '#f59e0b', dot: '#f59e0b' },
+        matching: { label: 'Finding Provider', color: '#f97316', dot: '#f97316' },
+        confirmed: { label: 'Confirmed', color: '#2563eb', dot: '#2563eb' },
+        in_progress: { label: 'In Progress', color: '#9333ea', dot: '#9333ea', pulse: true },
+        awaiting_approval: { label: 'Needs Approval', color: '#d97706', dot: '#f59e0b', pulse: true },
+        completed: { label: 'Completed', color: '#16a34a', dot: '#16a34a' },
+        cancelled: { label: 'Cancelled', color: '#dc2626', dot: '#dc2626' },
+        disputed: { label: 'Disputed', color: '#b91c1c', dot: '#b91c1c' },
+    };
+    const st = statusConfig[booking.status] || { label: booking.status, color: '#64748b', dot: '#64748b' };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -343,9 +375,25 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                 }
             >
                 <View style={styles.cardInfo}>
+                    <View style={styles.statusRow}>
+                        <View style={[styles.statusDot, { backgroundColor: st.dot }]} />
+                        <Text style={[styles.statusLabel, { color: st.color }]}>{st.label.toUpperCase()}</Text>
+                        <Text style={styles.headerBookingId}>#{booking.booking_number || booking.id}</Text>
+                    </View>
                     <Text style={styles.serviceName}>{booking.service_name}</Text>
-                    <Text style={styles.bookingNumber}>Booking #{booking.booking_number || booking.id}</Text>
                 </View>
+
+                {booking.status === 'awaiting_approval' && (
+                    <View style={styles.approvalBanner}>
+                        <View style={styles.approvalIcon}>
+                            <Text style={{ fontSize: 24 }}>🎉</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.approvalTitle}>Job Completed!</Text>
+                            <Text style={styles.approvalSubtitle}>Please review the work and approve payment.</Text>
+                        </View>
+                    </View>
+                )}
 
                 {imageUrl && (
                     <Image source={{ uri: imageUrl }} style={styles.serviceImage} />
@@ -364,6 +412,44 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                         </View>
                     </View>
                 </View>
+
+                {/* Job Timing - real start/end/duration from provider */}
+                {(booking.started_at || booking.actual_duration_minutes > 0) && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>⏱ Job Timing</Text>
+                        <View style={styles.card}>
+                            {booking.started_at && (
+                                <View style={styles.timingRow}>
+                                    <Text style={styles.timingLabel}>Started</Text>
+                                    <Text style={styles.timingValue}>
+                                        {new Date(booking.started_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </Text>
+                                </View>
+                            )}
+                            {booking.completed_at && (
+                                <View style={[styles.timingRow, { marginTop: 8 }]}>
+                                    <Text style={styles.timingLabel}>Completed</Text>
+                                    <Text style={styles.timingValue}>
+                                        {new Date(booking.completed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </Text>
+                                </View>
+                            )}
+                            {(booking.actual_duration_minutes > 0 || booking.duration_minutes > 0) && (
+                                <View style={[styles.timingRow, { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f1f5f9' }]}>
+                                    <Text style={styles.timingLabel}>Duration</Text>
+                                    <View style={styles.row}>
+                                        <Text style={[styles.timingValue, { color: PRIMARY, fontWeight: '900' }]}>
+                                            {booking.actual_duration_minutes > 0 ? `${booking.actual_duration_minutes} min` : 'In Progress'}
+                                        </Text>
+                                        <Text style={styles.timingStandard}>
+                                            {' '}(standard: {booking.duration_minutes || booking.standard_duration_minutes || 60}min)
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                )}
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Service Location</Text>
@@ -470,47 +556,132 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     </View>
                 </View>
 
-                {booking.photos && booking.photos.length > 0 && (
+                {/* Categorized Photos */}
+                {photos.before.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Job Photos</Text>
-                        <View style={styles.photoGrid}>
-                            {booking.photos.map((url, idx) => {
-                                const photoUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+                        <Text style={styles.sectionTitle}>📸 Before Photos ({photos.before.length})</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoList}>
+                            {photos.before.map((p, idx) => {
+                                const rawUrl = p.url || p.photo_url || '';
+                                const uri = rawUrl.startsWith('http') ? rawUrl : `${API_BASE_URL}${rawUrl}`;
                                 return (
-                                    <TouchableOpacity key={idx} onPress={() => openViewer(photoUrl)}>
-                                        <Image source={{ uri: photoUrl }} style={styles.photoMini} />
+                                    <TouchableOpacity key={idx} onPress={() => openViewer(uri)}>
+                                        <Image source={{ uri }} style={styles.photoMini} />
                                     </TouchableOpacity>
                                 );
                             })}
-                        </View>
+                        </ScrollView>
+                    </View>
+                )}
+
+                {photos.after.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>✅ After Photos ({photos.after.length})</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoList}>
+                            {photos.after.map((p, idx) => {
+                                const rawUrl = p.url || p.photo_url || '';
+                                const uri = rawUrl.startsWith('http') ? rawUrl : `${API_BASE_URL}${rawUrl}`;
+                                return (
+                                    <TouchableOpacity key={idx} onPress={() => openViewer(uri)}>
+                                        <Image source={{ uri }} style={styles.photoMini} />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {photos.customer.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>📎 Customer Uploads ({photos.customer.length})</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoList}>
+                            {photos.customer.map((p, idx) => {
+                                const rawUrl = p.url || p.photo_url || '';
+                                const uri = rawUrl.startsWith('http') ? rawUrl : `${API_BASE_URL}${rawUrl}`;
+                                return (
+                                    <TouchableOpacity key={idx} onPress={() => openViewer(uri)}>
+                                        <Image source={{ uri }} style={styles.photoMini} />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
                     </View>
                 )}
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Payment Details</Text>
-                    <View style={styles.card}>
-                        <View style={styles.pricingRow}>
-                            <Text style={styles.pricingLabel}>Amount held on card:</Text>
-                            <Text style={styles.pricingValue}>{formatCurrency(authAmount)}</Text>
+                    <Text style={styles.sectionTitle}>💳 Payment Breakdown</Text>
+                    <View style={styles.invoiceCard}>
+                        <View style={styles.invoiceHeader}>
+                            <Text style={styles.invoiceHeaderTitle}>INVOICE SUMMARY</Text>
+                            <View style={[styles.paymentBadge, { backgroundColor: booking.payment_status === 'paid' ? '#dcfce7' : '#fef3c7' }]}>
+                                <Text style={[styles.paymentBadgeText, { color: booking.payment_status === 'paid' ? '#166534' : '#92400e' }]}>
+                                    {(booking.payment_status || 'PENDING').toUpperCase()}
+                                </Text>
+                            </View>
                         </View>
-                        <View style={styles.pricingRow}>
-                            <Text style={styles.pricingLabel}>Base Price ({booking.standard_duration_minutes}min):</Text>
-                            <Text style={styles.pricingValue}>{formatCurrency(basePrice)}</Text>
+                        
+                        <View style={styles.invoiceItem}>
+                            <View>
+                                <Text style={styles.invoiceItemLabel}>Base Service Price</Text>
+                                <Text style={styles.invoiceItemSub}>Flat rate ({standardMinutes}min)</Text>
+                            </View>
+                            <Text style={styles.invoiceItemValue}>{formatCurrency(basePrice)}</Text>
                         </View>
-                        {overtimeEarnings > 0 && (
-                            <View style={styles.pricingRow}>
-                                <Text style={styles.pricingLabel}>Additional Earnings:</Text>
-                                <Text style={styles.pricingValue}>{formatCurrency(overtimeEarnings)}</Text>
+
+                        {overtimeRate > 0 && (
+                            <View style={styles.invoiceItem}>
+                                <View>
+                                    <View style={styles.row}>
+                                        <Ionicons name="time" size={14} color="#f59e0b" style={{ marginRight: 4 }} />
+                                        <Text style={styles.invoiceItemLabel}>Overtime Hold</Text>
+                                    </View>
+                                    <Text style={styles.invoiceItemSub}>{formatCurrency(overtimeRate)}/hr × 2 hrs (max hold)</Text>
+                                </View>
+                                <Text style={[styles.invoiceItemValue, { color: '#d97706' }]}>+{formatCurrency(overtimeHoldAmount)}</Text>
                             </View>
                         )}
-                        <View style={[styles.pricingRow, styles.totalRow]}>
-                            <Text style={styles.totalLabel}>Total</Text>
-                            <Text style={styles.totalValue}>{formatCurrency(totalAmount)}</Text>
+
+                        {isOvertime && (
+                            <View style={[styles.invoiceItem, { backgroundColor: '#f5f3ff', marginHorizontal: -16, paddingHorizontal: 16 }]}>
+                                <View>
+                                    <View style={styles.row}>
+                                        <Ionicons name="clock" size={14} color="#8b5cf6" style={{ marginRight: 4 }} />
+                                        <Text style={[styles.invoiceItemLabel, { color: '#7c3aed' }]}>Actual Overtime Used</Text>
+                                    </View>
+                                    <Text style={styles.invoiceItemSub}>{overtimeMinutes}min at {formatCurrency(overtimeRate)}/hr</Text>
+                                </View>
+                                <Text style={[styles.invoiceItemValue, { color: '#7c3aed' }]}>+{formatCurrency(overtimeCost)}</Text>
+                            </View>
+                        )}
+
+                        <View style={styles.invoiceItem}>
+                            <View>
+                                <Text style={styles.invoiceItemLabel}>Total Authorized Hold</Text>
+                                <Text style={styles.invoiceItemSub}>Card hold — not charged yet</Text>
+                            </View>
+                            <Text style={[styles.invoiceItemValue, { color: '#2563eb' }]}>{formatCurrency(authAmount)}</Text>
                         </View>
-                        <View style={styles.paymentStatusBox}>
-                            <Text style={styles.paymentStatusLabel}>Payment Status</Text>
-                            <Text style={styles.paymentStatusVal}>{booking.status === 'completed' ? 'PAID' : (booking.authorized_amount ? 'AUTHORIZED' : 'PENDING')}</Text>
+
+                        <View style={styles.invoiceTotal}>
+                            <View>
+                                <Text style={styles.invoiceTotalLabel}>
+                                    {booking.status === 'completed' ? 'Amount Charged' : 'Final Amount'}
+                                </Text>
+                                <Text style={styles.invoiceTotalSub}>Based on actual work time</Text>
+                            </View>
+                            <Text style={[styles.invoiceTotalValue, { color: isOvertime ? '#7c3aed' : PRIMARY }]}>
+                                {formatCurrency(totalAmount)}
+                            </Text>
                         </View>
+
+                        {booking.status !== 'completed' && (
+                            <View style={styles.authorizedNote}>
+                                <Ionicons name="card" size={16} color="#b45309" />
+                                <Text style={styles.authorizedNoteText}>
+                                    Your card is authorized for <Text style={{ fontWeight: 'bold' }}>{formatCurrency(authAmount)}</Text>. You will only be charged the final amount after completion.
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 </View>
 
@@ -574,12 +745,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                             </TouchableOpacity>
                         </>
                     )}
-                    {booking.status === 'pending' && (
-                        <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
-                            <Ionicons name="close-circle-outline" size={moderateScale(18)} color="#b91c1c" />
-                            <Text style={styles.cancelBtnText}>Cancel Booking</Text>
-                        </TouchableOpacity>
-                    )}
+
                 </View>
 
             </ScrollView>
@@ -616,8 +782,12 @@ const styles = StyleSheet.create({
 
     scrollContent: { padding: moderateScale(20), paddingBottom: verticalScale(40) },
     
-    cardInfo: { alignItems: 'center', marginBottom: verticalScale(20) },
-    serviceName: { fontSize: moderateScale(22), fontWeight: 'bold', color: '#0f172a', textAlign: 'center' },
+    cardInfo: { marginBottom: verticalScale(20) },
+    statusRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+    statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+    statusLabel: { fontSize: 11, fontWeight: 'bold', letterSpacing: 0.5 },
+    headerBookingId: { fontSize: 11, color: '#94a3b8', marginLeft: 'auto', fontWeight: 'bold' },
+    serviceName: { fontSize: moderateScale(26), fontWeight: '900', color: '#0f172a' },
     bookingNumber: { fontSize: moderateScale(14), color: '#64748b', marginTop: verticalScale(5) },
 
     serviceImage: {
@@ -649,9 +819,41 @@ const styles = StyleSheet.create({
     totalLabel: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#0f172a' },
     totalValue: { fontSize: moderateScale(18), fontWeight: 'bold', color: PRIMARY },
 
-    paymentStatusBox: { marginTop: verticalScale(15), backgroundColor: '#f0fdfa', padding: moderateScale(12), borderRadius: moderateScale(12), alignItems: 'center' },
-    paymentStatusLabel: { fontSize: moderateScale(12), color: PRIMARY, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: verticalScale(4) },
-    paymentStatusVal: { fontSize: moderateScale(16), color: PRIMARY, fontWeight: '900', letterSpacing: 1 },
+    /* Banner */
+    approvalBanner: {
+        backgroundColor: '#fffbeb', borderRadius: 20, padding: 20,
+        flexDirection: 'row', alignItems: 'center', gap: 15,
+        borderWidth: 2, borderColor: '#fef3c7', marginBottom: 25,
+        shadowColor: '#f59e0b', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4
+    },
+    approvalIcon: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center' },
+    approvalTitle: { fontSize: 17, fontWeight: '900', color: '#92400e' },
+    approvalSubtitle: { fontSize: 13, color: '#b45309', marginTop: 2 },
+
+    /* Invoice styles */
+    invoiceCard: { backgroundColor: '#fff', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#f1f5f9' },
+    invoiceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+    invoiceHeaderTitle: { fontSize: 10, fontWeight: '900', color: '#94a3b8', letterSpacing: 1 },
+    paymentBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    paymentBadgeText: { fontSize: 10, fontWeight: '900' },
+    invoiceItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' },
+    invoiceItemLabel: { fontSize: 14, fontWeight: '700', color: '#334155' },
+    invoiceItemSub: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
+    invoiceItemValue: { fontSize: 14, fontWeight: 'bold', color: '#1e293b' },
+    invoiceTotal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, paddingTop: 15 },
+    invoiceTotalLabel: { fontSize: 16, fontWeight: '900', color: '#0f172a' },
+    invoiceTotalSub: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
+    invoiceTotalValue: { fontSize: 24, fontWeight: '900' },
+    authorizedNote: { marginTop: 20, padding: 12, backgroundColor: '#fffbeb', borderRadius: 12, flexDirection: 'row', gap: 10 },
+    authorizedNoteText: { flex: 1, fontSize: 11, color: '#92400e', lineHeight: 16 },
+
+    row: { flexDirection: 'row', alignItems: 'center' },
+
+    /* Timing */
+    timingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    timingLabel: { fontSize: 13, color: '#64748b', fontWeight: '600' },
+    timingValue: { fontSize: 13, color: '#0f172a', fontWeight: '700' },
+    timingStandard: { fontSize: 11, color: '#94a3b8' },
 
     timelineRow: { flexDirection: 'row' },
     timelineIndicator: { alignItems: 'center', width: scale(30) },
@@ -686,8 +888,8 @@ const styles = StyleSheet.create({
     badgeTextActive: { color: '#fff' },
 
     /* Photo Grid */
-    photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(10) },
-    photoMini: { width: scale(80), height: scale(80), borderRadius: moderateScale(12) },
+    photoList: { gap: 12, paddingRight: 20 },
+    photoMini: { width: scale(100), height: scale(100), borderRadius: 16, backgroundColor: '#f1f5f9' },
 
     /* Action Buttons */
     actionsRow: { gap: verticalScale(12), marginBottom: verticalScale(30), marginTop: verticalScale(4) },

@@ -53,9 +53,9 @@ const EarningsScreen = ({ navigation }) => {
     };
 
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-GB', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'GBP',
+            currency: 'USD',
             minimumFractionDigits: 2,
         }).format(amount);
     };
@@ -82,7 +82,7 @@ const EarningsScreen = ({ navigation }) => {
             <View style={styles.transactionInfo}>
                 <Text style={styles.transactionTitle}>{item.service_name || 'Service Job'}</Text>
                 <Text style={styles.transactionDate}>
-                    {item.invoice_number} • {new Date(item.completion_date || item.created_at).toLocaleDateString()}
+                    {item.invoice_number} • {new Date(item.completion_date || item.created_at).toLocaleDateString('en-US')}
                 </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
@@ -106,7 +106,7 @@ const EarningsScreen = ({ navigation }) => {
                         color: item.status === 'paid' ? '#10b981' : '#f59e0b' 
                     }]}>{item.status?.toUpperCase()}</Text>
                 </View>
-                <Text style={styles.payoutDate}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                <Text style={styles.payoutDate}>{new Date(item.created_at).toLocaleDateString('en-US')}</Text>
             </View>
             
             <View style={styles.payoutDetails}>

@@ -588,7 +588,7 @@ export default function TimeTracker({
             <span>Standard: {formatDuration(standardDuration)}</span>
             {isOvertime && overtimeRate > 0 && (
               <span className="text-purple-600 font-semibold">
-                +{formatDuration(overtimeMinutes)} overtime (+${overtimeEarnings.toFixed(2)})
+                +{formatDuration(overtimeMinutes)} overtime (+$${overtimeEarnings.toFixed(2)})
               </span>
             )}
           </div>

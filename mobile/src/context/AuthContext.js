@@ -17,57 +17,60 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const loadAuthData = async () => {
             try {
+                // 1. Fetch cached credentials FIRST
                 const storedUser = await AsyncStorage.getItem('user');
                 const storedToken = await AsyncStorage.getItem('token');
 
-                let parsedUser = null;
+                let cachedUser = null;
                 if (storedUser) {
                     try {
-                        parsedUser = JSON.parse(storedUser);
+                        cachedUser = JSON.parse(storedUser);
+                        setUser(cachedUser);
+                        setToken(storedToken);
+                        console.log('📦 [AuthContext] Loaded from cache:', cachedUser.role);
+                        
+                        // IF we have cached data, we can stop "loading" immediately
+                        // so the app opens while we refresh in background.
+                        setLoading(false);
                     } catch (e) {
-                        console.warn('[AuthContext] Corrupted user data in storage, ignoring...');
+                        console.warn('[AuthContext] Corrupted cache:', e);
                     }
                 }
 
+                // 2. REFRESH in background (if we have a token)
                 if (storedToken) {
                     setToken(storedToken);
                     
                     try {
-                        console.log('🔄 [AuthContext] Refreshing session from server...');
+                        console.log('🔄 [AuthContext] Refreshing session in background...');
                         const response = await apiService.auth.me(storedToken);
                         
                         if (response.success && response.user) {
                             const freshUser = response.user;
                             
-                            // Re-standardize 'user' to 'customer' for mobile consistency
+                            // Re-standardize 'user' to 'customer'
                             if (freshUser.role === 'user') freshUser.role = 'customer';
                             
-                            console.log(`✅ [AuthContext] Refreshed: ${freshUser.role} (Step ${freshUser.onboarding_step})`);
+                            console.log(`✅ [AuthContext] Refresh complete: ${freshUser.role}`);
                             
                             setUser(freshUser);
                             await AsyncStorage.setItem('user', JSON.stringify(freshUser));
                             registerPushToken(freshUser);
                         } else {
-                            console.log('🚪 [AuthContext] Refresh failed, logging out...');
+                            console.log('🚪 [AuthContext] Session expired, logging out...');
                             await logout();
                         }
                     } catch (apiError) {
-                        const isAuthError = apiError.message?.toLowerCase().includes('not found') || 
-                                           apiError.message?.toLowerCase().includes('unauthorized') ||
-                                           apiError.message?.toLowerCase().includes('expired');
-                        
-                        if (isAuthError) {
-                            console.log('🚪 [AuthContext] Critical auth error during refresh, logging out...');
-                            await logout();
-                        } else if (storedUser) {
-                            console.log('⚠️ [AuthContext] Network/other error during refresh, using cache');
-                            setUser(JSON.parse(storedUser));
-                        }
+                        console.log('⚠️ [AuthContext] Background refresh failed:', apiError.message);
+                        // session might be invalid but we keep the cache if it's a network error
+                        const isAuthError = apiError.status === 401 || apiError.status === 404;
+                        if (isAuthError) await logout();
                     }
                 }
             } catch (error) {
                 console.error('Failed to load auth data:', error);
             } finally {
+                // Final safety check: if we never had a user, we must stop loading now
                 setLoading(false);
             }
         };

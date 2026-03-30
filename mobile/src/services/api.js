@@ -15,6 +15,10 @@ export const setLogoutHandler = (handler) => {
 };
 
 const request = async (endpoint, options = {}) => {
+    // 10-second timeout to prevent app from hanging indefinitely
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     try {
         const { params, token, ...fetchOptions } = options;
 
@@ -30,6 +34,7 @@ const request = async (endpoint, options = {}) => {
 
         const response = await fetch(url, {
             ...fetchOptions,
+            signal: controller.signal,
             headers: {
                 ...(!isFormData && { 'Content-Type': 'application/json' }),
                 // Attach Bearer token if available
@@ -40,6 +45,8 @@ const request = async (endpoint, options = {}) => {
                 ...fetchOptions.headers,
             },
         });
+        
+        clearTimeout(timeoutId);
 
         // Determine content type to parse response correctly
         const contentType = response.headers.get('content-type');
@@ -156,7 +163,7 @@ export const apiService = {
         getInvoices: (userId, token) => request('/api/customer/invoices', { method: 'GET', params: { user_id: userId }, token }),
 
         // Submit a rating and review for a provider
-        submitReview: (data, token) => request('/api/customer/reviews', { method: 'POST', body: JSON.stringify(data), token }),
+        submitReview: (data, token) => request('/api/reviews', { method: 'POST', body: JSON.stringify(data), token }),
     },
 
     /**

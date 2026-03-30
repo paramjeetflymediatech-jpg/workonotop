@@ -73,7 +73,7 @@ const AdminDashboard = ({ navigation }) => {
     const onRefresh = () => { setRefreshing(true); fetchDashboardData(); };
 
     const formatCurrency = (amount) =>
-        new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: 0 }).format(amount);
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
 
     const getStatusConfig = (status) => {
         switch (status) {

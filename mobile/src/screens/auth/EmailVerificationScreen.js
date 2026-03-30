@@ -16,9 +16,11 @@ import {
 } from 'react-native';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
 import { apiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const EmailVerificationScreen = ({ navigation, route }) => {
     const { email, type = 'pro' } = route.params || {};
+    const { logout } = useAuth();
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [timer, setTimer] = useState(60);
@@ -205,7 +207,16 @@ const EmailVerificationScreen = ({ navigation, route }) => {
                     bounces={false}
                     showsVerticalScrollIndicator={false}
                 >
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <TouchableOpacity 
+                        style={styles.backButton} 
+                        onPress={() => {
+                            if (navigation.canGoBack()) {
+                                navigation.goBack();
+                            } else {
+                                logout();
+                            }
+                        }}
+                    >
                         <Text style={styles.backIcon}>←</Text>
                     </TouchableOpacity>
 

@@ -256,7 +256,7 @@ export default function BookingDetailsPage({ params }) {
               <Field label="Category" value={booking.category_name || '—'} lbl={lbl} val={val} />
               <Field label="Base Price" value={`$${fmt(booking.service_price)}`} lbl={lbl} val={val} />
               <Field label="Overtime Rate" value={booking.additional_price > 0 ? `$${fmt(booking.additional_price)}/hr` : 'Not set'} lbl={lbl} val={val} />
-              <Field label="Standard Duration" value={booking.service_duration ? `${booking.service_duration} min` : '—'} lbl={lbl} val={val} />
+              <Field label="Standard Duration" value={booking.standard_duration_minutes ? `${booking.standard_duration_minutes} min` : (booking.service_duration ? `${booking.service_duration} min` : '—')} lbl={lbl} val={val} />
               <Field label="Authorized Amount" value={booking.authorized_amount ? `$${fmt(booking.authorized_amount)}` : '—'} lbl={lbl} val={val} />
             </div>
           </Card>
@@ -308,17 +308,17 @@ export default function BookingDetailsPage({ params }) {
                 <Row label="Service Base Price" value={`$${fmt(booking.service_price)}`} lbl={lbl} valCls={val} />
                 {commissionSet && (
                   <>
-                    <Row label={`Platform Commission (${booking.commission_percent}%)`} value={`-$${fmt(booking.service_price * booking.commission_percent / 100)}`} lbl={lbl} valCls="text-red-500" />
+                    <Row label={`Platform Commission (${booking.commission_percent}%)`} value={`$${fmt(booking.platform_amount || (booking.service_price * booking.commission_percent / 100))}`} lbl={lbl} valCls="text-teal-600" />
                     <Row label="Provider Base Amount" value={`$${fmt(booking.provider_amount || (booking.service_price * (1 - booking.commission_percent / 100)))}`} lbl={lbl} valCls={val} />
                   </>
                 )}
                 <div className={`pt-2 mt-1 border-t ${divCls} flex justify-between`}>
                   <span className={`text-sm font-semibold ${val}`}>Provider Earns (Final)</span>
-                  <span className="text-sm font-bold text-green-600">${fmt(booking.final_provider_amount || booking.provider_amount || booking.service_price)}</span>
+                  <span className="text-sm font-bold text-green-600">$$fmt(booking.final_provider_amount || booking.provider_amount || booking.service_price)</span>
                 </div>
                 <div className={`pt-2 border-t ${divCls} flex justify-between`}>
                   <span className={`text-sm font-semibold ${val}`}>Customer Charged</span>
-                  <span className={`text-sm font-bold ${val}`}>${fmt(booking.authorized_amount || booking.service_price)}</span>
+                  <span className={`text-sm font-bold ${val}`}>$$fmt(booking.authorized_amount || booking.service_price)</span>
                 </div>
               </div>
               {booking.payment_intent_id && (
@@ -348,11 +348,22 @@ export default function BookingDetailsPage({ params }) {
                 </div>
               </div>
             </div>
-            <div className={`mt-4 pt-4 border-t ${divCls} grid grid-cols-2 sm:grid-cols-4 gap-3`}>
+            <div className={`mt-4 pt-4 border-t ${divCls} grid grid-cols-2 sm:grid-cols-3 gap-3`}>
               <SmallField label="Accepted At" value={formatDateTime(booking.accepted_at)} lbl={lbl} val={val} />
               <SmallField label="Start Time" value={formatDateTime(booking.start_time)} lbl={lbl} val={val} />
               <SmallField label="End Time" value={formatDateTime(booking.end_time)} lbl={lbl} val={val} />
               <SmallField label="Timer Status" value={getStatusLabel(booking.job_timer_status)} lbl={lbl} val={val} />
+              <SmallField
+                label="Actual Duration"
+                value={booking.actual_duration_minutes > 0 ? `${booking.actual_duration_minutes} min` : '—'}
+                lbl={lbl}
+                val={booking.actual_duration_minutes > 0 ? 'text-teal-600 font-bold' : val}
+              />
+              <SmallField
+                label="Standard Duration"
+                value={booking.standard_duration_minutes ? `${booking.standard_duration_minutes} min` : (booking.service_duration ? `${booking.service_duration} min` : '—')}
+                lbl={lbl} val={val}
+              />
             </div>
           </Card>
 
@@ -432,7 +443,7 @@ export default function BookingDetailsPage({ params }) {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className={`text-xs ${lbl}`}>Platform earns</span>
-                  <span className="text-sm font-semibold text-green-600">${fmt(booking.service_price * booking.commission_percent / 100)}</span>
+                  <span className="text-sm font-semibold text-green-600">$${fmt(booking.platform_amount || (booking.service_price * booking.commission_percent / 100))}</span>
                 </div>
               </div>
             ) : (

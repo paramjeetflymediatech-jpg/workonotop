@@ -33,7 +33,7 @@ export async function POST(request) {
     // ✅ capture_method: 'manual' — sirf hold karo, charge nahi
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
-      currency: 'cad', // apni currency yahan daalo (cad / gbp / usd)
+      currency: 'gbp', // apni currency yahan daalo (cad / gbp / usd)
       capture_method: 'manual',
       description: `Authorization for: ${service_name || 'Service Booking'}`,
       automatic_payment_methods: { enabled: true },

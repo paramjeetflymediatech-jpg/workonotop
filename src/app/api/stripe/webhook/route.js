@@ -317,6 +317,14 @@ export async function POST(request) {
         await handleTransferFailed(event.data.object);
         break;
         
+      case 'payment_intent.succeeded':
+        console.log('✅ Payment intent succeeded:', event.data.object.id);
+        break;
+        
+      case 'charge.captured':
+        console.log('✅ Charge captured:', event.data.object.id);
+        break;
+        
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
