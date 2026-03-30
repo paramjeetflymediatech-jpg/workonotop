@@ -314,11 +314,11 @@ export default function BookingDetailsPage({ params }) {
                 )}
                 <div className={`pt-2 mt-1 border-t ${divCls} flex justify-between`}>
                   <span className={`text-sm font-semibold ${val}`}>Provider Earns (Final)</span>
-                  <span className="text-sm font-bold text-green-600">$$fmt(booking.final_provider_amount || booking.provider_amount || booking.service_price)</span>
+                  <span className="text-sm font-bold text-green-600">${fmt(booking.final_provider_amount || booking.provider_amount || booking.service_price)}</span>
                 </div>
                 <div className={`pt-2 border-t ${divCls} flex justify-between`}>
                   <span className={`text-sm font-semibold ${val}`}>Customer Charged</span>
-                  <span className={`text-sm font-bold ${val}`}>$$fmt(booking.authorized_amount || booking.service_price)</span>
+                  <span className={`text-sm font-bold ${val}`}>${fmt(booking.authorized_amount || booking.service_price)}</span>
                 </div>
               </div>
               {booking.payment_intent_id && (

@@ -107,8 +107,7 @@ const ProfileSetupScreen = ({ navigation }) => {
             const response = await apiService.provider.onboarding.updateProfile(data, token);
 
             if (response.success) {
-                // Update local user state so RootNavigator/IntroScreen knows we've progressed
-                await updateUser({ onboarding_step: 2 });
+                // Set step 2 in API, but no need to forcefully update global state to avoid remounting the Stack.Navigator
                 navigation.navigate('DocumentUpload', {
                     profile: { ...profile, ...data }
                 });

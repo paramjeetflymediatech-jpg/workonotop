@@ -46,7 +46,7 @@ export async function POST(request) {
       `UPDATE service_providers 
        SET bio = ?, specialty = ?, experience_years = ?,
            city = ?, location = ?, service_areas = ?,
-           skills = ?, onboarding_step = 3
+           skills = ?, onboarding_step = 2
        WHERE id = ?`,
       [
         bio,

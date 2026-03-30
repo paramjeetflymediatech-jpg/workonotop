@@ -58,10 +58,9 @@ export async function GET(request) {
   }
 }
 
-// POST new message
 export async function POST(request) {
   try {
-    const { bookingId, message } = await request.json();
+    const { bookingId, message, senderType: requestedRole } = await request.json();
 
     if (!bookingId || !message) {
       return NextResponse.json(
@@ -70,10 +69,26 @@ export async function POST(request) {
       );
     }
 
-    // Check authentication
-    const customerToken = request.cookies.get('customer_token')?.value;
-    const providerToken = request.cookies.get('provider_token')?.value;
-    const token = customerToken || providerToken;
+    let token = null;
+
+    // Support Bearer token from Mobile App
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+    
+    // Support Web Cookies (Preventing dual-login conflicts)
+    if (!token) {
+      if (requestedRole === 'provider') {
+        token = request.cookies.get('provider_token')?.value;
+      } else if (requestedRole === 'customer') {
+        token = request.cookies.get('customer_token')?.value;
+      } else {
+        token = request.cookies.get('adminAuth')?.value || 
+                request.cookies.get('customer_token')?.value || 
+                request.cookies.get('provider_token')?.value;
+      }
+    }
     
     if (!token) {
       return NextResponse.json(
@@ -90,8 +105,8 @@ export async function POST(request) {
       );
     }
 
-    const senderType = customerToken ? 'customer' : 'provider';
-    const senderId = senderType === 'customer' ? decoded.id : decoded.providerId;
+    const senderType = decoded.providerId ? 'provider' : 'customer';
+    const senderId = decoded.providerId || decoded.id;
 
     // perform all database work on a single connection for the whole
     // request.  this prevents the pool from handing out multiple sockets

@@ -114,7 +114,22 @@ const ProvidersScreen = ({ navigation }) => {
                     setUpdatingStatus(true);
                     try {
                         let res;
-                        if (action === 'reject_docs') {
+                        if (action === 'approve') {
+                            // Step 1: Approve all documents (matches web logic)
+                            const docsRes = await api.post(`/api/admin/providers/${providerId}/documents`, {
+                                action: 'approve_all'
+                            });
+                            
+                            if (!docsRes.success) {
+                                throw new Error(docsRes.message || 'Failed to verify documents');
+                            }
+
+                            // Step 2: Approve provider account
+                            res = await api.put('/api/admin/providers', {
+                                providerId,
+                                action: 'approve'
+                            });
+                        } else if (action === 'reject_docs') {
                             res = await api.post(`/api/admin/providers/${providerId}/documents`, {
                                 action: 'reject_all',
                                 rejectionReason: reason
@@ -128,12 +143,13 @@ const ProvidersScreen = ({ navigation }) => {
                         }
 
                         if (res.success) {
-                            Alert.alert('Success', `Action completed successfully`);
+                            Alert.alert('Success', action === 'approve' ? 'Provider approved & documents verified!' : 'Action completed successfully');
                             
-                            // Update selected provider in local state to reflect change in modal immediately
-                            const newStatus = action === 'approve' ? 'active' : (action === 'reject' ? 'rejected' : selectedProvider.status);
-                            const updatedProvider = { ...selectedProvider, status: newStatus };
-                            setSelectedProvider(updatedProvider);
+                            // Update selected provider in local state
+                            const newStatus = action === 'approve' ? 'active' : (action === 'reject' ? 'rejected' : selectedProvider?.status);
+                            if (selectedProvider) {
+                                setSelectedProvider({ ...selectedProvider, status: newStatus });
+                            }
                             
                             setShowRejectInput(false);
                             setRejectionReason('');
@@ -269,6 +285,7 @@ const ProvidersScreen = ({ navigation }) => {
 
     const renderProviderItem = ({ item }) => {
         const statusStyle = getStatusStyle(item.status);
+        const isStripeComplete = item.stripe_account_id && item.stripe_onboarding_complete;
 
         return (
             <TouchableOpacity
@@ -278,10 +295,19 @@ const ProvidersScreen = ({ navigation }) => {
                 <View style={styles.cardHeader}>
                     <View style={styles.providerAvatar}>
                         <Text style={styles.avatarText}>{item.name?.[0]}</Text>
+                        {isStripeComplete && (
+                            <View style={styles.stripeBadgeSmall}>
+                                <Ionicons name="card" size={moderateScale(10)} color="#fff" />
+                            </View>
+                        )}
                     </View>
                     <View style={styles.providerMeta}>
                         <Text style={styles.providerName}>{item.name}</Text>
-                        <Text style={styles.providerEmail}>{item.email}</Text>
+                        <Text style={styles.providerSpecialty}>{item.specialty || 'General Provider'}</Text>
+                        <View style={styles.locationRow}>
+                            <Ionicons name="location-outline" size={moderateScale(12)} color="#94a3b8" />
+                            <Text style={styles.providerLocation}>{item.city || 'Location not set'}</Text>
+                        </View>
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
                         <Text style={[styles.statusText, { color: statusStyle.text }]}>{item.status}</Text>
@@ -290,8 +316,11 @@ const ProvidersScreen = ({ navigation }) => {
 
                 <View style={styles.statsRow}>
                     <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Docs</Text>
-                        <Text style={styles.statVal}>{item.approved_docs}/{item.documents_count}</Text>
+                        <Text style={styles.statLabel}>Documents</Text>
+                        <View style={styles.docStatContainer}>
+                            <Text style={styles.statVal}>{item.approved_docs}</Text>
+                            <Text style={styles.statTotal}>/{item.documents_count}</Text>
+                        </View>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
@@ -300,8 +329,8 @@ const ProvidersScreen = ({ navigation }) => {
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Jobs</Text>
-                        <Text style={styles.statVal}>{item.total_reviews || 0}</Text>
+                        <Text style={styles.statLabel}>Experience</Text>
+                        <Text style={styles.statVal}>{item.experience_years || 0} Yrs</Text>
                     </View>
                 </View>
 
@@ -310,13 +339,19 @@ const ProvidersScreen = ({ navigation }) => {
                         <TouchableOpacity
                             style={[styles.actionBtn, styles.approveBtn]}
                             onPress={() => handleAction(item.id, 'approve')}
+                            disabled={updatingStatus}
                         >
-                            <Ionicons name="checkmark-circle-outline" size={moderateScale(18)} color="#fff" />
-                            <Text style={styles.actionBtnText}>Approve</Text>
+                            {updatingStatus ? <ActivityIndicator color="#fff" size="small" /> : (
+                                <>
+                                    <Ionicons name="checkmark-circle-outline" size={moderateScale(18)} color="#fff" />
+                                    <Text style={styles.actionBtnText}>Approve</Text>
+                                </>
+                            )}
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.actionBtn, styles.rejectBtn]}
                             onPress={() => handleAction(item.id, 'reject')}
+                            disabled={updatingStatus}
                         >
                             <Ionicons name="close-circle-outline" size={moderateScale(18)} color="#fff" />
                             <Text style={styles.actionBtnText}>Reject</Text>
@@ -595,6 +630,39 @@ const ProvidersScreen = ({ navigation }) => {
                                                 ))}
                                             </View>
                                         </View>
+
+                                        <View style={styles.detailSection}>
+                                            <Text style={styles.sectionTitle}>Additional Details</Text>
+                                            <View style={styles.detailGrid}>
+                                                <View style={styles.detailBox}>
+                                                    <Text style={styles.detailLabel}>Specialty</Text>
+                                                    <Text style={styles.detailValueSmall}>{selectedProvider.specialty || 'General'}</Text>
+                                                </View>
+                                                <View style={styles.detailBox}>
+                                                    <Text style={styles.detailLabel}>Experience</Text>
+                                                    <Text style={styles.detailValueSmall}>{selectedProvider.experience_years || 0} Years</Text>
+                                                </View>
+                                                <View style={styles.detailBox}>
+                                                   <Text style={styles.detailLabel}>Location</Text>
+                                                   <Text style={styles.detailValueSmall}>{selectedProvider.city || 'N/A'}</Text>
+                                                </View>
+                                                <View style={styles.detailBox}>
+                                                   <Text style={styles.detailLabel}>Stripe</Text>
+                                                   <Text style={[styles.detailValueSmall, { color: selectedProvider.stripe_onboarding_complete ? '#10b981' : '#f59e0b' }]}>
+                                                       {selectedProvider.stripe_onboarding_complete ? 'Connected' : 'Pending'}
+                                                   </Text>
+                                                </View>
+                                            </View>
+                                        </View>
+
+                                        {selectedProvider.bio && (
+                                            <View style={styles.detailSection}>
+                                                <Text style={styles.sectionTitle}>Provider Biography</Text>
+                                                <View style={styles.bioContainer}>
+                                                    <Text style={styles.bioText}>{selectedProvider.bio}</Text>
+                                                </View>
+                                            </View>
+                                        )}
 
                                          <View style={styles.detailSection}>
                                             <Text style={styles.sectionTitle}>Admin Actions</Text>
@@ -1167,6 +1235,80 @@ const styles = StyleSheet.create({
     fullImage: {
         width: '100%',
         height: '80%',
+    },
+    /* Custom Additions */
+    stripeBadgeSmall: {
+        position: 'absolute',
+        bottom: -moderateScale(2),
+        right: -moderateScale(2),
+        backgroundColor: '#6366f1',
+        borderRadius: moderateScale(10),
+        width: moderateScale(18),
+        height: moderateScale(18),
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    providerSpecialty: {
+        fontSize: moderateScale(13),
+        color: '#64748b',
+        fontWeight: '500',
+        marginTop: verticalScale(2),
+    },
+    locationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: verticalScale(4),
+        gap: scale(4),
+    },
+    providerLocation: {
+        fontSize: moderateScale(11),
+        color: '#94a3b8',
+        fontWeight: '500',
+    },
+    docStatContainer: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+    },
+    statTotal: {
+        fontSize: moderateScale(10),
+        color: '#94a3b8',
+        fontWeight: '600',
+    },
+    detailGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginHorizontal: -scale(5),
+    },
+    detailBox: {
+        width: '50%',
+        paddingHorizontal: scale(5),
+        marginBottom: verticalScale(10),
+    },
+    detailValueSmall: {
+        fontSize: moderateScale(13),
+        fontWeight: '700',
+        color: '#0f172a',
+        marginTop: verticalScale(2),
+        backgroundColor: '#f8fafc',
+        padding: scale(8),
+        borderRadius: moderateScale(8),
+        textAlign: 'center',
+        overflow: 'hidden',
+    },
+    bioContainer: {
+        backgroundColor: '#f8fafc',
+        padding: scale(15),
+        borderRadius: moderateScale(12),
+        borderLeftWidth: 4,
+        borderLeftColor: '#115e59',
+    },
+    bioText: {
+        fontSize: moderateScale(14),
+        color: '#334155',
+        lineHeight: moderateScale(20),
+        fontStyle: 'italic',
     },
 });
 

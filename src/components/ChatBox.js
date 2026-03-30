@@ -37,7 +37,8 @@ export default function ChatBox({ bookingId, currentUserType }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bookingId,
-          message: newMessage
+          message: newMessage,
+          senderType: currentUserType
         })
       });
 

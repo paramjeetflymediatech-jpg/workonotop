@@ -262,7 +262,18 @@ const AdminJobDetailsScreen = ({ navigation, route }) => {
                     <Text style={styles.headerTitle}>Booking Details</Text>
                     <Text style={styles.headerSubtitle}>#{currentBooking.booking_number || currentBooking.id}</Text>
                 </View>
-                <View style={styles.headerAction} />
+                <TouchableOpacity 
+                    onPress={() => navigation.navigate('Chat', {
+                        bookingId: currentBooking.id,
+                        bookingNumber: currentBooking.booking_number || currentBooking.id,
+                        role: 'customer',
+                        otherPartyName: `Chat: ${currentBooking.customer_first_name} & ${currentBooking.provider_name || 'Provider'}`,
+                    })}
+                    style={[styles.headerAction, !currentBooking.provider_id && { opacity: 0.3 }]}
+                    disabled={!currentBooking.provider_id}
+                >
+                    <Ionicons name="chatbubble-ellipses-outline" size={24} color="#1e293b" />
+                </TouchableOpacity>
             </View>
 
             <ScrollView 

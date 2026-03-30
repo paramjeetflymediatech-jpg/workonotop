@@ -33,7 +33,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Home, Briefcase, DollarSign, User, LogOut, Menu, X, ChevronRight, MessageCircle, AlertCircle, Star } from 'lucide-react';
 
-const STRIPE_REQUIRED_PATHS = ['/provider/chats', '/provider/earnings'];
+const STRIPE_REQUIRED_PATHS = ['/provider/chats', '/provider/earnings', '/provider/jobs'];
 
 function StripeRequiredModal({ isOpen, onClose }) {
   if (!isOpen) return null;
@@ -203,7 +203,7 @@ export default function ProviderLayout({ children }) {
   const navItems = [
     { href: '/provider/dashboard', label: 'Dashboard', icon: Home },
     { href: '/provider/available-jobs', label: 'Available Jobs', icon: Briefcase },
-    { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
+    { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase, stripeRequired: true },
     { href: '/provider/chats', label: 'Messages', icon: MessageCircle, stripeRequired: true },
     { href: '/provider/payouts', label: 'Earnings', icon: DollarSign, stripeRequired: true },
     { href: '/provider/ratings', label: 'Ratings', icon: Star },

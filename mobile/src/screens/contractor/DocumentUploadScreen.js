@@ -233,7 +233,6 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             return;
         }
         try { apiService.provider.onboarding.updateStep(3, token); } catch (e) { }
-        updateUser({ onboarding_step: 3 });
         navigation.navigate('BankLink', { profile, documents, profilePhoto: profile_photo, skills: profile.skills || [] });
     };
 

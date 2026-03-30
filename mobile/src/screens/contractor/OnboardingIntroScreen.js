@@ -32,10 +32,10 @@ const OnboardingIntroScreen = ({ navigation }) => {
             console.log('🔄 [Intro] Checking step:', currentStep);
             hasResumed.current = true;
             
-            if (currentStep === 2) navigation.navigate('ProfileSetup');
-            else if (currentStep === 3) navigation.navigate('DocumentUpload');
-            else if (currentStep === 4) navigation.navigate('BankLink');
-            else if (currentStep === 5) navigation.navigate('Review');
+            if (currentStep === 1) return; // Stay on intro so they can click Get Started
+            else if (currentStep === 2) navigation.navigate('DocumentUpload');
+            else if (currentStep === 3) navigation.navigate('BankLink');
+            else if (currentStep >= 4) navigation.navigate('Review');
         }
     }, [isFocused, currentStep, user?.onboarding_completed, user?.stripe_onboarding_complete]);
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../utils/api';
 import { moderateScale, scale, verticalScale } from '../utils/responsive';
@@ -203,9 +203,9 @@ const TimeTracker = ({
 
             {/* Completion Form Modal */}
             <Modal visible={showCompleteModal} animationType="slide" transparent>
-                <View style={styles.modalOverlay}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <ScrollView showsVerticalScrollIndicator={false}>
+                        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                             <Text style={styles.modalTitle}>Complete Job</Text>
                             <Text style={styles.modalLabel}>Work Summary *</Text>
                             <TextInput 
@@ -231,13 +231,13 @@ const TimeTracker = ({
                                 <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCompleteModal(false)} disabled={loading}>
                                     <Text style={styles.cancelBtnText}>Cancel</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.submitBtn} onPress={handleCompleteSubmit} disabled={loading || !workSummary.trim()}>
+                                <TouchableOpacity style={[styles.submitBtn, loading && styles.disabledBtn]} onPress={handleCompleteSubmit} disabled={loading}>
                                     {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Submit Job</Text>}
                                 </TouchableOpacity>
                             </View>
                         </ScrollView>
                     </View>
-                </View>
+                </KeyboardAvoidingView>
             </Modal>
         </View>
     );
@@ -245,7 +245,7 @@ const TimeTracker = ({
 
 const styles = StyleSheet.create({
     container: { alignItems: 'center', backgroundColor: '#fff', borderRadius: 20, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
-    timerCircle: { width: scale(160), height: scale(160), borderRadius: scale(80), borderEraser: 8, borderColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+    timerCircle: { width: scale(160), height: scale(160), borderRadius: scale(80), borderWidth: 8, borderColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
     timerOvertime: { borderColor: '#fef3c7' },
     timerValue: { fontSize: 36, fontWeight: 'bold', color: '#0f172a', fontVariant: ['tabular-nums'] },
     timerValueOvertime: { color: '#b45309' },
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, maxHeight: '80%' },
     modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#0f172a', marginBottom: 20 },
     modalLabel: { fontSize: 14, fontWeight: '600', color: '#475569', marginBottom: 8, marginTop: 12 },
-    textArea: { backgroundColor: '#f8fafc', borderEraser: 1, borderColor: '#e2e8f0', borderRadius: 15, padding: 12, height: 120, fontSize: 15, textAlignVertical: 'top' },
+    textArea: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 15, padding: 12, height: 120, fontSize: 15, textAlignVertical: 'top' },
     modalActions: { flexDirection: 'row', gap: 12, marginTop: 24, marginBottom: 20 },
     cancelBtn: { flex: 1, height: 50, borderRadius: 15, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' },
     cancelBtnText: { color: '#64748b', fontWeight: 'bold' },
