@@ -5,7 +5,6 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from 'src/context/AuthContext';
-import CustomerAuthModal from '../components/CustomerAuthModal';
 import {
   ChevronDown, Menu, X, LogOut, LayoutDashboard,
   User, BookOpen, Home
@@ -25,8 +24,6 @@ export default function Header() {
     getUserInitials
   } = useAuth();
 
-  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [customerModalMode, setCustomerModalMode] = useState('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [proDropdownOpen, setProDropdownOpen] = useState(false);
@@ -46,13 +43,6 @@ export default function Header() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-
-  const openCustomerModal = (mode = 'login') => {
-    setCustomerModalMode(mode);
-    setIsCustomerModalOpen(true);
-    setMobileMenuOpen(false);
-    setLoginDropdownOpen(false);
-  };
 
   const goToProLogin = () => { router.push('/provider/login'); setMobileMenuOpen(false); setProDropdownOpen(false); };
   const goToProSignup = () => { router.push('/provider/signup'); setMobileMenuOpen(false); setProDropdownOpen(false); };
@@ -138,14 +128,14 @@ export default function Header() {
                   {loginDropdownOpen && (
                     <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
                       <div className="p-1.5">
-                        <button onClick={() => openCustomerModal('login')}
+                        <Link href="/login" onClick={() => setLoginDropdownOpen(false)}
                           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 rounded-xl transition text-left">
                           <User className="h-4 w-4 text-green-600" /> Customer Login
-                        </button>
-                        <button onClick={goToProLogin}
+                        </Link>
+                        <Link href="/provider/login" onClick={() => setLoginDropdownOpen(false)}
                           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 rounded-xl transition text-left">
                           <LayoutDashboard className="h-4 w-4 text-blue-600" /> Pro Login
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   )}
@@ -159,14 +149,14 @@ export default function Header() {
                   {proDropdownOpen && (
                     <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
                       <div className="p-1.5">
-                        <button onClick={() => openCustomerModal('signup')}
+                        <Link href="/signup" onClick={() => setProDropdownOpen(false)}
                           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 rounded-xl transition text-left">
                           <User className="h-4 w-4 text-green-600" /> Customer Sign Up
-                        </button>
-                        <button onClick={goToProSignup}
+                        </Link>
+                        <Link href="/provider/signup" onClick={() => setProDropdownOpen(false)}
                           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 rounded-xl transition text-left">
                           <LayoutDashboard className="h-4 w-4 text-purple-600" /> Become a Pro
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   )}
@@ -209,15 +199,27 @@ export default function Header() {
             )}
 
             {!isLoggedIn && (
-              <div className="pt-4 space-y-2">
-                <button onClick={() => openCustomerModal('login')}
-                  className="w-full px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-xl">
-                  Customer Login
-                </button>
-                <button onClick={goToProLogin}
-                  className="w-full px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold rounded-xl">
-                  Pro Login
-                </button>
+              <div className="pt-4 border-t border-gray-50 flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 text-center py-3 bg-gray-50 text-gray-700 text-sm font-bold rounded-xl border border-gray-100 transition active:scale-[0.98]">
+                    Customer Login
+                  </Link>
+                  <Link href="/signup" onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 text-center py-3 bg-green-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-green-100 transition active:scale-[0.98]">
+                    Customer Sign Up
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-1">
+                  <Link href="/provider/login" onClick={() => setMobileMenuOpen(false)}
+                    className="text-center py-2.5 text-xs font-bold text-gray-500 hover:text-blue-600 transition">
+                    Provider Login
+                  </Link>
+                  <Link href="/provider/signup" onClick={() => setMobileMenuOpen(false)}
+                    className="text-center py-2.5 text-xs font-black text-green-600 bg-green-50/50 rounded-lg transition active:scale-[0.98]">
+                    Become a Provider
+                  </Link>
+                </div>
               </div>
             )}
           </div>
@@ -244,11 +246,6 @@ export default function Header() {
         </div>
       )}
 
-      <CustomerAuthModal
-        isOpen={isCustomerModalOpen}
-        onClose={() => setIsCustomerModalOpen(false)}
-        defaultMode={customerModalMode}
-      />
     </>
   );
 }

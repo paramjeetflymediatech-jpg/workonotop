@@ -38,7 +38,7 @@
 
 //   const [address, setAddress] = useState('');
 //   const [submitting, setSubmitting] = useState(false);
-  
+
 //   // ✅ FIX: Add a ref to track if submission is in progress
 //   const isSubmittingRef = useRef(false);
 //   // ✅ FIX: Add a ref to track if booking was already created
@@ -118,7 +118,7 @@
 
 //     try {
 //       console.log('Creating booking...', bookingPayload);
-      
+
 //       const res = await fetch('/api/bookings', {
 //         method: 'POST',
 //         headers: { 'Content-Type': 'application/json' },
@@ -126,11 +126,11 @@
 //       });
 
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         // ✅ FIX: Mark as created to prevent duplicate
 //         bookingCreatedRef.current = true;
-        
+
 //         // Store booking data with client secret
 //         const bookingData = {
 //           ...bookingPayload,
@@ -138,15 +138,15 @@
 //           booking_number: data.booking_number,
 //           client_secret: data.client_secret
 //         };
-        
+
 //         sessionStorage.setItem('lastBooking', JSON.stringify(bookingData));
-        
+
 //         // Clear old data
 //         sessionStorage.removeItem('bookingSchedule');
 //         sessionStorage.removeItem('bookingDetails');
-        
+
 //         console.log('Booking created successfully:', data.booking_number);
-        
+
 //         // Redirect to payment page
 //         router.push('/booking/payment');
 //       } else {
@@ -170,7 +170,7 @@
 //   const handleSignup = async (e) => {
 //     e.preventDefault();
 //     setSubmitting(true);
-    
+
 //     try {
 //       const res = await fetch('/api/auth/signup', {
 //         method: 'POST',
@@ -575,11 +575,7 @@ export default function BookingConfirmPage() {
   const router = useRouter();
   const { user, login } = useAuth();
   const [scheduleData, setScheduleData] = useState(null);
-  const [detailsData, setDetailsData] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState('signup');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -620,7 +616,10 @@ export default function BookingConfirmPage() {
   // ✅ NO booking creation here — just save to session and redirect to payment
   const handleProceedToPayment = (e) => {
     e.preventDefault();
-    if (!isAuthenticated) { setShowAuthModal(true); return; }
+    if (!isAuthenticated) { 
+      router.push('/login?redirect=/booking/confirm'); 
+      return; 
+    }
     if (submitting) return;
     setSubmitting(true);
 
@@ -858,14 +857,14 @@ export default function BookingConfirmPage() {
                       <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Ready to book?</h3>
                       <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Create an account or log in to continue</p>
                       <div className="space-y-3 sm:space-y-4 max-w-sm mx-auto">
-                        <button
-                          onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-                          className="w-full bg-gradient-to-r from-green-700 to-green-600 text-white py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold text-base sm:text-lg shadow-lg hover:from-green-800 hover:to-green-700 transition"
-                        >Sign Up</button>
-                        <button
-                          onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
-                          className="w-full border-2 border-green-700 text-green-700 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold text-base sm:text-lg hover:bg-green-50 transition"
-                        >Log In</button>
+                        <Link
+                          href="/signup?redirect=/booking/confirm"
+                          className="w-full bg-gradient-to-r from-green-700 to-green-600 text-white py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold text-base sm:text-lg shadow-lg hover:from-green-800 hover:to-green-700 transition flex items-center justify-center shrink-0"
+                        >Sign Up</Link>
+                        <Link
+                          href="/login?redirect=/booking/confirm"
+                          className="w-full border-2 border-green-700 text-green-700 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold text-base sm:text-lg hover:bg-green-50 transition flex items-center justify-center shrink-0"
+                        >Log In</Link>
                       </div>
                     </div>
                   )}
@@ -935,14 +934,6 @@ export default function BookingConfirmPage() {
           </div>
         </div>
       </div>
-
-      {showAuthModal && (
-        <CustomerAuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          defaultMode={authMode}
-        />
-      )}
 
       <Footer />
     </div>

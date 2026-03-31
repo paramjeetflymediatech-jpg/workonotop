@@ -24,13 +24,16 @@ export const metadata = {
   icons: {
     icon: "/favicon.png",
   },
+  other: {
+    referrer: 'no-referrer-when-downgrade'
+  }
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased `}
+        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans flex flex-col min-h-screen`}
         suppressHydrationWarning
       >
         <AuthProvider>
@@ -42,11 +45,19 @@ export default function RootLayout({ children }) {
           type="module" 
           src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js" 
           strategy="afterInteractive"
+          crossOrigin="anonymous"
         />
         <Script 
           noModule 
           src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js" 
-          strategy="afterInteractive"
+          strategy="lazyOnload"
+          crossOrigin="anonymous"
+        />
+        
+        {/* Google Identity Services */}
+        <Script 
+          src="https://accounts.google.com/gsi/client"
+          strategy="beforeInteractive"
         />
       </body>
     </html>

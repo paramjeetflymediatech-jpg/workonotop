@@ -573,7 +573,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from 'src/context/AuthContext';
 
@@ -600,19 +600,6 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
   const [hearAbout, setHearAbout] = useState('');
   const [receiveOffers, setReceiveOffers] = useState(false);
 
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [showPassword, setShowPassword]               = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showLoginPassword, setShowLoginPassword]     = useState(false);
-
-  const [submitting, setSubmitting]     = useState(false);
-  const [authError, setAuthError]       = useState('');
-  const [forgotEmail, setForgotEmail]   = useState('');
-  const [forgotStatus, setForgotStatus] = useState('idle');
-  const [forgotError, setForgotError]   = useState('');
-
-  if (!isOpen) return null;
-
   const resetForm = () => {
     setFirstName(''); setLastName(''); setEmail(''); setPhone('');
     setPassword(''); setConfirmPassword(''); setHearAbout('');
@@ -626,10 +613,148 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
   const handlePostAuth = () => {
     resetForm();
     onClose();
-    if (pathname?.startsWith('/provider')) {
-      router.replace('/');
+    if (pathname === '/provider/signup' || pathname === '/provider/login') {
+      router.push('/provider/dashboard');
+    } else {
+      router.refresh();
     }
   };
+
+  useEffect(() => {
+    // We now have the Google script in layout.js
+    const initGoogle = () => {
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (typeof window !== 'undefined' && window.google && clientId && clientId !== 'your-google-client-id') {
+        if (window.google_initialized) return;
+
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          ux_mode: 'popup',
+          use_fedcm_for_prompt: true,
+          callback: async (response) => {
+            setSubmitting(true);
+            try {
+              const res = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: response.credential, role: 'user' })
+              });
+              const data = await res.json();
+              if (data.success) {
+                login(data.user);
+                handlePostAuth();
+              } else {
+                setAuthError(data.message || 'Google login failed');
+              }
+            } catch (err) {
+              setAuthError('Failed to login with Google');
+            } finally {
+              setSubmitting(false);
+            }
+          }
+        });
+        window.google_initialized = true;
+      }
+    };
+
+    if (isOpen) {
+      initGoogle();
+    }
+  }, [isOpen, login, handlePostAuth]);
+
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [showPassword, setShowPassword]               = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword]     = useState(false);
+
+  const [submitting, setSubmitting]     = useState(false);
+  const [authError, setAuthError]       = useState('');
+  const [forgotEmail, setForgotEmail]   = useState('');
+  const [forgotStatus, setForgotStatus] = useState('idle');
+  const [forgotError, setForgotError]   = useState('');
+
+  const handleGoogleLogin = () => {
+    if (typeof window === 'undefined' || !window.google) {
+      alert("Google Sign-In is still loading. Please try again in 1 second.");
+      return;
+    }
+    if (submitting) return;
+
+    // Failsafe: Initialize if not already initialized
+    if (!window.google_initialized) {
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (clientId && clientId !== 'your-google-client-id') {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          ux_mode: 'popup',
+          use_fedcm_for_prompt: true,
+          callback: async (response) => {
+            setSubmitting(true);
+            try {
+              const res = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: response.credential, role: 'user' })
+              });
+              const data = await res.json();
+              if (data.success) {
+                login(data.user);
+                handlePostAuth();
+              } else {
+                setAuthError(data.message || 'Google login failed');
+              }
+            } catch (err) {
+              setAuthError('Failed to login with Google');
+            } finally {
+              setSubmitting(false);
+            }
+          }
+        });
+        window.google_initialized = true;
+      }
+    }
+
+    try {
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed()) {
+          console.log("GSI Prompt not displayed:", notification.getNotDisplayedReason());
+        }
+      });
+    } catch (err) {
+      console.error("Google Prompt Error:", err);
+    }
+  };
+
+  const GoogleButton = () => {
+    useEffect(() => {
+      const container = document.getElementById('google-button-container');
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      
+      if (typeof window !== 'undefined' && window.google && container && clientId && clientId !== 'your-google-client-id') {
+        // Clear previous to avoid duplication on re-render
+        container.innerHTML = ''; 
+
+        window.google.accounts.id.renderButton(container, {
+          theme: "outline",
+          size: "large",
+          width: container.offsetWidth || 340,
+          text: "continue_with",
+          shape: "rectangular",
+          logo_alignment: "left"
+        });
+      }
+    }, [authMode]);
+
+    return (
+      <div className="flex justify-center w-full my-4">
+        <div id="google-button-container" className="w-full max-w-[400px]" />
+      </div>
+    );
+  };
+
+  if (!isOpen) return null;
+
+  if (!isOpen) return null;
 
   const validators = {
     firstName: (v) => {
@@ -908,6 +1033,18 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
                 className="w-full bg-gradient-to-r from-green-700 to-green-600 text-white py-3 rounded-xl font-bold text-sm sm:text-base shadow-lg hover:from-green-800 hover:to-green-700 transition disabled:opacity-50 mt-2">
                 {submitting ? 'Logging in...' : 'Log In'}
               </button>
+              
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500 font-medium">Or continue with</span>
+                </div>
+              </div>
+
+              <GoogleButton />
+
               <div className="text-center">
                 <button type="button" onClick={() => { setAuthMode('forgot'); setAuthError(''); setForgotEmail(email); }}
                   className="text-sm text-green-700 hover:underline font-medium">
@@ -1133,6 +1270,17 @@ export default function CustomerAuthModal({ isOpen, onClose, defaultMode = 'logi
                 className="w-full bg-gradient-to-r from-green-700 to-green-600 text-white py-3 rounded-xl font-bold text-sm sm:text-base shadow-lg hover:from-green-800 hover:to-green-700 transition disabled:opacity-50">
                 {submitting ? 'Creating account...' : 'Create Account'}
               </button>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500 font-medium">Or continue with</span>
+                </div>
+              </div>
+
+              <GoogleButton />
 
               <p className="text-xs text-center text-gray-500">
                 By signing up you agree to WorkOnTap&apos;s{' '}
