@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS service_providers (
     name VARCHAR(200) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    phone VARCHAR(20) NOT NULL UNIQUE,
+    phone VARCHAR(20) DEFAULT NULL UNIQUE,
     specialty VARCHAR(200),
     experience_years INT,
     rating DECIMAL(3,2) DEFAULT 0.00,
