@@ -26,7 +26,7 @@ export async function POST(request) {
       );
     }
 
-    const { email, given_name, family_name, name, picture, sub: google_id, aud } = googleData;
+    const { email, given_name, family_name, name, picture, sub: google_id, aud, phone_number } = googleData;
     
     // Verify audience (must match our client id)
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -49,7 +49,7 @@ export async function POST(request) {
 
       let provider;
       if (providers.length === 0) {
-        // Create new provider (Notice: phone is required in schema, we'll use a placeholder or handle it in onboarding)
+        // Create new provider (Notice: phone is now nullable in schema)
         // For now, we'll check if email exists in users table to prevent conflict
         const existingUser = await query('SELECT id FROM users WHERE email = ?', [email]);
         if (existingUser.length > 0) {
@@ -60,12 +60,10 @@ export async function POST(request) {
         }
 
         // Insert new provider
-        // Note: phone is NOT NULL in schema, so we must provide something or placeholder
-        const tempPhonePlaceholder = 'gAuth' + Date.now().toString().slice(-10) + Math.floor(Math.random() * 1000);
         const result = await query(
           `INSERT INTO service_providers (name, email, password, phone, status, email_verified, avatar_url, onboarding_step)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [name || `${given_name} ${family_name}`, email, 'google-auth-placeholder', tempPhonePlaceholder.substring(0, 19), 'pending', 1, picture, 1]
+          [name || `${given_name} ${family_name}`, email, 'google-auth-placeholder', phone_number || null, 'pending', 1, picture, 1]
         );
         
         const newProvider = await query('SELECT * FROM service_providers WHERE id = ?', [result.insertId]);
