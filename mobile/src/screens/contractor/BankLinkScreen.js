@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     SafeAreaView, ActivityIndicator, Alert
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +14,7 @@ import PremiumAlert from '../../components/PremiumAlert';
 const BankLinkScreen = ({ navigation, route }) => {
     const { profile, profilePhoto, skills, documents } = route.params || {};
     const { user, token, updateUser, refreshUser } = useAuth();
+    const insets = useSafeAreaInsets();
     const [stripeUrl, setStripeUrl] = useState(null);
     const [loading, setLoading] = useState(false);
     const [webLoading, setWebLoading] = useState(true);
@@ -123,7 +125,7 @@ const BankLinkScreen = ({ navigation, route }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
+            <View style={[styles.content, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={moderateScale(24)} color="#0f172a" />

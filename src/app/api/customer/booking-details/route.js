@@ -135,7 +135,16 @@ import { verifyToken } from '@/lib/jwt'
 
 export async function GET(request) {
   try {
-    const token = request.cookies.get('customer_token')?.value
+    let token = request.cookies.get('customer_token')?.value
+    
+    // Support Bearer token for mobile apps
+    if (!token) {
+      const authHeader = request.headers.get('authorization')
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1]
+      }
+    }
+
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
@@ -147,6 +156,9 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url)
     const bookingId = searchParams.get('bookingId')
+    
+    console.log(`🔍 [API BookingDetails] UserID: ${decoded.id}, ReqBookingID: ${bookingId}, Decoded:`, decoded);
+
     if (!bookingId) {
       return NextResponse.json({ success: false, message: 'Booking ID required' }, { status: 400 })
     }
@@ -173,7 +185,7 @@ export async function GET(request) {
         LEFT JOIN service_providers  sp ON b.provider_id = sp.id
         WHERE b.id = ? AND b.user_id = ?
         LIMIT 1
-      `, [bookingId, decoded.id])
+      `, [bookingId, Number(decoded.id)])
 
       if (!bookings || bookings.length === 0) {
         return NextResponse.json({ success: false, message: 'Booking not found' }, { status: 404 })

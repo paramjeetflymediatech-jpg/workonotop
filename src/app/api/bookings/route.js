@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server'
-import { execute, getConnection, withConnection } from '@/lib/db'
 import Stripe from 'stripe'
+import jwt from 'jsonwebtoken'
 import { notifyUser } from '@/lib/push'
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null
@@ -78,9 +77,9 @@ export async function POST(request) {
   let connection
   try {
     const body = await request.json()
-    const {
+    let {
       service_id, service_name, service_price, additional_price,
-      first_name, last_name, email, phone,
+      first_name, last_name, name, email, phone,
       job_date, job_time_slot, timing_constraints, job_description, instructions,
       parking_access, elevator_access, has_pets,
       address_line1, address_line2, city = 'Calgary', postal_code,
@@ -88,8 +87,32 @@ export async function POST(request) {
       payment_intent_id,
     } = body
 
-    if (!service_id || !job_date || !job_time_slot || !address_line1 || !email || !first_name || !last_name) {
-      return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 })
+    // --- NEW: Token-based User ID Override (Security & Stale State Protection) ---
+    let authenticatedUserId = user_id;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        if (decoded && decoded.id) {
+          authenticatedUserId = Number(decoded.id);
+          console.log(`🛡️ [API Bookings] Overriding user_id ${user_id} with authenticated ID ${authenticatedUserId}`);
+        }
+      } catch (err) {
+        console.error('❌ [API Bookings] Invalid token in create booking:', err.message);
+      }
+    }
+    // ----------------------------------------------------------------------------
+
+    // Fallback: If first/last name are missing but 'name' is provided (e.g. from mobile Google Auth)
+    if ((!first_name || !last_name) && name) {
+      const parts = name.trim().split(' ');
+      if (!first_name) first_name = parts[0] || '';
+      if (!last_name) last_name = parts.slice(1).join(' ') || '';
+    }
+
+    if (!service_id || !job_date || !job_time_slot || !address_line1 || !email) {
+      return NextResponse.json({ success: false, message: 'Missing required fields (Service, Date, Time, Address, or Email)' }, { status: 400 })
     }
 
     if (!payment_intent_id) {
@@ -114,6 +137,11 @@ export async function POST(request) {
     await connection.query('START TRANSACTION')
 
     try {
+      console.log('[API Bookings] Creating booking for:', email, bookingNumber);
+      console.log('[API Bookings] Payload:', { 
+        service_id, first_name, last_name, email, phone, address_line1, job_description 
+      });
+
       const [result] = await connection.execute(
         `INSERT INTO bookings
          (booking_number, user_id, service_id, service_name, service_price, additional_price,
@@ -125,13 +153,13 @@ export async function POST(request) {
           standard_duration_minutes, payment_intent_id, authorized_amount)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,?,'pending','not_started','authorized',?,?,?)`,
         [
-          bookingNumber, user_id || null, service_id || null, service_name || null,
+          bookingNumber, authenticatedUserId || null, service_id || null, service_name || null,
           service_price || 0, additional_price || 0,
-          first_name || null, last_name || null, email || null, phone || null,
+          first_name || '', last_name || '', email || '', phone || '',
           job_date || null, timeSlotString || null, timing_constraints || null,
-          job_description || null, instructions || null,
+          job_description || '', instructions || null,
           parking_access ? 1 : 0, elevator_access ? 1 : 0, has_pets ? 1 : 0,
-          address_line1 || null, address_line2 || null, city || 'Calgary', postal_code || null,
+          address_line1 || '', address_line2 || null, city || 'Calgary', postal_code || null,
           basePrice || 0, standardDuration || 60,
           payment_intent_id || null, totalAuthorizedAmount || 0,
         ]
@@ -152,8 +180,8 @@ export async function POST(request) {
 
       await connection.query('COMMIT')
 
-      if (user_id) {
-        notifyUser(user_id, 'Booking Confirmed!', `Your booking #${bookingNumber} for ${service_name} has been created.`, { bookingId, bookingNumber, type: 'booking_created' }, execute, 'customer')
+      if (authenticatedUserId) {
+        notifyUser(authenticatedUserId, 'Booking Confirmed!', `Your booking #${bookingNumber} for ${service_name} has been created.`, { bookingId, bookingNumber, type: 'booking_created' }, execute, 'customer')
           .catch(err => console.error('[Push] Notification Error:', err));
       }
 

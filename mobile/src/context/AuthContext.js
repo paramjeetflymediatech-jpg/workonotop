@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { apiService, setLogoutHandler } from '../services/api';
 
 const AuthContext = createContext();
@@ -13,6 +14,14 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Configure Google Sign-In on mount
+    useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: '221840398936-4e0923mpq8viaoljni102if07j5cj0bq.apps.googleusercontent.com',
+            offlineAccess: true,
+        });
+    }, []);
 
     useEffect(() => {
         const loadAuthData = async () => {
@@ -224,6 +233,52 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    const loginWithGoogle = useCallback(async (role = 'customer', type = 'login') => {
+        try {
+            console.log('🏁 [GoogleAuth] Starting sign-in process...', { role, type });
+            
+            await GoogleSignin.hasPlayServices();
+            const userInfo = await GoogleSignin.signIn();
+            const idToken = userInfo.data?.idToken || userInfo.idToken;
+
+            if (!idToken) {
+                console.error('❌ [GoogleAuth] No ID token received');
+                return { success: false, message: 'Google authentication failed: No token received' };
+            }
+
+            console.log('📡 [GoogleAuth] Sending token to backend...');
+            // Standardize role: 'pro' alias from UI becomes 'provider'
+            const targetRole = role === 'pro' ? 'provider' : role;
+
+            const response = await apiService.post('/api/auth/google', {
+                token: idToken,
+                role: targetRole
+            });
+
+            if (response.success) {
+                const userData = response.user || response.provider;
+                const userToken = response.token;
+
+                if (userData.role === 'user') userData.role = 'customer';
+
+                console.log(`✅ [GoogleAuth] Success! Logged in as: ${userData.role}`);
+                await login(userData, userToken);
+                return { success: true, user: userData };
+            } else {
+                console.error('❌ [GoogleAuth] Backend rejected token:', response.message);
+                return { success: false, message: response.message || 'Login failed' };
+            }
+        } catch (error) {
+            console.error('🔥 [GoogleAuth] Critical error:', error);
+            return { 
+                success: false, 
+                message: error.code === 'SIGN_IN_CANCELLED' 
+                    ? 'Sign-in cancelled' 
+                    : 'Google Sign-In failed. Please try again.' 
+            };
+        }
+    }, [login]);
+
     const value = useMemo(() => ({
         user,
         token,
@@ -231,8 +286,9 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         updateUser,
-        refreshUser
-    }), [user, token, loading, login, logout, updateUser, refreshUser]);
+        refreshUser,
+        loginWithGoogle
+    }), [user, token, loading, login, logout, updateUser, refreshUser, loginWithGoogle]);
 
     return (
         <AuthContext.Provider value={value}>

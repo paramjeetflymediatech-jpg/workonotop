@@ -30,8 +30,10 @@ export async function POST(request) {
     
     // Verify audience (must match our client id)
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (aud !== clientId) {
-      console.error('Google Auth Security Warning: Audience mismatch', { aud, expected: clientId });
+    const androidClientId = process.env.GOOGLE_CLIENT_ID_ANDROID;
+    
+    if (aud !== clientId && aud !== androidClientId) {
+      console.error('Google Auth Security Warning: Audience mismatch', { aud, expected: [clientId, androidClientId] });
       return NextResponse.json(
         { success: false, message: 'Security verification failed: User intended for different application.' },
         { status: 403 }

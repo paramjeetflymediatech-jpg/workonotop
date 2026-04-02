@@ -27,8 +27,9 @@ const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
     const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
-    const { login } = useAuth();
+    const { login, loginWithGoogle } = useAuth();
 
     const showPremiumAlert = (message, title = 'Login Failed', type = 'error') => {
         setAlert({ visible: true, title, message, type });
@@ -69,6 +70,22 @@ const LoginScreen = ({ navigation }) => {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setGoogleLoading(true);
+        try {
+            // Role detection: if 'type' is 'pro' from route params, use provider role
+            const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
+            const result = await loginWithGoogle(role, 'login');
+            if (!result.success) {
+                showPremiumAlert(result.message);
+            }
+        } catch (err) {
+            showPremiumAlert('Google Sign-In failed');
+        } finally {
+            setGoogleLoading(false);
         }
     };
 
@@ -140,12 +157,35 @@ const LoginScreen = ({ navigation }) => {
                         <TouchableOpacity
                             style={[styles.button, loading && styles.buttonDisabled]}
                             onPress={handleLogin}
-                            disabled={loading}
+                            disabled={loading || googleLoading}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
                                 <Text style={styles.buttonText}>Sign In</Text>
+                            )}
+                        </TouchableOpacity>
+
+                        <View style={styles.divider}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>OR</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.googleButton, googleLoading && styles.buttonDisabled]}
+                            onPress={handleGoogleLogin}
+                            disabled={loading || googleLoading}
+                        >
+                            {googleLoading ? (
+                                <ActivityIndicator color="#0f172a" />
+                            ) : (
+                                <View style={styles.googleButtonContent}>
+                                    <View style={styles.googleIconContainer}>
+                                        <Text style={styles.googleIconText}>G</Text>
+                                    </View>
+                                    <Text style={styles.googleButtonText}>Continue with Google</Text>
+                                </View>
                             )}
                         </TouchableOpacity>
 
@@ -291,6 +331,58 @@ const styles = StyleSheet.create({
     signupLink: {
         color: '#115e59',
         fontWeight: 'bold',
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: verticalScale(20),
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#e2e8f0',
+    },
+    dividerText: {
+        marginHorizontal: scale(10),
+        color: '#94a3b8',
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+    },
+    googleButton: {
+        backgroundColor: '#fff',
+        paddingVertical: verticalScale(14),
+        borderRadius: moderateScale(15),
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    googleButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    googleIconContainer: {
+        width: moderateScale(24),
+        height: moderateScale(24),
+        borderRadius: moderateScale(12),
+        backgroundColor: '#4285F4',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: scale(12),
+    },
+    googleIconText: {
+        color: '#fff',
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+    },
+    googleButtonText: {
+        color: '#0f172a',
+        fontSize: moderateScale(16),
+        fontWeight: '600',
     }
 });
 

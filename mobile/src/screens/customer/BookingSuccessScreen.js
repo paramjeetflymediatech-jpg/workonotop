@@ -1,5 +1,5 @@
-import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Linking } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from '../../utils/responsive';
 import { API_BASE_URL } from '../../config';
@@ -8,6 +8,7 @@ const PRIMARY = '#115e59';
 
 const BookingSuccessScreen = ({ navigation, route }) => {
     const { bookingNumber, bookingId } = route.params || {};
+    const insets = useSafeAreaInsets();
 
     const handleDownloadInvoice = () => {
         if (!bookingId) return;
@@ -16,7 +17,7 @@ const BookingSuccessScreen = ({ navigation, route }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { paddingBottom: Math.max(insets.bottom, 20) }]}>
             <View style={styles.content}>
                 <View style={styles.iconCircle}>
                     <Ionicons name="checkmark-circle" size={moderateScale(80)} color={PRIMARY} />

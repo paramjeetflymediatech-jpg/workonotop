@@ -4,10 +4,12 @@ import { scale, verticalScale, moderateScale } from '../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_BASE_URL } from '../config';
 
 const DetailsScreen = ({ navigation, route }) => {
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const { service, bookingId } = route.params || {};
     const [data, setData] = useState(service || null);
     const [loading, setLoading] = useState(!service);
@@ -144,7 +146,7 @@ const DetailsScreen = ({ navigation, route }) => {
                 </View>
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, moderateScale(20)) }]}>
                 <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
                     <Text style={styles.secondaryButtonText}>Back</Text>
                 </TouchableOpacity>

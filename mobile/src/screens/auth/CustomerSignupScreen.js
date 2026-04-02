@@ -18,6 +18,8 @@ import { Alert } from 'react-native';
 import PasswordInput from '../../components/PasswordInput';
 import SuccessModal from '../../components/SuccessModal';
 import ErrorModal from '../../components/ErrorModal';
+import { useAuth } from '../../context/AuthContext';
+import { ActivityIndicator } from 'react-native';
 
 const CustomerSignupScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
@@ -35,6 +37,24 @@ const CustomerSignupScreen = ({ navigation }) => {
     const [error, setError] = useState('');
     const [showError, setShowError] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
+    const { loginWithGoogle } = useAuth();
+
+    const handleGoogleSignup = async () => {
+        setGoogleLoading(true);
+        try {
+            const result = await loginWithGoogle('customer', 'signup');
+            if (!result.success) {
+                setError(result.message);
+                setShowError(true);
+            }
+        } catch (err) {
+            setError('Google Signup failed');
+            setShowError(true);
+        } finally {
+            setGoogleLoading(false);
+        }
+    };
 
     const handleSignup = async () => {
         const { firstName, lastName, email, phone, password, confirmPassword, referral } = formData;
@@ -245,11 +265,34 @@ const CustomerSignupScreen = ({ navigation }) => {
                         <TouchableOpacity
                             style={[styles.submitButton, loading && styles.disabledButton]}
                             onPress={handleSignup}
-                            disabled={loading}
+                            disabled={loading || googleLoading}
                         >
                             <Text style={styles.submitButtonText}>
                                 {loading ? 'Creating Account...' : 'Create Account'}
                             </Text>
+                        </TouchableOpacity>
+
+                        <View style={styles.divider}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>OR</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.googleButton, googleLoading && styles.disabledButton]}
+                            onPress={handleGoogleSignup}
+                            disabled={loading || googleLoading}
+                        >
+                            {googleLoading ? (
+                                <ActivityIndicator color="#0f172a" />
+                            ) : (
+                                <View style={styles.googleButtonContent}>
+                                    <View style={styles.googleIconContainer}>
+                                        <Text style={styles.googleIconText}>G</Text>
+                                    </View>
+                                    <Text style={styles.googleButtonText}>Signup with Google</Text>
+                                </View>
+                            )}
                         </TouchableOpacity>
 
                         <Text style={styles.termsText}>
@@ -412,6 +455,58 @@ const styles = StyleSheet.create({
     },
     link: {
         color: '#115e59',
+        fontWeight: '600',
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: verticalScale(20),
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#e2e8f0',
+    },
+    dividerText: {
+        marginHorizontal: scale(10),
+        color: '#94a3b8',
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+    },
+    googleButton: {
+        backgroundColor: '#fff',
+        paddingVertical: verticalScale(14),
+        borderRadius: moderateScale(15),
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    googleButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    googleIconContainer: {
+        width: moderateScale(24),
+        height: moderateScale(24),
+        borderRadius: moderateScale(12),
+        backgroundColor: '#4285F4',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: scale(12),
+    },
+    googleIconText: {
+        color: '#fff',
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+    },
+    googleButtonText: {
+        color: '#0f172a',
+        fontSize: moderateScale(16),
         fontWeight: '600',
     }
 });

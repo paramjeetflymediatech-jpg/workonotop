@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     ScrollView, SafeAreaView, Alert, ActivityIndicator
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../utils/api';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -29,6 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 const ReviewScreen = ({ navigation, route }) => {
     const { user, updateUser, token } = useAuth();
+    const insets = useSafeAreaInsets();
 
     // ── Data from navigation params OR fall back to user object ──────────────
     const profile = route.params?.profile || {
@@ -370,6 +372,7 @@ const ReviewScreen = ({ navigation, route }) => {
                     )}
 
                     <Text style={styles.stepFooter}>Step 4 of 4</Text>
+                    <View style={{ height: Math.max(insets.bottom, 20) }} />
                 </View>
             </ScrollView>
         </SafeAreaView>

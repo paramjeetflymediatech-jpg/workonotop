@@ -337,6 +337,13 @@ function PaymentForm({ pendingBookingData, onSuccess }) {
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/booking/success/pending`,
+          payment_method_data: {
+            billing_details: {
+              name: `${pendingBookingData.first_name} ${pendingBookingData.last_name}`,
+              email: pendingBookingData.email,
+              phone: pendingBookingData.phone || undefined,
+            }
+          }
         },
         redirect: 'if_required',
       });
@@ -603,7 +610,11 @@ export default function PaymentPage() {
                   >← Go Back</button>
                 </div>
               ) : clientSecret ? (
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <Elements stripe={stripePromise} options={{ 
+                  clientSecret,
+                  appearance: { theme: 'stripe' },
+                  paymentMethodOrder: ['card', 'apple_pay', 'google_pay']
+                }}>
                   <PaymentForm
                     pendingBookingData={pendingBookingData}
                     onSuccess={handlePaymentSuccess}

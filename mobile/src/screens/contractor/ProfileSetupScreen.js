@@ -5,6 +5,7 @@ import {
     Platform, Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, verticalScale, scale } from '../../utils/responsive';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -30,6 +31,7 @@ const SKILLS = [
 ];
 
 const ProfileSetupScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const [profile, setProfile] = useState({
         bio: '',
         primarySpecialty: '',
@@ -310,6 +312,7 @@ const ProfileSetupScreen = ({ navigation }) => {
                     </TouchableOpacity>
 
                     <Text style={styles.stepFooter}>Step 1 of 4</Text>
+                    <View style={{ height: Math.max(insets.bottom, 20) }} />
                 </View>
             </ScrollView>
 

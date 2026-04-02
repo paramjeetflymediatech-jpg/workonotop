@@ -40,7 +40,10 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const [viewerVisible, setViewerVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
 
-    // Form State
+    // Form State (Intelligent name parsing for Google users)
+    const initialFirstName = user?.first_name || (user?.name ? user.name.split(' ')[0] : '');
+    const initialLastName = user?.last_name || (user?.name ? user.name.split(' ').slice(1).join(' ') : '');
+
     const [bookingData, setBookingData] = useState({
         service_id: service.id,
         service_name: service.name,
@@ -55,8 +58,9 @@ const CreateBookingScreen = ({ navigation, route }) => {
         parking_access: false,
         elevator_access: false,
         has_pets: false,
-        first_name: user?.first_name || '',
-        last_name: user?.last_name || '',
+        first_name: initialFirstName,
+        last_name: initialLastName,
+        name: user?.name || `${initialFirstName} ${initialLastName}`.trim(),
         email: user?.email || '',
         phone: user?.phone || '',
         photos: [],
@@ -555,7 +559,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
             {step === 5 && renderStep5()}
             {renderImageViewer()}
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, moderateScale(20)) }]}>
                 {step > 1 && (
                     <TouchableOpacity style={styles.backBtn} onPress={prevStep}>
                         <Text style={styles.backBtnText}>Back</Text>

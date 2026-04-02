@@ -433,7 +433,8 @@ const resolveProviderScreen = (user) => {
             if (step >= 4) return { screen: 'Review',            params: {} };
             if (step >= 3) return { screen: 'BankLink',          params: {} };
             if (step >= 2) return { screen: 'DocumentUpload',    params: {} };
-            return               { screen: 'ProviderOnboarding', params: {} };
+            // Web Step 1 = Profile Setup. Skip Intro (ProviderOnboarding) for direct parity.
+            return               { screen: 'ProfileSetup',       params: {} };
         }
 
         // 3b. Onboarding complete but docs were reset by admin → re-upload

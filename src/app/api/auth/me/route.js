@@ -16,10 +16,18 @@ export async function GET(request) {
     
     // 2. Try Web Sessions
     if (!decoded) {
-      const token = request.cookies.get('customer_token')?.value || 
-                    request.cookies.get('provider_token')?.value ||
-                    request.cookies.get('adminAuth')?.value;
+      let token = request.cookies.get('user_token')?.value || 
+                  request.cookies.get('provider_token')?.value ||
+                  request.cookies.get('adminAuth')?.value;
       
+      // Support Bearer token for mobile
+      if (!token) {
+        const authHeader = request.headers.get('authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          token = authHeader.split(' ')[1];
+        }
+      }
+
       if (token) {
         decoded = verifyToken(token);
       }
@@ -50,6 +58,7 @@ export async function GET(request) {
       );
       if (providers.length > 0) {
         userData = providers[0];
+        userData.id = Number(userData.id); // Ensure ID is a Number
         userData.role = 'provider';
       }
     } else {
@@ -60,6 +69,13 @@ export async function GET(request) {
       );
       if (users.length > 0) {
         userData = users[0];
+        userData.id = Number(userData.id); // Ensure ID is a Number
+        // Add fallbacks for fields missing in users table but expected by mobile app
+        userData.status = userData.status || 'active';
+        userData.onboarding_step = 1;
+        userData.onboarding_completed = 1;
+        userData.documents_uploaded = 0;
+        
         // Ensure consistent role naming for frontend
         if (userData.role === 'user') userData.role = 'customer';
       }

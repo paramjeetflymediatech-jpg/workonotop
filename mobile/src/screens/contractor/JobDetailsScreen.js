@@ -436,7 +436,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
 
             {/* Sticky Action Footer */}
             {job.status === 'pending' && (
-                <View style={styles.footer}>
+                <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                     <TouchableOpacity 
                         style={[styles.acceptBtnFull, { backgroundColor: headerColor }, loading && { opacity: 0.7 }]} 
                         onPress={handleAcceptJob}

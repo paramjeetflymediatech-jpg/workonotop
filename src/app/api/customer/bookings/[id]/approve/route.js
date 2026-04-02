@@ -165,7 +165,16 @@ function disputeProviderHtml({ bookingNumber, serviceName, customerName, provide
 
 // ── POST handler ──────────────────────────────────────────────────────────────
 export async function POST(request, { params }) {
-  const token = request.cookies.get('customer_token')?.value
+  let token = request.cookies.get('customer_token')?.value || request.cookies.get('user_token')?.value
+  
+  // Support Bearer token for mobile
+  if (!token) {
+    const authHeader = request.headers.get('authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1]
+    }
+  }
+
   if (!token) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
 
   const decoded = verifyToken(token)

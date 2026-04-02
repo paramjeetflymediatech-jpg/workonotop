@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../config';
@@ -15,6 +16,7 @@ import PremiumAlert from '../../components/PremiumAlert';
 
 const DocumentUploadScreen = ({ navigation, route }) => {
     const { token, updateUser, user } = useAuth();
+    const insets = useSafeAreaInsets();
 
     const isEntryPoint = route.params?.isEntryPoint === true;
 
@@ -399,6 +401,7 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                         <Text style={styles.nextBtnText}>Continue to Bank Link →</Text>
                     </TouchableOpacity>
                     <Text style={styles.stepFooter}>Step 2 of 4</Text>
+                    <View style={{ height: Math.max(insets.bottom, 20) }} />
                 </View>
             </ScrollView>
             <PremiumAlert visible={alert.visible} title={alert.title} message={alert.message} type={alert.type} onClose={() => setAlert({ ...alert, visible: false })} />
