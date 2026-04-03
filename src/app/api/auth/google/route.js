@@ -6,7 +6,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function POST(request) {
   try {
-    const { token, role } = await request.json(); // role: 'user' or 'provider'
+    const body = await request.json().catch(() => ({}));
+    const { token, role } = body; // role: 'user' or 'provider'
 
     if (!token) {
       return NextResponse.json(
@@ -141,6 +142,28 @@ export async function POST(request) {
     };
 
     const jwtToken = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
+    
+    // --- MOBILE SESSION PERSISTENCE ---
+    const deviceId = body.device_id || request.headers.get('x-device-id');
+    
+    if (deviceId || request.headers.get('user-agent')?.includes('Expo') || request.headers.get('user-agent')?.includes('ReactNative')) {
+        try {
+            const userIdCol = (finalRole === 'provider') ? 'provider_id' : 'user_id';
+            await query(
+                `INSERT INTO mobile_auth_users (${userIdCol}, user_type, last_login, device_id, refresh_token, refresh_token_expires)
+                 VALUES (?, ?, NOW(), ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
+                 ON DUPLICATE KEY UPDATE 
+                    last_login = NOW(), 
+                    device_id = VALUES(device_id),
+                    refresh_token = VALUES(refresh_token),
+                    refresh_token_expires = VALUES(refresh_token_expires)`,
+                [finalUser.id, finalRole, deviceId || 'mobile-app', jwtToken]
+            );
+            console.log('📱 [GoogleAuth] Mobile session persisted to DB');
+        } catch (e) {
+            console.warn('⚠️ [GoogleAuth] Skipping session persistence:', e.message);
+        }
+    }
 
     // --- PREPARE RESPONSE ---
     const responseData = {

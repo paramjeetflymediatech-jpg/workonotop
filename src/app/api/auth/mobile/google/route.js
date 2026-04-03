@@ -171,10 +171,14 @@ export async function POST(request) {
     try {
       const userIdCol = (dbType === 'provider') ? 'provider_id' : 'user_id';
       await query(
-          `INSERT INTO mobile_auth_users (${userIdCol}, user_type, last_login, device_id)
-           VALUES (?, ?, NOW(), ?)
-           ON DUPLICATE KEY UPDATE last_login = NOW(), device_id = VALUES(device_id)`,
-          [actualId, dbType, device_id || 'mobile-app']
+          `INSERT INTO mobile_auth_users (${userIdCol}, user_type, last_login, device_id, refresh_token, refresh_token_expires)
+           VALUES (?, ?, NOW(), ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
+           ON DUPLICATE KEY UPDATE 
+             last_login = NOW(), 
+             device_id = VALUES(device_id),
+             refresh_token = VALUES(refresh_token),
+             refresh_token_expires = VALUES(refresh_token_expires)`,
+          [actualId, dbType, device_id || 'mobile-app', authToken]
       );
     } catch (e) {
       console.warn('⚠️ [Mobile Google Auth] Skipping session persistence:', e.message);
