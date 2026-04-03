@@ -9,7 +9,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     Switch,
-    StatusBar
+    StatusBar,
+    Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
@@ -287,9 +288,11 @@ const CustomerSignupScreen = ({ navigation }) => {
                                 <ActivityIndicator color="#0f172a" />
                             ) : (
                                 <View style={styles.googleButtonContent}>
-                                    <View style={styles.googleIconContainer}>
-                                        <Text style={styles.googleIconText}>G</Text>
-                                    </View>
+                                    <Image 
+                                        source={require('../../../assets/google_logo.png')} 
+                                        style={styles.googleLogo}
+                                        resizeMode="contain"
+                                    />
                                     <Text style={styles.googleButtonText}>Signup with Google</Text>
                                 </View>
                             )}
@@ -482,32 +485,25 @@ const styles = StyleSheet.create({
         borderColor: '#e2e8f0',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOpacity: 0.08,
+        shadowRadius: 5,
+        elevation: 3,
     },
     googleButtonContent: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
-    googleIconContainer: {
-        width: moderateScale(24),
-        height: moderateScale(24),
-        borderRadius: moderateScale(12),
-        backgroundColor: '#4285F4',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: scale(12),
     },
-    googleIconText: {
-        color: '#fff',
-        fontSize: moderateScale(14),
-        fontWeight: 'bold',
+    googleLogo: {
+        width: moderateScale(22),
+        height: moderateScale(22),
+        marginRight: scale(10),
     },
     googleButtonText: {
         color: '#0f172a',
         fontSize: moderateScale(16),
-        fontWeight: '600',
+        fontWeight: 'bold',
+        letterSpacing: 0.2,
     }
 });
 

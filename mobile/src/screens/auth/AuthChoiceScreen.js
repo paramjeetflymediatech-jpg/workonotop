@@ -45,7 +45,7 @@ const AuthChoiceScreen = ({ navigation, route }) => {
         <View style={styles.buttonGroup}>
             <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={() => navigation.navigate('Login')}
+                onPress={() => changeView('login')}
             >
                 <Text style={styles.primaryButtonText}>Login</Text>
             </TouchableOpacity>
@@ -59,7 +59,23 @@ const AuthChoiceScreen = ({ navigation, route }) => {
         </View>
     );
 
-    const renderLoginOptions = () => null; // Removed as it is now unified
+    const renderLoginOptions = () => (
+        <View style={styles.buttonGroup}>
+            <TouchableOpacity
+                style={styles.roleButton}
+                onPress={() => navigation.navigate('Login', { type: 'customer' })}
+            >
+                <Text style={styles.roleButtonText}>Login as Customer</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.roleButton}
+                onPress={() => navigation.navigate('Login', { type: 'pro' })}
+            >
+                <Text style={styles.roleButtonText}>Login as Provider</Text>
+            </TouchableOpacity>
+        </View>
+    );
 
     const renderSignUpOptions = () => (
         <View style={styles.buttonGroup}>

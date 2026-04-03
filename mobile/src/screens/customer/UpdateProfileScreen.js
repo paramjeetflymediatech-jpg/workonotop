@@ -13,12 +13,12 @@ import { apiService } from '../../services/api';
 const UpdateProfileScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const { user, token, updateUser } = useAuth();
-    
+
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
-    
+
     const [form, setForm] = useState({
         first_name: '',
         last_name: '',
@@ -132,7 +132,7 @@ const UpdateProfileScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
@@ -144,14 +144,14 @@ const UpdateProfileScreen = ({ navigation }) => {
                     <View style={{ width: moderateScale(40) }} />
                 </View>
 
-                <ScrollView 
-                    contentContainerStyle={styles.scrollContent} 
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" />
                     }
                 >
-                    
+
                     {/* Profile Image Picker */}
                     <View style={styles.imagePickerContainer}>
                         <TouchableOpacity onPress={pickImage} style={styles.imagePickerBubble}>
@@ -229,8 +229,8 @@ const UpdateProfileScreen = ({ navigation }) => {
                         />
                     </View>
 
-                    <TouchableOpacity 
-                        style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
+                    <TouchableOpacity
+                        style={[styles.saveButton, saving && styles.saveButtonDisabled]}
                         onPress={handleSave}
                         disabled={saving}
                     >

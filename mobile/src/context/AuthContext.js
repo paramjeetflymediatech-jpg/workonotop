@@ -259,6 +259,11 @@ export const AuthProvider = ({ children }) => {
                 const userData = response.user || response.provider;
                 const userToken = response.token;
 
+                // Safety: Force correct role if missing
+                if (response.provider && (!userData || !userData.role)) {
+                    userData.role = 'provider';
+                }
+
                 if (userData.role === 'user') userData.role = 'customer';
 
                 console.log(`✅ [GoogleAuth] Success! Logged in as: ${userData.role}`);
@@ -274,7 +279,7 @@ export const AuthProvider = ({ children }) => {
                 success: false, 
                 message: error.code === 'SIGN_IN_CANCELLED' 
                     ? 'Sign-in cancelled' 
-                    : 'Google Sign-In failed. Please try again.' 
+                    : (error.message || 'Google Sign-In failed. Please try again.')
             };
         }
     }, [login]);

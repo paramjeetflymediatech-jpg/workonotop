@@ -27,153 +27,164 @@ export async function POST(request) {
     }
 
     const { email, given_name, family_name, name, picture, sub: google_id, aud, phone_number } = googleData;
-    
+
     // Verify audience (must match our client id)
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     const androidClientId = process.env.GOOGLE_CLIENT_ID_ANDROID;
-    
+
     if (aud !== clientId && aud !== androidClientId) {
-      console.error('Google Auth Security Warning: Audience mismatch', { aud, expected: [clientId, androidClientId] });
+      console.error('❌ [GoogleAuth] Audience mismatch!', {
+        received_aud: aud,
+        expected: {
+          web: clientId,
+          android: androidClientId
+        }
+      });
       return NextResponse.json(
-        { success: false, message: 'Security verification failed: User intended for different application.' },
+        { success: false, message: `Security verification failed: Audience mismatch. Received: ${aud}. Expected Web: ${clientId}, Android: ${androidClientId}` },
         { status: 403 }
       );
     }
 
-    if (role === 'provider') {
-      // Check if provider exists
-      const providers = await query(
-        'SELECT * FROM service_providers WHERE email = ?',
-        [email]
-      );
+    console.log('✅ [GoogleAuth] Audience verified:', aud === clientId ? 'Web' : 'Android');
 
-      let provider;
-      if (providers.length === 0) {
-        // Create new provider (Notice: phone is now nullable in schema)
-        // For now, we'll check if email exists in users table to prevent conflict
-        const existingUser = await query('SELECT id FROM users WHERE email = ?', [email]);
-        if (existingUser.length > 0) {
+    // --- STRICT ROLE DETECTION ---
+    const targetRole = role === 'pro' || role === 'provider' ? 'provider' : 'customer';
+
+    // 1. Check if user exists as a Provider
+    const existingProviders = await query(
+      'SELECT * FROM service_providers WHERE email = ?',
+      [email]
+    );
+
+    // 2. Check if user exists as a Customer
+    const existingUsers = await query(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
+
+    let finalUser = null;
+    let finalRole = null;
+
+    // 🟢 ADMIN BYPASS (Detection)
+    const adminUser = existingUsers.find(u => u.role === 'admin');
+
+    if (adminUser) {
+      finalUser = adminUser;
+      finalRole = 'admin';
+      console.log('👑 Admin Google login detected');
+    } else {
+      // 2. STRICT ROLE DETECTION (for regular users)
+      if (targetRole === 'provider') {
+        if (existingProviders.length > 0) {
+          finalUser = existingProviders[0];
+          finalRole = 'provider';
+        } else if (existingUsers.length > 0) {
+          // Strict Block: User exists as customer but tried to login as provider
           return NextResponse.json(
-            { success: false, message: 'This email is already registered as a customer.' },
+            { success: false, message: 'This email is registered as a customer. Please use the customer login.' },
             { status: 400 }
           );
         }
+      } else {
+        // targetRole === 'customer'
+        if (existingUsers.length > 0) {
+          finalUser = existingUsers[0];
+          finalRole = 'customer';
+        } else if (existingProviders.length > 0) {
+          // Strict Block: User exists as provider but tried to login as customer
+          return NextResponse.json(
+            { success: false, message: 'This email is registered as a service provider. Please use the provider login.' },
+            { status: 400 }
+          );
+        }
+      }
+    }
 
-        // Insert new provider
+    // --- REGISTRATION OR LOGIN PROCEED ---
+    if (finalUser) {
+      // Existing user logic
+      if (finalRole === 'provider' && !finalUser.email_verified) {
+        await query('UPDATE service_providers SET email_verified = 1 WHERE id = ?', [finalUser.id]);
+        finalUser.email_verified = 1;
+      }
+    } else {
+      // Registration logic (Neither account exists)
+      if (targetRole === 'provider') {
         const result = await query(
           `INSERT INTO service_providers (name, email, password, phone, status, email_verified, avatar_url, onboarding_step)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [name || `${given_name} ${family_name}`, email, 'google-auth-placeholder', phone_number || null, 'pending', 1, picture, 1]
         );
-        
         const newProvider = await query('SELECT * FROM service_providers WHERE id = ?', [result.insertId]);
-        provider = newProvider[0];
+        finalUser = newProvider[0];
+        finalRole = 'provider';
       } else {
-        provider = providers[0];
-      }
-
-      // Generate JWT for provider
-      const jwtToken = jwt.sign(
-        {
-          providerId: provider.id,
-          email: provider.email,
-          name: provider.name,
-          type: 'provider'
-        },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-
-      const response = NextResponse.json({
-        success: true,
-        message: 'Login successful',
-        token: jwtToken,
-        provider: {
-          id: provider.id,
-          name: provider.name,
-          email: provider.email,
-          status: provider.status,
-          onboarding_step: provider.onboarding_step,
-          onboarding_completed: provider.onboarding_completed
-        }
-      });
-
-      response.cookies.set({
-        name: 'provider_token',
-        value: jwtToken,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 7 * 24 * 60 * 60
-      });
-
-      return response;
-
-    } else {
-      // role: 'user' (customer)
-      const users = await query(
-        "SELECT * FROM users WHERE email = ? AND role = 'user'",
-        [email]
-      );
-
-      let user;
-      if (users.length === 0) {
-        // Check if email exists in providers table
-        const existingProvider = await query('SELECT id FROM service_providers WHERE email = ?', [email]);
-        if (existingProvider.length > 0) {
-          return NextResponse.json(
-            { success: false, message: 'This email is already registered as a service provider.' },
-            { status: 400 }
-          );
-        }
-
-        // Insert new user
         const result = await query(
           `INSERT INTO users (email, password_hash, first_name, last_name, role, image_url)
            VALUES (?, ?, ?, ?, ?, ?)`,
           [email, 'google-auth-placeholder', given_name || '', family_name || '', 'user', picture]
         );
-        
         const newUser = await query('SELECT * FROM users WHERE id = ?', [result.insertId]);
-        user = newUser[0];
-      } else {
-        user = users[0];
+        finalUser = newUser[0];
+        finalRole = 'customer';
       }
-
-      const jwtToken = jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          role: 'user'
-        },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-
-      const { password_hash, ...userData } = user;
-
-      const response = NextResponse.json({
-        success: true,
-        message: 'Login successful',
-        token: jwtToken,
-        user: userData
-      });
-
-      response.cookies.set({
-        name: 'customer_token',
-        value: jwtToken,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 7 * 24 * 60 * 60
-      });
-
-      return response;
     }
+
+    // --- GENERATE TOKEN ---
+    const tokenPayload = {
+      id: finalUser.id,
+      email: finalUser.email,
+      role: finalRole,
+      type: finalRole, // For backward compatibility
+      providerId: finalRole === 'provider' ? finalUser.id : undefined // Critical for onboarding routes
+    };
+
+    const jwtToken = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
+
+    // --- PREPARE RESPONSE ---
+    const responseData = {
+      success: true,
+      message: 'Login successful',
+      token: jwtToken,
+      role: finalRole
+    };
+
+    if (finalRole === 'provider') {
+      responseData.provider = {
+        id: finalUser.id,
+        name: finalUser.name,
+        email: finalUser.email,
+        status: finalUser.status,
+        email_verified: 1,
+        onboarding_step: finalUser.onboarding_step || 1,
+        onboarding_completed: finalUser.onboarding_completed || 0,
+        documents_uploaded: finalUser.documents_uploaded || 0,
+        stripe_onboarding_complete: finalUser.stripe_onboarding_complete || 0
+      };
+    } else {
+      const { password_hash, ...rest } = finalUser;
+      responseData.user = {
+        ...rest,
+        role: 'customer' // Normalize 'user' to 'customer' for mobile
+      };
+    }
+
+    const response = NextResponse.json(responseData);
+
+    // Set cookie for web compatibility
+    const cookieName = finalRole === 'provider' ? 'provider_token' : 'customer_token';
+    response.cookies.set({
+      name: cookieName,
+      value: jwtToken,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Google Auth error:', error);

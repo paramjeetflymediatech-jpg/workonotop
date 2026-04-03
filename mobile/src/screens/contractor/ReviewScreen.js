@@ -29,7 +29,7 @@ import { Ionicons } from '@expo/vector-icons';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ReviewScreen = ({ navigation, route }) => {
-    const { user, updateUser, token } = useAuth();
+    const { user, updateUser, token, logout } = useAuth();
     const insets = useSafeAreaInsets();
 
     // ── Data from navigation params OR fall back to user object ──────────────
@@ -236,7 +236,10 @@ const ReviewScreen = ({ navigation, route }) => {
                         >
                             <Ionicons name="arrow-back" size={moderateScale(24)} color="#0d9488" />
                         </TouchableOpacity>
-                        <Text style={styles.mainTitle}>Final Review</Text>
+                        <Text style={[styles.mainTitle, { flex: 1 }]}>Final Review</Text>
+                        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+                            <Ionicons name="log-out-outline" size={moderateScale(22)} color="#ef4444" />
+                        </TouchableOpacity>
                     </View>
                     <Text style={styles.subtitle}>Please check your details before submitting</Text>
 

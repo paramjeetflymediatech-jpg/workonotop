@@ -13,7 +13,7 @@ import PremiumAlert from '../../components/PremiumAlert';
 
 const BankLinkScreen = ({ navigation, route }) => {
     const { profile, profilePhoto, skills, documents } = route.params || {};
-    const { user, token, updateUser, refreshUser } = useAuth();
+    const { user, token, updateUser, refreshUser, logout } = useAuth();
     const insets = useSafeAreaInsets();
     const [stripeUrl, setStripeUrl] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -60,15 +60,15 @@ const BankLinkScreen = ({ navigation, route }) => {
         // Detect when stripe redirects back
         const url = navState.url || '';
         if (
-            url.includes('/stripe/callback') || 
-            url.includes('/stripe/refresh') || 
+            url.includes('/stripe/callback') ||
+            url.includes('/stripe/refresh') ||
             url.includes('success=true') ||
             url.includes('stripe_complete=true') ||
             url.includes('onboarding?step=4')
         ) {
             setStripeUrl(null);
             setConnected(true);
-            
+
             try {
                 // Extract accountId from URL if present
                 let accountId = null;
@@ -81,7 +81,7 @@ const BankLinkScreen = ({ navigation, route }) => {
 
                 // 1. Tell backend to verify/complete the Stripe setup
                 await apiService.provider.onboarding.stripeComplete({ accountId }, token);
-                
+
                 // 2. Refresh entire user object from backend to get stripe_onboarding_complete status
                 await refreshUser();
             } catch (err) {
@@ -131,6 +131,9 @@ const BankLinkScreen = ({ navigation, route }) => {
                         <Ionicons name="arrow-back" size={moderateScale(24)} color="#0f172a" />
                     </TouchableOpacity>
                     <Text style={styles.mainTitle}>Bank Account</Text>
+                    <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+                        <Ionicons name="log-out-outline" size={moderateScale(22)} color="#ef4444" />
+                    </TouchableOpacity>
                 </View>
 
                 <Text style={styles.title}>Link Your Bank Account</Text>
@@ -158,8 +161,8 @@ const BankLinkScreen = ({ navigation, route }) => {
 
                 <TouchableOpacity
                     style={[styles.stripeBtn, loading && styles.btnDisabled]}
-                    onPress={connected 
-                        ? (Number(user?.onboarding_completed) === 1 
+                    onPress={connected
+                        ? (Number(user?.onboarding_completed) === 1
                             ? () => navigation.navigate('Main')
                             : () => navigation.navigate('Review', { profile, documents, connected: true }))
                         : openStripeOnboarding}
@@ -175,9 +178,9 @@ const BankLinkScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
 
                 {!connected && (
-                    <TouchableOpacity 
-                        style={styles.skipBtn} 
-                        onPress={Number(user?.onboarding_completed) === 1 
+                    <TouchableOpacity
+                        style={styles.skipBtn}
+                        onPress={Number(user?.onboarding_completed) === 1
                             ? () => navigation.navigate('Main')
                             : () => navigation.navigate('Review', { profile, documents, connected: false })}
                         disabled={loading}
@@ -230,7 +233,6 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(18),
         fontWeight: 'bold',
         color: '#0f172a',
-        marginRight: moderateScale(40), // Balance the back button
     },
     title: { fontSize: moderateScale(28), fontWeight: 'bold', color: '#0f172a' },
     subtitle: { fontSize: moderateScale(14), color: '#64748b', marginTop: verticalScale(4), marginBottom: verticalScale(32) },
@@ -267,18 +269,18 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textDecorationLine: 'underline',
     },
-    mandatoryNotice: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
+    mandatoryNotice: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
         marginTop: verticalScale(24),
         backgroundColor: '#f8fafc',
         padding: moderateScale(12),
         borderRadius: moderateScale(10),
     },
-    mandatoryText: { 
-        color: '#64748b', 
-        fontSize: moderateScale(13), 
+    mandatoryText: {
+        color: '#64748b',
+        fontSize: moderateScale(13),
         marginLeft: scale(8),
         fontStyle: 'italic',
         lineHeight: moderateScale(18),

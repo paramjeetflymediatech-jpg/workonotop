@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import PremiumAlert from '../../components/PremiumAlert';
 
 const DocumentUploadScreen = ({ navigation, route }) => {
-    const { token, updateUser, user } = useAuth();
+    const { token, updateUser, user, logout } = useAuth();
     const insets = useSafeAreaInsets();
 
     const isEntryPoint = route.params?.isEntryPoint === true;
@@ -208,11 +208,13 @@ const DocumentUploadScreen = ({ navigation, route }) => {
         if (hasDoc) {
             Alert.alert(`Manage ${label}`, 'Choose action', [
                 { text: 'View Document', onPress: () => { setViewerImage(documents[key]); setViewerVisible(true); } },
-                { text: 'Upload New', onPress: () => Alert.alert(`Upload ${label}`, 'Choose source', [
-                    { text: 'Camera', onPress: () => takePhoto(key, label) },
-                    { text: 'Gallery', onPress: () => pickDocument(key, label) },
-                    { text: 'Cancel', style: 'cancel' },
-                ]) },
+                {
+                    text: 'Upload New', onPress: () => Alert.alert(`Upload ${label}`, 'Choose source', [
+                        { text: 'Camera', onPress: () => takePhoto(key, label) },
+                        { text: 'Gallery', onPress: () => pickDocument(key, label) },
+                        { text: 'Cancel', style: 'cancel' },
+                    ])
+                },
                 { text: 'Cancel', style: 'cancel' },
             ]);
         } else {
@@ -372,7 +374,10 @@ const DocumentUploadScreen = ({ navigation, route }) => {
                         >
                             <Ionicons name="arrow-back" size={moderateScale(24)} color={isEntryPoint ? '#cbd5e1' : '#115e59'} />
                         </TouchableOpacity>
-                        <Text style={styles.mainTitle}>Upload Documents</Text>
+                        <Text style={[styles.mainTitle, { flex: 1 }]}>Upload Documents</Text>
+                        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+                            <Ionicons name="log-out-outline" size={moderateScale(20)} color="#ef4444" />
+                        </TouchableOpacity>
                     </View>
                     <Text style={styles.subtitle}>Our team needs these to verify your identity</Text>
 
@@ -465,6 +470,15 @@ const styles = StyleSheet.create({
     viewerTitle: { flex: 1, textAlign: 'center', color: '#fff', fontSize: moderateScale(16), fontWeight: 'bold', marginRight: moderateScale(30) },
     viewerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     viewerImage: { width: '100%', height: '100%' },
+    logoutBtn: {
+        width: moderateScale(40),
+        height: moderateScale(40),
+        borderRadius: moderateScale(20),
+        backgroundColor: '#fef2f2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: scale(10),
+    },
 });
 
 export default DocumentUploadScreen;

@@ -6,11 +6,13 @@ import {
     Animated,
     TouchableOpacity,
     Image,
-    SafeAreaView
+    StatusBar
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH, SCREEN_HEIGHT } from '../../utils/responsive';
 
 const WelcomeScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
     const floatAnim = useRef(new Animated.Value(0)).current;
@@ -61,7 +63,8 @@ const WelcomeScreen = ({ navigation }) => {
     });
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
             <View style={styles.topSection}>
                 <Text style={styles.brandText}>WorkOn<Text style={styles.brandBold}>Top</Text></Text>
             </View>
@@ -95,7 +98,7 @@ const WelcomeScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </Animated.View>
             </View>
-        </SafeAreaView>
+        </View>
     );
 };
 

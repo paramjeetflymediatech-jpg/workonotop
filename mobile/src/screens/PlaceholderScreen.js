@@ -1,13 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from '../utils/responsive';
 
 const PlaceholderScreen = ({ navigation, route }) => {
     const { title } = route.params || { title: 'Coming Soon' };
+    const insets = useSafeAreaInsets();
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
             <View style={styles.header}>
                 {navigation.canGoBack() ? (
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -37,7 +40,7 @@ const PlaceholderScreen = ({ navigation, route }) => {
                     <Text style={styles.buttonText}>Go Back</Text>
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </View>
     );
 };
 

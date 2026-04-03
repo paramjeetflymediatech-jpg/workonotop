@@ -12,12 +12,12 @@ import { API_BASE_URL } from '../../config';
 
 const ProviderUpdateProfileScreen = ({ navigation }) => {
     const { user, updateUser, token } = useAuth();
-    
+
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
-    
+
     const [form, setForm] = useState({
         name: '',
         email: '',
@@ -91,7 +91,7 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
 
         try {
             setSaving(true);
-            
+
             // We'll use /api/provider (PUT) which supports Bearer tokens as verified in Step 728
             const updateData = {
                 name: form.name,
@@ -140,7 +140,7 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
@@ -152,14 +152,14 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                     <View style={{ width: moderateScale(40) }} />
                 </View>
 
-                <ScrollView 
-                    contentContainerStyle={styles.scrollContent} 
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" />
                     }
                 >
-                    
+
                     <View style={styles.imagePickerContainer}>
                         <TouchableOpacity onPress={pickImage} style={styles.imagePickerBubble}>
                             {profileImage ? (
@@ -251,8 +251,8 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                         />
                     </View>
 
-                    <TouchableOpacity 
-                        style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
+                    <TouchableOpacity
+                        style={[styles.saveButton, saving && styles.saveButtonDisabled]}
                         onPress={handleSave}
                         disabled={saving}
                     >

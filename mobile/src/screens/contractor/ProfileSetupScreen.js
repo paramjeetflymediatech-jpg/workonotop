@@ -43,7 +43,7 @@ const ProfileSetupScreen = ({ navigation }) => {
     });
     const [loading, setLoading] = useState(false);
     const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
-    const { token, updateUser } = useAuth();
+    const { token, updateUser, logout } = useAuth();
 
     const showPremiumAlert = (message, title = '', type = 'error') => {
         setAlert({ visible: true, title, message, type });
@@ -163,11 +163,11 @@ const ProfileSetupScreen = ({ navigation }) => {
 
                 <View style={styles.contentCard}>
                     <View style={styles.header}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                            <Ionicons name="arrow-back" size={moderateScale(24)} color="#1e293b" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Profile Setup</Text>
                         <View style={{ width: moderateScale(40) }} />
+                        <Text style={styles.headerTitle}>Profile Setup</Text>
+                        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+                            <Ionicons name="log-out-outline" size={moderateScale(24)} color="#ef4444" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Bio */}
@@ -470,7 +470,15 @@ const styles = StyleSheet.create({
         color: '#94a3b8',
         fontSize: moderateScale(12),
         marginTop: verticalScale(20),
-    }
+    },
+    logoutBtn: {
+        width: moderateScale(40),
+        height: moderateScale(40),
+        borderRadius: moderateScale(20),
+        backgroundColor: '#fef2f2',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 });
 
 export default ProfileSetupScreen;

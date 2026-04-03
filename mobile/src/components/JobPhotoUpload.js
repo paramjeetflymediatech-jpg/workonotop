@@ -107,8 +107,8 @@ const JobPhotoUpload = ({ bookingId, photoType, onUploadComplete }) => {
                     {previews.map((uri, index) => (
                         <View key={index} style={styles.previewContainer}>
                             <Image source={{ uri }} style={styles.previewImage} />
-                            <TouchableOpacity 
-                                style={styles.removeBtn} 
+                            <TouchableOpacity
+                                style={styles.removeBtn}
                                 onPress={() => {
                                     setPhotos(prev => prev.filter((_, i) => i !== index));
                                     setPreviews(prev => prev.filter((_, i) => i !== index));
@@ -130,9 +130,9 @@ const JobPhotoUpload = ({ bookingId, photoType, onUploadComplete }) => {
                     <Ionicons name="images" size={18} color="#64748b" />
                     <Text style={styles.actionBtnText}>Library</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.uploadBtn, (photos.length === 0 || uploading) && styles.disabledBtn]} 
-                    onPress={uploadPhotos} 
+                <TouchableOpacity
+                    style={[styles.uploadBtn, (photos.length === 0 || uploading) && styles.disabledBtn]}
+                    onPress={uploadPhotos}
                     disabled={photos.length === 0 || uploading}
                 >
                     {uploading ? (

@@ -46,7 +46,11 @@ const LoginScreen = ({ navigation }) => {
             // Dedicated mobile endpoint for multi-role support
             const endpoint = '/api/auth/mobile/login';
 
-            const response = await apiService.post(endpoint, { email, password });
+            const response = await apiService.post(endpoint, {
+                email,
+                password,
+                role: type || 'customer' // Defaults to customer if type is missing
+            });
 
             if (response.success) {
                 const userData = response.user || {};
@@ -60,9 +64,9 @@ const LoginScreen = ({ navigation }) => {
             }
         } catch (err) {
             if (err.status === 403 && err.data?.requiresVerification) {
-                navigation.navigate('EmailVerification', { 
+                navigation.navigate('EmailVerification', {
                     email: err.data.email || email,
-                    type: type || 'pro' 
+                    type: type || 'pro'
                 });
                 return;
             }
@@ -181,9 +185,11 @@ const LoginScreen = ({ navigation }) => {
                                 <ActivityIndicator color="#0f172a" />
                             ) : (
                                 <View style={styles.googleButtonContent}>
-                                    <View style={styles.googleIconContainer}>
-                                        <Text style={styles.googleIconText}>G</Text>
-                                    </View>
+                                    <Image 
+                                        source={require('../../../assets/google_logo.png')} 
+                                        style={styles.googleLogo}
+                                        resizeMode="contain"
+                                    />
                                     <Text style={styles.googleButtonText}>Continue with Google</Text>
                                 </View>
                             )}
@@ -357,32 +363,25 @@ const styles = StyleSheet.create({
         borderColor: '#e2e8f0',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOpacity: 0.08,
+        shadowRadius: 5,
+        elevation: 3,
     },
     googleButtonContent: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
-    googleIconContainer: {
-        width: moderateScale(24),
-        height: moderateScale(24),
-        borderRadius: moderateScale(12),
-        backgroundColor: '#4285F4',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: scale(12),
     },
-    googleIconText: {
-        color: '#fff',
-        fontSize: moderateScale(14),
-        fontWeight: 'bold',
+    googleLogo: {
+        width: moderateScale(22),
+        height: moderateScale(22),
+        marginRight: scale(10),
     },
     googleButtonText: {
         color: '#0f172a',
         fontSize: moderateScale(16),
-        fontWeight: '600',
+        fontWeight: 'bold',
+        letterSpacing: 0.2,
     }
 });
 

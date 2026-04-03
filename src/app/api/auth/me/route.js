@@ -46,12 +46,12 @@ export async function GET(request) {
 
     let userData = null;
 
-    if (role === 'provider') {
+    if (role === 'provider' || decoded.type === 'provider') {
       // Lookup in service_providers table
       const providers = await query(
         `SELECT id, name, email, phone, status, specialty, bio, 
                 experience_years, city, location, service_areas, skills,
-                onboarding_step, onboarding_completed, avatar_url,
+                onboarding_step, onboarding_completed, documents_uploaded, email_verified, avatar_url,
                 stripe_onboarding_complete, stripe_account_id
          FROM service_providers WHERE id = ?`,
         [userId]
@@ -60,6 +60,7 @@ export async function GET(request) {
         userData = providers[0];
         userData.id = Number(userData.id); // Ensure ID is a Number
         userData.role = 'provider';
+        userData.email_verified = userData.email_verified || 0;
       }
     } else {
       // Lookup in users table (Customers and Admins)

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from '../utils/responsive';
@@ -16,7 +16,7 @@ const HomeScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <ScrollView 
                 showsVerticalScrollIndicator={false}
                 refreshControl={
@@ -54,7 +54,7 @@ const HomeScreen = ({ navigation }) => {
                 </View>
                 <View style={{ height: verticalScale(100) }} />
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 

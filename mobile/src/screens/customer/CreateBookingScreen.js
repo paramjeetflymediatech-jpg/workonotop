@@ -497,7 +497,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
         <View style={styles.stepContainer}>
             <View style={{ marginBottom: 15 }}>
                 <Text style={styles.sectionTitle}>Payment & Authorization</Text>
-                
+
                 <View style={[styles.paymentCard, { padding: 15, marginBottom: 10 }]}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text style={{ fontWeight: '700', fontSize: 16, color: '#0f172a' }}>Total Amount</Text>

@@ -5,7 +5,6 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    SafeAreaView,
     StatusBar,
     ActivityIndicator,
     RefreshControl,
@@ -112,7 +111,7 @@ const AdminDashboard = ({ navigation }) => {
     const adminName = user?.name || user?.email?.split('@')[0] || 'Admin';
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
 
             <ScrollView
@@ -236,7 +235,7 @@ const AdminDashboard = ({ navigation }) => {
                     </View>
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 
