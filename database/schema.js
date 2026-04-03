@@ -63,7 +63,7 @@ const tables = [
     name VARCHAR(200) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    phone VARCHAR(20) UNIQUE NOT NULL,
+    phone VARCHAR(50) UNIQUE,
     specialty VARCHAR(200),
     experience_years INT,
     rating DECIMAL(3,2) DEFAULT 0.00,
@@ -516,7 +516,8 @@ const alterations = [
   { table: 'mobile_auth_users', column: 'device_name', sql: "ALTER TABLE mobile_auth_users ADD COLUMN device_name VARCHAR(255) AFTER device_id" },
   { table: 'mobile_auth_users', column: 'device_platform', sql: "ALTER TABLE mobile_auth_users ADD COLUMN device_platform ENUM('ios', 'android', 'web') AFTER device_name" },
   { table: 'mobile_auth_users', column: 'uq_user_device', sql: "ALTER TABLE mobile_auth_users ADD UNIQUE INDEX uq_user_device (user_id, device_id)", type: 'unique' },
-  { table: 'mobile_auth_users', column: 'uq_provider_device', sql: "ALTER TABLE mobile_auth_users ADD UNIQUE INDEX uq_provider_device (provider_id, device_id)", type: 'unique' }
+  { table: 'mobile_auth_users', column: 'uq_provider_device', sql: "ALTER TABLE mobile_auth_users ADD UNIQUE INDEX uq_provider_device (provider_id, device_id)", type: 'unique' },
+  { table: 'service_providers', column: 'phone', sql: 'ALTER TABLE service_providers MODIFY COLUMN phone VARCHAR(50) UNIQUE', type: 'modify' }
 ];
 
 // =====================================================
