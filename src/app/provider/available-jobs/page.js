@@ -848,11 +848,11 @@ export default function ProviderAvailableJobs() {
                 <div className="flex items-start justify-between p-5 pb-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${
-                      job.is_admin_assigned ? 'bg-blue-50 border border-blue-100' :
-                      hasOvertime ? 'bg-purple-50 border border-purple-100' :
-                      'bg-green-50 border border-green-100'
+                      job.is_admin_assigned ? 'bg-blue-50 border border-blue-100 text-blue-600' :
+                      hasOvertime ? 'bg-purple-50 border border-purple-100 text-purple-600' :
+                      'bg-green-50 border border-green-100 text-green-600'
                     }`}>
-                      {job.category_icon || '🔧'}
+                      {job.category_icon ? <ion-icon name={job.category_icon}></ion-icon> : '🔧'}
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-bold text-gray-900 text-sm truncate">{job.service_name}</h3>
