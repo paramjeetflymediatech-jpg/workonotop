@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
+import Typography from '../../theme/Typography';
 import { API_BASE_URL } from '../../config';
 
 const PRIMARY = '#115e59';
@@ -29,6 +30,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     const [disputeVisible, setDisputeVisible] = useState(false);
     const [disputeText, setDisputeText] = useState('');
     const [photos, setPhotos] = useState({ before: [], after: [], customer: [] });
+    const [imgError, setImgError] = useState(false);
 
     useEffect(() => {
         fetchDetails();
@@ -59,6 +61,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
         } finally {
             setLoading(false);
             setRefreshing(false);
+            setImgError(false);
         }
     };
 
@@ -395,8 +398,17 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     </View>
                 )}
 
-                {imageUrl && (
-                    <Image source={{ uri: imageUrl }} style={styles.serviceImage} />
+                {imageUrl && !imgError ? (
+                    <Image 
+                        source={{ uri: imageUrl }} 
+                        onError={() => setImgError(true)} 
+                        style={styles.serviceImage} 
+                    />
+                ) : (
+                    <View style={[styles.serviceImage, { backgroundColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' }]}>
+                        <Ionicons name="image-outline" size={48} color="#94a3b8" />
+                        <Text style={{ color: '#94a3b8', marginTop: 8, fontWeight: 'bold' }}>No Image Available</Text>
+                    </View>
                 )}
 
                 <View style={styles.section}>
@@ -404,7 +416,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     <View style={styles.card}>
                         <View style={styles.iconRow}>
                             <Ionicons name="calendar-outline" size={moderateScale(20)} color={PRIMARY} />
-                            <Text style={styles.cardTextVals}>{booking.job_date}</Text>
+                            <Text style={styles.cardTextVals}>{(new Date(booking.job_date)).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
                         </View>
                         <View style={[styles.iconRow, { marginTop: 10 }]}>
                             <Ionicons name="time-outline" size={moderateScale(20)} color={PRIMARY} />
@@ -463,7 +475,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     </View>
                 </View>
 
-                <View style={styles.section}>
+                {/* <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Contact</Text>
                     <View style={styles.card}>
                         {(booking.customer_first_name || booking.customer_last_name) && (
@@ -483,7 +495,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                             </View>
                         )}
                     </View>
-                </View>
+                </View> */}
 
                 {booking.provider_name && (
                     <View style={styles.section}>
@@ -645,7 +657,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                             <View style={[styles.invoiceItem, { backgroundColor: '#f5f3ff', marginHorizontal: -16, paddingHorizontal: 16 }]}>
                                 <View>
                                     <View style={styles.row}>
-                                        <Ionicons name="clock" size={14} color="#8b5cf6" style={{ marginRight: 4 }} />
+                                        <Ionicons name="time-outline" size={14} color="#8b5cf6" style={{ marginRight: 4 }} />
                                         <Text style={[styles.invoiceItemLabel, { color: '#7c3aed' }]}>Actual Overtime Used</Text>
                                     </View>
                                     <Text style={styles.invoiceItemSub}>{overtimeMinutes}min at {formatCurrency(overtimeRate)}/hr</Text>
@@ -785,8 +797,8 @@ const styles = StyleSheet.create({
     cardInfo: { marginBottom: verticalScale(20) },
     statusRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
     statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-    statusLabel: { fontSize: 11, fontWeight: 'bold', letterSpacing: 0.5 },
-    headerBookingId: { fontSize: 11, color: '#94a3b8', marginLeft: 'auto', fontWeight: 'bold' },
+    statusLabel: { fontSize: Typography.tiny, fontWeight: 'bold', letterSpacing: 0.5 },
+    headerBookingId: { fontSize: Typography.tiny, textSpacing: 2, color: '#000000ff', marginLeft: 'auto', fontWeight: 'bold' },
     serviceName: { fontSize: moderateScale(26), fontWeight: '900', color: '#0f172a' },
     bookingNumber: { fontSize: moderateScale(14), color: '#64748b', marginTop: verticalScale(5) },
 
@@ -795,7 +807,8 @@ const styles = StyleSheet.create({
         height: verticalScale(200),
         borderRadius: moderateScale(16),
         marginBottom: verticalScale(20),
-        resizeMode: 'cover'
+        resizeMode: 'contain',
+        backgroundColor: '#f1f5f9'
     },
 
     section: { marginBottom: verticalScale(25) },
@@ -833,38 +846,38 @@ const styles = StyleSheet.create({
     /* Invoice styles */
     invoiceCard: { backgroundColor: '#fff', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#f1f5f9' },
     invoiceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-    invoiceHeaderTitle: { fontSize: 10, fontWeight: '900', color: '#94a3b8', letterSpacing: 1 },
+    invoiceHeaderTitle: { fontSize: Typography.getCustom(10), fontWeight: '900', color: '#94a3b8', letterSpacing: 1 },
     paymentBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-    paymentBadgeText: { fontSize: 10, fontWeight: '900' },
+    paymentBadgeText: { fontSize: Typography.getCustom(10), fontWeight: '900' },
     invoiceItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' },
-    invoiceItemLabel: { fontSize: 14, fontWeight: '700', color: '#334155' },
-    invoiceItemSub: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
-    invoiceItemValue: { fontSize: 14, fontWeight: 'bold', color: '#1e293b' },
+    invoiceItemLabel: { fontSize: Typography.body, fontWeight: '700', color: '#334155' },
+    invoiceItemSub: { fontSize: Typography.tiny, color: '#94a3b8', marginTop: 2 },
+    invoiceItemValue: { fontSize: Typography.body, fontWeight: 'bold', color: '#1e293b' },
     invoiceTotal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, paddingTop: 15 },
-    invoiceTotalLabel: { fontSize: 16, fontWeight: '900', color: '#0f172a' },
-    invoiceTotalSub: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
-    invoiceTotalValue: { fontSize: 24, fontWeight: '900' },
+    invoiceTotalLabel: { fontSize: Typography.bodyLarge, fontWeight: '900', color: '#0f172a' },
+    invoiceTotalSub: { fontSize: Typography.tiny, color: '#94a3b8', marginTop: 2 },
+    invoiceTotalValue: { fontSize: Typography.h3, fontWeight: '900' },
     authorizedNote: { marginTop: 20, padding: 12, backgroundColor: '#fffbeb', borderRadius: 12, flexDirection: 'row', gap: 10 },
-    authorizedNoteText: { flex: 1, fontSize: 11, color: '#92400e', lineHeight: 16 },
+    authorizedNoteText: { flex: 1, fontSize: Typography.tiny, color: '#92400e', lineHeight: Typography.getLineHeight(Typography.tiny) },
 
     row: { flexDirection: 'row', alignItems: 'center' },
 
     /* Timing */
     timingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    timingLabel: { fontSize: 13, color: '#64748b', fontWeight: '600' },
-    timingValue: { fontSize: 13, color: '#0f172a', fontWeight: '700' },
-    timingStandard: { fontSize: 11, color: '#94a3b8' },
+    timingLabel: { fontSize: Typography.bodySmall, color: '#64748b', fontWeight: '600' },
+    timingValue: { fontSize: Typography.bodySmall, color: '#0f172a', fontWeight: '700' },
+    timingStandard: { fontSize: Typography.tiny, color: '#000000ff' },
 
     timelineRow: { flexDirection: 'row' },
     timelineIndicator: { alignItems: 'center', width: scale(30) },
     timelineDot: { width: moderateScale(12), height: moderateScale(12), borderRadius: moderateScale(6), backgroundColor: PRIMARY, zIndex: 2 },
     timelineLine: { width: 2, flex: 1, backgroundColor: '#e2e8f0', marginVertical: verticalScale(4) },
     timelineContent: { flex: 1, paddingBottom: verticalScale(20), paddingTop: verticalScale(-2) },
-    timelineStatus: { fontSize: moderateScale(15), fontWeight: 'bold', color: '#0f172a', textTransform: 'capitalize' },
-    timelineDate: { fontSize: moderateScale(12), color: '#64748b', marginTop: verticalScale(2) },
+    timelineStatus: { fontSize: Typography.input, fontWeight: 'bold', color: '#0f172a', textTransform: 'capitalize' },
+    timelineDate: { fontSize: Typography.caption, color: '#64748b', marginTop: verticalScale(2) },
 
-    descriptionText: { fontSize: moderateScale(15), color: '#334155', lineHeight: verticalScale(22) },
-    extraText: { fontSize: moderateScale(14), color: '#475569', marginLeft: scale(10), flex: 1 },
+    descriptionText: { fontSize: Typography.input, color: '#334155', lineHeight: Typography.getLineHeight(Typography.input) },
+    extraText: { fontSize: Typography.body, color: '#475569', marginLeft: scale(10), flex: 1 },
     providerRatingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
     providerRating: { fontSize: moderateScale(13), color: '#64748b', marginLeft: 4 },
 

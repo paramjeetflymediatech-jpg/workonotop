@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, SafeAreaView, ScrollView,
+    View, Text, StyleSheet, ScrollView,
     TouchableOpacity, ActivityIndicator, RefreshControl, StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
@@ -14,6 +15,7 @@ const GOLD = '#f59e0b';
 
 const RatingsScreen = ({ navigation }) => {
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [data, setData] = useState(null);
@@ -55,21 +57,21 @@ const RatingsScreen = ({ navigation }) => {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container}>
+            <View style={styles.container}>
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={TEAL} />
                     <Text style={styles.loadingText}>Loading ratings...</Text>
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top + verticalScale(8) }]}>
                 <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.openDrawer()}>
                     <Ionicons name="menu-outline" size={moderateScale(26)} color="#fff" />
                 </TouchableOpacity>
@@ -144,7 +146,7 @@ const RatingsScreen = ({ navigation }) => {
                     </View>
                 )}
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 
@@ -157,7 +159,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         backgroundColor: TEAL_DARK,
         paddingHorizontal: scale(20),
-        paddingTop: verticalScale(40),
         paddingBottom: verticalScale(18),
     },
     menuBtn: {

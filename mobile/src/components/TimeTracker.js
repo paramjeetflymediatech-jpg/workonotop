@@ -138,7 +138,7 @@ const TimeTracker = ({
     if (timerStatus === 'completed') {
         return (
             <View style={styles.completedBox}>
-                <Ionicons name="checkmark-circle" size={40} color="#10b981" />
+                <Ionicons name="checkmark-circle" size={40} color='#134e4a' />
                 <Text style={styles.completedTitle}>Job Finished</Text>
                 <Text style={styles.completedText}>Awaiting customer approval.</Text>
             </View>
@@ -264,8 +264,8 @@ const styles = StyleSheet.create({
     stopBtn: { flex: 1, backgroundColor: '#1e293b' },
     disabledBtn: { backgroundColor: '#cbd5e1' },
     completedBox: { alignItems: 'center', padding: 30, backgroundColor: '#ecfdf5', borderRadius: 20, width: '100%' },
-    completedTitle: { fontSize: 18, fontWeight: 'bold', color: '#065f46', marginTop: 12 },
-    completedText: { fontSize: 14, color: '#047857', marginTop: 4 },
+    completedTitle: { fontSize: 18, fontWeight: 'bold', color: '#134e4a', marginTop: 12 },
+    completedText: { fontSize: 14, color: '#134e4a', marginTop: 4 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, maxHeight: '80%' },
     modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#0f172a', marginBottom: 20 },

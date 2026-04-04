@@ -24,10 +24,15 @@ const verticalScale = (size) => (SCREEN_HEIGHT / guidelineBaseHeight) * size;
  */
 const moderateScale = (size, factor = 0.5) => size + (scale(size) - size) * factor;
 
+const IS_TABLET = SCREEN_WIDTH >= 768;
+const IS_SMALL_DEVICE = SCREEN_WIDTH < 350;
+
 export {
     scale,
     verticalScale,
     moderateScale,
     SCREEN_WIDTH,
-    SCREEN_HEIGHT
+    SCREEN_HEIGHT,
+    IS_TABLET,
+    IS_SMALL_DEVICE
 };

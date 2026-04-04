@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, SafeAreaView, FlatList,
+    View, Text, StyleSheet, FlatList,
     TouchableOpacity, ActivityIndicator, RefreshControl, StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
+import Typography from '../../theme/Typography';
 
 const TEAL = '#0f766e';
 const TEAL_DARK = '#134e4a';
@@ -22,6 +24,7 @@ const STATUS_CONFIG = {
 
 const ProviderMessagesScreen = ({ navigation }) => {
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [bookings, setBookings] = useState([]);
@@ -52,8 +55,8 @@ const ProviderMessagesScreen = ({ navigation }) => {
             bookingId: booking.id,
             bookingNumber: booking.booking_number || booking.id,
             role: 'provider',
-            otherPartyName: booking.customer_first_name
-                ? `${booking.customer_first_name} ${booking.customer_last_name || ''}`.trim()
+            otherPartyName: booking.customer_name
+                ? `${booking.first_name} ${booking.last_name || ''}`.trim()
                 : 'Customer',
         });
     };
@@ -64,12 +67,12 @@ const ProviderMessagesScreen = ({ navigation }) => {
             <TouchableOpacity style={styles.card} onPress={() => openChat(item)} activeOpacity={0.75}>
                 <View style={styles.avatarCircle}>
                     <Text style={styles.avatarText}>
-                        {item.customer_first_name?.[0]?.toUpperCase() || 'C'}
+                        {item.first_name?.[0]?.toUpperCase() || 'C'}
                     </Text>
                 </View>
                 <View style={styles.cardBody}>
                     <Text style={styles.customerName}>
-                        {item.customer_first_name} {item.customer_last_name}
+                        {item.first_name} {item.last_name}
                     </Text>
                     <Text style={styles.serviceName} numberOfLines={1}>{item.service_name}</Text>
                     <Text style={styles.dateText}>📅 {item.job_date}</Text>
@@ -86,19 +89,19 @@ const ProviderMessagesScreen = ({ navigation }) => {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container}>
+            <View style={styles.container}>
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={TEAL} />
                     <Text style={styles.loadingText}>Loading messages...</Text>
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top + verticalScale(8) }]}>
                 <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.openDrawer()}>
                     <Ionicons name="menu-outline" size={moderateScale(26)} color="#fff" />
                 </TouchableOpacity>
@@ -122,27 +125,26 @@ const ProviderMessagesScreen = ({ navigation }) => {
                     </View>
                 }
             />
-        </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f1f5f9' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: verticalScale(10), color: '#64748b', fontSize: moderateScale(14) },
+    loadingText: { marginTop: verticalScale(10), color: '#64748b', fontSize: Typography.body },
 
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         backgroundColor: TEAL_DARK,
         paddingHorizontal: scale(20),
-        paddingTop: verticalScale(40),
         paddingBottom: verticalScale(18),
     },
     menuBtn: {
         width: moderateScale(40), height: moderateScale(40), borderRadius: moderateScale(12),
         backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center',
     },
-    headerTitle: { fontSize: moderateScale(18), fontWeight: 'bold', color: '#fff' },
+    headerTitle: { fontSize: Typography.h5, fontWeight: 'bold', color: '#fff' },
 
     listContent: { padding: scale(14), paddingBottom: verticalScale(30) },
 
@@ -157,20 +159,20 @@ const styles = StyleSheet.create({
         width: moderateScale(46), height: moderateScale(46), borderRadius: moderateScale(23),
         backgroundColor: '#f0fdfa', justifyContent: 'center', alignItems: 'center',
     },
-    avatarText: { fontSize: moderateScale(18), fontWeight: '800', color: TEAL },
+    avatarText: { fontSize: Typography.h5, fontWeight: '800', color: TEAL },
     cardBody: { flex: 1 },
-    customerName: { fontSize: moderateScale(15), fontWeight: '700', color: '#0f172a' },
-    serviceName: { fontSize: moderateScale(12), color: '#64748b', marginTop: 2 },
-    dateText: { fontSize: moderateScale(11), color: '#94a3b8', marginTop: 4 },
+    customerName: { fontSize: Typography.bodyLarge, fontWeight: '700', color: '#0f172a',textTransform:'capitalize' },
+    serviceName: { fontSize: Typography.caption, color: '#64748b', marginTop: 2 },
+    dateText: { fontSize: Typography.tiny, color: '#94a3b8', marginTop: 4 },
 
     cardRight: { alignItems: 'flex-end', gap: verticalScale(8) },
     statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-    statusText: { fontSize: moderateScale(10), fontWeight: '800', textTransform: 'uppercase' },
+    statusText: { fontSize: Typography.tiny, fontWeight: '800', textTransform: 'uppercase' },
     chatIcon: { marginTop: 2 },
 
     emptyBox: { flex: 1, alignItems: 'center', paddingTop: verticalScale(80), paddingHorizontal: scale(30) },
-    emptyText: { fontSize: moderateScale(17), fontWeight: '700', color: '#334155', marginTop: verticalScale(14) },
-    emptySubText: { fontSize: moderateScale(13), color: '#94a3b8', marginTop: 8, textAlign: 'center', lineHeight: moderateScale(18) },
+    emptyText: { fontSize: Typography.h5, fontWeight: '700', color: '#334155', marginTop: verticalScale(14) },
+    emptySubText: { fontSize: Typography.bodySmall, color: '#94a3b8', marginTop: 8, textAlign: 'center', lineHeight: Typography.h5 },
 });
 
 export default ProviderMessagesScreen;

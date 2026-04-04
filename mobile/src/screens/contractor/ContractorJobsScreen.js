@@ -10,6 +10,7 @@ import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
+import Typography from '../../theme/Typography';
 
 const TEAL_DARK = '#134e4a';
 const { width } = Dimensions.get('window');
@@ -69,12 +70,12 @@ const ContractorJobsScreen = ({ navigation }) => {
         }
 
         Alert.alert(
-            'Accept this Job?', 
+            'Accept this Job?',
             `This job will be assigned to you immediately.\n\nYou earn: ${displayAmount}${hasOvertime ? '\n(Max 2hrs OT available)' : ''}`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Accept Job', 
+                    text: 'Accept Job',
                     onPress: async () => {
                         try {
                             const res = await api.post('/api/provider/available-jobs', { booking_id: jobId });
@@ -141,7 +142,7 @@ const ContractorJobsScreen = ({ navigation }) => {
                 )}
                 {hasOvertime && !isAdminAssigned && (
                     <View style={styles.otHeaderBanner}>
-                        <Ionicons name="time" size={14} color="#fff" />
+                        <Ionicons name="time-outline" size={24} color="#fff" style={{fontSize:Typography.getCustom(20)}} />
                         <Text style={styles.otHeaderBannerText}>Overtime eligible — max 2 hrs @ ${otRate.toFixed(2)}/hr</Text>
                     </View>
                 )}
@@ -149,7 +150,7 @@ const ContractorJobsScreen = ({ navigation }) => {
                 <View style={styles.cardHeader}>
                     <View style={styles.serviceIconContainer}>
                         <View style={[styles.iconCircle, { backgroundColor: accentColor + '15' }]}>
-                                <Text style={styles.categoryEmoji}>{job.category_icon || '🛠️'}</Text>
+                            <Text style={styles.categoryEmoji}> {   job.category_icon ? <Ionicons name={job.category_icon} size={24} color={accentColor} /> : '🛠️'}</Text>
                         </View>
                         <View style={styles.serviceTextContainer}>
                             <Text style={styles.serviceName}>{job.service_name}</Text>
@@ -165,7 +166,7 @@ const ContractorJobsScreen = ({ navigation }) => {
                 <View style={styles.cardMeta}>
                     <View style={styles.badgeRow}>
                         <View style={styles.metaBadge}>
-                            <Ionicons name="time-outline" size={12} color="#64748b" />
+                            <Ionicons name="time-outline" size={16} color="#000000ff" />
                             <Text style={styles.metaBadgeText}>{formatDuration(dur)}</Text>
                         </View>
                         {hasOvertime && (
@@ -177,15 +178,15 @@ const ContractorJobsScreen = ({ navigation }) => {
 
                     <View style={styles.infoGrid}>
                         <View style={styles.infoItem}>
-                            <Ionicons name="calendar-outline" size={14} color="#94a3b8" />
+                            <Ionicons name="calendar-outline" size={14} color="#000000ff" />
                             <Text style={styles.infoItemText}>{formatDate(job.job_date)}</Text>
                         </View>
                         <View style={styles.infoItem}>
-                            <Ionicons name="time-outline" size={14} color="#94a3b8" />
+                            <Ionicons name="time-outline" size={14} color="#000000ff" />
                             <Text style={styles.infoItemText} numberOfLines={1}>{Array.isArray(job.job_time_slot) ? job.job_time_slot[0] : job.job_time_slot}</Text>
                         </View>
                         <View style={styles.infoItem}>
-                            <Ionicons name="location-outline" size={14} color="#94a3b8" />
+                            <Ionicons name="location-outline" size={14} color="#000000ff" />
                             <Text style={styles.infoItemText} numberOfLines={1}>{job.address_line1?.split(',')[0]}</Text>
                         </View>
                     </View>
@@ -206,13 +207,13 @@ const ContractorJobsScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.cardActions}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.detailsBtn}
                         onPress={() => navigation.navigate('JobDetails', { job })}
                     >
                         <Text style={styles.detailsBtnText}>View Details</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={[styles.acceptBtnFull, { backgroundColor: accentColor }, !stripeConnected && styles.disabledBtn]}
                         onPress={() => acceptJob(job.id, hasOvertime, job.display_amount)}
                     >
@@ -239,21 +240,13 @@ const ContractorJobsScreen = ({ navigation }) => {
             <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
 
             {/* Header */}
-            <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(15)) }]}>
+            <View style={[styles.header, { paddingTop: insets.top + verticalScale(8) }]}>
                 <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} style={styles.menuBtn}>
-                    <Ionicons name="menu-outline" size={24} color="#fff" />
+                    <Ionicons name="menu-outline" size={moderateScale(26)} color="#fff" />
                 </TouchableOpacity>
-                <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle}>Available Jobs</Text>
-                    {providerCity ? (
-                        <View style={styles.locationRow}>
-                            <Ionicons name="location" size={10} color="#4ade80" />
-                            <Text style={styles.locationText}>{providerCity}</Text>
-                        </View>
-                    ) : null}
-                </View>
-                <TouchableOpacity onPress={() => onRefresh()} disabled={refreshing} style={styles.refreshBtn}>
-                    <Ionicons name="refresh" size={20} color="#fff" />
+                <Text style={styles.headerTitle}>Available Jobs</Text>
+                <TouchableOpacity onPress={() => onRefresh()} disabled={refreshing} style={styles.menuBtn}>
+                    <Ionicons name="refresh" size={moderateScale(24)} color="#fff" />
                 </TouchableOpacity>
             </View>
 
@@ -268,7 +261,7 @@ const ContractorJobsScreen = ({ navigation }) => {
                 </View>
             )}
 
-            <ScrollView 
+            <ScrollView
                 contentContainerStyle={styles.scroll}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#14b8a6" />}
                 showsVerticalScrollIndicator={false}
@@ -291,8 +284,8 @@ const ContractorJobsScreen = ({ navigation }) => {
                                 { id: 'base_only', label: 'Base Only' },
                             ].map((f) => (
                                 (f.id !== 'assigned' || stats.assigned > 0) && (
-                                    <TouchableOpacity 
-                                        key={f.id} 
+                                    <TouchableOpacity
+                                        key={f.id}
                                         onPress={() => setFilter(f.id)}
                                         style={[styles.filterChip, filter === f.id && styles.filterChipActive]}
                                     >
@@ -329,16 +322,15 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f8fafc' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        backgroundColor: TEAL_DARK, paddingHorizontal: 20, paddingBottom: 20,
+        backgroundColor: TEAL_DARK, paddingHorizontal: scale(20), paddingBottom: verticalScale(18),
     },
-    menuBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
-    headerTitleContainer: { flex: 1, marginLeft: 16 },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff', letterSpacing: -0.5 },
-    locationRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2, opacity: 0.8 },
-    locationText: { fontSize: 11, color: '#4ade80', fontWeight: '700', marginLeft: 4, textTransform: 'uppercase' },
-    refreshBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
-    
-    stripeWarning: { 
+    menuBtn: {
+        width: moderateScale(40), height: moderateScale(40), borderRadius: moderateScale(12),
+        backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center',
+    },
+    headerTitle: { fontSize: moderateScale(18), fontWeight: 'bold', color: '#fff' },
+
+    stripeWarning: {
         backgroundColor: '#fffbeb', borderBottomWidth: 1, borderBottomColor: '#fef3c7',
         paddingHorizontal: 20, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10
     },
@@ -350,75 +342,75 @@ const styles = StyleSheet.create({
 
     topSection: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
     statsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-    statItem: { fontSize: 11, color: '#94a3b8' },
+    statItem: { fontSize: Typography.getCustom(14), color: 'black' },
     statVal: { fontWeight: 'bold', color: '#1e293b' },
-    
+
     filterBar: { marginBottom: 8 },
     filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0' },
     filterChipActive: { backgroundColor: '#1e293b', borderColor: '#1e293b' },
-    filterText: { fontSize: 12, color: '#64748b', fontWeight: '600' },
+    filterText: { fontSize: Typography.getCustom(14), color: '#000000ff', fontWeight: '600' },
     filterTextActive: { color: '#fff' },
 
     scroll: { padding: 16, paddingBottom: 40 },
-    
-    jobCard: { 
+
+    jobCard: {
         backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 16,
         borderWidth: 1, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05, shadowRadius: 10
     },
-    assignedBanner: { 
+    assignedBanner: {
         backgroundColor: '#eff6ff', flexDirection: 'row', alignItems: 'center', gap: 6,
         paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: '#dbeafe'
     },
-    assignedBannerText: { fontSize: 10, fontWeight: '700', color: '#1e40af' },
-    otHeaderBanner: { 
+    assignedBannerText: { fontSize: Typography.getCustom(10), fontWeight: '700', color: '#1e40af' },
+    otHeaderBanner: {fontSize:Typography.getCustom(16),
         backgroundColor: '#7c3aed', flexDirection: 'row', alignItems: 'center', gap: 6,
         paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 12
     },
-    otHeaderBannerText: { fontSize: 10, fontWeight: '700', color: '#fff' },
+    otHeaderBannerText: { fontSize: Typography.getCustom(16), fontWeight: '700', color: '#fff' },
 
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
     serviceIconContainer: { flexDirection: 'row', gap: 12, flex: 1 },
     iconCircle: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-    categoryEmoji: { fontSize: 20 },
+    categoryEmoji: { fontSize: Typography.h4 },
     serviceTextContainer: { flex: 1 },
-    serviceName: { fontSize: 15, fontWeight: 'bold', color: '#1e293b' },
-    categoryName: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
-    
+    serviceName: { fontSize: Typography.input, fontWeight: 'bold', color: '#000000ff' },
+    categoryName: { fontSize: Typography.caption, color: '#000000ff', marginTop: 2 },
+
     earningsBadge: { alignItems: 'flex-end' },
-    earnLabel: { fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 },
-    earnValue: { fontSize: 22, fontWeight: '900', marginTop: 2 },
+    earnLabel: { fontSize: Typography.getCustom(9), color: '#000000ff', textTransform: 'uppercase', letterSpacing: 0.5 },
+    earnValue: { fontSize: Typography.h3, fontWeight: '900', marginTop: 2 },
 
     cardMeta: { marginBottom: 16 },
     badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
     metaBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    metaBadgeText: { fontSize: 11, color: '#64748b', fontWeight: '700' },
-    otBadge: { backgroundColor: '#f5f3ff', borderWidth: 1, borderColor: '#ddd6fe' },
-    otBadgeText: { fontSize: 11, color: '#7c3aed', fontWeight: '800' },
+    metaBadgeText: { fontSize: Typography.getCustom(12), color: '#000000ff', fontWeight: '700' },
+    otBadge: { backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#ddd6fe' },
+    otBadgeText: { fontSize: Typography.getCustom(12), color: '#7c3aed', fontWeight: '800' },
 
     infoGrid: { flexDirection: 'row', gap: 16, marginBottom: 12 },
     infoItem: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
-    infoItemText: { fontSize: 11, color: '#64748b', fontWeight: '500' },
-    
+    infoItemText: { fontSize: Typography.getCustom(12), color: '#000000ff', fontWeight: '500' },
+
     accessRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
-    accessTag: { fontSize: 10, color: '#115e59', fontWeight: '700', backgroundColor: '#f0fdfa', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#ccfbf1' },
-    
-    commissionInfo: { paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
-    commissionText: { fontSize: 10, color: '#94a3b8', textAlign: 'center' },
+    accessTag: { fontSize: Typography.getCustom(10), color: '#115e59', fontWeight: '700', backgroundColor: '#f0fdfa', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#ccfbf1' },
+
+    commissionInfo: { paddingTop: 12, borderTopWidth: 1, borderTopColor: '#0d0e0eff' },
+    commissionText: { fontSize: Typography.getCustom(10), color: '#000000ff', textAlign: 'center' },
 
     cardActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
     detailsBtn: { flex: 1, height: 48, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' },
-    detailsBtnText: { fontSize: 13, fontWeight: '700', color: '#1e293b' },
+    detailsBtnText: { fontSize: Typography.bodySmall, fontWeight: '700', color: '#1e293b' },
     acceptBtnFull: { flex: 1.5, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    acceptBtnTextFull: { fontSize: 13, fontWeight: 'bold', color: '#fff' },
+    acceptBtnTextFull: { fontSize: Typography.bodySmall, fontWeight: 'bold', color: '#fff' },
     disabledBtn: { backgroundColor: '#cbd5e1' },
 
     emptyContainer: { alignItems: 'center', paddingVertical: 60 },
     emptyIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-    emptyTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b', marginBottom: 8 },
-    emptyText: { fontSize: 13, color: '#94a3b8', textAlign: 'center', paddingHorizontal: 40, lineHeight: 20 },
+    emptyTitle: { fontSize: Typography.h5, fontWeight: 'bold', color: '#1e293b', marginBottom: 8 },
+    emptyText: { fontSize: Typography.bodySmall, color: '#94a3b8', textAlign: 'center', paddingHorizontal: 40, lineHeight: Typography.getLineHeight(Typography.bodySmall) },
     checkAgainBtn: { marginTop: 24, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: '#14b8a6', borderRadius: 12 },
-    checkAgainText: { color: '#fff', fontWeight: 'bold', fontSize: 14 }
+    checkAgainText: { color: '#fff', fontWeight: 'bold', fontSize: Typography.body }
 });
 
 export default ContractorJobsScreen;

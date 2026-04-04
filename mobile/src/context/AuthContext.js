@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         GoogleSignin.configure({
             webClientId: '221840398936-4e0923mpq8viaoljni102if07j5cj0bq.apps.googleusercontent.com',
+            iosClientId: '221840398936-4e0923mpq8viaoljni102if07j5cj0bq.apps.googleusercontent.com', // Fix for iOS "failed to determine clientID"
             offlineAccess: true,
         });
     }, []);

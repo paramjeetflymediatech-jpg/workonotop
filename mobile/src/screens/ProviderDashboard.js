@@ -120,11 +120,11 @@ const ProviderDashboard = ({ navigation }) => {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
 
             {/* Header */}
-            <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(15)) }]}>
+            <View style={[styles.header, { paddingTop: insets.top + verticalScale(8) }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TouchableOpacity
                         onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
@@ -137,7 +137,7 @@ const ProviderDashboard = ({ navigation }) => {
                         <Text style={styles.nameText}>Hi, {user?.name || 'Partner'}</Text>
                     </View>
                 </View>
-                <View style={[styles.statusToggle, {
+                {/* <View style={[styles.statusToggle, {
                     backgroundColor: isAvailable ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
                     borderColor: isAvailable ? 'rgba(255,255,255,0.2)' : 'transparent'
                 }]}>
@@ -152,7 +152,7 @@ const ProviderDashboard = ({ navigation }) => {
                     <Text style={[styles.statusText, { color: '#fff' }]}>
                         {isAvailable ? 'Online' : 'Offline'}
                     </Text>
-                </View>
+                </View> */}
             </View>
 
             <ScrollView
@@ -244,7 +244,7 @@ const ProviderDashboard = ({ navigation }) => {
                 {/* Bottom Space for Floating Tab Bar */}
                 <View style={{ height: verticalScale(100) + insets.bottom }} />
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 

@@ -4,11 +4,11 @@ import {
     ActivityIndicator, SafeAreaView, RefreshControl, StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DrawerActions } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../utils/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
+import Typography from '../../theme/Typography';
 
 const TEAL_DARK = '#134e4a';
 const TEAL_LIGHT = '#14b8a6';
@@ -109,12 +109,12 @@ const MyJobsScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
 
             {/* Header */}
-            <View style={[styles.header, { paddingTop: Math.max(insets.top, verticalScale(15)) }]}>
-                <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} style={styles.menuBtn}>
+            <View style={[styles.header, { paddingTop: insets.top + verticalScale(8) }]}>
+                <TouchableOpacity onPress={() => navigation.openDrawer()} style={styles.menuBtn}>
                     <Ionicons name="menu-outline" size={moderateScale(26)} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>My Jobs</Text>
@@ -168,7 +168,7 @@ const MyJobsScreen = ({ navigation }) => {
                     }
                 />
             )}
-        </SafeAreaView>
+        </View>
     );
 };
 
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         backgroundColor: TEAL_DARK,
         paddingHorizontal: scale(20),
-        paddingBottom: verticalScale(16),
+        paddingBottom: verticalScale(18),
     },
     menuBtn: {
         width: moderateScale(40), height: moderateScale(40), borderRadius: moderateScale(12),
@@ -194,12 +194,12 @@ const styles = StyleSheet.create({
         paddingVertical: 10, borderRadius: 10, gap: 8
     },
     activeTab: { backgroundColor: '#14b8a6' },
-    tabText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
+    tabText: { fontSize: Typography.body, fontWeight: '600', color: '#64748b' },
     activeTabText: { color: '#fff' },
     tabBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, minWidth: 20, alignItems: 'center' },
     activeBadge: { backgroundColor: 'rgba(255,255,255,0.2)' },
     inactiveBadge: { backgroundColor: '#f1f5f9' },
-    badgeText: { fontSize: 10, fontWeight: 'bold', color: '#64748b' },
+    badgeText: { fontSize: Typography.getCustom(10), fontWeight: 'bold', color: '#64748b' },
     activeBadgeText: { color: '#fff' },
     listContent: { padding: 16, paddingTop: 0 },
     card: {
@@ -208,27 +208,27 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: '#f1f5f9'
     },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-    serviceName: { fontSize: 16, fontWeight: 'bold', color: '#0f172a' },
-    bookingNumber: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
+    serviceName: { fontSize: Typography.bodyLarge, fontWeight: 'bold', color: '#0f172a' },
+    bookingNumber: { fontSize: Typography.caption, color: '#94a3b8', marginTop: 2 },
     statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    statusText: { fontSize: 10, fontWeight: 'bold' },
+    statusText: { fontSize: Typography.getCustom(10), fontWeight: 'bold' },
     cardBody: { marginBottom: 16, gap: 8 },
     infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    infoText: { fontSize: 13, color: '#64748b' },
+    infoText: { fontSize: Typography.bodySmall, color: '#64748b' },
     dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: '#94a3b8' },
     cardFooter: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9'
     },
     earningsContainer: {},
-    earningsLabel: { fontSize: 11, color: '#94a3b8' },
-    earningsValue: { fontSize: 16, fontWeight: 'bold', color: '#14b8a6' },
+    earningsLabel: { fontSize: Typography.tiny, color: '#94a3b8' },
+    earningsValue: { fontSize: Typography.bodyLarge, fontWeight: 'bold', color: '#14b8a6' },
     detailsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    detailsBtnText: { fontSize: 14, fontWeight: '600', color: '#14b8a6' },
+    detailsBtnText: { fontSize: Typography.body, fontWeight: '600', color: '#14b8a6' },
     centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
-    emptyText: { fontSize: 18, fontWeight: 'bold', color: '#475569', marginTop: 16 },
-    emptySubText: { fontSize: 14, color: '#94a3b8', textAlign: 'center', marginTop: 8, paddingHorizontal: 40 }
+    emptyText: { fontSize: Typography.h5, fontWeight: 'bold', color: '#475569', marginTop: 16 },
+    emptySubText: { fontSize: Typography.body, color: '#94a3b8', textAlign: 'center', marginTop: 8, paddingHorizontal: 40 }
 });
 
 export default MyJobsScreen;

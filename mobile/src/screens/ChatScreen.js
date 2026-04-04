@@ -9,9 +9,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 import { moderateScale, scale, verticalScale } from '../utils/responsive';
+import Typography from '../theme/Typography';
 
-const TEAL = '#22c55e';
-const TEAL_DARK = '#15803d';
+
+const TEAL = '#0f766e';
+const TEAL_DARK = '#134e4a';
+const TEAL_LIGHT = '#14b8a6';
 const POLL_INTERVAL = 5000;
 
 const ChatScreen = ({ navigation, route }) => {
@@ -174,7 +177,7 @@ const ChatScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f1f5f9' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: verticalScale(10), color: '#64748b', fontSize: moderateScale(14) },
+    loadingText: { marginTop: verticalScale(10), color: '#64748b', fontSize: Typography.body },
 
     header: {
         flexDirection: 'row', alignItems: 'center', gap: scale(12),
@@ -187,8 +190,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center',
     },
     headerMid: { flex: 1 },
-    headerTitle: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#fff' },
-    headerSub: { fontSize: moderateScale(11), color: 'rgba(255,255,255,0.65)', marginTop: 1 },
+    headerTitle: { fontSize: Typography.bodyLarge, fontWeight: 'bold', color: '#fff' },
+    headerSub: { fontSize: Typography.tiny, color: 'rgba(255,255,255,0.65)', marginTop: 1 },
 
     msgList: { padding: scale(14), paddingBottom: verticalScale(10) },
 
@@ -203,7 +206,7 @@ const styles = StyleSheet.create({
     },
 
     senderName: { 
-        fontSize: moderateScale(11), 
+        fontSize: Typography.tiny, 
         color: '#94a3b8', 
         fontWeight: '600', 
         marginBottom: 3, 
@@ -233,15 +236,15 @@ const styles = StyleSheet.create({
         borderColor: '#f1f5f9',
     },
     bubbleText: { 
-        fontSize: moderateScale(14), 
+        fontSize: Typography.body, 
         color: '#1e293b', 
-        lineHeight: moderateScale(22) 
+        lineHeight: Typography.getLineHeight(Typography.body) 
     },
     bubbleTextMine: { 
         color: '#fff' 
     },
     timeText: { 
-        fontSize: moderateScale(10), 
+        fontSize: Typography.tiny, 
         color: '#94a3b8', 
         marginTop: 4, 
         textAlign: 'right',
@@ -260,7 +263,7 @@ const styles = StyleSheet.create({
         flex: 1, backgroundColor: '#f8fafc', borderRadius: moderateScale(22),
         borderWidth: 1, borderColor: '#e2e8f0',
         paddingHorizontal: scale(16), paddingVertical: verticalScale(10),
-        fontSize: moderateScale(14), color: '#1e293b', maxHeight: verticalScale(100),
+        fontSize: Typography.body, color: '#1e293b', maxHeight: verticalScale(100),
     },
     sendBtn: {
         width: moderateScale(44), height: moderateScale(44), borderRadius: moderateScale(22),
@@ -269,8 +272,8 @@ const styles = StyleSheet.create({
     sendBtnDisabled: { backgroundColor: '#94a3b8' },
 
     emptyBox: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: verticalScale(80) },
-    emptyText: { fontSize: moderateScale(17), fontWeight: '700', color: '#334155', marginTop: verticalScale(14) },
-    emptySubText: { fontSize: moderateScale(13), color: '#94a3b8', marginTop: 6 },
+    emptyText: { fontSize: Typography.h5, fontWeight: '700', color: '#334155', marginTop: verticalScale(14) },
+    emptySubText: { fontSize: Typography.bodySmall, color: '#94a3b8', marginTop: 6 },
 });
 
 export default ChatScreen;

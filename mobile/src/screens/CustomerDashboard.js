@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../utils/responsive';
+import Typography from '../theme/Typography';
+
 import { API_BASE_URL } from '../config';
 
 const PRIMARY = '#115e59'; // Deep Teal
@@ -130,7 +132,7 @@ const CustomerDashboard = ({ navigation }) => {
                 </View>
 
                 {/* --- PROMO CAROUSEL --- */}
-                <View style={styles.promoSection}>
+                {/* <View style={styles.promoSection}>
                     <View style={styles.promoCard}>
                         <View style={styles.promoInfo}>
                             <View style={styles.tag}>
@@ -146,7 +148,7 @@ const CustomerDashboard = ({ navigation }) => {
                             <Text style={{ fontSize: moderateScale(60) }}>🏠</Text>
                         </View>
                     </View>
-                </View>
+                </View> */}
 
                 {/* --- HELPERS --- */}
                 {(() => {
@@ -312,7 +314,7 @@ const CustomerDashboard = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: BG_COLOR },
     loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-    loaderText: { marginTop: verticalScale(15), fontSize: moderateScale(16), color: '#64748b', fontWeight: '500' },
+    loaderText: { marginTop: verticalScale(15), fontSize: Typography.bodyLarge, color: '#64748b', fontWeight: '500' },
 
     /* Header */
     headerGradient: {
@@ -333,8 +335,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: verticalScale(25),
     },
-    greetingText: { color: 'rgba(255,255,255,0.7)', fontSize: moderateScale(15), fontWeight: '500' },
-    nameText: { color: '#fff', fontSize: moderateScale(28), fontWeight: 'bold' },
+    greetingText: { color: 'rgba(255,255,255,0.7)', fontSize: Typography.bodyLarge, fontWeight: '500' },
+    nameText: { color: '#fff', fontSize: Typography.h2, fontWeight: 'bold' },
     profileBtn: {
         width: moderateScale(50),
         height: moderateScale(50),
@@ -358,7 +360,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
     },
-    avatarTxt: { color: PRIMARY, fontSize: moderateScale(18), fontWeight: 'bold' },
+    avatarTxt: { color: PRIMARY, fontSize: Typography.h5, fontWeight: 'bold' },
 
     /* Search */
     searchContainer: {
@@ -374,7 +376,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 10,
     },
-    searchTxt: { color: '#94a3b8', marginLeft: scale(12), fontSize: moderateScale(15), fontWeight: '500' },
+    searchTxt: { color: '#94a3b8', marginLeft: scale(12), fontSize: Typography.bodyLarge, fontWeight: '500' },
 
     /* Promo Section */
     promoSection: { marginTop: verticalScale(-20), paddingHorizontal: moderateScale(20) },
@@ -401,9 +403,9 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         marginBottom: verticalScale(8),
     },
-    tagText: { color: ACCENT, fontSize: moderateScale(10), fontWeight: '800', letterSpacing: 0.5 },
-    promoTitle: { fontSize: moderateScale(22), fontWeight: 'bold', color: '#0f172a', lineHeight: moderateScale(26) },
-    promoSub: { color: '#64748b', fontSize: moderateScale(13), marginVertical: verticalScale(8), lineHeight: moderateScale(18) },
+    tagText: { color: ACCENT, fontSize: Typography.tiny, fontWeight: '800', letterSpacing: 0.5 },
+    promoTitle: { fontSize: Typography.getCustom(22), fontWeight: 'bold', color: '#0f172a', lineHeight: Typography.getCustom(26) },
+    promoSub: { color: '#64748b', fontSize: Typography.bodySmall, marginVertical: verticalScale(8), lineHeight: Typography.h5 },
     promoBtnAction: {
         backgroundColor: PRIMARY,
         paddingHorizontal: moderateScale(18),
@@ -411,7 +413,7 @@ const styles = StyleSheet.create({
         borderRadius: moderateScale(12),
         alignSelf: 'flex-start',
     },
-    promoBtnText: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(14) },
+    promoBtnText: { color: '#fff', fontWeight: 'bold', fontSize: Typography.body },
     promoImagePlaceholder: { marginLeft: scale(10) },
 
     /* Sections Shared */
@@ -423,8 +425,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: moderateScale(25),
         marginBottom: verticalScale(15),
     },
-    sectionTitle: { fontSize: moderateScale(19), fontWeight: 'bold', color: '#0f172a' },
-    viewAllBtn: { color: PRIMARY_LIGHT, fontWeight: '700', fontSize: moderateScale(14) },
+    sectionTitle: { fontSize: Typography.getCustom(19), fontWeight: 'bold', color: '#0f172a' },
+    viewAllBtn: { color: PRIMARY_LIGHT, fontWeight: '700', fontSize: Typography.body },
 
     /* Category Scroll */
     categoryScroll: { paddingLeft: moderateScale(25), paddingRight: moderateScale(10), paddingBottom: verticalScale(10) },
@@ -453,7 +455,7 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(12),
     },
     catEmoji: { fontSize: moderateScale(30) },
-    catName: { fontSize: moderateScale(12), fontWeight: '700', color: '#334155', textAlign: 'center', lineHeight: moderateScale(16) },
+    catName: { fontSize: Typography.caption, fontWeight: '700', color: '#334155', textAlign: 'center', lineHeight: Typography.bodyLarge },
 
     /* Orders / Bookings */
     orderCard: {
@@ -481,14 +483,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     orderMid: { flex: 1, marginLeft: scale(15) },
-    orderName: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#0f172a' },
-    orderDate: { fontSize: moderateScale(12), color: '#94a3b8', marginTop: verticalScale(4) },
+    orderName: { fontSize: Typography.bodyLarge, fontWeight: 'bold', color: '#0f172a' },
+    orderDate: { fontSize: Typography.caption, color: '#94a3b8', marginTop: verticalScale(4) },
     orderStatus: {
         paddingHorizontal: moderateScale(12),
         paddingVertical: verticalScale(6),
         borderRadius: moderateScale(12),
     },
-    statusTxtTag: { fontSize: moderateScale(11), fontWeight: '800', textTransform: 'uppercase' },
+    statusTxtTag: { fontSize: Typography.tiny, fontWeight: '800', textTransform: 'uppercase' },
 
     /* Empty State */
     emptyWrap: {
@@ -509,14 +511,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: verticalScale(20),
     },
-    emptyTitle: { fontSize: moderateScale(18), fontWeight: 'bold', color: '#0f172a' },
+    emptyTitle: { fontSize: Typography.h5, fontWeight: 'bold', color: '#0f172a' },
     emptySub: {
         textAlign: 'center',
         color: '#94a3b8',
-        fontSize: moderateScale(14),
+        fontSize: Typography.body,
         marginTop: verticalScale(8),
         paddingHorizontal: moderateScale(20),
-        lineHeight: moderateScale(20),
+        lineHeight: Typography.h4,
     },
     emptyBtn: {
         marginTop: verticalScale(20),
@@ -562,13 +564,13 @@ const styles = StyleSheet.create({
     priceTagText: {
         color: PRIMARY,
         fontWeight: 'bold',
-        fontSize: moderateScale(12),
+        fontSize: Typography.caption,
     },
     featuredInfo: {
         padding: moderateScale(12),
     },
     featuredName: {
-        fontSize: moderateScale(14),
+        fontSize: Typography.body,
         fontWeight: 'bold',
         color: '#1e293b',
         marginBottom: verticalScale(4),
@@ -578,12 +580,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     ratingText: {
-        fontSize: moderateScale(11),
+        fontSize: Typography.tiny,
         color: '#64748b',
         marginLeft: scale(4),
         fontWeight: '600',
     },
-    emptyBtnTxt: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(15) },
+    emptyBtnTxt: { color: '#fff', fontWeight: 'bold', fontSize: Typography.bodyLarge },
 });
 
 export default CustomerDashboard;

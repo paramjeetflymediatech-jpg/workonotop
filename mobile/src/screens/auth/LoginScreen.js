@@ -17,6 +17,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useRoute } from '@react-navigation/native';
 import { apiService } from '../../services/api';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
+import Typography from '../../theme/Typography';
+
 import PasswordInput from '../../components/PasswordInput';
 import PremiumAlert from '../../components/PremiumAlert';
 
@@ -30,7 +32,7 @@ const LoginScreen = ({ navigation }) => {
     const [googleLoading, setGoogleLoading] = useState(false);
     const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
     const { login, loginWithGoogle } = useAuth();
-
+    const role = type === 'pro' || type === 'provider' ? 'Provider' : 'Customer';
     const showPremiumAlert = (message, title = 'Login Failed', type = 'error') => {
         setAlert({ visible: true, title, message, type });
     };
@@ -123,7 +125,7 @@ const LoginScreen = ({ navigation }) => {
                                 resizeMode="contain"
                             />
                         )}
-                        <Text style={styles.title}>Welcome Back</Text>
+                        <Text style={styles.title}>Welcome Back {role}</Text>
                         <Text style={styles.subtitle}>Sign in to your WorkOnTop account</Text>
                     </View>
 
@@ -241,7 +243,7 @@ const styles = StyleSheet.create({
         marginTop: verticalScale(25),
     },
     backIcon: {
-        fontSize: moderateScale(20),
+        fontSize: Typography.h4,
         color: '#0f172a',
         fontWeight: 'bold',
     },
@@ -255,13 +257,13 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(10),
     },
     title: {
-        fontSize: moderateScale(28),
+        fontSize: Typography.h2,
         fontWeight: 'bold',
         color: '#0f172a',
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: moderateScale(15),
+        fontSize: Typography.bodyLarge,
         color: '#64748b',
         textAlign: 'center',
         marginTop: verticalScale(4),
@@ -274,7 +276,7 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(15),
         textAlign: 'center',
         fontWeight: '600',
-        fontSize: moderateScale(14),
+        fontSize: Typography.body,
     },
     form: {
         width: '100%',
@@ -283,7 +285,7 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(15),
     },
     label: {
-        fontSize: moderateScale(13),
+        fontSize: Typography.label,
         fontWeight: '600',
         color: '#475569',
         marginBottom: verticalScale(6),
@@ -294,7 +296,7 @@ const styles = StyleSheet.create({
         borderColor: '#e2e8f0',
         borderRadius: moderateScale(12),
         padding: moderateScale(14),
-        fontSize: moderateScale(16),
+        fontSize: Typography.bodyLarge,
         color: '#0f172a',
     },
     forgotPassword: {
@@ -303,7 +305,7 @@ const styles = StyleSheet.create({
     },
     forgotPasswordText: {
         color: '#115e59',
-        fontSize: moderateScale(14),
+        fontSize: Typography.body,
         fontWeight: '600',
     },
     button: {
@@ -322,7 +324,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#fff',
-        fontSize: moderateScale(18),
+        fontSize: Typography.h5,
         fontWeight: 'bold',
     },
     signupFooter: {
@@ -331,7 +333,7 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(20),
     },
     signupText: {
-        fontSize: moderateScale(15),
+        fontSize: Typography.bodyLarge,
         color: '#64748b',
     },
     signupLink: {
@@ -351,7 +353,7 @@ const styles = StyleSheet.create({
     dividerText: {
         marginHorizontal: scale(10),
         color: '#94a3b8',
-        fontSize: moderateScale(12),
+        fontSize: Typography.tiny,
         fontWeight: 'bold',
     },
     googleButton: {
@@ -379,7 +381,7 @@ const styles = StyleSheet.create({
     },
     googleButtonText: {
         color: '#0f172a',
-        fontSize: moderateScale(16),
+        fontSize: Typography.bodyLarge,
         fontWeight: 'bold',
         letterSpacing: 0.2,
     }

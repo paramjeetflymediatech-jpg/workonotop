@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { verticalScale } from '../utils/responsive';
+import Typography from '../theme/Typography';
+
 import { API_BASE_URL } from '../config';
 import LogoutConfirmationModal from '../components/LogoutConfirmationModal';
 
@@ -74,7 +76,7 @@ const ProfileScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 )}
 
-                {user?.role === 'provider' && (
+                {/* {user?.role === 'provider' && (
                     <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Messages')}>
                         <View style={styles.menuIconContainer}>
                             <Ionicons name="chatbubbles-outline" size={20} color="#115e59" />
@@ -82,7 +84,7 @@ const ProfileScreen = ({ navigation }) => {
                         <Text style={styles.menuText}>My Messages</Text>
                         <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
                     </TouchableOpacity>
-                )}
+                )} */}
 
                 {user?.role === 'admin' && (
                     <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Job Requests')}>
@@ -178,7 +180,7 @@ const styles = StyleSheet.create({
     },
     avatarText: {
         color: '#fff',
-        fontSize: 40,
+        fontSize: Typography.getCustom(40),
         fontWeight: 'bold',
     },
     avatarImage: {
@@ -187,12 +189,12 @@ const styles = StyleSheet.create({
         borderRadius: 50,
     },
     name: {
-        fontSize: 24,
+        fontSize: Typography.h3,
         fontWeight: 'bold',
         color: '#0f172a',
     },
     email: {
-        fontSize: 16,
+        fontSize: Typography.bodyLarge,
         color: '#64748b',
         marginTop: 4,
     },
@@ -204,7 +206,7 @@ const styles = StyleSheet.create({
     },
     roleBadgeText: {
         color: '#fff',
-        fontSize: 12,
+        fontSize: Typography.tiny,
         fontWeight: 'bold',
     },
     menuContainer: {
@@ -229,7 +231,7 @@ const styles = StyleSheet.create({
     },
     menuText: {
         flex: 1,
-        fontSize: 16,
+        fontSize: Typography.bodyLarge,
         color: '#334155',
         fontWeight: '500',
     },
@@ -242,7 +244,7 @@ const styles = StyleSheet.create({
     },
     logoutText: {
         color: '#ef4444',
-        fontSize: 16,
+        fontSize: Typography.bodyLarge,
         fontWeight: 'bold',
     },
 });
