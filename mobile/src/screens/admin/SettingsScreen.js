@@ -123,6 +123,14 @@ const SettingsScreen = ({ navigation }) => {
                     <SettingItem icon="document-text-outline" title="Terms & Privacy" color="#64748b" />
                     <View style={styles.divider} />
                     <SettingItem icon="information-circle-outline" title="Platform Version" subtitle="v2.4.0 (Build 112)" color="#64748b" />
+                    <View style={styles.divider} />
+                    <SettingItem 
+                        icon="trash-outline" 
+                        title="Delete Account" 
+                        subtitle="Request permanent data removal"
+                        color="#ef4444" 
+                        onPress={() => navigation.navigate('DataDeletion')}
+                    />
                 </View>
 
                 <View style={{ height: verticalScale(40) }} />

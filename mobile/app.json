@@ -7,7 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "jsEngine": "hermes",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -15,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nh_aman.workontap",
+      "bundleIdentifier": "com.nhaman.workontap",
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
@@ -27,7 +26,7 @@
         "backgroundColor": "#115E59",
         "foregroundImage": "./assets/adaptive-icon.png"
       },
-      "package": "com.nh_aman.workontap",
+      "package": "com.nhaman.workontap",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "android.permission.POST_NOTIFICATIONS"

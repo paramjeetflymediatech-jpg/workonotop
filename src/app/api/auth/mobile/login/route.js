@@ -97,6 +97,7 @@ export async function POST(request) {
                 first_name: user.first_name || user.name,
                 last_name: user.last_name || '',
                 role: dbRole,
+                status: user.status || 'active',
                 type: dbRole // Added for compatibility with provider middleware/routes
             },
             JWT_SECRET,

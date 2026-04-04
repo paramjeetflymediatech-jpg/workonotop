@@ -56,7 +56,8 @@ export async function POST(request) {
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
-        role: 'user'
+        role: 'user',
+        status: user.status || 'active'
       },
       JWT_SECRET,
       { expiresIn: '7d' }

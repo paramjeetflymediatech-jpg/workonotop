@@ -238,6 +238,14 @@ export const AuthProvider = ({ children }) => {
             console.log('🏁 [GoogleAuth] Starting sign-in process...', { role, type });
             
             await GoogleSignin.hasPlayServices();
+            
+            // Force sign out first so that the account picker UI always appears
+            try {
+                await GoogleSignin.signOut();
+            } catch (signOutError) {
+                // Ignore error if already signed out
+            }
+
             const userInfo = await GoogleSignin.signIn();
             const idToken = userInfo.data?.idToken || userInfo.idToken;
 

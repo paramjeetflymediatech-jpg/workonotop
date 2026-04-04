@@ -120,12 +120,7 @@ const SettingsScreen = ({ navigation }) => {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <SectionHeader title="Account" />
                 <View style={styles.sectionCard}>
-                    <SettingItem
-                        icon="person-outline"
-                        title="Edit Profile"
-                        subtitle="Update your personal information"
-                        onPress={() => navigation.navigate('UpdateProfile')}
-                    />
+                     
                     <View style={styles.divider} />
                     <SettingItem
                         icon="lock-closed-outline"
@@ -140,7 +135,7 @@ const SettingsScreen = ({ navigation }) => {
                         icon="notifications-outline"
                         title="Notification Preferences"
                         subtitle="Manage Push, Email, and Reminders"
-                        onPress={() => navigation.navigate('NotificationSettings')}
+                        onPress={() => Alert.alert('Notification Preferences', 'Notification Preferences will be available in the next update.')}
                     />
                 </View>
 
@@ -189,6 +184,17 @@ const SettingsScreen = ({ navigation }) => {
                         <Text style={styles.versionLabel}>App Version</Text>
                         <Text style={styles.versionValue}>v{Constants.expoConfig?.version || '1.0.0'}</Text>
                     </View>
+                </View>
+
+                <SectionHeader title="Account Actions" />
+                <View style={[styles.sectionCard, { borderColor: '#fee2e2', borderWidth: 1 }]}>
+                    <SettingItem 
+                        icon="trash-outline" 
+                        title="Delete Account" 
+                        subtitle="Permanently remove your account and data"
+                        color="#ef4444" 
+                        onPress={() => navigation.navigate('DataDeletion')}
+                    />
                 </View>
 
                 <View style={{ height: verticalScale(20) }} />

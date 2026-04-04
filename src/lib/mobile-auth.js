@@ -60,12 +60,40 @@ export async function getMobileSession(request) {
         }
 
         // Standardize the response to match what onboarding routes expect
+        const userId = session.provider_id || decoded.id;
+        const type = session.user_type;
+
+        // 3. ✨ NEW: Check for account restriction/deletion status
+        // We only allow authenticated access if the account is in 'active' status
+        try {
+            const table = type === 'provider' ? 'service_providers' : 'users';
+            const statusRows = await execute(`SELECT status FROM ${table} WHERE id = ?`, [userId]);
+            
+            if (statusRows.length > 0) {
+                const status = statusRows[0].status;
+                if (status === 'pending_deletion' || status === 'deleted') {
+                    console.log(`🚫 [Mobile Auth] Action blocked: Account status is ${status} for ${type} ID ${userId}`);
+                    // Return special object to allow specific handlers for "account restricted" state
+                    return {
+                        id: userId,
+                        type: type,
+                        status: status,
+                        restricted: true,
+                        error: 'Account restricted. Deletion in progress.'
+                    };
+                }
+            }
+        } catch (statusErr) {
+            console.error('❌ Status check failed:', statusErr.message);
+        }
+
         return {
             ...decoded,
             providerId: session.provider_id || decoded.id,
             userId: session.user_id || decoded.id,
             type: session.user_type,
-            mobileSession: true
+            mobileSession: true,
+            status: 'active'
         };
 
     } catch (error) {

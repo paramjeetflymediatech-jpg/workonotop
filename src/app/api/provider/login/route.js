@@ -215,7 +215,8 @@ export async function POST(request) {
       providerId: provider.id,
       email: provider.email,
       name: provider.name,
-      type: 'provider'
+      type: 'provider',
+      status: provider.status
     });
 
     const response = NextResponse.json({

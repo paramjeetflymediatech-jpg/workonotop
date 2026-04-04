@@ -64,7 +64,7 @@ export async function middleware(request) {
   if (
     pathname.startsWith("/admin") &&
     pathname !== "/admin/login" &&
-    pathname !== "/api/admin/login"  // ✅ don't block login API
+    pathname !== "/api/admin/login"
   ) {
     const token = request.cookies.get("adminAuth")?.value;
 
@@ -73,7 +73,8 @@ export async function middleware(request) {
     }
 
     try {
-      await jwtVerify(token, JWT_SECRET);
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      // Admin specific status check if needed
     } catch {
       const response = NextResponse.redirect(new URL("/admin/login", request.url));
       response.cookies.set("adminAuth", "", { maxAge: 0 });
@@ -81,17 +82,26 @@ export async function middleware(request) {
     }
   }
 
-  // Provider routes unchanged
-  if (
-    pathname.startsWith("/provider") &&
-    !pathname.includes("/login") &&
-    !pathname.includes("/register") &&
-    !pathname.includes("/verify-email") &&
-    !pathname.includes("/rejected")
-  ) {
-    const token = request.cookies.get("provider_token")?.value;
-    if (!token) {
-      return NextResponse.redirect(new URL("/provider/login", request.url));
+  // Provider & Customer Restricted Status Check
+  const providerToken = request.cookies.get("provider_token")?.value;
+  const customerToken = request.cookies.get("customer_token")?.value;
+  const token = providerToken || customerToken;
+
+  if (token) {
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      if (payload.status === 'pending_deletion' || payload.status === 'deleted') {
+        // Block sensitive actions but allow them to see their restricted profile if we had a page for it
+        // For now, if it's an API request, return 403. If it's a page request (excluding logout), we can redirect.
+        if (pathname.startsWith('/api/') && !pathname.includes('/auth/logout')) {
+          return NextResponse.json(
+            { success: false, message: 'Account restricted. Deletion in progress.', status: payload.status },
+            { status: 403 }
+          );
+        }
+      }
+    } catch (err) {
+      // Token invalid, ignore here as other parts of middleware handle redirects
     }
   }
 
