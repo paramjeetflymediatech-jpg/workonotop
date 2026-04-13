@@ -24,6 +24,7 @@ function SignupFormContent() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
@@ -227,14 +228,20 @@ function SignupFormContent() {
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-bold text-gray-700 ml-1">Confirm</label>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              className={`w-full px-4 py-3.5 sm:py-4 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 text-sm sm:text-base bg-gray-50/50 hover:bg-white focus:bg-white transition-all outline-none font-medium ${fieldErrors.confirmPassword ? 'border-red-200' : 'border-gray-100'}`}
-              placeholder="••••••••"
-              value={formData.confirmPassword}
-              onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
-              required
-            />
+            <div className="relative group">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                className={`w-full px-4 pr-10 py-3.5 sm:py-4 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 text-sm sm:text-base bg-gray-50/50 hover:bg-white focus:bg-white transition-all outline-none font-medium ${fieldErrors.confirmPassword ? 'border-red-200' : 'border-gray-100'}`}
+                placeholder="••••••••"
+                value={formData.confirmPassword}
+                onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+                required
+              />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400">
+                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
         </div>
 

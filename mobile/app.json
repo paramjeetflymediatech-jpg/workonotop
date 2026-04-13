@@ -15,10 +15,12 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nhaman.workontap",
+      "buildReactNativeFromSource": true,
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -26,7 +28,7 @@
         "backgroundColor": "#115E59",
         "foregroundImage": "./assets/adaptive-icon.png"
       },
-      "package": "com.nhaman.workontap",
+      "package": "com.nh_aman.workontap",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "android.permission.POST_NOTIFICATIONS"
@@ -46,7 +48,13 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.221840398936-4e0923mpq8viaoljni102if07j5cj0bq"
+        }
+      ],
+      "expo-apple-authentication",
       "expo-web-browser"
     ],
     "extra": {

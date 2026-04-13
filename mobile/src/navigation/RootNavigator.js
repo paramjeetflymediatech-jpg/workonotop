@@ -341,6 +341,7 @@ import OtpVerificationScreen from '../screens/auth/OtpVerificationScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
+import GuestPlaceholderScreen from '../screens/auth/GuestPlaceholderScreen';
 
 // Main navigators
 import BottomTabNavigator from './BottomTabNavigator';
@@ -481,25 +482,8 @@ const RootNavigator = () => {
         );
     }
 
-    // ── Unauthenticated ──────────────────────────────────────────────────────
-    if (!user) {
-        return (
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="Welcome"           component={WelcomeScreen} />
-                <Stack.Screen name="AuthChoice"        component={AuthChoiceScreen} />
-                <Stack.Screen name="Login"             component={LoginScreen} />
-                <Stack.Screen name="ProviderSignup"    component={ProviderSignupScreen} />
-                <Stack.Screen name="CustomerSignup"    component={CustomerSignupScreen} />
-                <Stack.Screen name="ForgotPassword"    component={ForgotPasswordScreen} />
-                <Stack.Screen name="OtpVerification"   component={OtpVerificationScreen} />
-                <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
-                <Stack.Screen name="ResetPassword"     component={ResetPasswordScreen} />
-            </Stack.Navigator>
-        );
-    }
-
     // ── Admin ────────────────────────────────────────────────────────────────
-    if (user.role === 'admin') {
+    if (user?.role === 'admin') {
         return (
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="Main"               component={AdminDrawerNavigator} />
@@ -510,21 +494,84 @@ const RootNavigator = () => {
         );
     }
 
-    // ── Customer ─────────────────────────────────────────────────────────────
-    if (user.role === 'customer') {
+    // ── Provider ─────────────────────────────────────────────────────────────
+    if (user?.role === 'provider') {
+        const { screen: initialScreen, params: initialParams } = resolveProviderScreen(user);
+
         return (
             <Stack.Navigator
+                key={initialScreen}
+                initialRouteName={initialScreen}
                 screenOptions={{
                     headerStyle: { backgroundColor: '#14b8a6' },
                     headerTintColor: '#fff',
                     headerTitleStyle: { fontWeight: 'bold' },
                 }}
             >
-                <Stack.Screen name="Main"                   component={BottomTabNavigator}           options={{ headerShown: false }} />
-                <Stack.Screen name="CreateBooking"          component={CreateBookingScreen}          options={{ title: 'Book Service' }} />
-                <Stack.Screen name="BookingSuccess"         component={BookingSuccessScreen}         options={{ headerShown: false }} />
+                {/* ── Onboarding screens ───────────────────────────────────── */}
+                <Stack.Screen
+                    name="ProviderOnboarding"
+                    component={OnboardingIntroScreen}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="ProfileSetup"
+                    component={ProfileSetupScreen}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="DocumentUpload"
+                    component={DocumentUploadScreen}
+                    initialParams={initialScreen === 'DocumentUpload' ? initialParams : undefined}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="BankLink"
+                    component={BankLinkScreen}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="Review"
+                    component={ReviewScreen}
+                    options={{ headerShown: false }}
+                />
+
+                {/* ── Status / gate screens ─────────────────────────────────── */}
+                <Stack.Screen
+                    name="PendingApproval"
+                    component={PendingApprovalScreen}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="Rejected"
+                    component={RejectedScreen}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="EmailVerificationPending"
+                    component={EmailVerificationScreen}
+                    options={{ headerShown: false }}
+                />
+
+                {/* ── Main app (active provider ONLY) ──────────────────────── */}
+                <Stack.Screen
+                    name="Main"
+                    component={ProviderDrawerNavigator}
+                    options={{ headerShown: false }}
+                />
+
+                {/* ── Provider job & profile screens ────────────────────────── */}
+                <Stack.Screen name="MyJobs"                component={MyJobsScreen}                options={{ headerShown: false }} />
+                <Stack.Screen name="JobDetails"            component={JobDetailsScreen}            options={{ headerShown: false }} />
+                <Stack.Screen name="StartJob"              component={StartJobScreen}              options={{ headerShown: false }} />
+                <Stack.Screen name="FinishJob"             component={FinishJobScreen}             options={{ headerShown: false }} />
+                <Stack.Screen name="JobReport"             component={JobReportScreen}             options={{ title: 'Job Report' }} />
+                <Stack.Screen name="ProviderUpdateProfile" component={ProviderUpdateProfileScreen} options={{ headerShown: false }} />
+
+                {/* ── Shared screens ────────────────────────────────────────── */}
+                <Stack.Screen name="AdminJobDetails"        component={AdminJobDetailsScreen}        options={{ headerShown: false }} />
+                <Stack.Screen name="AdminNotifications"     component={AdminNotificationsScreen}     options={{ headerShown: false }} />
                 <Stack.Screen name="CustomerBookingDetails" component={CustomerBookingDetailsScreen} options={{ headerShown: false }} />
-                <Stack.Screen name="JobReport"              component={JobReportScreen}              options={{ title: 'Job Report' }} />
                 <Stack.Screen name="UpdateProfile"          component={UpdateProfileScreen}          options={{ headerShown: false }} />
                 <Stack.Screen name="Settings"               component={SettingsScreen}               options={{ headerShown: false }} />
                 <Stack.Screen name="NotificationSettings"   component={NotificationSettingsScreen}   options={{ headerShown: false }} />
@@ -539,83 +586,35 @@ const RootNavigator = () => {
         );
     }
 
-    // ── Provider ─────────────────────────────────────────────────────────────
-    const { screen: initialScreen, params: initialParams } = resolveProviderScreen(user);
-
+    // ── Customer / Guest ─────────────────────────────────────────────────────
+    // If no user OR role is customer, we show the main browseable app.
     return (
         <Stack.Navigator
-            key={initialScreen}
-            initialRouteName={initialScreen}
+            initialRouteName="Main"
             screenOptions={{
-                headerStyle: { backgroundColor: '#14b8a6' },
+                headerStyle: { backgroundColor: '#115e59' },
                 headerTintColor: '#fff',
                 headerTitleStyle: { fontWeight: 'bold' },
             }}
         >
-            {/* ── Onboarding screens ───────────────────────────────────── */}
-            <Stack.Screen
-                name="ProviderOnboarding"
-                component={OnboardingIntroScreen}
-                options={{ headerShown: false }}
-            />
-            <Stack.Screen
-                name="ProfileSetup"
-                component={ProfileSetupScreen}
-                options={{ headerShown: false }}
-            />
-            <Stack.Screen
-                name="DocumentUpload"
-                component={DocumentUploadScreen}
-                initialParams={initialScreen === 'DocumentUpload' ? initialParams : undefined}
-                options={{ headerShown: false }}
-            />
-            <Stack.Screen
-                name="BankLink"
-                component={BankLinkScreen}
-                options={{ headerShown: false }}
-            />
-            <Stack.Screen
-                name="Review"
-                component={ReviewScreen}
-                options={{ headerShown: false }}
-            />
+            <Stack.Screen name="Main"                   component={BottomTabNavigator}           options={{ headerShown: false }} />
+            
+            {/* Auth flow (now accessible from everywhere) */}
+            <Stack.Screen name="Welcome"           component={WelcomeScreen}            options={{ headerShown: false }} />
+            <Stack.Screen name="AuthChoice"        component={AuthChoiceScreen}         options={{ headerShown: false }} />
+            <Stack.Screen name="Login"             component={LoginScreen}              options={{ headerShown: false }} />
+            <Stack.Screen name="ProviderSignup"    component={ProviderSignupScreen}     options={{ headerShown: false }} />
+            <Stack.Screen name="CustomerSignup"    component={CustomerSignupScreen}     options={{ headerShown: false }} />
+            <Stack.Screen name="ForgotPassword"    component={ForgotPasswordScreen}     options={{ headerShown: false }} />
+            <Stack.Screen name="OtpVerification"   component={OtpVerificationScreen}    options={{ headerShown: false }} />
+            <Stack.Screen name="EmailVerification" component={EmailVerificationScreen}  options={{ headerShown: false }} />
+            <Stack.Screen name="ResetPassword"     component={ResetPasswordScreen}      options={{ headerShown: false }} />
 
-            {/* ── Status / gate screens ─────────────────────────────────── */}
-            <Stack.Screen
-                name="PendingApproval"
-                component={PendingApprovalScreen}
-                options={{ headerShown: false }}
-            />
-            <Stack.Screen
-                name="Rejected"
-                component={RejectedScreen}
-                options={{ headerShown: false }}
-            />
-            <Stack.Screen
-                name="EmailVerificationPending"
-                component={EmailVerificationScreen}
-                options={{ headerShown: false }}
-            />
-
-            {/* ── Main app (active provider ONLY) ──────────────────────── */}
-            <Stack.Screen
-                name="Main"
-                component={ProviderDrawerNavigator}
-                options={{ headerShown: false }}
-            />
-
-            {/* ── Provider job & profile screens ────────────────────────── */}
-            <Stack.Screen name="MyJobs"                component={MyJobsScreen}                options={{ headerShown: false }} />
-            <Stack.Screen name="JobDetails"            component={JobDetailsScreen}            options={{ headerShown: false }} />
-            <Stack.Screen name="StartJob"              component={StartJobScreen}              options={{ headerShown: false }} />
-            <Stack.Screen name="FinishJob"             component={FinishJobScreen}             options={{ headerShown: false }} />
-            <Stack.Screen name="JobReport"             component={JobReportScreen}             options={{ title: 'Job Report' }} />
-            <Stack.Screen name="ProviderUpdateProfile" component={ProviderUpdateProfileScreen} options={{ headerShown: false }} />
-
-            {/* ── Shared screens ────────────────────────────────────────── */}
-            <Stack.Screen name="AdminJobDetails"        component={AdminJobDetailsScreen}        options={{ headerShown: false }} />
-            <Stack.Screen name="AdminNotifications"     component={AdminNotificationsScreen}     options={{ headerShown: false }} />
+            {/* Customer internal screens */}
+            <Stack.Screen name="CreateBooking"          component={CreateBookingScreen}          options={{ title: 'Book Service' }} />
+            <Stack.Screen name="BookingSuccess"         component={BookingSuccessScreen}         options={{ headerShown: false }} />
             <Stack.Screen name="CustomerBookingDetails" component={CustomerBookingDetailsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="JobReport"              component={JobReportScreen}              options={{ title: 'Job Report' }} />
             <Stack.Screen name="UpdateProfile"          component={UpdateProfileScreen}          options={{ headerShown: false }} />
             <Stack.Screen name="Settings"               component={SettingsScreen}               options={{ headerShown: false }} />
             <Stack.Screen name="NotificationSettings"   component={NotificationSettingsScreen}   options={{ headerShown: false }} />
@@ -626,6 +625,7 @@ const RootNavigator = () => {
             <Stack.Screen name="DataDeletion"           component={DataDeletionScreen}           options={{ headerShown: false }} />
             <Stack.Screen name="Chat"                   component={ChatScreen}                   options={{ headerShown: false }} />
             <Stack.Screen name="Details"                component={DetailsScreen} />
+            <Stack.Screen name="GuestPlaceholder"       component={GuestPlaceholderScreen}       options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 };

@@ -93,8 +93,15 @@ const WelcomeScreen = ({ navigation }) => {
                 </Animated.View>
 
                 <Animated.View style={[styles.buttonWrapper, { opacity: buttonFadeAnim }]}>
-                    <TouchableOpacity style={styles.button} onPress={() => navigation.replace('AuthChoice')}>
+                    <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AuthChoice')}>
                         <Text style={styles.buttonText}>Get Started</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.guestButton} 
+                        onPress={() => navigation.navigate('Main')}
+                    >
+                        <Text style={styles.guestButtonText}>Browse as Guest</Text>
                     </TouchableOpacity>
                 </Animated.View>
             </View>
@@ -162,6 +169,17 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: moderateScale(23),
         fontWeight: '600',
+    },
+    guestButton: {
+        marginTop: verticalScale(16),
+        paddingVertical: verticalScale(12),
+        alignItems: 'center',
+    },
+    guestButtonText: {
+        color: '#64748b',
+        fontSize: moderateScale(18),
+        fontWeight: '500',
+        textDecorationLine: 'underline',
     },
 });
 

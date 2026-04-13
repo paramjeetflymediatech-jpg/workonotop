@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { apiService, setLogoutHandler } from '../services/api';
 
 const AuthContext = createContext();
@@ -293,6 +294,70 @@ export const AuthProvider = ({ children }) => {
         }
     }, [login]);
 
+    const loginWithApple = useCallback(async (role = 'customer') => {
+        try {
+            console.log('🏁 [AppleAuth] Starting sign-in process...', { role });
+            
+            // 1. Request credentials from Apple
+            const credential = await AppleAuthentication.signInAsync({
+                requestedScopes: [
+                    AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                    AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                ],
+            });
+
+            const { identityToken, user: appleUserId, fullName, email } = credential;
+            console.log('✅ [AppleAuth] Identity Token received');
+
+            if (!identityToken) {
+                console.error('❌ [AppleAuth] No identity token received');
+                return { success: false, message: 'Apple authentication failed: No token received' };
+            }
+
+            console.log('📡 [AppleAuth] Sending token to backend...');
+            const targetRole = role === 'pro' ? 'provider' : role;
+
+            const response = await apiService.post('/api/auth/apple', {
+                token: identityToken,
+                role: targetRole,
+                user: {
+                    name: fullName ? {
+                        firstName: fullName.givenName,
+                        lastName: fullName.familyName
+                    } : null,
+                    email: email
+                }
+            });
+
+            if (response.success) {
+                const userData = response.user || response.provider;
+                const userToken = response.token;
+
+                if (response.provider && (!userData || !userData.role)) {
+                    userData.role = 'provider';
+                }
+
+                if (userData.role === 'user') userData.role = 'customer';
+
+                console.log(`✅ [AppleAuth] Success! Logged in as: ${userData.role}`);
+                await login(userData, userToken);
+                return { success: true, user: userData };
+            } else {
+                console.error('❌ [AppleAuth] Backend rejected token:', response.message);
+                return { success: false, message: response.message || 'Login failed' };
+            }
+        } catch (error) {
+            console.error('🔥 [AppleAuth] Critical error:', error);
+            if (error.code === 'ERR_CANCELED') {
+                return { success: false, message: 'Sign-in cancelled' };
+            }
+            return { 
+                success: false, 
+                message: error.message || 'Apple Sign-In failed. Please try again.'
+            };
+        }
+    }, [login]);
+
     const value = useMemo(() => ({
         user,
         token,
@@ -301,8 +366,9 @@ export const AuthProvider = ({ children }) => {
         logout,
         updateUser,
         refreshUser,
-        loginWithGoogle
-    }), [user, token, loading, login, logout, updateUser, refreshUser, loginWithGoogle]);
+        loginWithGoogle,
+        loginWithApple
+    }), [user, token, loading, login, logout, updateUser, refreshUser, loginWithGoogle, loginWithApple]);
 
     return (
         <AuthContext.Provider value={value}>

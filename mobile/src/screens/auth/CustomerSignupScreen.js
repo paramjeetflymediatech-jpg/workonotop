@@ -19,8 +19,9 @@ import { Alert } from 'react-native';
 import PasswordInput from '../../components/PasswordInput';
 import SuccessModal from '../../components/SuccessModal';
 import ErrorModal from '../../components/ErrorModal';
-import { useAuth } from '../../context/AuthContext';
 import { ActivityIndicator } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { useAuth } from '../../context/AuthContext';
 
 const CustomerSignupScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
@@ -39,7 +40,8 @@ const CustomerSignupScreen = ({ navigation }) => {
     const [showError, setShowError] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
-    const { loginWithGoogle } = useAuth();
+    const [appleLoading, setAppleLoading] = useState(false);
+    const { loginWithGoogle, loginWithApple } = useAuth();
 
     const handleGoogleSignup = async () => {
         setGoogleLoading(true);
@@ -57,11 +59,27 @@ const CustomerSignupScreen = ({ navigation }) => {
         }
     };
 
+    const handleAppleSignup = async () => {
+        setAppleLoading(true);
+        try {
+            const result = await loginWithApple('customer');
+            if (!result.success) {
+                setError(result.message);
+                setShowError(true);
+            }
+        } catch (err) {
+            setError('Apple Signup failed');
+            setShowError(true);
+        } finally {
+            setAppleLoading(false);
+        }
+    };
+
     const handleSignup = async () => {
         const { firstName, lastName, email, phone, password, confirmPassword, referral } = formData;
 
         // Basic presence check
-        if (!firstName || !lastName || !email || !password || !phone) {
+        if (!firstName || !lastName || !email || !password) {
             setError('Please fill in all required fields');
             setShowError(true);
             return;
@@ -88,12 +106,14 @@ const CustomerSignupScreen = ({ navigation }) => {
             return;
         }
 
-        // Phone validation (10-15 digits)
-        const phoneRegex = /^\+?[\d\s-]{10,15}$/;
-        if (!phoneRegex.test(phone.trim())) {
-            setError('Phone number must be between 10 and 15 digits.');
-            setShowError(true);
-            return;
+        // Phone validation (10-15 digits) - only if provided
+        if (phone.trim()) {
+            const phoneRegex = /^\+?[\d\s-]{10,15}$/;
+            if (!phoneRegex.test(phone.trim())) {
+                setError('Phone number must be between 10 and 15 digits.');
+                setShowError(true);
+                return;
+            }
         }
 
         // Password validation (min 8 chars, alphabets + special chars)
@@ -118,7 +138,7 @@ const CustomerSignupScreen = ({ navigation }) => {
                 first_name: firstName.trim(),
                 last_name: lastName.trim(),
                 email: email.toLowerCase().trim(),
-                phone: phone.trim(),
+                phone: phone.trim() || null,
                 password: password,
                 hear_about: referral,
                 receive_offers: isNewsletterEnabled
@@ -209,7 +229,7 @@ const CustomerSignupScreen = ({ navigation }) => {
                         </View>
 
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Phone *</Text>
+                            <Text style={styles.label}>Phone (Optional)</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="+1 (403) 000-0000"
@@ -298,6 +318,16 @@ const CustomerSignupScreen = ({ navigation }) => {
                             )}
                         </TouchableOpacity>
 
+                        {Platform.OS === 'ios' && (
+                            <AppleAuthentication.AppleAuthenticationButton
+                                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+                                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                                cornerRadius={moderateScale(15)}
+                                style={styles.appleButton}
+                                onPress={handleAppleSignup}
+                            />
+                        )}
+
                         <Text style={styles.termsText}>
                             By signing up you agree to WorkOnTap's <Text style={styles.link}>Terms</Text> & <Text style={styles.link}>Privacy</Text>
                         </Text>
@@ -311,7 +341,10 @@ const CustomerSignupScreen = ({ navigation }) => {
                 message="Account created successfully! Please log in."
                 onOk={() => {
                     setShowSuccess(false);
-                    navigation.navigate('Login', { type: 'customer' });
+                    navigation.navigate('Login', { 
+                        type: 'customer',
+                        ...navigation.getState().routes.find(r => r.name === 'CustomerSignup')?.params
+                    });
                 }}
             />
 
@@ -504,6 +537,11 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(16),
         fontWeight: 'bold',
         letterSpacing: 0.2,
+    },
+    appleButton: {
+        width: '100%',
+        height: verticalScale(50),
+        marginTop: verticalScale(14),
     }
 });
 

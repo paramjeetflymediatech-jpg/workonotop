@@ -65,9 +65,8 @@ const CustomerDashboard = ({ navigation }) => {
     }, [user?.id]);
 
     useEffect(() => {
-        if (user?.id) {
-            fetchCustomerData();
-        }
+        // Run fetch even if no user (for guest mode)
+        fetchCustomerData();
     }, [user?.id]);
 
     const onRefresh = () => {
@@ -253,56 +252,58 @@ const CustomerDashboard = ({ navigation }) => {
                     </View>
                 )}
 
-                {/* --- ACTIVE BOOKINGS --- */}
-                <View style={[styles.section, { marginBottom: verticalScale(15) }]}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>My Active Orders</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('MyBookings')}>
-                            <Text style={styles.viewAllBtn}>See All</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {bookings.length > 0 ? (
-                        bookings.slice(0, 2).map((booking) => {
-                            const status = getStatusStyle(booking.status);
-                            return (
-                                <TouchableOpacity
-                                    key={booking.id}
-                                    style={styles.orderCard}
-                                    onPress={() => navigation.navigate('CustomerBookingDetails', { bookingId: booking.id })}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={styles.orderIcon}>
-                                        <Ionicons name="construct" size={moderateScale(24)} color={PRIMARY} />
-                                    </View>
-                                    <View style={styles.orderMid}>
-                                        <Text style={styles.orderName}>{booking.service_name}</Text>
-                                        <Text style={styles.orderDate}>
-                                            <Ionicons name="calendar-outline" size={moderateScale(12)} /> {new Date(booking.job_date).toLocaleDateString()}
-                                        </Text>
-                                    </View>
-                                    <View style={[styles.orderStatus, { backgroundColor: status.bg }]}>
-                                        <Text style={[styles.statusTxtTag, { color: status.text }]}>{status.label}</Text>
-                                    </View>
-                                </TouchableOpacity>
-                            );
-                        })
-                    ) : (
-                        <View style={styles.emptyWrap}>
-                            <View style={styles.emptyIconCircle}>
-                                <Ionicons name="receipt-outline" size={moderateScale(40)} color="#cbd5e1" />
-                            </View>
-                            <Text style={styles.emptyTitle}>No bookings yet</Text>
-                            <Text style={styles.emptySub}>Your bookings will appear here once you book a service.</Text>
-                            <TouchableOpacity
-                                style={styles.emptyBtn}
-                                onPress={() => navigation.navigate('Services')}
-                            >
-                                <Text style={styles.emptyBtnTxt}>Browse Services</Text>
+                {/* --- ACTIVE BOOKINGS (ONLY FOR LOGGED IN) --- */}
+                {user && (
+                    <View style={[styles.section, { marginBottom: verticalScale(15) }]}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>My Active Orders</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('MyBookings')}>
+                                <Text style={styles.viewAllBtn}>See All</Text>
                             </TouchableOpacity>
                         </View>
-                    )}
-                </View>
+
+                        {bookings.length > 0 ? (
+                            bookings.slice(0, 2).map((booking) => {
+                                const status = getStatusStyle(booking.status);
+                                return (
+                                    <TouchableOpacity
+                                        key={booking.id}
+                                        style={styles.orderCard}
+                                        onPress={() => navigation.navigate('CustomerBookingDetails', { bookingId: booking.id })}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.orderIcon}>
+                                            <Ionicons name="construct" size={moderateScale(24)} color={PRIMARY} />
+                                        </View>
+                                        <View style={styles.orderMid}>
+                                            <Text style={styles.orderName}>{booking.service_name}</Text>
+                                            <Text style={styles.orderDate}>
+                                                <Ionicons name="calendar-outline" size={moderateScale(12)} /> {new Date(booking.job_date).toLocaleDateString()}
+                                            </Text>
+                                        </View>
+                                        <View style={[styles.orderStatus, { backgroundColor: status.bg }]}>
+                                            <Text style={[styles.statusTxtTag, { color: status.text }]}>{status.label}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })
+                        ) : (
+                            <View style={styles.emptyWrap}>
+                                <View style={styles.emptyIconCircle}>
+                                    <Ionicons name="receipt-outline" size={moderateScale(40)} color="#cbd5e1" />
+                                </View>
+                                <Text style={styles.emptyTitle}>No bookings yet</Text>
+                                <Text style={styles.emptySub}>Your bookings will appear here once you book a service.</Text>
+                                <TouchableOpacity
+                                    style={styles.emptyBtn}
+                                    onPress={() => navigation.navigate('Services')}
+                                >
+                                    <Text style={styles.emptyBtnTxt}>Browse Services</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+                )}
 
                 {/* Bottom padding for tab bar visibility */}
                 <View style={{ height: verticalScale(100) + insets.bottom }} />

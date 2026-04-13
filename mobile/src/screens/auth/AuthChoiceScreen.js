@@ -63,14 +63,20 @@ const AuthChoiceScreen = ({ navigation, route }) => {
         <View style={styles.buttonGroup}>
             <TouchableOpacity
                 style={styles.roleButton}
-                onPress={() => navigation.navigate('Login', { type: 'customer' })}
+                onPress={() => navigation.navigate('Login', { 
+                    type: 'customer',
+                    ...route.params 
+                })}
             >
                 <Text style={styles.roleButtonText}>Login as Customer</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
                 style={styles.roleButton}
-                onPress={() => navigation.navigate('Login', { type: 'pro' })}
+                onPress={() => navigation.navigate('Login', { 
+                    type: 'pro',
+                    ...route.params
+                })}
             >
                 <Text style={styles.roleButtonText}>Login as Provider</Text>
             </TouchableOpacity>
@@ -81,21 +87,17 @@ const AuthChoiceScreen = ({ navigation, route }) => {
         <View style={styles.buttonGroup}>
             <TouchableOpacity
                 style={styles.roleButton}
-                onPress={() => navigation.navigate('CustomerSignup')}
+                onPress={() => navigation.navigate('CustomerSignup', { ...route.params })}
             >
                 <Text style={styles.roleButtonText}>Customer Sign Up</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
                 style={styles.roleButton}
-                onPress={() => navigation.navigate('ProviderSignup')}
+                onPress={() => navigation.navigate('ProviderSignup', { ...route.params })}
             >
                 <Text style={styles.roleButtonText}>Become a Pro</Text>
             </TouchableOpacity>
-
-            {/* <TouchableOpacity onPress={() => changeView('initial')}>
-                <Text style={styles.backText}>← Back</Text>
-            </TouchableOpacity> */}
         </View>
     );
 

@@ -21,6 +21,7 @@ import Typography from '../../theme/Typography';
 
 import PasswordInput from '../../components/PasswordInput';
 import PremiumAlert from '../../components/PremiumAlert';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 const LoginScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
@@ -30,8 +31,9 @@ const LoginScreen = ({ navigation }) => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
+    const [appleLoading, setAppleLoading] = useState(false);
     const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
-    const { login, loginWithGoogle } = useAuth();
+    const { login, loginWithGoogle, loginWithApple } = useAuth();
     const role = type === 'pro' || type === 'provider' ? 'Provider' : 'Customer';
     const showPremiumAlert = (message, title = 'Login Failed', type = 'error') => {
         setAlert({ visible: true, title, message, type });
@@ -61,6 +63,13 @@ const LoginScreen = ({ navigation }) => {
                 if (userData.role === 'user') userData.role = 'customer';
 
                 login(userData, response.token);
+
+                // Handle Redirect if guest was trying to book
+                const { redirectTo, redirectParams } = route.params || {};
+                if (redirectTo) {
+                    console.log(`🚀 [Login] Redirecting to ${redirectTo}`);
+                    navigation.navigate(redirectTo, redirectParams);
+                }
             } else {
                 showPremiumAlert(response.message || 'Invalid credentials');
             }
@@ -92,6 +101,21 @@ const LoginScreen = ({ navigation }) => {
             showPremiumAlert('Google Sign-In failed');
         } finally {
             setGoogleLoading(false);
+        }
+    };
+
+    const handleAppleLogin = async () => {
+        setAppleLoading(true);
+        try {
+            const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
+            const result = await loginWithApple(role);
+            if (!result.success) {
+                showPremiumAlert(result.message);
+            }
+        } catch (err) {
+            showPremiumAlert('Apple Sign-In failed');
+        } finally {
+            setAppleLoading(false);
         }
     };
 
@@ -196,6 +220,16 @@ const LoginScreen = ({ navigation }) => {
                                 </View>
                             )}
                         </TouchableOpacity>
+
+                        {Platform.OS === 'ios' && (
+                            <AppleAuthentication.AppleAuthenticationButton
+                                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                                cornerRadius={moderateScale(15)}
+                                style={styles.appleButton}
+                                onPress={handleAppleLogin}
+                            />
+                        )}
 
                         <TouchableOpacity
                             style={styles.signupFooter}
@@ -384,6 +418,11 @@ const styles = StyleSheet.create({
         fontSize: Typography.bodyLarge,
         fontWeight: 'bold',
         letterSpacing: 0.2,
+    },
+    appleButton: {
+        width: '100%',
+        height: verticalScale(50),
+        marginTop: verticalScale(14),
     }
 });
 

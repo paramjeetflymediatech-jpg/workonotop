@@ -10,34 +10,36 @@ import ProviderDashboard from '../screens/ProviderDashboard';
 import ServicesScreen from '../screens/ServicesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import MyBookingsScreen from '../screens/customer/MyBookingsScreen';
+import GuestPlaceholderScreen from '../screens/auth/GuestPlaceholderScreen';
 
 const Tab = createBottomTabNavigator();
 
 const BottomTabNavigator = () => {
     const { user } = useAuth();
+    const role = user?.role || 'customer';
 
     return (
         <Tab.Navigator
-            tabBar={(props) => <CustomTabBar {...props} role={user?.role} />}
+            tabBar={(props) => <CustomTabBar {...props} role={role} />}
             screenOptions={{
-                headerShown: false, // Changed: Let screens handle their own headers or use the drawer header
+                headerShown: false,
             }}
         >
             {/* Common first tab, but component changes by role */}
             <Tab.Screen
                 name="Dashboard"
                 component={
-                    user?.role === 'provider' ? ProviderDashboard :
+                    role === 'provider' ? ProviderDashboard :
                         CustomerDashboard
                 }
                 options={{
-                    title: user?.role === 'provider' ? 'Pro Dashboard' :
+                    title: role === 'provider' ? 'Pro Dashboard' :
                         'WorkOnTop'
                 }}
             />
 
             {/* Role-specific middle tab */}
-            {user?.role === 'provider' ? (
+            {role === 'provider' ? (
                 <Tab.Screen
                     name="Jobs"
                     component={ServicesScreen} // Placeholder for Provider Jobs
@@ -52,7 +54,12 @@ const BottomTabNavigator = () => {
                     />
                     <Tab.Screen
                         name="MyBookings"
-                        component={MyBookingsScreen}
+                        component={user ? MyBookingsScreen : GuestPlaceholderScreen}
+                        initialParams={!user ? {
+                            title: 'Your Bookings',
+                            description: 'Sign in to see your booking history and manage upcoming services.',
+                            icon: 'calendar-outline'
+                        } : undefined}
                         options={{ title: 'My Bookings' }}
                     />
                 </>
@@ -61,7 +68,12 @@ const BottomTabNavigator = () => {
             {/* Common last tab */}
             <Tab.Screen
                 name="Profile"
-                component={ProfileScreen}
+                component={user ? ProfileScreen : GuestPlaceholderScreen}
+                initialParams={!user ? {
+                    title: 'Your Profile',
+                    description: 'Sign in to update your profile, manage settings, and more.',
+                    icon: 'person-outline'
+                } : undefined}
                 options={{ title: 'Profile' }}
             />
         </Tab.Navigator>

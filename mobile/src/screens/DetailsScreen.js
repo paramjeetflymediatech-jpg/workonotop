@@ -48,7 +48,7 @@ const DetailsScreen = ({ navigation, route }) => {
     if (loading) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator size="large" color="#14b8a6" />
+                <ActivityIndicator size="large" color="#115e59" />
             </View>
         );
     }
@@ -151,7 +151,21 @@ const DetailsScreen = ({ navigation, route }) => {
                     <Text style={styles.secondaryButtonText}>Back</Text>
                 </TouchableOpacity>
                 {isService && data.is_active !== 0 && !route.params?.hideBooking && (
-                    <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('CreateBooking', { service: data })}>
+                    <TouchableOpacity 
+                        style={styles.primaryButton} 
+                        onPress={() => {
+                            if (!user) {
+                                // Guest tries to book -> Redirect to Auth
+                                navigation.navigate('AuthChoice', { 
+                                    initialState: 'login',
+                                    redirectTo: 'CreateBooking',
+                                    redirectParams: { service: data }
+                                });
+                            } else {
+                                navigation.navigate('CreateBooking', { service: data });
+                            }
+                        }}
+                    >
                         <Text style={styles.primaryButtonText}>Book Now</Text>
                     </TouchableOpacity>
                 )}

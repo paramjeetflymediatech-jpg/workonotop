@@ -15,6 +15,7 @@ function ProviderSignupFormContent() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [touched, setTouched] = useState({});
 
   useEffect(() => {
@@ -67,7 +68,9 @@ function ProviderSignupFormContent() {
       case 'firstName': return !value.trim() ? 'First name required' : value.length < 2 ? 'Too short' : '';
       case 'lastName': return !value.trim() ? 'Last name required' : '';
       case 'email': return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'Invalid email' : '';
-      case 'phone': return value.replace(/\D/g, '').length < 10 ? 'Invalid phone' : '';
+      case 'phone': 
+        if (!value) return '';
+        return value.replace(/\D/g, '').length < 10 ? 'Invalid phone' : '';
       case 'password': return value.length < 8 ? 'Min 8 characters' : !/[!@#$%^&*(),.?":{}|<>]/.test(value) ? 'Need special character' : '';
       case 'confirmPassword': return value !== formData.password ? 'Passwords match fail' : '';
       default: return '';
@@ -172,7 +175,7 @@ function ProviderSignupFormContent() {
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-bold text-gray-700 ml-1">Phone Number</label>
+          <label className="block text-sm font-bold text-gray-700 ml-1">Phone Number (Optional)</label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <Phone className="h-5 w-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
@@ -180,7 +183,7 @@ function ProviderSignupFormContent() {
             <input
               type="tel" name="phone" value={formData.phone} onChange={handleChange} onBlur={handleBlur}
               className={`w-full pl-12 pr-4 py-3.5 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-gray-50/50 hover:bg-white focus:bg-white transition-all font-medium ${errors.phone ? 'border-red-200' : 'border-gray-100'}`}
-              placeholder="+1 (555) 000-0000" required
+              placeholder="+1 (555) 000-0000"
             />
           </div>
         </div>
@@ -206,12 +209,18 @@ function ProviderSignupFormContent() {
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-bold text-gray-700 ml-1">Confirm</label>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} onBlur={handleBlur}
-              className={`w-full px-4 py-3.5 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-gray-50/50 hover:bg-white focus:bg-white transition-all font-medium ${errors.confirmPassword ? 'border-red-200' : 'border-gray-100'}`}
-              placeholder="••••••••" required
-            />
+            <div className="relative group">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} onBlur={handleBlur}
+                className={`w-full px-4 pr-10 py-3.5 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-gray-50/50 hover:bg-white focus:bg-white transition-all font-medium ${errors.confirmPassword ? 'border-red-200' : 'border-gray-100'}`}
+                placeholder="••••••••" required
+              />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400">
+                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
         </div>
 

@@ -171,12 +171,12 @@ export async function POST(request) {
     const body = await request.json();
     const { email, password, firstName, lastName, phone, source } = body;
 
-    if (!email || !password || !firstName || !lastName || !phone) {
+    if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
         { success: false, message: 'All fields are required' },
         { status: 400 }
       );
-    }
+    }   
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -195,15 +195,29 @@ export async function POST(request) {
     }
 
     // Check if email exists in service_providers table
-    const existingProvider = await execute(
-      'SELECT id FROM service_providers WHERE email = ? OR phone = ?',
-      [email, phone]
+    const existingEmail = await execute(
+      'SELECT id FROM service_providers WHERE email = ?',
+      [email]
     );
-    if (existingProvider.length > 0) {
+    if (existingEmail.length > 0) {
       return NextResponse.json(
-        { success: false, message: 'Email or phone already registered' },
+        { success: false, message: 'Email already registered' },
         { status: 400 }
       );
+    }
+
+    // Check if phone exists (only if provided)
+    if (phone) {
+      const existingPhone = await execute(
+        'SELECT id FROM service_providers WHERE phone = ?',
+        [phone]
+      );
+      if (existingPhone.length > 0) {
+        return NextResponse.json(
+          { success: false, message: 'Phone number already registered' },
+          { status: 400 }
+        );
+      }
     }
 
     // ✅ Check if email exists in users (customer) table
@@ -236,7 +250,7 @@ export async function POST(request) {
         fullName,
         email.toLowerCase().trim(),
         hashedPassword,
-        phone.trim(),
+        phone ? phone.trim() : null,
         verificationToken,
         tokenExpiry,
       ]

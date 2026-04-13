@@ -16,9 +16,16 @@ export async function GET(request) {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
     }
 
+    // Determine target table based on role
+    const isProvider = decoded.role === 'provider' || decoded.type === 'provider';
+    const tableName = isProvider ? 'service_providers' : 'users';
+    const userId = decoded.id;
+
+    console.log(`Fetching settings for ${isProvider ? 'provider' : 'user'} ID: ${userId}`);
+
     const results = await execute(
-      'SELECT push_notifications_enabled, booking_reminders_enabled, dark_mode_enabled, receive_offers FROM users WHERE id = ?',
-      [decoded.id]
+      `SELECT push_notifications_enabled, booking_reminders_enabled, dark_mode_enabled, receive_offers FROM ${tableName} WHERE id = ?`,
+      [userId]
     );
 
     if (results.length === 0) {
@@ -55,6 +62,11 @@ export async function PUT(request) {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
     }
 
+    // Determine target table based on role
+    const isProvider = decoded.role === 'provider' || decoded.type === 'provider';
+    const tableName = isProvider ? 'service_providers' : 'users';
+    const userId = decoded.id;
+
     const body = await request.json();
     const { push_notifications_enabled, booking_reminders_enabled, dark_mode_enabled, receive_offers } = body;
 
@@ -82,8 +94,8 @@ export async function PUT(request) {
       return NextResponse.json({ success: false, message: 'No fields to update' }, { status: 400 });
     }
 
-    queryParams.push(decoded.id);
-    await execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, queryParams);
+    queryParams.push(userId);
+    await execute(`UPDATE ${tableName} SET ${fields.join(', ')} WHERE id = ?`, queryParams);
 
     return NextResponse.json({ success: true, message: 'Settings updated successfully' });
 

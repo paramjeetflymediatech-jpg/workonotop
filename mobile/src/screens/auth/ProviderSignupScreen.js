@@ -18,8 +18,9 @@ import { Alert } from 'react-native';
 import PasswordInput from '../../components/PasswordInput';
 import SuccessModal from '../../components/SuccessModal';
 import ErrorModal from '../../components/ErrorModal';
-import { useAuth } from '../../context/AuthContext';
 import { ActivityIndicator } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { useAuth } from '../../context/AuthContext';
 
 const ProviderSignupScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
@@ -36,7 +37,8 @@ const ProviderSignupScreen = ({ navigation }) => {
     const [showError, setShowError] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
-    const { loginWithGoogle } = useAuth();
+    const [appleLoading, setAppleLoading] = useState(false);
+    const { loginWithGoogle, loginWithApple } = useAuth();
 
     const handleGoogleSignup = async () => {
         setGoogleLoading(true);
@@ -54,11 +56,27 @@ const ProviderSignupScreen = ({ navigation }) => {
         }
     };
 
+    const handleAppleSignup = async () => {
+        setAppleLoading(true);
+        try {
+            const result = await loginWithApple('provider');
+            if (!result.success) {
+                setError(result.message);
+                setShowError(true);
+            }
+        } catch (err) {
+            setError('Apple Signup failed');
+            setShowError(true);
+        } finally {
+            setAppleLoading(false);
+        }
+    };
+
     const handleSignup = async () => {
         const { firstName, lastName, email, phone, password, confirmPassword } = formData;
 
         // Basic presence check
-        if (!firstName || !lastName || !email || !phone || !password) {
+        if (!firstName || !lastName || !email || !password) {
             setError('Please fill in all fields');
             setShowError(true);
             return;
@@ -85,12 +103,14 @@ const ProviderSignupScreen = ({ navigation }) => {
             return;
         }
 
-        // Phone validation (10-15 digits)
-        const phoneRegex = /^\+?[\d\s-]{10,15}$/;
-        if (!phoneRegex.test(phone.trim())) {
-            setError('Phone number must be between 10 and 15 digits.');
-            setShowError(true);
-            return;
+        // Phone validation (10-15 digits) - only if provided
+        if (phone.trim()) {
+            const phoneRegex = /^\+?[\d\s-]{10,15}$/;
+            if (!phoneRegex.test(phone.trim())) {
+                setError('Phone number must be between 10 and 15 digits.');
+                setShowError(true);
+                return;
+            }
         }
 
         // Password validation (min 8 chars, alphabets + special chars)
@@ -115,7 +135,7 @@ const ProviderSignupScreen = ({ navigation }) => {
                 firstName: firstName.trim(),
                 lastName: lastName.trim(),
                 email: email.toLowerCase().trim(),
-                phone: phone.trim(),
+                phone: phone.trim() || null,
                 password,
                 source: 'mobile'
             });
@@ -207,7 +227,7 @@ const ProviderSignupScreen = ({ navigation }) => {
                         </View>
 
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Phone Number</Text>
+                            <Text style={styles.label}>Phone Number (Optional)</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="+1 (555) 000-0000"
@@ -273,6 +293,16 @@ const ProviderSignupScreen = ({ navigation }) => {
                                 </View>
                             )}
                         </TouchableOpacity>
+
+                        {Platform.OS === 'ios' && (
+                            <AppleAuthentication.AppleAuthenticationButton
+                                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+                                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                                cornerRadius={moderateScale(15)}
+                                style={styles.appleButton}
+                                onPress={handleAppleSignup}
+                            />
+                        )}
 
                         <TouchableOpacity style={styles.footer} onPress={() => navigation.navigate('Login', { type: 'pro' })}>
                             <Text style={styles.footerText}>
@@ -463,6 +493,11 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(16),
         fontWeight: 'bold',
         letterSpacing: 0.2,
+    },
+    appleButton: {
+        width: '100%',
+        height: verticalScale(50),
+        marginTop: verticalScale(14),
     }
 });
 
