@@ -15,7 +15,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nhaman.workontap",
-      "buildReactNativeFromSource": true,
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
