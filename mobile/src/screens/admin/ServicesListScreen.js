@@ -1,23 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    SafeAreaView,
-    TouchableOpacity,
-    FlatList,
-    ActivityIndicator,
-    RefreshControl,
-    StatusBar,
-    TextInput,
-    Modal,
-    ScrollView,
-    Switch,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Image
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, StatusBar, TextInput, Modal, ScrollView, Switch, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';

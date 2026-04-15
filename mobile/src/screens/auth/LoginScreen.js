@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, CommonActions } from '@react-navigation/native';
 import { apiService } from '../../services/api';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
 import Typography from '../../theme/Typography';
@@ -66,9 +66,26 @@ const LoginScreen = ({ navigation }) => {
 
                 // Handle Redirect if guest was trying to book
                 const { redirectTo, redirectParams } = route.params || {};
+                
                 if (redirectTo) {
-                    console.log(`🚀 [Login] Redirecting to ${redirectTo}`);
-                    navigation.navigate(redirectTo, redirectParams);
+                    console.log(`🚀 [Login] Hard redirecting to ${redirectTo}`);
+                    navigation.dispatch(
+                        CommonActions.reset({
+                            index: 1,
+                            routes: [
+                                { name: 'Main' },
+                                { name: redirectTo, params: redirectParams }
+                            ],
+                        })
+                    );
+                } else {
+                    console.log('🚀 [Login] Resetting to Customer Dashboard');
+                    navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [{ name: 'Main' }],
+                        })
+                    );
                 }
             } else {
                 showPremiumAlert(response.message || 'Invalid credentials');
@@ -94,7 +111,15 @@ const LoginScreen = ({ navigation }) => {
             // Role detection: if 'type' is 'pro' from route params, use provider role
             const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
             const result = await loginWithGoogle(role, 'login');
-            if (!result.success) {
+            if (result.success) {
+                console.log('🚀 [GoogleAuth] Resetting to Dashboard');
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'Main' }],
+                    })
+                );
+            } else {
                 showPremiumAlert(result.message);
             }
         } catch (err) {
@@ -109,7 +134,15 @@ const LoginScreen = ({ navigation }) => {
         try {
             const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
             const result = await loginWithApple(role);
-            if (!result.success) {
+            if (result.success) {
+                console.log('🚀 [AppleAuth] Resetting to Dashboard');
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'Main' }],
+                    })
+                );
+            } else {
                 showPremiumAlert(result.message);
             }
         } catch (err) {

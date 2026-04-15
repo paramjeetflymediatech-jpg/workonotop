@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, SafeAreaView, ActivityIndicator, Switch, Alert, Platform, KeyboardAvoidingView, Image, RefreshControl
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Switch, Alert, Platform, KeyboardAvoidingView, Image, RefreshControl } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { apiService } from '../../services/api';
 
 const UpdateProfileScreen = ({ navigation }) => {

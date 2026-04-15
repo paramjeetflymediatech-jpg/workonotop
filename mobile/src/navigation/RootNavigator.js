@@ -462,15 +462,14 @@ const RootNavigator = () => {
 
     useEffect(() => {
         if (user) {
-            console.log('🛡️ [RootNavigator] user changed:', {
+            console.log('🛡️ [RootNavigator] Session Active:', {
+                id: user.id || 'no-id',
                 role: user.role,
                 status: user.status,
-                email_verified: user.email_verified,
-                onboarding_completed: user.onboarding_completed,
-                onboarding_step: user.onboarding_step,
-                documents_uploaded: user.documents_uploaded,
-                stripe_onboarding_complete: user.stripe_onboarding_complete,
+                onboarding: user.onboarding_completed,
             });
+        } else {
+            console.log('🛡️ [RootNavigator] Guest Mode');
         }
     }, [user]);
 
@@ -485,7 +484,11 @@ const RootNavigator = () => {
     // ── Admin ────────────────────────────────────────────────────────────────
     if (user?.role === 'admin') {
         return (
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Navigator 
+                key={`admin-${user.id || 'primary'}`}
+                initialRouteName="Main"
+                screenOptions={{ headerShown: false }}
+            >
                 <Stack.Screen name="Main"               component={AdminDrawerNavigator} />
                 <Stack.Screen name="AdminJobDetails"    component={AdminJobDetailsScreen} />
                 <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
@@ -587,9 +590,12 @@ const RootNavigator = () => {
     }
 
     // ── Customer / Guest ─────────────────────────────────────────────────────
-    // If no user OR role is customer, we show the main browseable app.
+    const stackKey = user ? `auth-customer-${user.id}` : 'guest';
+    console.log(`🛡️ [RootNavigator] Mounting stack with key: ${stackKey}`);
+
     return (
         <Stack.Navigator
+            key={stackKey}
             initialRouteName="Main"
             screenOptions={{
                 headerStyle: { backgroundColor: '#115e59' },

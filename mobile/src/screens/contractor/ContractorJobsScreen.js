@@ -1,14 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    SafeAreaView, ActivityIndicator, RefreshControl, Alert, StatusBar,
-    Platform, Dimensions
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Alert, StatusBar, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerActions } from '@react-navigation/native';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
 import Typography from '../../theme/Typography';
 

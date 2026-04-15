@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, SafeAreaView, Alert, Image, ActivityIndicator,
-    Platform, Modal
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image, ActivityIndicator, Platform, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../config';

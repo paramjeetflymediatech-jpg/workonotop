@@ -1,18 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    FlatList,
-    SafeAreaView,
-    StatusBar,
-    ActivityIndicator,
-    RefreshControl,
-    Modal,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, StatusBar, ActivityIndicator, RefreshControl, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../utils/api';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';

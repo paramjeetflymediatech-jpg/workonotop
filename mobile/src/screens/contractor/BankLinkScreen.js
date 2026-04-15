@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity,
-    SafeAreaView, ActivityIndicator, Alert
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';

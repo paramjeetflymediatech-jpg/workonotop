@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, SafeAreaView, Alert, ActivityIndicator,
-    Platform, Dimensions
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, verticalScale, scale } from '../../utils/responsive';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';

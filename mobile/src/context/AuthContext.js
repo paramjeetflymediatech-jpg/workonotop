@@ -18,11 +18,25 @@ export const AuthProvider = ({ children }) => {
 
     // Configure Google Sign-In on mount
     useEffect(() => {
-        GoogleSignin.configure({
-            webClientId: '221840398936-4e0923mpq8viaoljni102if07j5cj0bq.apps.googleusercontent.com',
-            iosClientId: '221840398936-4e0923mpq8viaoljni102if07j5cj0bq.apps.googleusercontent.com', // Fix for iOS "failed to determine clientID"
-            offlineAccess: true,
-        });
+        const configureGoogle = async () => {
+            try {
+                // Only configure if not in Expo Go and native module exists
+                if (!isExpoGo) {
+                    await GoogleSignin.configure({
+                        webClientId: '221840398936-4e0923mpq8viaoljni102if07j5cj0bq.apps.googleusercontent.com',
+                        iosClientId: '221840398936-4e0923mpq8viaoljni102if07j5cj0bq.apps.googleusercontent.com',
+                        offlineAccess: true,
+                    });
+                    console.log('✅ [AuthContext] Google Sign-In configured');
+                } else {
+                    console.warn('⚠️ [AuthContext] Google Sign-In skipped: Not supported in Expo Go. Use a Development Build.');
+                }
+            } catch (err) {
+                console.error('❌ [AuthContext] Google Sign-In configuration failed:', err.message);
+            }
+        };
+
+        configureGoogle();
     }, []);
 
     useEffect(() => {
@@ -238,6 +252,15 @@ export const AuthProvider = ({ children }) => {
     const loginWithGoogle = useCallback(async (role = 'customer', type = 'login') => {
         try {
             console.log('🏁 [GoogleAuth] Starting sign-in process...', { role, type });
+
+            // Safety Check: Google Sign-In requires native modules not available in Expo Go
+            if (isExpoGo) {
+                console.error('❌ [GoogleAuth] Method called in Expo Go');
+                return { 
+                    success: false, 
+                    message: 'Google Login is not supported in Expo Go. Please use a Development Build or sign in with email.' 
+                };
+            }
             
             await GoogleSignin.hasPlayServices();
             

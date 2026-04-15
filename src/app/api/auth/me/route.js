@@ -14,18 +14,23 @@ export async function GET(request) {
     // 1. Try Mobile Session
     let decoded = await getMobileSession(request);
     
-    // 2. Try Web Sessions
+    // 2. Try Bearer token (mobile) first, then web session cookies
     if (!decoded) {
-      let token = request.cookies.get('user_token')?.value || 
-                  request.cookies.get('provider_token')?.value ||
-                  request.cookies.get('adminAuth')?.value;
-      
-      // Support Bearer token for mobile
+      let token = null;
+
+      // Bearer header takes priority (mobile app always sends this)
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
+
+      // Fall back to web session cookies
+      // NOTE: login route sets 'customer_token' (not 'user_token')
       if (!token) {
-        const authHeader = request.headers.get('authorization');
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-          token = authHeader.split(' ')[1];
-        }
+        token = request.cookies.get('customer_token')?.value ||
+                request.cookies.get('user_token')?.value ||
+                request.cookies.get('provider_token')?.value ||
+                request.cookies.get('adminAuth')?.value;
       }
 
       if (token) {

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, SafeAreaView, ActivityIndicator, Alert, Platform, KeyboardAvoidingView, Image, RefreshControl
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Platform, KeyboardAvoidingView, Image, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';

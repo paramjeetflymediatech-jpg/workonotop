@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, SafeAreaView, Alert, ActivityIndicator
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../utils/api';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';

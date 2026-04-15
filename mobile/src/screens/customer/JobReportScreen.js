@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    SafeAreaView, ActivityIndicator, Alert, Image
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../utils/api';
 import { moderateScale, verticalScale } from '../../utils/responsive';
 

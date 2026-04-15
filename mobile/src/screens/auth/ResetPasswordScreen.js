@@ -1,17 +1,6 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ActivityIndicator,
-    SafeAreaView,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Alert,
-    Image
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Alert, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from '../../utils/responsive';
 import { api } from '../../utils/api';
 import PasswordInput from '../../components/PasswordInput';
