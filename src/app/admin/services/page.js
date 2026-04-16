@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminTheme } from '../layout'
-
+import * as icons from 'ionicons/icons'
 export default function Services() {
   const router = useRouter()
   const { isDarkMode } = useAdminTheme()
@@ -38,23 +38,23 @@ export default function Services() {
 
 
 
-useEffect(() => {
-  checkAuth()
-}, [])
+  useEffect(() => {
+    checkAuth()
+  }, [])
 
-const checkAuth = async () => {
-  try {
-    const res = await fetch('/api/admin/me')
-    if (!res.ok) {
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/admin/me')
+      if (!res.ok) {
+        router.push('/admin/login')
+        return
+      }
+      loadServices()   // ✅ auth pass hone ke baad
+      loadCategories()
+    } catch {
       router.push('/admin/login')
-      return
     }
-    loadServices()   // ✅ auth pass hone ke baad
-    loadCategories()
-  } catch {
-    router.push('/admin/login')
   }
-}
 
 
 
@@ -95,8 +95,8 @@ const checkAuth = async () => {
       const res = await fetch('/api/upload', { method: 'POST', body: formData })
       const data = await res.json()
       if (data.success) {
-        if (!isEdit) setNewService(prev => ({...prev, image_url: data.url}))
-        else setSelectedService(prev => ({...prev, image_url: data.url}))
+        if (!isEdit) setNewService(prev => ({ ...prev, image_url: data.url }))
+        else setSelectedService(prev => ({ ...prev, image_url: data.url }))
       } else {
         alert('Upload failed: ' + data.message)
       }
@@ -105,6 +105,16 @@ const checkAuth = async () => {
     } finally {
       setUploading(false)
     }
+  }
+
+
+  const toCamelCase = (str) =>
+    str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+
+  function Icon({ name }) {
+    const iconKey = toCamelCase(name)
+    const icon = icons[iconKey] || icons.helpCircleOutline
+    return <ion-icon icon={icon}></ion-icon>
   }
 
   const addService = async (e) => {
@@ -259,6 +269,7 @@ const checkAuth = async () => {
       {/* Services Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {currentServices.length > 0 ? currentServices.map((service) => (
+
           <div
             key={service.id}
             className={`rounded-xl shadow-lg border overflow-hidden transition-opacity ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} ${!isActive(service) ? 'opacity-60' : ''}`}
@@ -271,7 +282,7 @@ const checkAuth = async () => {
                     <img src={service.image_url} alt={service.name} className="w-12 h-12 rounded-lg object-cover" />
                   ) : (
                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl ${isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}`}>
-                      {service.category_icon || '🔧'}
+                      {service.category_icon ? <Icon name={service.category_icon} /> : '🔧'}
                     </div>
                   )}
                   <div>
@@ -318,11 +329,10 @@ const checkAuth = async () => {
                 </button>
                 <button
                   onClick={() => toggleServiceStatus(service)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive(service)
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive(service)
                       ? isDarkMode ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                       : isDarkMode ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-green-100 text-green-700 hover:bg-green-200'
-                  }`}
+                    }`}
                 >
                   {isActive(service) ? 'Deactivate' : 'Activate'}
                 </button>
@@ -402,7 +412,7 @@ const checkAuth = async () => {
               <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                 <div>
                   <label className={labelClass}>Category *</label>
-                  <select required value={newService.category_id} onChange={(e) => setNewService({...newService, category_id: e.target.value})} className={inputClass}>
+                  <select required value={newService.category_id} onChange={(e) => setNewService({ ...newService, category_id: e.target.value })} className={inputClass}>
                     <option value="">Select a category</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
@@ -410,34 +420,34 @@ const checkAuth = async () => {
                 <div>
                   <label className={labelClass}>Service Name *</label>
                   <input type="text" required value={newService.name}
-                    onChange={(e) => setNewService({...newService, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
+                    onChange={(e) => setNewService({ ...newService, name: e.target.value, slug: e.target.value.toLowerCase().trim().replace(/[\/]/g, '').replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-') })}
                     className={inputClass} placeholder="e.g., Appliance Installation" />
                 </div>
                 <div>
                   <label className={labelClass}>Slug *</label>
-                  <input type="text" required value={newService.slug} onChange={(e) => setNewService({...newService, slug: e.target.value})} className={inputClass} placeholder="e.g., appliance-installation" />
+                  <input type="text" required value={newService.slug} onChange={(e) => setNewService({ ...newService, slug: e.target.value })} className={inputClass} placeholder="e.g., appliance-installation" />
                 </div>
                 <div>
                   <label className={labelClass}>Short Description</label>
-                  <input type="text" value={newService.short_description} onChange={(e) => setNewService({...newService, short_description: e.target.value})} className={inputClass} placeholder="Brief description" maxLength="500" />
+                  <input type="text" value={newService.short_description} onChange={(e) => setNewService({ ...newService, short_description: e.target.value })} className={inputClass} placeholder="Brief description" maxLength="500" />
                 </div>
                 <div>
                   <label className={labelClass}>Full Description</label>
-                  <textarea rows="4" value={newService.description} onChange={(e) => setNewService({...newService, description: e.target.value})} className={inputClass} placeholder="Detailed description..." />
+                  <textarea rows="4" value={newService.description} onChange={(e) => setNewService({ ...newService, description: e.target.value })} className={inputClass} placeholder="Detailed description..." />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Base Price ($) *</label>
-                    <input type="number" required step="0.01" min="0" value={newService.base_price} onChange={(e) => setNewService({...newService, base_price: e.target.value})} className={inputClass} placeholder="0.00" />
+                    <input type="number" required step="0.01" min="0" value={newService.base_price} onChange={(e) => setNewService({ ...newService, base_price: e.target.value })} className={inputClass} placeholder="0.00" />
                   </div>
                   <div>
                     <label className={labelClass}>Additional Price ($)</label>
-                    <input type="number" step="0.01" min="0" value={newService.additional_price} onChange={(e) => setNewService({...newService, additional_price: e.target.value})} className={inputClass} placeholder="0.00" />
+                    <input type="number" step="0.01" min="0" value={newService.additional_price} onChange={(e) => setNewService({ ...newService, additional_price: e.target.value })} className={inputClass} placeholder="0.00" />
                   </div>
                 </div>
                 <div>
                   <label className={labelClass}>Duration (minutes)</label>
-                  <input type="number" min="0" value={newService.duration_minutes} onChange={(e) => setNewService({...newService, duration_minutes: e.target.value})} className={inputClass} placeholder="e.g., 120" />
+                  <input type="number" min="0" value={newService.duration_minutes} onChange={(e) => setNewService({ ...newService, duration_minutes: e.target.value })} className={inputClass} placeholder="e.g., 120" />
                 </div>
                 <div>
                   <label className={labelClass}>Service Image</label>
@@ -452,14 +462,14 @@ const checkAuth = async () => {
                 <div className="grid grid-cols-3 gap-4">
                   {[['is_homepage', 'Homepage'], ['is_trending', 'Trending'], ['is_popular', 'Popular']].map(([key, label]) => (
                     <div key={key} className="flex items-center gap-2">
-                      <input type="checkbox" id={`${key}_add`} checked={newService[key] || false} onChange={(e) => setNewService({...newService, [key]: e.target.checked})} className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500" />
+                      <input type="checkbox" id={`${key}_add`} checked={newService[key] || false} onChange={(e) => setNewService({ ...newService, [key]: e.target.checked })} className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500" />
                       <label htmlFor={`${key}_add`} className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>{label}</label>
                     </div>
                   ))}
                 </div>
                 <div>
                   <label className={labelClass}>Customers use this service for</label>
-                  <textarea rows="3" value={newService.use_cases || ''} onChange={(e) => setNewService({...newService, use_cases: e.target.value})} className={inputClass} placeholder="Dishwasher Repair, Washer Repair, Dryer Repair..." />
+                  <textarea rows="3" value={newService.use_cases || ''} onChange={(e) => setNewService({ ...newService, use_cases: e.target.value })} className={inputClass} placeholder="Dishwasher Repair, Washer Repair, Dryer Repair..." />
                   <p className="text-xs text-gray-500 mt-1">Separate with commas.</p>
                 </div>
               </div>
@@ -489,40 +499,40 @@ const checkAuth = async () => {
               <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                 <div>
                   <label className={labelClass}>Category *</label>
-                  <select required value={selectedService.category_id} onChange={(e) => setSelectedService({...selectedService, category_id: parseInt(e.target.value)})} className={inputClass}>
+                  <select required value={selectedService.category_id} onChange={(e) => setSelectedService({ ...selectedService, category_id: parseInt(e.target.value) })} className={inputClass}>
                     <option value="">Select a category</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className={labelClass}>Service Name *</label>
-                  <input type="text" required value={selectedService.name} onChange={(e) => setSelectedService({...selectedService, name: e.target.value})} className={inputClass} />
+                  <input type="text" required value={selectedService.name} onChange={(e) => setSelectedService({ ...selectedService, name: e.target.value, slug: e.target.value.toLowerCase().trim().replace(/[\/]/g, '').replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-') })} className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Slug *</label>
-                  <input type="text" required value={selectedService.slug} onChange={(e) => setSelectedService({...selectedService, slug: e.target.value})} className={inputClass} />
+                  <input type="text" required value={selectedService.slug} onChange={(e) => setSelectedService({ ...selectedService, slug: e.target.value })} className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Short Description</label>
-                  <input type="text" value={selectedService.short_description || ''} onChange={(e) => setSelectedService({...selectedService, short_description: e.target.value})} className={inputClass} maxLength="500" />
+                  <input type="text" value={selectedService.short_description || ''} onChange={(e) => setSelectedService({ ...selectedService, short_description: e.target.value })} className={inputClass} maxLength="500" />
                 </div>
                 <div>
                   <label className={labelClass}>Full Description</label>
-                  <textarea rows="4" value={selectedService.description || ''} onChange={(e) => setSelectedService({...selectedService, description: e.target.value})} className={inputClass} />
+                  <textarea rows="4" value={selectedService.description || ''} onChange={(e) => setSelectedService({ ...selectedService, description: e.target.value })} className={inputClass} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Base Price ($) *</label>
-                    <input type="number" required step="0.01" min="0" value={selectedService.base_price} onChange={(e) => setSelectedService({...selectedService, base_price: e.target.value})} className={inputClass} />
+                    <input type="number" required step="0.01" min="0" value={selectedService.base_price} onChange={(e) => setSelectedService({ ...selectedService, base_price: e.target.value })} className={inputClass} />
                   </div>
                   <div>
                     <label className={labelClass}>Additional Price ($)</label>
-                    <input type="number" step="0.01" min="0" value={selectedService.additional_price || ''} onChange={(e) => setSelectedService({...selectedService, additional_price: e.target.value})} className={inputClass} />
+                    <input type="number" step="0.01" min="0" value={selectedService.additional_price || ''} onChange={(e) => setSelectedService({ ...selectedService, additional_price: e.target.value })} className={inputClass} />
                   </div>
                 </div>
                 <div>
                   <label className={labelClass}>Duration (minutes)</label>
-                  <input type="number" min="0" value={selectedService.duration_minutes || ''} onChange={(e) => setSelectedService({...selectedService, duration_minutes: e.target.value})} className={inputClass} />
+                  <input type="number" min="0" value={selectedService.duration_minutes || ''} onChange={(e) => setSelectedService({ ...selectedService, duration_minutes: e.target.value })} className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Service Image</label>
@@ -539,18 +549,18 @@ const checkAuth = async () => {
                 <div className="grid grid-cols-3 gap-4">
                   {[['is_homepage', 'Homepage'], ['is_trending', 'Trending'], ['is_popular', 'Popular']].map(([key, label]) => (
                     <div key={key} className="flex items-center gap-2">
-                      <input type="checkbox" id={`${key}_edit`} checked={selectedService[key] === 1 || selectedService[key] === true || false} onChange={(e) => setSelectedService({...selectedService, [key]: e.target.checked})} className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500" />
+                      <input type="checkbox" id={`${key}_edit`} checked={selectedService[key] === 1 || selectedService[key] === true || false} onChange={(e) => setSelectedService({ ...selectedService, [key]: e.target.checked })} className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500" />
                       <label htmlFor={`${key}_edit`} className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>{label}</label>
                     </div>
                   ))}
                 </div>
                 <div>
                   <label className={labelClass}>Customers use this service for</label>
-                  <textarea rows="3" value={selectedService.use_cases || ''} onChange={(e) => setSelectedService({...selectedService, use_cases: e.target.value})} className={inputClass} placeholder="Dishwasher Repair, Washer Repair, Dryer Repair..." />
+                  <textarea rows="3" value={selectedService.use_cases || ''} onChange={(e) => setSelectedService({ ...selectedService, use_cases: e.target.value })} className={inputClass} placeholder="Dishwasher Repair, Washer Repair, Dryer Repair..." />
                   <p className="text-xs text-gray-500 mt-1">Separate with commas.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="checkbox" id="is_active_edit" checked={isActive(selectedService)} onChange={(e) => setSelectedService({...selectedService, is_active: e.target.checked ? 1 : 0})} className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500" />
+                  <input type="checkbox" id="is_active_edit" checked={isActive(selectedService)} onChange={(e) => setSelectedService({ ...selectedService, is_active: e.target.checked ? 1 : 0 })} className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500" />
                   <label htmlFor="is_active_edit" className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>Active (visible to customers)</label>
                 </div>
               </div>
