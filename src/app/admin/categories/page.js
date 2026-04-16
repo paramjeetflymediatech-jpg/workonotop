@@ -318,9 +318,18 @@ export default function Categories() {
             <form onSubmit={addCategory}>
               <div className="p-6 space-y-4">
                 {[
-                  { label: 'Category Name *', key: 'name', type: 'text', required: true, placeholder: 'e.g., Cleaning', extra: (val) => ({ slug: val.toLowerCase().replace(/\s+/g, '-') }) },
+                  {
+                    label: 'Category Name *', key: 'name', type: 'text', required: true, placeholder: 'e.g., Cleaning', extra: (val) => ({
+                      slug: val
+                        .toLowerCase()
+                        .trim()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-')
+                    })
+                  },
                   { label: 'Slug *', key: 'slug', type: 'text', required: true, placeholder: 'e.g., cleaning' },
-                   { label: 'Icon (Emoji or Ionicon)', key: 'icon', type: 'text', placeholder: 'e.g., 🧹 or brush-outline' },
+                  { label: 'Icon (Emoji or Ionicon)', key: 'icon', type: 'text', placeholder: 'e.g., 🧹 or brush-outline' },
                 ].map(({ label, key, type, required, placeholder, extra }) => (
                   <div key={key}>
                     <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>{label}</label>
@@ -377,14 +386,23 @@ export default function Categories() {
             <form onSubmit={updateCategory}>
               <div className="p-6 space-y-4">
                 {[
-                  { label: 'Category Name *', key: 'name', type: 'text', required: true },
+                  {
+                    label: 'Category Name *', key: 'name', type: 'text', required: true, extra: (val) => ({
+                      slug: val
+                        .toLowerCase()
+                        .trim()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-')
+                    })
+                  },
                   { label: 'Slug *', key: 'slug', type: 'text', required: true },
-                   { label: 'Icon (Emoji or Ionicon)', key: 'icon', type: 'text' },
-                ].map(({ label, key, type, required }) => (
+                  { label: 'Icon (Emoji or Ionicon)', key: 'icon', type: 'text' },
+                ].map(({ label, key, type, required, extra }) => (
                   <div key={key}>
                     <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-700'}`}>{label}</label>
                     <input type={type} required={required} value={selectedCategory[key] || ''}
-                      onChange={(e) => setSelectedCategory({ ...selectedCategory, [key]: e.target.value })}
+                      onChange={(e) => setSelectedCategory({ ...selectedCategory, [key]: e.target.value, ...(extra ? extra(e.target.value) : {}) })}
                       className={`w-full px-4 py-2 rounded-lg border ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-teal-500`}
                     />
                   </div>
