@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import * as icons from 'ionicons/icons'
+import Icon from '@/components/Icon';
 
 export default function ServiceDetailPage({ params }) {
   const unwrappedParams = use(params);
@@ -17,16 +17,6 @@ export default function ServiceDetailPage({ params }) {
   const [service, setService] = useState(null);
   const [relatedServices, setRelatedServices] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const toCamelCase = (str) =>
-    str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
-
-  function Icon({ name }) {
-    const iconKey = toCamelCase(name)
-    const icon = icons[iconKey] || icons.helpCircleOutline
-    return <ion-icon icon={icon}></ion-icon>
-  }
-
 
   useEffect(() => {
     if (serviceId) {

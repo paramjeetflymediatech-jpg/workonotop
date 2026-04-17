@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminTheme } from '../layout'
-import * as icons from 'ionicons/icons'
+import Icon from '@/components/Icon';
 export default function Services() {
   const router = useRouter()
   const { isDarkMode } = useAdminTheme()
@@ -25,19 +25,6 @@ export default function Services() {
     use_cases: '', is_homepage: false, is_trending: false, is_popular: false, is_active: true
   })
 
-  // useEffect(() => {
-  //   checkAuth()
-  //   loadServices()
-  //   loadCategories()
-  // }, [])
-
-  // const checkAuth = () => {
-  //   const auth = localStorage.getItem('adminAuth')
-  //   if (!auth) router.push('/')
-  // }
-
-
-
   useEffect(() => {
     checkAuth()
   }, [])
@@ -55,9 +42,6 @@ export default function Services() {
       router.push('/admin/login')
     }
   }
-
-
-
 
   const loadServices = async () => {
     setLoading(true)
@@ -106,17 +90,6 @@ export default function Services() {
       setUploading(false)
     }
   }
-
-
-  const toCamelCase = (str) =>
-    str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
-
-  function Icon({ name }) {
-    const iconKey = toCamelCase(name)
-    const icon = icons[iconKey] || icons.helpCircleOutline
-    return <ion-icon icon={icon}></ion-icon>
-  }
-
   const addService = async (e) => {
     e.preventDefault()
     try {

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useAuth } from 'src/context/AuthContext';
-
+import Icon from '@/components/Icon';
 export default function HomePage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -28,7 +28,7 @@ export default function HomePage() {
   const [homepageServices, setHomepageServices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  
   const services = [
     'fridge not cooling', 'leaky faucet', 'electrical outlet not working',
     'washer repair', 'dryer vent cleaning', 'ceiling fan installation',
@@ -442,7 +442,7 @@ export default function HomePage() {
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                        <span className="text-6xl font-bold text-white">{service.name.charAt(0)}</span>
+                        <span className="text-6xl font-bold text-white"><Icon name={service.icon} /></span>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
