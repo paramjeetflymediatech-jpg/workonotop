@@ -1,21 +1,14 @@
-
-
-
-
-
-
 'use client';
-
 import Link from 'next/link';
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import * as icons from 'ionicons/icons'
 
 export default function ServiceDetailPage({ params }) {
   const unwrappedParams = use(params);
   const serviceId = unwrappedParams.serviceId;
-  
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState('123 8 Avenue Southwest, Suite 504, Calgary AB');
@@ -25,11 +18,21 @@ export default function ServiceDetailPage({ params }) {
   const [relatedServices, setRelatedServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const toCamelCase = (str) =>
+    str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+
+  function Icon({ name }) {
+    const iconKey = toCamelCase(name)
+    const icon = icons[iconKey] || icons.helpCircleOutline
+    return <ion-icon icon={icon}></ion-icon>
+  }
+
+
   useEffect(() => {
     if (serviceId) {
       fetchServiceData();
     }
-    
+
     const savedAddress = sessionStorage.getItem('userAddress');
     if (savedAddress) {
       setSelectedAddress(savedAddress);
@@ -42,10 +45,10 @@ export default function ServiceDetailPage({ params }) {
     try {
       const serviceRes = await fetch(`/api/services?slug=${serviceId}`);
       const serviceData = await serviceRes.json();
-      
+
       if (serviceData.success && serviceData.data) {
         setService(serviceData.data);
-        
+
         if (serviceData.data.category_id) {
           const relatedRes = await fetch(`/api/services?category_id=${serviceData.data.category_id}`);
           const relatedData = await relatedRes.json();
@@ -76,7 +79,7 @@ export default function ServiceDetailPage({ params }) {
     setAddressModalOpen(false);
   };
 
-  const useCases = service?.use_cases 
+  const useCases = service?.use_cases
     ? service.use_cases.split(',').map(item => item.trim()).filter(item => item)
     : [];
 
@@ -108,8 +111,8 @@ export default function ServiceDetailPage({ params }) {
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
-     <Header/>
-      
+      <Header />
+
       <div className="bg-gray-50 border-b border-gray-200 py-3">
         <div className="container mx-auto px-6 max-w-7xl">
           <div className="flex items-center text-sm text-gray-600">
@@ -124,19 +127,19 @@ export default function ServiceDetailPage({ params }) {
 
       <div className="container mx-auto px-6 max-w-7xl py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-          
+
           <div className="lg:col-span-2">
             <div className="mb-6 md:mb-8 rounded-2xl overflow-hidden shadow-lg border border-slate-100">
               <div className="h-56 sm:h-64 md:h-72 flex items-center justify-center relative bg-gradient-to-br from-[#16A34A]/5 to-[#16A34A]/10">
                 {service.image_url ? (
-                  <img 
-                    src={service.image_url} 
+                  <img
+                    src={service.image_url}
                     alt={service.name}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <span className="text-8xl sm:text-9xl md:text-[10rem] drop-shadow-xl">
-                    {service.category_icon || '🔧'}
+                    {service.category_icon ? <Icon name={service.category_icon}></Icon> : <Icon name="wrench"></Icon>}
                   </span>
                 )}
                 <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium text-gray-700 shadow-md border border-gray-200">
@@ -181,7 +184,7 @@ export default function ServiceDetailPage({ params }) {
                   ))}
                 </div>
 
-              
+
               </div>
             )}
 
@@ -221,7 +224,7 @@ export default function ServiceDetailPage({ params }) {
                 <div className="flex-1 text-center sm:text-left">
                   <h3 className="text-2xl font-bold mb-2">Homeowner Protection Promise</h3>
                   <p className="text-white/90 mb-4">
-                    Every WorkOnTap pro is licensed, background-checked, and well-rated. 
+                    Every WorkOnTap pro is licensed, background-checked, and well-rated.
                     If your experience isn&apos;t perfect, we&apos;ll make it right — 100% guaranteed.
                   </p>
                   <Link href="/guarantee" className="inline-flex items-center bg-white text-[#16A34A] px-6 py-3 rounded-full font-semibold hover:bg-green-50 transition shadow-lg">
@@ -245,17 +248,17 @@ export default function ServiceDetailPage({ params }) {
                   </h3>
                   <p className="text-white/80 text-sm mt-1">Get a confirmed pro in minutes</p>
                 </div>
-                
+
                 <div className="p-6">
                   <div className="mb-6">
                     <p className="text-sm text-gray-600 mb-2 flex items-center">
-                      <span className="text-[#16A34A] mr-1">✓</span> 
+                      <span className="text-[#16A34A] mr-1">✓</span>
                       Transparent, upfront pricing
                       <Link href="/pricing" className="text-[#16A34A] underline ml-1 text-xs font-medium">
                         Learn more
                       </Link>
                     </p>
-                    
+
                     <div className="bg-[#16A34A]/5 rounded-xl p-5 border-2 border-[#16A34A]/10">
                       <div className="text-center">
                         <div className="text-sm uppercase tracking-wider text-gray-600 mb-1">Starting at</div>
@@ -299,7 +302,7 @@ export default function ServiceDetailPage({ params }) {
                       </svg>
                       Where do you need service?
                     </label>
-                    <div 
+                    <div
                       className="flex items-center p-3 border-2 border-gray-200 rounded-xl hover:border-[#16A34A] transition cursor-pointer bg-white"
                       onClick={() => setAddressModalOpen(true)}
                     >
@@ -338,8 +341,8 @@ export default function ServiceDetailPage({ params }) {
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Enter your address</h3>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Street address</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
                 value={tempAddress}
                 onChange={(e) => setTempAddress(e.target.value)}
@@ -347,13 +350,13 @@ export default function ServiceDetailPage({ params }) {
               />
             </div>
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={handleAddressSave}
                 className="flex-1 bg-green-700 text-white py-3 rounded-xl font-semibold hover:bg-green-800 transition"
               >
                 Save address
               </button>
-              <button 
+              <button
                 onClick={() => {
                   setAddressModalOpen(false);
                   setTempAddress(selectedAddress);
@@ -375,7 +378,7 @@ export default function ServiceDetailPage({ params }) {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedServices.map((item) => (
-                <Link 
+                <Link
                   key={item.id}
                   href={`/services/${item.slug}`}
                   className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:shadow-[#16A34A]/5 transition-all duration-300 hover:-translate-y-1 border border-slate-100"
@@ -404,7 +407,7 @@ export default function ServiceDetailPage({ params }) {
         </section>
       )}
 
-  <Footer/>
+      <Footer />
 
       <style jsx>{`
         @keyframes fadeIn {
