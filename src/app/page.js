@@ -186,12 +186,12 @@ export default function HomePage() {
             {/* Left Content */}
             <div className="flex-1 text-center lg:text-left relative z-10">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 border border-brand/30 text-[#15803D] text-sm font-medium mb-6 backdrop-blur-sm animate-fadeIn">
-  <span className="relative flex h-2 w-2">
-    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brandLight opacity-75"></span>
-    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
-  </span>
-  5,000+ Verified Pros Ready
-</div>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brandLight opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
+                </span>
+                5,000+ Verified Pros Ready
+              </div>
 
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-[family-name:var(--font-outfit)] leading-[1.1] mb-8 tracking-tight min-h-[100px] md:min-h-[140px] lg:min-h-[160px]">
                 Your Home, <br />
@@ -233,61 +233,61 @@ export default function HomePage() {
 
 
               <div className="relative max-w-2xl lg:mx-0 mx-auto group">
-  
-  {/* Glow Border */}
-  <div className="absolute -inset-1 rounded-2xl opacity-30 group-hover:opacity-60 transition duration-700"
-    style={{
-      background: "linear-gradient(90deg, #15803D, #22c55e)"
-    }}
-  ></div>
 
-  {/* Main Box */}
-  <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 flex items-center hover:bg-white/15 transition-all duration-300">
+                {/* Glow Border */}
+                <div className="absolute -inset-1 rounded-2xl opacity-30 group-hover:opacity-60 transition duration-700"
+                  style={{
+                    background: "linear-gradient(90deg, #15803D, #22c55e)"
+                  }}
+                ></div>
 
-    {/* Input Area */}
-    <div className="flex items-center flex-1 px-4 py-3">
-      
-      {/* Icon */}
-      <svg
-        className="w-6 h-6 mr-3"
-        style={{ color: "#15803D" }}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-        />
-      </svg>
+                {/* Main Box */}
+                <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 flex items-center hover:bg-white/15 transition-all duration-300">
 
-      {/* Input */}
-      <input
-        type="text"
-        placeholder={placeholder || 'What do you need fixed?'}
-        className="w-full bg-transparent border-none outline-none text-black placeholder:text-black text-lg md:text-xl"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        onKeyDown={handleKeyDown}
-      />
-    </div>
+                  {/* Input Area */}
+                  <div className="flex items-center flex-1 px-4 py-3">
 
-    {/* Button */}
-    <button
-      onClick={handleSearchClick}
-      className="font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-xl transition-all active:scale-95 text-sm sm:text-base mr-2 sm:mr-0"
-      style={{
-        backgroundColor: "#15803D",
-        color: "#ECFDF5",
-        boxShadow: "0 10px 25px rgba(21, 128, 61, 0.4)"
-      }}
-      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#166534"}
-      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#15803D"}
-    >
-      Search
-    </button>
+                    {/* Icon */}
+                    <svg
+                      className="w-6 h-6 mr-3"
+                      style={{ color: "#15803D" }}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
 
-  </div>
-</div>
+                    {/* Input */}
+                    <input
+                      type="text"
+                      placeholder={placeholder || 'What do you need fixed?'}
+                      className="w-full bg-transparent border-none outline-none text-black placeholder:text-black text-lg md:text-xl"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                    />
+                  </div>
+
+                  {/* Button */}
+                  <button
+                    onClick={handleSearchClick}
+                    className="font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-xl transition-all active:scale-95 text-sm sm:text-base mr-2 sm:mr-0"
+                    style={{
+                      backgroundColor: "#15803D",
+                      color: "#ECFDF5",
+                      boxShadow: "0 10px 25px rgba(21, 128, 61, 0.4)"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#166534"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#15803D"}
+                  >
+                    Search
+                  </button>
+
+                </div>
+              </div>
 
               <div className="mt-8 flex flex-wrap items-center gap-6 justify-center lg:justify-start text-sm">
                 <div className="flex items-center gap-2">
@@ -358,12 +358,12 @@ export default function HomePage() {
           <div className="max-w-5xl mx-auto">
             <div className="relative rounded-[3rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-[12px] border-white group">
               <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none"></div>
-              <video 
-                src="/video/how-it-works.mp4" 
+              <video
+                src="/video/how-it-works.mp4"
                 className="w-full h-auto object-cover"
-                autoPlay 
-                muted 
-                loop 
+                autoPlay
+                muted
+                loop
                 playsInline
                 controls
               />
@@ -434,11 +434,17 @@ export default function HomePage() {
                     }`}
                 >
                   <div className="absolute inset-0">
-                    <img
-                      src={service.image_url || '/images/hero-default.jpg'}
-                      alt={service.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-                    />
+                    {service.image_url ? (
+                      <img
+                        src={service.image_url}
+                        alt={service.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                        <span className="text-6xl font-bold text-white">{service.name.charAt(0)}</span>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
                   </div>
 
