@@ -3,30 +3,14 @@
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useAuth } from 'src/context/AuthContext';
 import Icon from '@/components/Icon';
+import TypingHero from '@/components/TypingHero';
+import AnimatedSearchBar from '@/components/AnimatedSearchBar';
+
 export default function HomePage() {
-  const router = useRouter();
-  const { user } = useAuth();
-  const [placeholder, setPlaceholder] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [loopNum, setLoopNum] = useState(0);
-  const [typingSpeed, setTypingSpeed] = useState(100);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('Home Maintenance');
   const [testimonialIndex, setTestimonialIndex] = useState(0);
-
-  // Hero text typing effect states
-  const [heroText, setHeroText] = useState('');
-  const [isDeletingHero, setIsDeletingHero] = useState(false);
-  const [loopNumHero, setLoopNumHero] = useState(0);
-  const [typingSpeedHero, setTypingSpeedHero] = useState(100);
-
   const [homepageServices, setHomepageServices] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const services = [
@@ -43,35 +27,6 @@ export default function HomePage() {
     'Spotlessly Cleaned.',
     'Professionally Managed',
   ];
-
-  const serviceCategories = ['Home Maintenance', 'Home Remodeling', 'Outdoor Upkeep', 'Essential Home Services'];
-
-  const servicesByCategory = {
-    'Home Maintenance': [
-      { title: 'Electric Work', desc: 'Our electricians handle installations, wiring issues, safety checks, and repairs with precision and care to keep your home running safely.', image: '/images/electric.jpg', large: true },
-      { title: 'Plumbing Service', desc: 'We provide fast solutions for leaks, clogs, and installations.', image: '/images/plumbing.jpg' },
-      { title: 'Roofing & Waterproofing', desc: 'Protect your home from water damage with expert roofing solutions.', image: '/images/roofing.jpg' },
-      { title: 'Carpenter Work', desc: 'From furniture repairs to custom woodwork done right.', image: '/images/carpenter.jpg' },
-    ],
-    'Home Remodeling': [
-      { title: 'Kitchen Renovation', desc: 'Transform your kitchen with modern designs and quality craftsmanship.', image: '/images/kitchen.jpg', large: true },
-      { title: 'Bathroom Remodel', desc: 'Upgrade your bathroom with stylish and functional improvements.', image: '/images/bathroom.jpg' },
-      { title: 'Flooring Installation', desc: 'Expert flooring solutions for every room in your home.', image: '/images/flooring.jpg' },
-      { title: 'Interior Painting', desc: 'Fresh coats and professional finishes for beautiful interiors.', image: '/images/painting.jpg' },
-    ],
-    'Outdoor Upkeep': [
-      { title: 'Lawn Care', desc: 'Keep your lawn healthy, green, and well-maintained year-round.', image: '/images/lawn.jpg', large: true },
-      { title: 'Fence Installation', desc: 'Durable and attractive fencing solutions for your property.', image: '/images/fence.jpg' },
-      { title: 'Pressure Washing', desc: 'Blast away dirt and grime from driveways, decks, and siding.', image: '/images/pressure.jpg' },
-      { title: 'Gutter Cleaning', desc: 'Keep gutters clear to prevent water damage and overflow.', image: '/images/gutter.jpg' },
-    ],
-    'Essential Home Services': [
-      { title: 'House Cleaning', desc: 'Professional cleaning services for a spotless and healthy home.', image: '/images/cleaning.jpg', large: true },
-      { title: 'Appliance Repair', desc: 'Fast and reliable repairs for all major home appliances.', image: '/images/appliance.jpg' },
-      { title: 'HVAC Service', desc: 'Heating and cooling maintenance to keep your home comfortable.', image: '/images/hvac.jpg' },
-      { title: 'Pest Control', desc: 'Safe and effective pest removal to protect your home.', image: '/images/pest.jpg' },
-    ],
-  };
 
   const testimonials = [
     [
@@ -93,78 +48,13 @@ export default function HomePage() {
     try {
       const servicesRes = await fetch('/api/services?is_homepage=1');
       const servicesData = await servicesRes.json();
-      const categoriesRes = await fetch('/api/categories');
-      const categoriesData = await categoriesRes.json();
       if (servicesData.success) setHomepageServices(servicesData.data || []);
-      if (categoriesData.success) setCategories(categoriesData.data || []);
     } catch (error) {
       console.error('Error loading homepage data:', error);
     } finally {
       setLoading(false);
     }
   };
-
-  const getCategoryIcon = (categoryId) => {
-    const category = categories.find(c => c.id === categoryId);
-    return category?.icon || '🔧';
-  };
-
-  useEffect(() => {
-    let timer;
-    const handleTyping = () => {
-      const i = loopNum % services.length;
-      const fullText = services[i];
-      if (!isDeleting) {
-        setPlaceholder(fullText.substring(0, placeholder.length + 1));
-        setTypingSpeed(80);
-      } else {
-        setPlaceholder(fullText.substring(0, placeholder.length - 1));
-        setTypingSpeed(40);
-      }
-      if (!isDeleting && placeholder === fullText) {
-        setTimeout(() => setIsDeleting(true), 2000);
-      } else if (isDeleting && placeholder === '') {
-        setIsDeleting(false);
-        setLoopNum(loopNum + 1);
-        setTypingSpeed(80);
-      }
-    };
-    timer = setTimeout(handleTyping, typingSpeed);
-    return () => clearTimeout(timer);
-  }, [placeholder, isDeleting, loopNum, typingSpeed, services]);
-
-  useEffect(() => {
-    let timer;
-    const handleTyping = () => {
-      const i = loopNumHero % heroPhrases.length;
-      const fullText = heroPhrases[i];
-      if (!isDeletingHero) {
-        setHeroText(fullText.substring(0, heroText.length + 1));
-        setTypingSpeedHero(80);
-      } else {
-        setHeroText(fullText.substring(0, heroText.length - 1));
-        setTypingSpeedHero(40);
-      }
-      if (!isDeletingHero && heroText === fullText) {
-        setTimeout(() => setIsDeletingHero(true), 2000);
-      } else if (isDeletingHero && heroText === '') {
-        setIsDeletingHero(false);
-        setLoopNumHero(loopNumHero + 1);
-        setTypingSpeedHero(80);
-      }
-    };
-    timer = setTimeout(handleTyping, typingSpeedHero);
-    return () => clearTimeout(timer);
-  }, [heroText, isDeletingHero, loopNumHero, typingSpeedHero, heroPhrases]);
-
-  const handleSearchClick = () => {
-    if (searchTerm.trim()) {
-      router.push(`/services?search=${encodeURIComponent(searchTerm)}`);
-    } else {
-      router.push('/services');
-    }
-  };
-  const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearchClick(); };
 
   if (loading) {
     return (
@@ -173,6 +63,7 @@ export default function HomePage() {
       </div>
     );
   }
+console.log(homepageServices)
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans antialiased text-slate-900 overflow-x-hidden">
@@ -195,9 +86,7 @@ export default function HomePage() {
 
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-[family-name:var(--font-outfit)] leading-[1.1] mb-8 tracking-tight min-h-[100px] md:min-h-[140px] lg:min-h-[160px]">
                 Your Home, <br />
-                <span className="text-transparent bg-clip-text bg-[#15803D]">
-                  {heroText || '\u00A0'}
-                </span>
+                <TypingHero phrases={heroPhrases} />
                 <span className="text-emerald-400 animate-pulse">|</span>
               </h1>
 
@@ -206,88 +95,7 @@ export default function HomePage() {
                 Transparent pricing, instant booking, and guaranteed quality.
               </p>
 
-              {/* Floating Search Bar */}
-              {/* <div className="relative max-w-2xl lg:mx-0 mx-auto group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                <div
-                  className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 flex items-center hover:bg-white/15 transition-all duration-300"
-                >
-                  <div className="flex items-center flex-1 px-4 py-3">
-                    <svg className="w-6 h-6 text-emerald-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder={placeholder || 'What do you need fixed?'}
-                      className="w-full bg-transparent border-none outline-none text-white placeholder:text-slate-400 text-lg md:text-xl"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                    />
-                  </div>
-                  <button onClick={handleSearchClick} className="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 text-sm sm:text-base mr-2 sm:mr-0">
-                    Search
-                  </button>
-                </div>
-              </div> */}
-
-
-              <div className="relative max-w-2xl lg:mx-0 mx-auto group">
-
-                {/* Glow Border */}
-                <div className="absolute -inset-1 rounded-2xl opacity-30 group-hover:opacity-60 transition duration-700"
-                  style={{
-                    background: "linear-gradient(90deg, #15803D, #22c55e)"
-                  }}
-                ></div>
-
-                {/* Main Box */}
-                <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 flex items-center hover:bg-white/15 transition-all duration-300">
-
-                  {/* Input Area */}
-                  <div className="flex items-center flex-1 px-4 py-3">
-
-                    {/* Icon */}
-                    <svg
-                      className="w-6 h-6 mr-3"
-                      style={{ color: "#15803D" }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
-                    </svg>
-
-                    {/* Input */}
-                    <input
-                      type="text"
-                      placeholder={placeholder || 'What do you need fixed?'}
-                      className="w-full bg-transparent border-none outline-none text-black placeholder:text-black text-lg md:text-xl"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                    />
-                  </div>
-
-                  {/* Button */}
-                  <button
-                    onClick={handleSearchClick}
-                    className="font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-xl transition-all active:scale-95 text-sm sm:text-base mr-2 sm:mr-0"
-                    style={{
-                      backgroundColor: "#15803D",
-                      color: "#ECFDF5",
-                      boxShadow: "0 10px 25px rgba(21, 128, 61, 0.4)"
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#166534"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#15803D"}
-                  >
-                    Search
-                  </button>
-
-                </div>
-              </div>
+              <AnimatedSearchBar services={services} />
 
               <div className="mt-8 flex flex-wrap items-center gap-6 justify-center lg:justify-start text-sm">
                 <div className="flex items-center gap-2">
@@ -442,7 +250,7 @@ export default function HomePage() {
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                        <span className="text-6xl font-bold text-white"><Icon name={service.icon} /></span>
+                        <span className="text-6xl font-bold text-white"><Icon name={service.category_icon} /></span>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
