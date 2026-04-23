@@ -432,7 +432,60 @@ export function getDeletionRequestCancelledEmailHtml(email) {
   });
 }
 
+// ─── Admin Notification: New Provider Signup ─────────────────────────────────
+export function getAdminNewProviderSignupEmailHtml(providerData) {
+  const { name, email, phone } = providerData;
+  const body = `
+    <p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">New Provider Registered</p>
+    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7;">
+      A new service provider has just registered on WorkOnTap.
+    </p>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <p style="margin:4px 0;font-size:14px;color:#334155;"><strong>Name:</strong> ${name}</p>
+      <p style="margin:4px 0;font-size:14px;color:#334155;"><strong>Email:</strong> ${email}</p>
+      <p style="margin:4px 0;font-size:14px;color:#334155;"><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+    </div>
+    <p style="margin:0;font-size:14px;color:#64748b;">
+      Please review their application in the admin dashboard once they complete their profile.
+    </p>
+  `;
+
+  return emailLayout({
+    previewText: `New Provider: ${name} (${email})`,
+    headerBg: 'linear-gradient(135deg, #0f766e 0%, #0891b2 100%)',
+    headerIcon: '🆕',
+    headerTitle: 'New Pro Signup',
+    body,
+  });
+}
+
 // ─── Welcome Email (kept for backward compat) ─────────────────────────────────
 export function getWelcomeEmailHtml(name) {
   return getApprovalEmailHtml(name);
+}
+
+export function getAdminProviderApplicationSubmittedEmailHtml(providerData) {
+  const { name, email, specialty } = providerData;
+  const body = `
+    <p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">Application Submitted for Review</p>
+    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7;">
+      <strong>${name}</strong> has completed their profile and documents. Their application is now ready for your review.
+    </p>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <p style="margin:4px 0;font-size:14px;color:#334155;"><strong>Name:</strong> ${name}</p>
+      <p style="margin:4px 0;font-size:14px;color:#334155;"><strong>Email:</strong> ${email}</p>
+      <p style="margin:4px 0;font-size:14px;color:#334155;"><strong>Specialty:</strong> ${specialty || 'Not specified'}</p>
+    </div>
+    <p style="margin:0;font-size:14px;color:#64748b;">
+      Login to the admin dashboard to verify their documents and activate their account.
+    </p>
+  `;
+
+  return emailLayout({
+    previewText: `Review Required: ${name} (${specialty})`,
+    headerBg: 'linear-gradient(135deg, #15803d 0%, #16a34a 100%)',
+    headerIcon: '📋',
+    headerTitle: 'Application for Review',
+    body,
+  });
 }

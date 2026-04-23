@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { execute } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
 import { getMobileSession } from '@/lib/mobile-auth';
+import { sendEmail, getAdminProviderApplicationSubmittedEmailHtml } from '@/lib/email';
 
 export async function POST(request) {
   try {
@@ -49,18 +50,16 @@ export async function POST(request) {
     console.log('📊 Stats:', { docsCount, stripeComplete });
 
 
-    const isMobile = !!(await getMobileSession(request));
-
     // Update provider
     await execute(
       `UPDATE service_providers 
        SET 
            onboarding_completed = 1,
            onboarding_step = 5,
-           status = CASE WHEN ? = 1 AND status = 'active' THEN 'active' ELSE 'pending' END,
+           status = IF(status = 'active', 'active', 'pending'),
            updated_at = NOW()
        WHERE id = ?`,
-      [isMobile ? 1 : 0, providerId]
+      [providerId]
     );
 
     // Get updated status for response
@@ -72,6 +71,29 @@ export async function POST(request) {
 
     console.log('✅ Onboarding completed for provider:', providerId);
     console.log('='.repeat(60));
+
+    // 🔔 Notify Admin about application ready for review
+    try {
+      const providerInfo = await execute(
+        `SELECT first_name, last_name, email, specialty FROM service_providers WHERE id = ?`,
+        [providerId]
+      );
+      if (providerInfo.length > 0) {
+        const { first_name, last_name, email, specialty } = providerInfo[0];
+        const fullName = `${first_name} ${last_name || ''}`.trim();
+        const adminEmail = process.env.ADMIN_EMAIL || 'amandeepkumar.flymediatech@gmail.com';
+        
+        await sendEmail({
+          to: adminEmail,
+          subject: `Review Required: ${fullName}`,
+          html: getAdminProviderApplicationSubmittedEmailHtml({ name: fullName, email, specialty }),
+          text: `Professional application submitted: ${fullName} (${email}, Specialty: ${specialty || 'None'})`
+        });
+        console.log('✅ Admin notification sent (Application Review) to:', adminEmail);
+      }
+    } catch (adminEmailError) {
+      console.error('❌ Admin notification error:', adminEmailError.message);
+    }
 
     return NextResponse.json({
       success: true,

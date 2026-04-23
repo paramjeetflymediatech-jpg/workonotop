@@ -420,22 +420,11 @@ const resolveProviderScreen = (user) => {
     if (user.status !== 'active') {
         console.log('🔵 [Nav] status:', user.status, '— not active, checking onboarding...');
 
-        // 3a. Onboarding not complete — resume from DB step
+        // 3a. Onboarding not complete — ALWAYS go to Intro screen first
+        // This acts as a gateway/checkpoint to "apply checks" and show progress.
         if (Number(user.onboarding_completed) !== 1) {
-            const step = Number(user.onboarding_step) || 1;
-            console.log('🔵 [Nav] onboarding incomplete, step:', step);
-
-            // If step says payment/review but docs not uploaded → go back to docs
-            if (step >= 3 && Number(user.documents_uploaded) !== 1) {
-                console.log('🟠 [Nav] step >= 3 but documents_uploaded = 0 → DocumentUpload');
-                return { screen: 'DocumentUpload', params: {} };
-            }
-
-            if (step >= 4) return { screen: 'Review',            params: {} };
-            if (step >= 3) return { screen: 'BankLink',          params: {} };
-            if (step >= 2) return { screen: 'DocumentUpload',    params: {} };
-            // Web Step 1 = Profile Setup. Skip Intro (ProviderOnboarding) for direct parity.
-            return               { screen: 'ProfileSetup',       params: {} };
+            console.log('🔵 [Nav] onboarding incomplete → OnboardingIntro');
+            return { screen: 'OnboardingIntro', params: {} };
         }
 
         // 3b. Onboarding complete but docs were reset by admin → re-upload
@@ -513,7 +502,7 @@ const RootNavigator = () => {
             >
                 {/* ── Onboarding screens ───────────────────────────────────── */}
                 <Stack.Screen
-                    name="ProviderOnboarding"
+                    name="OnboardingIntro"
                     component={OnboardingIntroScreen}
                     options={{ headerShown: false }}
                 />

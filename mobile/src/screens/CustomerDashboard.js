@@ -46,10 +46,18 @@ const CustomerDashboard = ({ navigation }) => {
 
     const fetchCustomerData = useCallback(async () => {
         try {
+            const categoriesPromise = api.get('/api/categories');
+            const featuredPromise = api.get('/api/services?homepage=true&limit=6');
+            
+            let bookingsPromise = Promise.resolve({ data: [] });
+            if (user?.id) {
+                bookingsPromise = api.get(`/api/customer/bookings?user_id=${user.id}`);
+            }
+
             const [categoriesRes, bookingsRes, featuredRes] = await Promise.all([
-                api.get('/api/categories'),
-                api.get(`/api/customer/bookings?user_id=${user?.id}`),
-                api.get('/api/services?homepage=true&limit=6')
+                categoriesPromise,
+                bookingsPromise,
+                featuredPromise
             ]);
             
             setCategories(categoriesRes.data || []);

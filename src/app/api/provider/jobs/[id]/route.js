@@ -44,6 +44,13 @@ export async function GET(request, { params }) {
     }
 
     const job = jobs[0]
+    
+    // Fetch customer-provided photos
+    const photos = await execute(
+      'SELECT photo_url FROM booking_photos WHERE booking_id = ?',
+      [id]
+    )
+    job.photos = photos.map(p => p.photo_url)
 
     // Parse time slots
     if (job.job_time_slot) {

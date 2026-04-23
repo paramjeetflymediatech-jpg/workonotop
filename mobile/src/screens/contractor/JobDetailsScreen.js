@@ -74,7 +74,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
         if (!stripeConnected) {
             Alert.alert('Stripe Not Connected', 'You need to connect your Stripe account before you can accept jobs.', [
                 { text: 'Later', style: 'cancel' },
-                { text: 'Connect Now', onPress: () => navigation.navigate('OnboardingIntro') }
+                { text: 'Connect Now', onPress: () => navigation.navigate('BankLink') }
             ]);
             return;
         }
@@ -420,11 +420,14 @@ const JobDetailsScreen = ({ navigation, route }) => {
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>📷 Job Photos ({job.photos.length})</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-                                {job.photos.map((photo, i) => (
-                                    <TouchableOpacity key={i} style={styles.photoContainer}>
-                                        <Image source={{ uri: photo }} style={styles.photo} />
-                                    </TouchableOpacity>
-                                ))}
+                                {job.photos.map((photo, i) => {
+                                    const uri = photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`;
+                                    return (
+                                        <TouchableOpacity key={i} style={styles.photoContainer}>
+                                            <Image source={{ uri }} style={styles.photo} />
+                                        </TouchableOpacity>
+                                    );
+                                })}
                             </ScrollView>
                         </View>
                     )}

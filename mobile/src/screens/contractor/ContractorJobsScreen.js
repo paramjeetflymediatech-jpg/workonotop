@@ -54,6 +54,22 @@ const ContractorJobsScreen = ({ navigation }) => {
         }
     }, [user?.role, fetchJobs, navigation]);
 
+    useEffect(() => {
+        if (!loading && !stripeConnected) {
+            Alert.alert(
+                'Stripe Connection Required',
+                'To accept jobs and receive payments, you must connect your Stripe account.',
+                [
+                    { text: 'Later', style: 'cancel' },
+                    { 
+                        text: 'Connect Now', 
+                        onPress: () => navigation.navigate('BankLink') 
+                    }
+                ]
+            );
+        }
+    }, [loading, stripeConnected]);
+
     const onRefresh = () => { setRefreshing(true); fetchJobs(true); };
 
     const acceptJob = async (jobId, hasOvertime, displayAmount) => {
@@ -251,7 +267,7 @@ const ContractorJobsScreen = ({ navigation }) => {
                 <View style={styles.stripeWarning}>
                     <Ionicons name="warning" size={18} color="#92400e" />
                     <Text style={styles.stripeWarningText}>Connect Stripe to accept jobs and receive payments.</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('OnboardingIntro')}>
+                    <TouchableOpacity onPress={() => navigation.navigate('BankLink')}>
                         <Text style={styles.connectLink}>Connect →</Text>
                     </TouchableOpacity>
                 </View>

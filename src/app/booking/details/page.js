@@ -17,7 +17,7 @@
 //   const [parkingAccess, setParkingAccess] = useState(false);
 //   const [elevatorAccess, setElevatorAccess] = useState(false);
 //   const [hasPets, setHasPets] = useState(false);
-//   const [address, setAddress] = useState('123 8 Avenue Southwest, Suite 504, Calgary AB');
+//   const [address, setAddress] = useState('Please enter your service location');
 //   const fileInputRef = useRef(null);
 
 //   const maxDescriptionLength = 500;
@@ -574,6 +574,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { toast } from 'react-hot-toast';
 
 export default function BookingDetailsPage() {
   const router = useRouter();
@@ -585,7 +586,8 @@ export default function BookingDetailsPage() {
   const [parkingAccess, setParkingAccess] = useState(false);
   const [elevatorAccess, setElevatorAccess] = useState(false);
   const [hasPets, setHasPets] = useState(false);
-  const [address, setAddress] = useState('123 8 Avenue Southwest, Suite 504, Calgary AB');
+  const [address, setAddress] = useState('Please enter your service location');
+  const [addressError, setAddressError] = useState('');
   const fileInputRef = useRef(null);
 
   const maxDescriptionLength = 500;
@@ -671,6 +673,18 @@ export default function BookingDetailsPage() {
   };
 
   const handleContinue = () => {
+    if (!address || address === 'Please enter your service location' || address.trim() === '') {
+      setAddressError('Required');
+      toast.error('Please enter your service location');
+      return;
+    }
+    setAddressError('');
+
+    if (jobDescription.trim().length < 20) {
+      toast.error('Please write at least 20 characters to help pros understand your job');
+      return;
+    }
+
     const detailsData = {
       job_description: jobDescription,
       instructions: '',
@@ -778,14 +792,20 @@ export default function BookingDetailsPage() {
                 </div>
                 
                 <div className="p-6 md:p-8">
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">
-                    Service Address <span className="text-red-500">*</span>
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-semibold text-gray-800">
+                      Service Address <span className="text-red-500">*</span>
+                    </label>
+                    {addressError && <span className="text-red-500 text-xs font-bold animate-pulse">{addressError}</span>}
+                  </div>
                   <input
                     type="text"
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition outline-none text-gray-700"
+                    onChange={(e) => {
+                      setAddress(e.target.value);
+                      if (e.target.value.trim()) setAddressError('');
+                    }}
+                    className={`w-full p-3 border-2 rounded-xl focus:ring-2 focus:ring-green-200 transition outline-none text-gray-700 ${addressError ? 'border-red-400' : 'border-gray-200 focus:border-green-500'}`}
                     placeholder="Enter your full service address"
                     required
                   />
@@ -1013,11 +1033,11 @@ export default function BookingDetailsPage() {
                 
                 <button 
                   onClick={handleContinue}
-                  disabled={jobDescription.length < 20 || uploading || !address.trim()}
+                  disabled={uploading || !address.trim()}
                   className={`
                     w-full sm:w-auto px-10 py-4 rounded-xl font-bold text-lg shadow-lg
                     flex items-center justify-center transition-all duration-300
-                    ${jobDescription.length >= 20 && !uploading && address.trim()
+                    ${!uploading && address.trim()
                       ? 'bg-gradient-to-r from-green-700 to-green-600 text-white hover:from-green-800 hover:to-green-700 hover:scale-[1.02] shadow-green-200' 
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }

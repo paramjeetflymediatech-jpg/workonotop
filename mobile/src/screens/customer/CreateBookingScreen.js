@@ -12,6 +12,8 @@ import {
     Image,
     Modal,
     Dimensions,
+    ToastAndroid,
+    Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
@@ -39,6 +41,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const [intentError, setIntentError] = useState(null);
     const [viewerVisible, setViewerVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [addressError, setAddressError] = useState('');
 
     // Form State (Intelligent name parsing for Google users)
     const initialFirstName = user?.first_name || (user?.name ? user.name.split(' ')[0] : '');
@@ -129,10 +132,14 @@ const CreateBookingScreen = ({ navigation, route }) => {
     };
 
     const nextStep = async () => {
-        if (step === 1 && !bookingData.address_line1) {
-            Alert.alert('Fields Required', 'Service Address is required.');
+        if (step === 1 && (!bookingData.address_line1 || bookingData.address_line1.trim() === '')) {
+            setAddressError('Please enter your service location');
+            if (Platform.OS === 'android') {
+                ToastAndroid.show('Please enter your service location', ToastAndroid.SHORT);
+            }
             return;
         }
+        setAddressError('');
         if (step === 2 && (!bookingData.job_date || !bookingData.job_time_slot)) {
             Alert.alert('Selection Required', 'Please select a date and time slot.');
             return;
@@ -142,8 +149,11 @@ const CreateBookingScreen = ({ navigation, route }) => {
                 Alert.alert('Fields Required', 'Phone, Job Description, and Timing Constraints are required.');
                 return;
             }
-            if (bookingData.job_description.trim().length < 50) {
-                Alert.alert('Details Needed', 'Please provide a more detailed job description (at least 50 characters).');
+            if (bookingData.job_description.trim().length < 20) {
+                if (Platform.OS === 'android') {
+                    ToastAndroid.show('Please write at least 20 characters to help pros understand your job', ToastAndroid.SHORT);
+                }
+                Alert.alert('Details Needed', 'Please provide a more detailed job description (at least 20 characters).');
                 return;
             }
         }
@@ -261,12 +271,15 @@ const CreateBookingScreen = ({ navigation, route }) => {
         <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>Where do you need service?</Text>
 
-            <Text style={styles.label}>Service Address *</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 2 }}>
+                <Text style={styles.label}>Service Address *</Text>
+                {addressError ? <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '600' }}>{addressError}</Text> : null}
+            </View>
             <TextInput
                 style={styles.input}
                 value={bookingData.address_line1}
                 onChangeText={txt => setBookingData({ ...bookingData, address_line1: txt })}
-                placeholder="Full address (Street, City, Province, Postal)"
+                placeholder="Please enter your service location"
             />
 
             <View style={{ height: 40 }} />

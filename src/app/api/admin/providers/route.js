@@ -257,7 +257,11 @@ export async function PUT(request) {
       // Approve provider
       await execute(
         `UPDATE service_providers 
-         SET status = 'active', approved_at = NOW(), updated_at = NOW() 
+         SET status = 'active', 
+             onboarding_completed = 1,
+             onboarding_step = 5,
+             approved_at = NOW(), 
+             updated_at = NOW() 
          WHERE id = ?`,
         [providerId]
       );

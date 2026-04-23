@@ -160,7 +160,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { execute, getConnection } from '@/lib/db';
 import { generateEmailVerificationToken } from '@/lib/jwt';
-import { sendEmail, getVerificationEmailHtml, getOtpVerificationEmailHtml } from '@/lib/email';
+import { sendEmail, getVerificationEmailHtml, getOtpVerificationEmailHtml, getAdminNewProviderSignupEmailHtml } from '@/lib/email';
 
 export async function POST(request) {
   console.log('🚀 PROVIDER SIGNUP API CALLED at:', new Date().toISOString());
@@ -303,8 +303,18 @@ export async function POST(request) {
       if (emailResult.success) {
         console.log('✅ Verification email sent to:', email);
       }
+
+      // 🔔 Notify Admin about new provider signup
+      const adminEmail = process.env.ADMIN_EMAIL || 'amandeepkumar.flymediatech@gmail.com';
+      await sendEmail({
+        to: adminEmail,
+        subject: `New Pro Signup: ${fullName}`,
+        html: getAdminNewProviderSignupEmailHtml({ name: fullName, email, phone }),
+        text: `New provider registered: ${fullName} (${email}, ${phone || 'No phone'})`
+      });
+      console.log('✅ Admin notification sent to:', adminEmail);
     } catch (emailError) {
-      console.error('❌ Email send error:', emailError.message);
+      console.error('❌ Email error:', emailError.message);
     }
 
     return NextResponse.json({

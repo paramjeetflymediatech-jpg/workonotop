@@ -5,18 +5,20 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Icon from '@/components/Icon';
+import { toast } from 'react-hot-toast';
 
 export default function ServiceDetailPage({ params }) {
   const unwrappedParams = use(params);
   const serviceId = unwrappedParams.serviceId;
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState('123 8 Avenue Southwest, Suite 504, Calgary AB');
+  const [selectedAddress, setSelectedAddress] = useState('Please enter your service location');
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [tempAddress, setTempAddress] = useState(selectedAddress);
   const [service, setService] = useState(null);
   const [relatedServices, setRelatedServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [addressError, setAddressError] = useState('');
 
   useEffect(() => {
     if (serviceId) {
@@ -286,15 +288,21 @@ export default function ServiceDetailPage({ params }) {
                   )}
 
                   <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                      <svg className="w-5 h-5 text-green-700 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                      </svg>
-                      Where do you need service?
-                    </label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-semibold text-gray-800 flex items-center">
+                        <svg className="w-5 h-5 text-green-700 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        Where do you need service?
+                      </label>
+                      {addressError && <span className="text-red-500 text-xs font-bold animate-pulse">{addressError}</span>}
+                    </div>
                     <div
-                      className="flex items-center p-3 border-2 border-gray-200 rounded-xl hover:border-[#16A34A] transition cursor-pointer bg-white"
-                      onClick={() => setAddressModalOpen(true)}
+                      className={`flex items-center p-3 border-2 rounded-xl transition cursor-pointer bg-white ${addressError ? 'border-red-400 animate-shake' : 'border-gray-200 hover:border-[#16A34A]'}`}
+                      onClick={() => {
+                        setAddressError('');
+                        setAddressModalOpen(true);
+                      }}
                     >
                       <span className="text-sm flex-1 line-clamp-1">{selectedAddress}</span>
                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -306,11 +314,20 @@ export default function ServiceDetailPage({ params }) {
                     </p>
                   </div>
 
-                  <Link href={`/booking/schedule?service=${service.id}`}>
-                    <button className="w-full bg-gradient-to-r from-[#16A34A] to-[#15803D] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-[#16A34A]/20 transition-all duration-300 transform hover:scale-[1.02]">
-                      Get Started — Free Quote
-                    </button>
-                  </Link>
+                  <button 
+                    onClick={() => {
+                      if (!selectedAddress || selectedAddress === 'Please enter your service location' || selectedAddress.trim() === '') {
+                        setAddressError('Required');
+                        toast.error('Please enter your service location');
+                        setAddressModalOpen(true);
+                      } else {
+                        router.push(`/booking/schedule?service=${service.id}`);
+                      }
+                    }}
+                    className="w-full bg-gradient-to-r from-[#16A34A] to-[#15803D] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-[#16A34A]/20 transition-all duration-300 transform hover:scale-[1.02]"
+                  >
+                    Get Started — Free Quote
+                  </button>
 
                   <p className="text-xs text-center text-gray-500 mt-3 flex items-center justify-center">
                     <svg className="w-4 h-4 text-[#16A34A] mr-1" fill="currentColor" viewBox="0 0 20 20">

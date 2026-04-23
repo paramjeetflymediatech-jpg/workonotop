@@ -79,11 +79,12 @@ const LoginScreen = ({ navigation }) => {
                         })
                     );
                 } else {
-                    console.log('🚀 [Login] Resetting to Customer Dashboard');
+                    const targetRoute = userData.role === 'provider' ? 'OnboardingIntro' : 'Main';
+                    console.log(`🚀 [Login] Resetting to ${targetRoute} for ${userData.role}`);
                     navigation.dispatch(
                         CommonActions.reset({
                             index: 0,
-                            routes: [{ name: 'Main' }],
+                            routes: [{ name: targetRoute }],
                         })
                     );
                 }
@@ -112,11 +113,12 @@ const LoginScreen = ({ navigation }) => {
             const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
             const result = await loginWithGoogle(role, 'login');
             if (result.success) {
-                console.log('🚀 [GoogleAuth] Resetting to Dashboard');
+                const targetRoute = result.user?.role === 'provider' ? 'OnboardingIntro' : 'Main';
+                console.log(`🚀 [GoogleAuth] Resetting to ${targetRoute}`);
                 navigation.dispatch(
                     CommonActions.reset({
                         index: 0,
-                        routes: [{ name: 'Main' }],
+                        routes: [{ name: targetRoute }],
                     })
                 );
             } else {
@@ -135,11 +137,12 @@ const LoginScreen = ({ navigation }) => {
             const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
             const result = await loginWithApple(role);
             if (result.success) {
-                console.log('🚀 [AppleAuth] Resetting to Dashboard');
+                const targetRoute = result.user?.role === 'provider' ? 'OnboardingIntro' : 'Main';
+                console.log(`🚀 [AppleAuth] Resetting to ${targetRoute}`);
                 navigation.dispatch(
                     CommonActions.reset({
                         index: 0,
-                        routes: [{ name: 'Main' }],
+                        routes: [{ name: targetRoute }],
                     })
                 );
             } else {

@@ -88,7 +88,7 @@ const BankLinkScreen = ({ navigation, route }) => {
             }
 
             // Auto navigate based on onboarding status
-            if (Number(user?.onboarding_completed) === 1) {
+            if (Number(user?.onboarding_completed) === 1 || user?.status === 'active') {
                 navigation.navigate('Main');
             } else {
                 navigation.navigate('Review', { profile, documents, connected: true });
@@ -159,7 +159,7 @@ const BankLinkScreen = ({ navigation, route }) => {
                 <TouchableOpacity
                     style={[styles.stripeBtn, loading && styles.btnDisabled]}
                     onPress={connected
-                        ? (Number(user?.onboarding_completed) === 1
+                        ? ((Number(user?.onboarding_completed) === 1 || user?.status === 'active')
                             ? () => navigation.navigate('Main')
                             : () => navigation.navigate('Review', { profile, documents, connected: true }))
                         : openStripeOnboarding}
@@ -177,7 +177,7 @@ const BankLinkScreen = ({ navigation, route }) => {
                 {!connected && (
                     <TouchableOpacity
                         style={styles.skipBtn}
-                        onPress={Number(user?.onboarding_completed) === 1
+                        onPress={(Number(user?.onboarding_completed) === 1 || user?.status === 'active')
                             ? () => navigation.navigate('Main')
                             : () => navigation.navigate('Review', { profile, documents, connected: false })}
                         disabled={loading}
