@@ -391,9 +391,22 @@ CREATE TABLE IF NOT EXISTS mobile_auth_users (
     UNIQUE KEY uq_provider_device (provider_id, device_id)
 );
 
+-- -----------------------------------------------------
+-- Table: system_settings (Global App Configurations)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS system_settings (
+    `key` VARCHAR(191) PRIMARY KEY,
+    `value` TEXT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- =====================================================
 -- SAMPLE DATA (Optional)
 -- =====================================================
+
+-- Insert global defaults
+INSERT INTO system_settings (`key`, `value`) VALUES ('default_commission', '5');
 
 -- Insert sample service categories
 INSERT INTO service_categories (name, slug, icon, description, display_order) VALUES
