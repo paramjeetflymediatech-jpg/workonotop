@@ -84,7 +84,7 @@ export async function POST(request) {
       first_name, last_name, name, email, phone,
       job_date, job_time_slot, timing_constraints, job_description, instructions,
       parking_access, elevator_access, has_pets,
-      address_line1, address_line2, city = 'Calgary', postal_code,
+      address_line1, address_line2, city = '', postal_code,
       photos = [], user_id,
       payment_intent_id,
     } = body
@@ -161,7 +161,7 @@ export async function POST(request) {
           job_date || null, timeSlotString || null, timing_constraints || null,
           job_description || '', instructions || null,
           parking_access ? 1 : 0, elevator_access ? 1 : 0, has_pets ? 1 : 0,
-          address_line1 || '', address_line2 || null, city || 'Calgary', postal_code || null,
+          address_line1 || '', address_line2 || null, city || '', postal_code || null,
           basePrice || 0, standardDuration || 60,
           payment_intent_id || null, totalAuthorizedAmount || 0,
         ]

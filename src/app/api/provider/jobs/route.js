@@ -61,7 +61,8 @@ export async function GET(request) {
         b.job_timer_status,
         s.name as service_full_name,
         s.duration_minutes,
-        c.name as category_name
+        c.name as category_name,
+        (SELECT GROUP_CONCAT(photo_url) FROM booking_photos WHERE booking_id = b.id) as photos_csv
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
@@ -82,6 +83,9 @@ export async function GET(request) {
       if (job.job_time_slot) {
         job.job_time_slot = job.job_time_slot.split(',')
       }
+
+      job.photos = job.photos_csv ? job.photos_csv.split(',') : []
+      delete job.photos_csv
       
       job.service_price = parseFloat(job.service_price || 0)
       job.additional_price = parseFloat(job.additional_price || 0)

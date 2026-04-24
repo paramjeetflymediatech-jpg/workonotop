@@ -95,9 +95,8 @@ function ConfirmModal({ isOpen, onClose, onConfirm, loading, amount, hasOvertime
             Cancel
           </button>
           <button onClick={onConfirm} disabled={loading}
-            className={`flex-1 py-3 text-white font-bold rounded-xl text-sm transition disabled:opacity-60 flex items-center justify-center gap-2 ${
-              hasOvertime ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'bg-green-600 hover:bg-green-700'
-            }`}>
+            className={`flex-1 py-3 text-white font-bold rounded-xl text-sm transition disabled:opacity-60 flex items-center justify-center gap-2 ${hasOvertime ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'bg-green-600 hover:bg-green-700'
+              }`}>
             {loading
               ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Accepting…</>
               : '✓ Confirm Accept'
@@ -147,6 +146,7 @@ export default function ProviderJobDetail({ params }) {
   const [showConfirm, setShowConfirm] = useState(false)
   const [stripeConnected, setStripeConnected] = useState(true)
   const [stripeModal, setStripeModal] = useState(false)
+  const [selectedPhoto, setSelectedPhoto] = useState(null)
   const [toast, setToast] = useState(null)
 
   const showToast = (type, text) => setToast({ type, text })
@@ -167,7 +167,13 @@ export default function ProviderJobDetail({ params }) {
       const res = await fetch(`/api/provider/available-jobs/${id}`)
       const data = await res.json()
       if (data.success) {
-        setJob({ ...data.data, is_available: data.is_available, is_my_job: data.is_my_job })
+        console.log('✅ [DEBUG] Fetched job data:', data.data)
+        setJob({
+          ...data.data,
+          is_available: data.is_available,
+          is_my_job: data.is_my_job,
+          availability_reason: data.availability_reason
+        })
       } else {
         showToast('error', data.message || 'Job not found')
       }
@@ -221,24 +227,24 @@ export default function ProviderJobDetail({ params }) {
     </div>
   )
 
-  const amount      = parseFloat(job.provider_amount || 0)
-  const basePrice   = parseFloat(job.service_price || job.base_price || 0)
-  const commPct     = parseFloat(job.commission_percent || 0)
-  const otRate      = parseFloat(job.additional_price || job.overtime_rate || 0)
-  const dur         = job.service_duration || 60
-  const commAmt     = basePrice * (commPct / 100)
+  const amount = parseFloat(job.provider_amount || 0)
+  const basePrice = parseFloat(job.service_price || job.base_price || 0)
+  const commPct = parseFloat(job.commission_percent || 0)
+  const otRate = parseFloat(job.additional_price || job.overtime_rate || 0)
+  const dur = job.service_duration || 60
+  const commAmt = basePrice * (commPct / 100)
   const baseEarnings = basePrice - commAmt
-  const netOT       = otRate * (1 - commPct / 100)
+  const netOT = otRate * (1 - commPct / 100)
   const hasOvertime = otRate > 0
-  const slots       = fmtSlots(job.job_time_slot)
+  const slots = fmtSlots(job.job_time_slot)
 
   // ✅ FIX: Cast to boolean — prevents MySQL tinyint 0 rendering as "0" text in JSX
-  const hasParking  = !!job.parking_access
+  const hasParking = !!job.parking_access
   const hasElevator = !!job.elevator_access
-  const hasPets     = !!job.has_pets
+  const hasPets = !!job.has_pets
 
   return (
-    <div className="w-full pb-32">
+    <div className="w-full max-w-4xl mx-auto pb-32 px-4 md:px-0">
       <Toast toast={toast} onDismiss={() => setToast(null)} />
       <StripeRequiredModal isOpen={stripeModal} onClose={() => setStripeModal(false)} />
 
@@ -254,216 +260,252 @@ export default function ProviderJobDetail({ params }) {
       />
 
       {/* Back */}
-      <div className="mb-4">
+      <div className="mb-6">
         <Link href="/provider/available-jobs"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition">
+          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition font-medium">
           <ArrowLeft className="h-4 w-4" /> Available Jobs
         </Link>
       </div>
 
       {/* Hero */}
-      <div className={`rounded-2xl text-white p-6 mb-4 ${
-        hasOvertime
-          ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-blue-700'
-          : 'bg-gradient-to-br from-green-500 to-teal-600'
-      }`}>
-        <div className="flex items-start justify-between gap-4">
+      <div className="bg-gradient-to-r from-green-700 to-teal-600 rounded-3xl text-white p-6 md:p-8 mb-6 shadow-xl shadow-green-900/10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="min-w-0">
-            <p className="text-white/70 text-xs uppercase tracking-wide mb-1">{job.category_name}</p>
-            <h1 className="text-xl font-bold">{job.service_name}</h1>
-            <p className="text-white/60 text-xs mt-1">#{job.booking_number}</p>
+            <p className="text-green-100 text-[10px] md:text-xs uppercase tracking-widest font-bold mb-2 opacity-80">
+              {job.category_name}
+            </p>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight mb-2 leading-tight">
+              {job.service_name}
+            </h1>
+            <p className="text-white/60 text-xs font-mono">ID: {job.booking_number}</p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md rounded-full px-3.5 py-1.5 text-xs font-medium">
+                <Clock className="h-3.5 w-3.5 text-green-200" /> {formatDuration(dur)}
+              </span>
+              {hasOvertime && (
+                <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md rounded-full px-3.5 py-1.5 text-xs font-bold text-green-100">
+                  ⏰ +${otRate.toFixed(2)}/hr OT
+                </span>
+              )}
+            </div>
           </div>
-          <div className="text-right flex-shrink-0 bg-white/15 rounded-2xl px-4 py-3 backdrop-blur-sm">
-            <p className="text-white/70 text-[10px] uppercase tracking-wide">You earn</p>
-            <p className="text-3xl font-extrabold">${amount.toFixed(2)}</p>
+
+          <div className="flex-shrink-0 bg-white/15 rounded-3xl p-5 backdrop-blur-md border border-white/10 text-center md:text-right min-w-[140px]">
+            <p className="text-green-100 text-[10px] uppercase tracking-widest font-bold mb-1 opacity-70">Guaranteed</p>
+            <p className="text-4xl font-black leading-none">${amount.toFixed(2)}</p>
           </div>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 text-xs">
-            <Clock className="h-3 w-3" /> {formatDuration(dur)}
-          </span>
-          {hasOvertime && (
-            <span className="inline-flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
-              ⏰ +${otRate.toFixed(2)}/hr overtime
-            </span>
-          )}
         </div>
       </div>
 
       {/* Status banners */}
       {!job.is_available && !job.is_my_job && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 mb-4 flex items-center gap-2.5">
-          <span className="text-xl">⚠️</span>
-          <p className="text-sm text-red-700 font-medium">Already accepted by another provider.</p>
-        </div>
-      )}
-      {job.is_my_job && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-3.5 mb-4 flex items-center justify-between">
-          <p className="text-sm text-green-700 font-medium flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" /> You accepted this job!
-          </p>
-          <Link href="/provider/jobs" className="text-sm text-green-700 font-bold underline">My Jobs →</Link>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {/* Payment Breakdown */}
-        <InfoCard title="Payment Breakdown" icon="💰">
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-              <Clock className="h-4 w-4 text-gray-400" />
-              <div>
-                <p className="text-xs text-gray-400">Standard Duration</p>
-                <p className="text-sm font-semibold text-gray-900">{formatDuration(dur)}</p>
-              </div>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Base price</span>
-              <span className="font-medium text-gray-900">${basePrice.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Commission ({commPct}%)</span>
-              <span className="font-medium text-orange-600">−${commAmt.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-bold pt-2 border-t border-gray-100">
-              <span className="text-gray-800">Your base earnings</span>
-              <span className="text-green-600">${baseEarnings.toFixed(2)}</span>
-            </div>
-
-            {hasOvertime && (
-              <>
-                <div className="flex justify-between text-sm pt-1">
-                  <span className="text-gray-500">Overtime rate (gross)</span>
-                  <span className="font-medium text-purple-600">+${otRate.toFixed(2)}/hr</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Commission on OT ({commPct}%)</span>
-                  <span className="font-medium text-orange-600">−${(otRate * commPct / 100).toFixed(2)}/hr</span>
-                </div>
-                <div className="flex justify-between text-sm font-semibold">
-                  <span className="text-gray-700">Net overtime rate</span>
-                  <span className="text-green-600">+${netOT.toFixed(2)}/hr</span>
-                </div>
-
-                <div className="bg-purple-50 rounded-xl p-3.5 mt-1">
-                  <p className="text-xs font-semibold text-purple-700 mb-3">With overtime, you could earn:</p>
-                  {[[1, baseEarnings + netOT], [2, baseEarnings + netOT * 2]].map(([hrs, total]) => (
-                    <div key={hrs} className="mb-2 last:mb-0">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Base + {hrs}hr overtime</span>
-                        <span className="font-bold text-purple-700">${total.toFixed(2)}</span>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        ${baseEarnings.toFixed(2)} + ${(netOT * hrs).toFixed(2)} net OT
-                      </div>
-                    </div>
-                  ))}
-                  <p className="text-xs text-gray-400 mt-2">All amounts after {commPct}% commission</p>
-                </div>
-              </>
-            )}
+        <div className={`border rounded-2xl p-4 mb-6 flex items-center gap-3 ${job.availability_reason === 'awaiting_approval'
+            ? 'bg-amber-50 border-amber-200'
+            : 'bg-red-50 border-red-200'
+          }`}>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${job.availability_reason === 'awaiting_approval' ? 'bg-amber-100' : 'bg-red-100'
+            }`}>
+            <span className="text-xl">{job.availability_reason === 'awaiting_approval' ? '⏳' : '⚠️'}</span>
           </div>
-        </InfoCard>
-
-        {/* Schedule */}
-        <InfoCard title="Schedule" icon="📅">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-gray-400 mb-1">Date</p>
-              <p className="text-sm font-semibold text-gray-900">{formatDate(job.job_date)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400 mb-2">Time Slot{slots.length > 1 ? 's' : ''}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {slots.map((s, i) => (
-                  <span key={i} className="px-3 py-1 bg-green-100 text-green-800 rounded-lg text-xs font-semibold">{s}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-          {job.timing_constraints && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <p className="text-xs text-gray-400 mb-1">Timing Notes</p>
-              <p className="text-sm text-gray-700">{job.timing_constraints}</p>
-            </div>
-          )}
-        </InfoCard>
-
-        {/* Location */}
-        <InfoCard title="Location" icon="📍">
-          <div className="bg-gray-50 rounded-xl p-3.5 mb-3">
-            <p className="text-sm font-semibold text-gray-900">{job.address_line1}</p>
-            {job.address_line2 && <p className="text-sm text-gray-500 mt-0.5">{job.address_line2}</p>}
-            {(job.city || job.postal_code) && (
-              <p className="text-xs text-gray-400 mt-0.5">{[job.city, job.postal_code].filter(Boolean).join(', ')}</p>
-            )}
-          </div>
-
-          {/* ✅ FIXED: Using boolean cast — prevents tinyint 0 showing as "0" text */}
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              ['🅿️', 'Parking',  hasParking,  'green'],
-              ['🛗', 'Elevator', hasElevator, 'green'],
-              ['🐕', 'Pets',     hasPets,     'amber'],
-            ].map(([icon, label, val, color]) => (
-              <div key={label} className={`rounded-xl border p-2.5 text-center text-xs font-semibold ${
-                val
-                  ? color === 'green'
-                    ? 'bg-green-50 border-green-200 text-green-700'
-                    : 'bg-amber-50 border-amber-200 text-amber-700'
-                  : 'bg-gray-50 border-gray-200 text-gray-300'
+          <div>
+            <p className={`text-sm font-bold ${job.availability_reason === 'awaiting_approval' ? 'text-amber-800' : 'text-red-700'
               }`}>
-                <span className="block text-base mb-0.5">{icon}</span>
-                {label} {val ? '✓' : '—'}
-              </div>
-            ))}
+              {job.availability_reason === 'already_accepted' && 'Already accepted by another provider.'}
+              {job.availability_reason === 'awaiting_approval' && 'Awaiting Admin Approval'}
+              {job.availability_reason === 'not_available' && 'This job is no longer available.'}
+              {!job.availability_reason && 'Job is currently unavailable.'}
+            </p>
+            {/* {job.availability_reason === 'awaiting_approval' && (
+              <p className="text-xs text-amber-700/70 mt-0.5 font-medium">
+                The administrator needs to set the commission for this job before it can be accepted.
+              </p>
+            )} */}
           </div>
-        </InfoCard>
+        </div>
+      )}
 
-        {/* Description */}
-        {job.job_description && (
-          <InfoCard title="Job Description" icon="📝">
-            <p className="text-sm text-gray-700 leading-relaxed">{job.job_description}</p>
+      {job.is_my_job && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6 flex items-center justify-between gap-4">
+          <p className="text-sm text-green-700 font-bold flex items-center gap-2.5">
+            <CheckCircle className="h-5 w-5" /> You accepted this job!
+          </p>
+          <Link href="/provider/jobs" className="px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-xl hover:bg-green-700 transition flex-shrink-0">
+            View My Jobs
+          </Link>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left Side Info */}
+        <div className="space-y-6">
+          <InfoCard title="Schedule" icon="📅">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Date</p>
+                <p className="text-sm font-semibold text-gray-900">{formatDate(job.job_date)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-2">Time Slot{slots.length > 1 ? 's' : ''}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {slots.map((s, i) => (
+                    <span key={i} className="px-3 py-1 bg-green-100 text-green-800 rounded-lg text-xs font-semibold">{s}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {job.timing_constraints && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs text-gray-400 mb-1 font-medium italic">Timing Notes</p>
+                <p className="text-sm text-gray-700 break-words whitespace-pre-wrap">{job.timing_constraints}</p>
+              </div>
+            )}
           </InfoCard>
-        )}
 
-        {/* Instructions */}
-        {job.instructions && (
-          <InfoCard title="Special Instructions" icon="💡">
-            <p className="text-sm text-gray-700 leading-relaxed">{job.instructions}</p>
-          </InfoCard>
-        )}
+          <InfoCard title="Location" icon="📍">
+            <div className="bg-gray-50 rounded-2xl p-4 mb-4 border border-gray-100">
+              <p className="text-sm font-bold text-gray-900 break-words">{job.address_line1}</p>
+              {job.address_line2 && <p className="text-sm text-gray-500 mt-0.5 break-words">{job.address_line2}</p>}
+              {(job.city || job.postal_code) && (
+                <p className="text-xs text-gray-400 mt-1 font-medium">{[job.city, job.postal_code].filter(Boolean).join(', ')}</p>
+              )}
+            </div>
 
-        {/* Photos */}
-        {job.photos?.length > 0 && (
-          <InfoCard title={`Photos (${job.photos.length})`} icon="📷">
             <div className="grid grid-cols-3 gap-2">
-              {job.photos.map((photo, i) => (
-                <div key={i} onClick={() => window.open(photo, '_blank')}
-                  className="aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition">
-                  <img src={photo} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+              {[
+                ['🅿️', 'Parking', hasParking, 'green'],
+                ['🛗', 'Elevator', hasElevator, 'green'],
+                ['🐕', 'Pets', hasPets, 'amber'],
+              ].map(([icon, label, val, color]) => (
+                <div key={label} className={`rounded-xl border p-2.5 text-center transition-colors ${val
+                    ? color === 'green'
+                      ? 'bg-green-50 border-green-200 text-green-700'
+                      : 'bg-amber-50 border-amber-200 text-amber-700'
+                    : 'bg-gray-50 border-gray-100 text-gray-300'
+                  }`}>
+                  <span className="block text-lg mb-0.5">{icon}</span>
+                  <p className="text-[10px] font-bold uppercase tracking-tight">{label}</p>
+                  <p className="text-[10px] mt-0.5">{val ? '✓' : '—'}</p>
                 </div>
               ))}
             </div>
           </InfoCard>
+
+          {job.photos?.length > 0 && (
+            <InfoCard title={`Customer Photos (${job.photos.length})`} icon="📷">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {job.photos.map((photo, i) => (
+                  <div key={i} onClick={() => setSelectedPhoto(photo)}
+                    className="aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition border border-gray-100 shadow-sm group relative">
+                    <img src={photo} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-[10px] bg-white/90 px-2 py-1 rounded-md font-bold shadow-sm">View</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-400 mt-3 italic font-medium">* Click to enlarge photo</p>
+            </InfoCard>
+          )}
+        </div>
+
+        {/* Photo Preview Modal */}
+        {selectedPhoto && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-200">
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setSelectedPhoto(null)} />
+            <button 
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute top-6 right-6 z-[110] p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
+              <X className="h-6 w-6" />
+            </button>
+            <div className="relative z-[110] max-w-5xl w-full h-full flex items-center justify-center">
+              <img 
+                src={selectedPhoto} 
+                alt="Enlarged view" 
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300" 
+              />
+            </div>
+          </div>
         )}
+
+        {/* Right Side Info */}
+        <div className="space-y-6">
+          <InfoCard title="Payment Breakdown" icon="💰">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 pb-3 border-b border-gray-50">
+                <Clock className="h-4 w-4 text-gray-400" />
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase">Standard Duration</p>
+                  <p className="text-sm font-bold text-gray-900">{formatDuration(dur)}</p>
+                </div>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500 font-medium">Service Base Price</span>
+                <span className="font-bold text-gray-900">${basePrice.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500 font-medium">Platform Fee ({commPct}%)</span>
+                <span className="font-bold text-orange-600">−${commAmt.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-black pt-3 border-t border-gray-100">
+                <span className="text-gray-900 uppercase tracking-tighter">Your Base Earnings</span>
+                <span className="text-green-600 text-lg">${baseEarnings.toFixed(2)}</span>
+              </div>
+
+              {hasOvertime && (
+                <div className="bg-purple-50 rounded-2xl p-4 mt-2 border border-purple-100">
+                  <p className="text-md font-bold mb-3">Potential Earnings with Overtime</p>
+                  {[[1, baseEarnings + netOT], [2, baseEarnings + netOT * 2]].map(([hrs, total]) => (
+                    <div key={hrs} className="flex justify-between items-center mb-2 last:mb-0">
+                      <div>
+                        <p className="text-sm font-bold ">Base + {hrs}hr OT</p>
+                        <p className="text-[10px] ">${baseEarnings.toFixed(2)} + ${(netOT * hrs).toFixed(2)}</p>
+                      </div>
+                      <span className="text-sm font-black">${total.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <p className="text-[10px] mt-3 italic font-medium">Net OT rate: ${netOT.toFixed(2)}/hr after commission</p>
+                </div>
+              )}
+            </div>
+          </InfoCard>
+
+          {job.job_description && (
+            <InfoCard title="Job Description" icon="📝">
+              <p className="text-sm text-gray-700 leading-relaxed break-words whitespace-pre-wrap font-medium">{job.job_description}</p>
+            </InfoCard>
+          )}
+
+          {job.instructions && (
+            <InfoCard title="Special Instructions" icon="💡">
+              <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
+                <p className="text-sm text-amber-900 leading-relaxed break-words whitespace-pre-wrap font-medium">{job.instructions}</p>
+              </div>
+            </InfoCard>
+          )}
+        </div>
+      </div>
+
+      {/* Debug Info */}
+      <div className="mt-12 p-4 bg-gray-50 border border-gray-100 rounded-2xl opacity-40 hover:opacity-100 transition-opacity">
+        <p className="text-[10px] text-gray-400 font-mono">DEBUG: job.photos.length = {job.photos?.length || 0} | booking_id={id}</p>
       </div>
 
       {/* Sticky Accept Button */}
       {job.is_available && (
-        <div className="fixed bottom-0 left-0 right-0 lg:left-60 z-30 p-4 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-          <div className="max-w-3xl mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 lg:left-64 z-40 p-4 md:p-6 bg-white/80 backdrop-blur-xl border-t border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
+          <div className="max-w-4xl mx-auto">
             <button
               onClick={() => { if (!stripeConnected) { setStripeModal(true) } else { setShowConfirm(true) } }}
-              className={`w-full py-4 text-white rounded-2xl font-bold text-base transition shadow-lg flex items-center justify-center gap-2 ${
-                hasOvertime
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-95'
-                  : 'bg-green-600 hover:bg-green-700'
-              }`}>
-              ✓ Accept this Job — Earn ${amount.toFixed(2)}
+              className={`w-full py-4.5 text-white rounded-2xl font-black text-lg transition-all shadow-xl hover:scale-[1.01] active:scale-95 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 ${hasOvertime
+                  ? 'bg-gradient-to-r from-green-700 to-teal-600 shadow-green-900/20'
+                  : 'bg-green-600 hover:bg-green-700 shadow-green-600/20'
+                }`}>
+              <span>Accept this Job — Earn ${amount.toFixed(2)}</span>
               {hasOvertime && (
-                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                  Up to ${(baseEarnings + netOT * 2).toFixed(2)} with 2hr OT
+                <span className="text-[10px] md:text-xs bg-white/20 px-3 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-sm">
+                  Potential up to ${(baseEarnings + netOT * 2).toFixed(2)}
                 </span>
               )}
             </button>

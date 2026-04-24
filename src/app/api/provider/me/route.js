@@ -31,7 +31,7 @@ export async function GET(request) {
               onboarding_step, onboarding_completed, documents_verified,
               stripe_onboarding_complete, specialty, bio, experience_years,
               city, location, service_areas, skills, avatar_url,
-              approved_at, created_at
+              documents_uploaded, approved_at, created_at
        FROM service_providers 
        WHERE id = ?`,
       [providerId]

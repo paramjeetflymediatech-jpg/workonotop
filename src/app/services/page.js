@@ -127,10 +127,13 @@ export default function ServicesPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [servicesRes, categoriesRes] = await Promise.all([
-        fetch('/api/services'),
-        fetch('/api/categories')
-      ]);
+      console.log('Fetching services...');
+      const servicesRes = await fetch('/api/services');
+      console.log('Services status:', servicesRes.status);
+      
+      console.log('Fetching categories...');
+      const categoriesRes = await fetch('/api/categories');
+      console.log('Categories status:', categoriesRes.status);
 
       const servicesData = await servicesRes.json();
       const categoriesData = await categoriesRes.json();
@@ -143,7 +146,7 @@ export default function ServicesPage() {
         setCategories(categoriesData.data || []);
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading data in fetchData:', error);
     } finally {
       setLoading(false);
     }

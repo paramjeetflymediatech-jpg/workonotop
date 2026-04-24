@@ -43,10 +43,16 @@ export async function GET(request, { params }) {
 
     const booking = { ...results[0] }
 
-    if (booking.job_time_slot) booking.job_time_slot = booking.job_time_slot.split(',')
+    // Fetch photos separately for reliability
+    const photos = await execute(
+      'SELECT photo_url FROM booking_photos WHERE booking_id = ? ORDER BY created_at ASC',
+      [id]
+    )
+    booking.photos = photos.map(p => p.photo_url)
 
-    try { booking.photos = JSON.parse(booking.photos_json) || [] } catch { booking.photos = [] }
-    delete booking.photos_json
+    console.log(`[DEBUG] Job ${id} customer photos:`, booking.photos)
+
+    if (booking.job_time_slot) booking.job_time_slot = booking.job_time_slot.split(',')
 
     booking.base_price = parseFloat(booking.base_price || 0)
     booking.overtime_rate = parseFloat(booking.overtime_rate || 0)
@@ -71,10 +77,24 @@ export async function GET(request, { params }) {
       two_hour_overtime_total: baseEarnings + netOT * 2,
     }
 
+    let availability_reason = null
     const isAvailable = booking.provider_id === null && ['pending', 'matching'].includes(booking.status) && booking.commission_percent !== null
+    
+    if (!isAvailable) {
+      if (booking.provider_id !== null) availability_reason = 'already_accepted'
+      else if (booking.commission_percent === null) availability_reason = 'awaiting_approval'
+      else availability_reason = 'not_available'
+    }
+
     const isMyJob = booking.provider_id === decoded.providerId
 
-    return NextResponse.json({ success: true, data: booking, is_available: isAvailable, is_my_job: isMyJob })
+    return NextResponse.json({ 
+      success: true, 
+      data: booking, 
+      is_available: isAvailable, 
+      is_my_job: isMyJob,
+      availability_reason 
+    })
 
   } catch (error) {
     console.error('Error fetching job:', error)

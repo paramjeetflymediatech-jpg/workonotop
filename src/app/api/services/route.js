@@ -4,6 +4,7 @@ import { execute, query } from '@/lib/db'
 
 // GET all services
 export async function GET(request) {
+  console.log('GET /api/services called');
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -11,6 +12,8 @@ export async function GET(request) {
     const slug = searchParams.get('slug')
     const homepage = searchParams.get('homepage')
     const limitParams = searchParams.get('limit')
+
+    console.log('Filters:', { id, categoryId, slug, homepage, limitParams });
 
     let sql = `
       SELECT 
@@ -45,7 +48,6 @@ export async function GET(request) {
 
     sql += ' ORDER BY sc.display_order, s.name'
 
-    // Always sanitize LIMIT to prevent any issues with placeholders
     if (limitParams) {
       const parsedLimit = parseInt(limitParams)
       if (!isNaN(parsedLimit)) {
@@ -53,8 +55,9 @@ export async function GET(request) {
       }
     }
 
-    // Use query() instead of execute() for queries with dynamic LIMIT or broad SELECTs
+    console.log('Executing SQL:', sql);
     const services = await query(sql, params)
+    console.log(`Found ${services.length} services`);
 
     if ((id || slug) && services.length === 1) {
       return NextResponse.json({
@@ -68,9 +71,9 @@ export async function GET(request) {
       data: services
     })
   } catch (error) {
-    console.error('Error fetching services:', error)
+    console.error('CRITICAL ERROR in GET /api/services:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch services' },
+      { success: false, message: 'Failed to fetch services', error: error.message },
       { status: 500 }
     )
   }

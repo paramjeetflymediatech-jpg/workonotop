@@ -5,8 +5,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Briefcase, DollarSign, Clock, Star, ArrowRight, 
+import {
+  Briefcase, DollarSign, Clock, Star, ArrowRight,
   Zap, MapPin, CheckCircle, AlertCircle, BellRing, TrendingUp
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -25,7 +25,7 @@ export default function ProviderDashboard() {
   const [showNewJobAlert, setShowNewJobAlert] = useState(false);
   const [newJobsList, setNewJobsList] = useState([]);
   const [alertDismissed, setAlertDismissed] = useState(false);
-  
+
   // ========== ADD THIS - Payout data for accurate earnings ==========
   const [payoutData, setPayoutData] = useState(null);
   // ================================================================

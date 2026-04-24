@@ -204,29 +204,18 @@ export function AuthProvider({ children }) {
         } else {
           setUserType('customer');
         }
+      } else {
+        // If unified auth fails, check provider specific endpoint as fallback
+        const providerRes = await fetch('/api/provider/me');
+        const providerData = await providerRes.json();
         
-        setLoading(false);
-        return;
-      }
-
-      // Fallback: Check customer auth
-      const customerRes = await fetch('/api/auth/me');
-      const customerData = await customerRes.json();
-      
-      if (customerData.success) {
-        setUser(customerData.user);
-        setUserType('customer');
-        setLoading(false);
-        return;
-      }
-
-      // Fallback: Check provider auth
-      const providerRes = await fetch('/api/provider/me');
-      const providerData = await providerRes.json();
-      
-      if (providerData.success) {
-        setUser(providerData.provider);
-        setUserType('provider');
+        if (providerData.success) {
+          setUser(providerData.provider);
+          setUserType('provider');
+        } else {
+          setUser(null);
+          setUserType(null);
+        }
       }
     } catch (error) {
       console.error('Auth check error:', error);

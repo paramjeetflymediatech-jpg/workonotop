@@ -80,7 +80,7 @@ export default function BookingConfirmPage() {
       has_pets: detailsData.has_pets || false,
       address_line1: address,
       address_line2: '',
-      city: 'Toronto',
+      city: '',
       postal_code: '',
       photos: detailsData.photos || [],
       user_id: currentUser?.id,

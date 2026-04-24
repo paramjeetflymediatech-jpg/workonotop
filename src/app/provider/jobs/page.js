@@ -143,14 +143,37 @@ export default function ProviderJobs() {
                 <div key={job.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition">
                   {/* Job Header */}
                   <div className="p-4 border-b border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{job.service_name}</h3>
-                        <p className="text-sm text-gray-500">#{job.booking_number}</p>
+                    <div className="flex items-center gap-3">
+                      {/* Photo Thumbnail */}
+                      <div className="flex-shrink-0">
+                        {job.photos?.length > 0 ? (
+                          <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-100 shadow-sm relative group cursor-pointer"
+                            onClick={() => window.open(job.photos[0], '_blank')}>
+                            <img src={job.photos[0]} alt="Job" className="w-full h-full object-cover" />
+                            {job.photos.length > 1 && (
+                              <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white text-[8px] px-1 py-0.5 rounded backdrop-blur-sm">
+                                +{job.photos.length - 1}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center text-xl border border-gray-100">
+                            🔧
+                          </div>
+                        )}
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
-                        {job.status?.replace('_', ' ')}
-                      </span>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate">{job.service_name}</h3>
+                            <p className="text-xs text-gray-500">#{job.booking_number}</p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(job.status)}`}>
+                            {job.status?.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 

@@ -201,6 +201,12 @@ const ContractorJobsScreen = ({ navigation }) => {
                             <Ionicons name="location-outline" size={14} color="#000000ff" />
                             <Text style={styles.infoItemText} numberOfLines={1}>{job.address_line1?.split(',')[0]}</Text>
                         </View>
+                        {job.photos?.length > 0 && (
+                            <View style={styles.infoItem}>
+                                <Ionicons name="images-outline" size={14} color="#2563eb" />
+                                <Text style={[styles.infoItemText, {color: '#2563eb', fontWeight: 'bold'}]}>{job.photos.length} Photo{job.photos.length > 1 ? 's' : ''}</Text>
+                            </View>
+                        )}
                     </View>
 
                     {(job.parking_access || job.elevator_access || job.has_pets) && (

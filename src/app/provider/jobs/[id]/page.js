@@ -544,6 +544,7 @@ export default function ProviderJobDetail({ params }) {
       const res = await fetch(`/api/provider/jobs/${id}`)
       const data = await res.json()
       if (data.success) {
+        console.log('✅ [DEBUG] Fetched accepted job data:', data.data)
         setJob(data.data)
       } else {
         if (res.status === 401) {
@@ -660,7 +661,7 @@ export default function ProviderJobDetail({ params }) {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/provider/jobs" className="flex items-center gap-1.5 text-sm text-gray-600 font-medium">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
             Jobs
           </Link>
@@ -677,6 +678,28 @@ export default function ProviderJobDetail({ params }) {
           <p className="text-sm text-gray-500 mt-1">{formatDate(job.job_date)}</p>
         </div>
 
+        {/* Customer Photos Gallery */}
+        {job.photos?.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📸</span>
+                <h2 className="font-bold text-gray-900 text-sm">Customer Provided Photos ({job.photos.length})</h2>
+              </div>
+              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Before acceptance</p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {job.photos.map((url, i) => (
+                <div key={i} onClick={() => window.open(url, '_blank')}
+                  className="aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition border border-gray-100">
+                  <img src={url} alt={`Customer Photo ${i + 1}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-3 italic">* Click any photo to view full size</p>
+          </div>
+        )}
+
         {/* Step Progress Bar */}
         {!isCompleted && (
           <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4">
@@ -689,20 +712,18 @@ export default function ProviderJobDetail({ params }) {
               ].map((step, i, arr) => (
                 <React.Fragment key={step.num}>
                   <div className="flex flex-col items-center gap-1">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                      step.done ? 'bg-green-500 text-white' :
-                      step.active ? 'bg-green-600 text-white ring-4 ring-green-100' :
-                      'bg-gray-100 text-gray-400'
-                    }`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step.done ? 'bg-green-500 text-white' :
+                        step.active ? 'bg-green-600 text-white ring-4 ring-green-100' :
+                          'bg-gray-100 text-gray-400'
+                      }`}>
                       {step.done ? (
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                       ) : step.num}
                     </div>
-                    <span className={`text-[9px] font-semibold text-center leading-tight max-w-[52px] ${
-                      step.active ? 'text-green-700' : step.done ? 'text-green-500' : 'text-gray-400'
-                    }`}>{step.label}</span>
+                    <span className={`text-[9px] font-semibold text-center leading-tight max-w-[52px] ${step.active ? 'text-green-700' : step.done ? 'text-green-500' : 'text-gray-400'
+                      }`}>{step.label}</span>
                   </div>
                   {i < arr.length - 1 && (
                     <div className={`flex-1 h-0.5 mx-1 mb-4 rounded ${step.done ? 'bg-green-400' : 'bg-gray-200'}`} />
@@ -775,9 +796,8 @@ export default function ProviderJobDetail({ params }) {
         {isInProgress && (
           <div className={`bg-white rounded-2xl border p-5 ${!hasAfterPhotos ? 'border-amber-300 shadow-sm' : 'border-green-200'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${
-                !hasAfterPhotos ? 'bg-amber-50 border border-amber-200' : 'bg-green-50 border border-green-200'
-              }`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${!hasAfterPhotos ? 'bg-amber-50 border border-amber-200' : 'bg-green-50 border border-green-200'
+                }`}>
                 {hasAfterPhotos ? '✅' : '📸'}
               </div>
               <div>
@@ -858,12 +878,39 @@ export default function ProviderJobDetail({ params }) {
           </div>
         )}
 
+        {/* Customer Photos */}
+        {job.photos?.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">📸</span>
+              <h2 className="font-bold text-gray-900">Customer Photos ({job.photos.length})</h2>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {job.photos.map((url, i) => (
+                <div key={i} onClick={() => window.open(url, '_blank')}
+                  className="aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition border border-gray-100">
+                  <img src={url} alt={`Customer Photo ${i + 1}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-3 italic">* Click any photo to view full size</p>
+          </div>
+        )}
+
         {/* Job Details (collapsible) - Pass job as prop */}
-        <JobDetailsCard 
-          job={job} 
-          showContact={showContact} 
-          setShowContact={setShowContact} 
+        <JobDetailsCard
+          job={job}
+          showContact={showContact}
+          setShowContact={setShowContact}
         />
+
+        {/* Debug Info */}
+        <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+          <p className="text-[10px] text-gray-400 font-mono">DEBUG: job.photos.length = {job.photos?.length || 0}</p>
+          {job.photos?.length > 0 && (
+            <p className="text-[10px] text-gray-400 font-mono truncate">DEBUG: first photo = {job.photos[0]}</p>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -871,9 +918,9 @@ export default function ProviderJobDetail({ params }) {
 
 function StatusBadge({ status }) {
   const config = {
-    confirmed:   { label: 'Confirmed',   classes: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' },
+    confirmed: { label: 'Confirmed', classes: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' },
     in_progress: { label: 'In Progress', classes: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' },
-    completed:   { label: 'Completed',   classes: 'bg-green-50 text-green-700 ring-1 ring-green-200' },
+    completed: { label: 'Completed', classes: 'bg-green-50 text-green-700 ring-1 ring-green-200' },
   }
   const cfg = config[status] || { label: status, classes: 'bg-gray-100 text-gray-600' }
   return <span className={`px-3 py-1 rounded-full text-xs font-semibold ${cfg.classes}`}>{cfg.label}</span>
@@ -881,7 +928,7 @@ function StatusBadge({ status }) {
 
 function JobDetailsCard({ job, showContact, setShowContact }) {
   const [expanded, setExpanded] = useState(false)
-  
+
   // Define these inside the component using job data
   const hasParking = job ? !!job.parking_access : false
   const hasElevator = job ? !!job.elevator_access : false
@@ -892,7 +939,7 @@ function JobDetailsCard({ job, showContact, setShowContact }) {
       <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between px-5 py-4 text-left">
         <span className="font-semibold text-gray-800 text-sm">Job Details</span>
         <svg className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
       {expanded && (
@@ -902,7 +949,7 @@ function JobDetailsCard({ job, showContact, setShowContact }) {
               <button onClick={() => setShowContact(!showContact)} className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                 <span>👤</span> Customer Contact
                 <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showContact ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               {showContact && (
@@ -927,7 +974,7 @@ function JobDetailsCard({ job, showContact, setShowContact }) {
                     {job.customer_phone && (
                       <>
                         <a href={`tel:${job.customer_phone}`} className="flex-1 py-2 bg-green-600 text-white rounded-xl text-xs font-semibold text-center">Call</a>
-                        <a href={`https://wa.me/${job.customer_phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold text-center">WhatsApp</a>
+                        <a href={`https://wa.me/${job.customer_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold text-center">WhatsApp</a>
                       </>
                     )}
                     {job.customer_email && (
@@ -960,7 +1007,7 @@ function JobDetailsCard({ job, showContact, setShowContact }) {
             {job.address_line2 && <p className="text-gray-500">{job.address_line2}</p>}
             {job.city && <p className="text-gray-500">{job.city} {job.postal_code}</p>}
           </div>
-          
+
           {/* Fixed: hasParking, hasElevator, hasPets are now defined inside this component */}
           {(hasParking || hasElevator || hasPets) && (
             <div className="flex flex-wrap gap-2">
@@ -969,7 +1016,7 @@ function JobDetailsCard({ job, showContact, setShowContact }) {
               {hasPets && <span className="text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full border border-amber-200">Pets on site</span>}
             </div>
           )}
-          
+
           {job.job_description && (
             <div className="text-sm">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Description</p>

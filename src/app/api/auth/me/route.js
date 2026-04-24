@@ -70,12 +70,13 @@ export async function GET(request) {
     } else {
       // Lookup in users table (Customers and Admins)
       const users = await query(
-        'SELECT id, email, first_name, last_name, phone, role, status, image_url FROM users WHERE id = ?',
+        'SELECT id, email, first_name, last_name, phone, role, image_url FROM users WHERE id = ?',
         [userId]
       );
       if (users.length > 0) {
         userData = users[0];
         userData.id = Number(userData.id); // Ensure ID is a Number
+        userData.status = 'active'; // Default status for users (not in DB)
         // Add fallbacks for fields missing in users table but expected by mobile app
         userData.onboarding_step = 1;
         userData.onboarding_completed = 1;
