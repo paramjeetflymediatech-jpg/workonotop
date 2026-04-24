@@ -14,6 +14,7 @@ export default function BookingDetailsPage({ params }) {
   const [tradespeople, setTradespeople] = useState([])
   const [selectedProvider, setSelectedProvider] = useState('')
   const [commissionPct, setCommissionPct] = useState('')
+  const [isEditingCommission, setIsEditingCommission] = useState(false)
   const [savingCommission, setSavingCommission] = useState(false)
   const [lightbox, setLightbox] = useState(null)
 
@@ -48,7 +49,7 @@ export default function BookingDetailsPage({ params }) {
       const res = await fetch('/api/provider?status=active')
       const data = await res.json()
       if (data.success) setTradespeople(data.data || [])
-    } catch {}
+    } catch { }
   }
 
   const notify = (type, message) => {
@@ -102,6 +103,7 @@ export default function BookingDetailsPage({ params }) {
       notify('error', 'Request failed')
     } finally {
       setSavingCommission(false)
+      setIsEditingCommission(false)
     }
   }
 
@@ -273,14 +275,14 @@ export default function BookingDetailsPage({ params }) {
                 )}
                 {booking.timing_constraints && (
                   <div>
-                   <p className={`text-xs font-medium mb-1 ${lbl}`}>Timing Constraints</p>
+                    <p className={`text-xs font-medium mb-1 ${lbl}`}>Timing Constraints</p>
 
-<div className="p-3 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800 flex gap-2">
-  <span className="flex-shrink-0">⏰</span>
-  <span className="break-words min-w-0">
-    {booking.timing_constraints}
-  </span>
-</div>
+                    <div className="p-3 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800 flex gap-2">
+                      <span className="flex-shrink-0">⏰</span>
+                      <span className="break-words min-w-0">
+                        {booking.timing_constraints}
+                      </span>
+                    </div>
                   </div>
                 )}
                 {booking.instructions && (
@@ -423,32 +425,37 @@ export default function BookingDetailsPage({ params }) {
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">💰</span>
               <h2 className={`text-base font-semibold ${val}`}>Commission</h2>
-              {commissionSet && (
+              {commissionSet && !isEditingCommission && (
                 <span className="ml-auto flex items-center gap-1 text-xs text-green-600 font-medium">
                   <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Live
                 </span>
               )}
             </div>
-            {commissionSet ? (
+
+            {commissionSet && !isEditingCommission ? (
               <div className="rounded-lg bg-green-50 border border-green-200 p-4 relative overflow-hidden">
                 <div className="flex items-center justify-between mb-2">
                   <span className={`text-sm ${lbl}`}>Commission Rate</span>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
-                    <CheckCircle className="w-3 h-3" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Locked</span>
-                  </div>
+                  <button
+                    onClick={() => setIsEditingCommission(true)}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white text-teal-600 border border-teal-200 text-[10px] font-bold uppercase tracking-wider hover:bg-teal-50 transition-colors"
+                  >
+                    ✏️ Edit
+                  </button>
                 </div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl font-bold text-green-600">{booking.commission_percent}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className={`text-xs ${lbl}`}>Platform earns</span>
-                  <span className="text-sm font-semibold text-green-600">$${fmt(booking.platform_amount || (booking.service_price * booking.commission_percent / 100))}</span>
+                  <span className="text-sm font-semibold text-green-600">${fmt(booking.platform_amount || (booking.service_price * booking.commission_percent / 100))}</span>
                 </div>
               </div>
             ) : (
               <div>
-                <p className={`text-xs mb-3 ${lbl}`}>Set commission to make this job visible to providers.</p>
+                <p className={`text-xs mb-3 ${lbl}`}>
+                  {isEditingCommission ? 'Update commission for this booking.' : 'Set commission to make this job visible to providers.'}
+                </p>
                 <div className="flex gap-2 mb-3">
                   <div className="relative flex-1">
                     <input
@@ -459,18 +466,28 @@ export default function BookingDetailsPage({ params }) {
                     />
                     <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm ${lbl}`}>%</span>
                   </div>
-                  <button onClick={saveCommission} disabled={savingCommission || commissionPct === ''}
-                    className="px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition disabled:opacity-50">
-                    {savingCommission ? '…' : 'Save'}
-                  </button>
-                </div>
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex gap-2">
-                  <span className="text-amber-600 flex-shrink-0">⚠️</span>
-                  <div>
-                    <p className="text-xs font-semibold text-amber-800">Commission not set</p>
-                    <p className="text-xs text-amber-700 mt-0.5">Job is hidden from providers.</p>
+                  <div className="flex gap-2">
+                    {isEditingCommission && (
+                      <button onClick={() => { setIsEditingCommission(false); setCommissionPct(String(booking.commission_percent)) }}
+                        className={`p-2.5 rounded-xl border ${divCls} ${lbl} hover:bg-gray-100 transition`}>
+                        ✕
+                      </button>
+                    )}
+                    <button onClick={saveCommission} disabled={savingCommission || commissionPct === ''}
+                      className="px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition disabled:opacity-50">
+                      {savingCommission ? '…' : (isEditingCommission ? 'Update' : 'Save')}
+                    </button>
                   </div>
                 </div>
+                {!commissionSet && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex gap-2">
+                    <span className="text-amber-600 flex-shrink-0">⚠️</span>
+                    <div>
+                      <p className="text-xs font-semibold text-amber-800">Commission not set</p>
+                      <p className="text-xs text-amber-700 mt-0.5">Job is hidden from providers.</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

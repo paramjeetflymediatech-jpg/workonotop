@@ -305,7 +305,7 @@ export default function ProviderPayouts() {
         </div>
 
         {/* Back to Dashboard Link */}
-        {/* <div className="mt-6 text-center">
+        <div className="mt-6 text-center">
           <Link 
             href="/provider/dashboard"
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition group"
@@ -313,7 +313,7 @@ export default function ProviderPayouts() {
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition" />
             Back to Dashboard
           </Link>
-        </div> */}
+        </div>
       </div>
 
       {/* Add animation styles */}

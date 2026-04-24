@@ -3,6 +3,17 @@ import { execute, query, getConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
 import { notifyUser } from '@/lib/push'
 
+// Helper to get system settings
+async function getSystemSetting(key, defaultValue = null) {
+  try {
+    const results = await execute('SELECT `value` FROM system_settings WHERE `key` = ?', [key])
+    return results && results.length > 0 ? results[0].value : defaultValue
+  } catch (error) {
+    console.error(`Error fetching setting ${key}:`, error)
+    return defaultValue
+  }
+}
+
 // ── GET: List available jobs ──────────────────────────────────────────────────
 export async function GET(request) {
   let providerId = null;
@@ -11,27 +22,31 @@ export async function GET(request) {
 
   try {
     let token = request.cookies.get('provider_token')?.value
-    
+
     if (!token) {
-        const authHeader = request.headers.get('Authorization');
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            token = authHeader.split(' ')[1];
-        }
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
     }
 
     if (!token) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
-    
+
     const decoded = verifyToken(token)
     const userType = decoded?.type || decoded?.role;
 
     if (!decoded || userType !== 'provider') {
-        return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
     providerId = decoded.providerId || decoded.id;
     if (!providerId) {
-        return NextResponse.json({ success: false, message: 'Provider ID missing from token' }, { status: 401 })
+      return NextResponse.json({ success: false, message: 'Provider ID missing from token' }, { status: 401 })
     }
+
+    // Fetch default commission once
+    const defaultCommRaw = await getSystemSetting('default_commission', '20')
+    const defaultComm = parseFloat(defaultCommRaw)
 
     const { searchParams } = new URL(request.url)
     const cityParam = searchParams.get('city')
@@ -41,12 +56,11 @@ export async function GET(request) {
 
     const providers = await execute('SELECT city FROM service_providers WHERE id = ?', [providerId])
     const providerCity = providers && providers.length > 0 ? (providers[0].city || '') : ''
-    
-    // Trim and handle case-insensitive city matching
-    // ✅ NEW: If cityParam is explicitly provided, we filter strictly.
-    // If not, we use providerCity for sorting/context but show everything.
-    const activeCityFilter = cityParam ? cityParam.trim() : ''
-    locationFilter = (activeCityFilter || providerCity || '').trim()
+
+    // ✅ NEW: Determine the effective city to filter by. 
+    // If user searches for a city, use that.
+    // Otherwise, default to the provider's home city to prevent showing irrelevant jobs (e.g. York vs Ludhiana).
+    const activeCityFilter = (cityParam || providerCity || '').trim()
 
     let locationCondition = ''
     const locationParams = []
@@ -68,7 +82,7 @@ export async function GET(request) {
         )
       `
       const countResult = await query(countSql, [providerId, ...locationParams])
-      
+
       const previewSql = `
         SELECT id, service_name, job_date, city, provider_amount, service_price, commission_percent
         FROM bookings b
@@ -81,20 +95,25 @@ export async function GET(request) {
         LIMIT ?
       `
       const previewJobs = await query(previewSql, [providerId, ...locationParams, previewLimit])
-      
-      const recentJobs = (previewJobs || []).map(job => ({
-        id: job.id,
-        service_name: job.service_name,
-        display_amount: job.commission_percent === null ? 'Awaiting Approval' : `$${parseFloat(job.provider_amount || job.service_price || 0).toFixed(2)}`,
-        job_date: job.job_date,
-        city: job.city
-      }))
 
-      return NextResponse.json({ 
-        success: true, 
-        count: (countResult && countResult[0]) ? (countResult[0].count || 0) : 0, 
-        recentJobs, 
-        provider_city: providerCity 
+      const recentJobs = (previewJobs || []).map(job => {
+        const comm = job.commission_percent !== null ? parseFloat(job.commission_percent) : defaultComm
+        const earnings = job.provider_amount || (parseFloat(job.service_price || 0) * (1 - comm / 100))
+
+        return {
+          id: job.id,
+          service_name: job.service_name,
+          display_amount: `$${parseFloat(earnings).toFixed(2)}`,
+          job_date: job.job_date,
+          city: job.city
+        }
+      })
+
+      return NextResponse.json({
+        success: true,
+        count: (countResult && countResult[0]) ? (countResult[0].count || 0) : 0,
+        recentJobs,
+        provider_city: providerCity
       })
     }
 
@@ -110,33 +129,31 @@ export async function GET(request) {
         s.duration_minutes as service_duration,
         c.name as category_name, c.icon as category_icon,
         (SELECT GROUP_CONCAT(photo_url) FROM booking_photos WHERE booking_id = b.id) as photos_csv,
-        CASE WHEN b.provider_id = ? THEN 1 ELSE 0 END as admin_assigned,
-        CASE WHEN LOWER(b.city) LIKE LOWER(?) THEN 1 ELSE 0 END as city_match
+        CASE WHEN b.provider_id = ? THEN 1 ELSE 0 END as admin_assigned
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
       WHERE (
-        -- ✅ Admin pre-assigned to THIS provider
+        -- ✅ Admin pre-assigned to THIS provider (always show these)
         (
           b.provider_id = ?
           AND b.status = 'matching'
         )
         OR
-        -- ✅ Open jobs
+        -- ✅ Open jobs filtered strictly by city
         (
           b.provider_id IS NULL
           AND b.status IN ('pending', 'matching')
           ${locationCondition}
         )
       )
-      ORDER BY admin_assigned DESC, city_match DESC, b.created_at DESC
+      ORDER BY admin_assigned DESC, b.created_at DESC
     `
 
     const params = [
-      providerId, // CASE WHEN admin_assigned
-      `%${providerCity}%`, // CASE WHEN city_match
-      providerId, // admin-assigned block
-      ...locationParams,  // location match
+      providerId,
+      providerId,
+      ...locationParams,
     ]
 
     const jobs = await execute(sql, params)
@@ -144,44 +161,43 @@ export async function GET(request) {
     const processedJobs = (jobs || []).map(job => {
       const j = { ...job }
       if (j.job_time_slot) j.job_time_slot = j.job_time_slot.split(',')
-      
+
       j.photos = j.photos_csv ? j.photos_csv.split(',') : []
       delete j.photos_csv
 
-      const isApproved = j.commission_percent !== null
-      const basePrice      = parseFloat(j.service_price || 0)
-      const commPct        = parseFloat(j.commission_percent || 0)
-      const otRate         = parseFloat(j.overtime_rate || 0)
+      const commPct = j.commission_percent !== null ? parseFloat(j.commission_percent) : defaultComm
+      const basePrice = parseFloat(j.service_price || 0)
+      const otRate = parseFloat(j.overtime_rate || 0)
       const providerAmount = parseFloat(j.provider_amount || 0)
-      const duration       = j.service_duration || 60
-      const commAmt        = basePrice * (commPct / 100)
-      const baseEarnings   = isApproved ? (basePrice - commAmt) : 0
-      const netOT          = otRate * (1 - commPct / 100)
+      const duration = j.service_duration || 60
+      const commAmt = basePrice * (commPct / 100)
+      const baseEarnings = basePrice - commAmt
+      const netOT = otRate * (1 - commPct / 100)
 
       j.pricing = {
-        is_approved:            isApproved,
-        base_price:             basePrice,
-        commission_percent:     commPct,
-        commission_amount:      commAmt,
+        is_approved: true,
+        base_price: basePrice,
+        commission_percent: commPct,
+        commission_amount: commAmt,
         provider_base_earnings: baseEarnings,
-        has_overtime:           otRate > 0,
-        overtime_rate:          otRate,
-        net_overtime_rate:      netOT,
-        total_provider_amount:  providerAmount || baseEarnings || basePrice,
-        duration_minutes:       duration,
+        has_overtime: otRate > 0,
+        overtime_rate: otRate,
+        net_overtime_rate: netOT,
+        total_provider_amount: providerAmount || baseEarnings,
+        duration_minutes: duration,
       }
 
-      if (otRate > 0 && isApproved) {
+      if (otRate > 0) {
         j.overtime_info = {
-          rate_per_hour:     otRate,
+          rate_per_hour: otRate,
           net_rate_per_hour: netOT,
-          example_1hr:       baseEarnings + netOT,
-          example_2hr:       baseEarnings + netOT * 2,
-          message: `💰 Overtime: +$${otRate.toFixed(2)}/hr ($${netOT.toFixed(2)} after ${commPct}% commission)`,
+          example_1hr: baseEarnings + netOT,
+          example_2hr: baseEarnings + netOT * 2,
+          message: `💰 Overtime: +$${otRate.toFixed(2)}/hr ($${netOT.toFixed(2)} after commission)`,
         }
       }
 
-      j.display_amount    = isApproved ? `$${(providerAmount || baseEarnings).toFixed(2)}` : 'Awaiting Approval'
+      j.display_amount = `$${(providerAmount || baseEarnings).toFixed(2)}`
       j.is_admin_assigned = j.admin_assigned === 1
       return j
     })
@@ -189,21 +205,8 @@ export async function GET(request) {
     return NextResponse.json({ success: true, data: processedJobs, provider_city: providerCity, total: processedJobs.length })
 
   } catch (error) {
-    console.error('Error fetching available jobs:', {
-      message: error.message,
-      stack: error.stack,
-      providerId,
-      locationFilter,
-      countOnly
-    })
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Failed to fetch jobs: ' + error.message,
-      debug: {
-        providerId: typeof providerId !== 'undefined' ? providerId : null,
-        countOnly: typeof countOnly !== 'undefined' ? countOnly : null
-      }
-    }, { status: 500 })
+    console.error('Error fetching available jobs:', error)
+    return NextResponse.json({ success: false, message: 'Failed to fetch jobs' }, { status: 500 })
   }
 }
 
@@ -234,6 +237,9 @@ export async function POST(request) {
     const { booking_id } = await request.json()
     if (!booking_id) return NextResponse.json({ success: false, message: 'booking_id is required' }, { status: 400 })
 
+    const defaultCommRaw = await getSystemSetting('default_commission', '20')
+    const defaultComm = parseFloat(defaultCommRaw)
+
     connection = await getConnection()
     await connection.query('START TRANSACTION')
 
@@ -253,10 +259,7 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: 'Job not found' }, { status: 404 })
       }
 
-      if (job.commission_percent === null) {
-        await connection.query('ROLLBACK')
-        return NextResponse.json({ success: false, message: 'Job is awaiting admin approval' }, { status: 400 })
-      }
+      const commPct = job.commission_percent !== null ? parseFloat(job.commission_percent) : defaultComm
 
       if (job.provider_id !== null && job.provider_id !== providerId) {
         await connection.query('ROLLBACK')
@@ -266,6 +269,14 @@ export async function POST(request) {
       if (!['pending', 'matching'].includes(job.status)) {
         await connection.query('ROLLBACK')
         return NextResponse.json({ success: false, message: `Job not available (status: ${job.status})` }, { status: 409 })
+      }
+
+      // ✅ Update commission_percent if it was null
+      if (job.commission_percent === null) {
+        await connection.execute(
+          'UPDATE bookings SET commission_percent = ? WHERE id = ?',
+          [commPct, booking_id]
+        )
       }
 
       await connection.execute(
@@ -279,7 +290,6 @@ export async function POST(request) {
 
       await connection.query('COMMIT')
 
-      // 🔔 Notify customer that their booking was accepted (non-blocking)
       try {
         const bookingRows = await execute(
           'SELECT user_id, booking_number FROM bookings WHERE id = ?',
@@ -299,22 +309,21 @@ export async function POST(request) {
       } catch (_) { }
 
       const basePrice = parseFloat(job.service_price || 0)
-      const commPct = parseFloat(job.commission_percent || 0)
       const otRate = parseFloat(job.overtime_rate || 0)
-      const baseEarnings = commPct > 0 ? basePrice * (1 - commPct / 100) : basePrice
+      const baseEarnings = basePrice * (1 - commPct / 100)
       const netOT = otRate * (1 - commPct / 100)
 
       const response = {
         success: true,
         message: `You accepted: ${job.service_name}`,
-        provider_amount: job.provider_amount || basePrice,
+        provider_amount: job.provider_amount || baseEarnings,
       }
 
       if (otRate > 0) {
         response.overtime_info = {
           rate_per_hour: otRate,
           net_rate_per_hour: netOT,
-          message: `Overtime available at $${otRate.toFixed(2)}/hr ($${netOT.toFixed(2)} after ${commPct}% commission).`
+          message: `Overtime available at $${otRate.toFixed(2)}/hr.`
         }
       }
 

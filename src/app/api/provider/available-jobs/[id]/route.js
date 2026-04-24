@@ -1,7 +1,9 @@
 // app/api/provider/available-jobs/[id]/route.js
 import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
-import { verifyToken } from '@/lib/jwt'  // ✅ same as /api/provider/me
+import { verifyToken } from '@/lib/jwt'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 function getAuth(request) {
   const token = request.cookies.get('provider_token')?.value
@@ -11,6 +13,17 @@ function getAuth(request) {
   return decoded
 }
 
+// Helper to get system settings
+async function getSystemSetting(key, defaultValue = null) {
+  try {
+    const results = await execute('SELECT `value` FROM system_settings WHERE `key` = ?', [key])
+    return results && results.length > 0 ? results[0].value : defaultValue
+  } catch (error) {
+    console.error(`Error fetching setting ${key}:`, error)
+    return defaultValue
+  }
+}
+
 // ── GET: Job detail ───────────────────────────────────────────────────────────
 export async function GET(request, { params }) {
   try {
@@ -18,6 +31,9 @@ export async function GET(request, { params }) {
     if (!decoded) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
 
     const { id } = await params
+
+    const defaultCommRaw = await getSystemSetting('default_commission', '20')
+    const defaultComm = parseFloat(defaultCommRaw)
 
     const results = await execute(
       `SELECT
@@ -30,8 +46,7 @@ export async function GET(request, { params }) {
         b.service_price as base_price,
         b.additional_price as overtime_rate,
         s.duration_minutes AS service_duration,
-        c.name AS category_name, c.icon AS category_icon,
-        (SELECT JSON_ARRAYAGG(photo_url) FROM booking_photos WHERE booking_id = b.id) as photos_json
+        c.name AS category_name, c.icon AS category_icon
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
@@ -43,21 +58,18 @@ export async function GET(request, { params }) {
 
     const booking = { ...results[0] }
 
-    // Fetch photos separately for reliability
     const photos = await execute(
       'SELECT photo_url FROM booking_photos WHERE booking_id = ? ORDER BY created_at ASC',
       [id]
     )
     booking.photos = photos.map(p => p.photo_url)
 
-    console.log(`[DEBUG] Job ${id} customer photos:`, booking.photos)
-
     if (booking.job_time_slot) booking.job_time_slot = booking.job_time_slot.split(',')
 
     booking.base_price = parseFloat(booking.base_price || 0)
     booking.overtime_rate = parseFloat(booking.overtime_rate || 0)
     booking.provider_amount = parseFloat(booking.provider_amount || 0)
-    booking.commission_percent = booking.commission_percent ? parseFloat(booking.commission_percent) : null
+    booking.commission_percent = booking.commission_percent !== null ? parseFloat(booking.commission_percent) : defaultComm
     booking.service_duration = booking.service_duration || 60
 
     const commAmt = booking.base_price * (booking.commission_percent / 100)
@@ -71,29 +83,28 @@ export async function GET(request, { params }) {
       provider_base: baseEarnings,
       overtime_rate: booking.overtime_rate,
       net_overtime_rate: netOT,
-      total_provider_amount: booking.provider_amount,
+      total_provider_amount: booking.provider_amount || baseEarnings,
       duration_minutes: booking.service_duration,
       one_hour_overtime_total: baseEarnings + netOT,
       two_hour_overtime_total: baseEarnings + netOT * 2,
     }
 
     let availability_reason = null
-    const isAvailable = booking.provider_id === null && ['pending', 'matching'].includes(booking.status) && booking.commission_percent !== null
-    
+    const isAvailable = booking.provider_id === null && ['pending', 'matching'].includes(booking.status)
+
     if (!isAvailable) {
       if (booking.provider_id !== null) availability_reason = 'already_accepted'
-      else if (booking.commission_percent === null) availability_reason = 'awaiting_approval'
       else availability_reason = 'not_available'
     }
 
     const isMyJob = booking.provider_id === decoded.providerId
 
-    return NextResponse.json({ 
-      success: true, 
-      data: booking, 
-      is_available: isAvailable, 
+    return NextResponse.json({
+      success: true,
+      data: booking,
+      is_available: isAvailable,
       is_my_job: isMyJob,
-      availability_reason 
+      availability_reason
     })
 
   } catch (error) {
@@ -111,6 +122,9 @@ export async function POST(request, { params }) {
 
     const { id } = await params
 
+    const defaultCommRaw = await getSystemSetting('default_commission', '20')
+    const defaultComm = parseFloat(defaultCommRaw)
+
     connection = await getConnection()
     await connection.query('START TRANSACTION')
 
@@ -126,9 +140,16 @@ export async function POST(request, { params }) {
       )
 
       if (!job) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: 'Job not found' }, { status: 404 }) }
-      if (job.commission_percent === null) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: 'Job not yet approved by admin' }, { status: 409 }) }
+
+      const commPct = job.commission_percent !== null ? parseFloat(job.commission_percent) : defaultComm
+
       if (job.provider_id !== null) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: 'Already accepted by another provider' }, { status: 409 }) }
       if (!['pending', 'matching'].includes(job.status)) { await connection.query('ROLLBACK'); return NextResponse.json({ success: false, message: `Not available (status: ${job.status})` }, { status: 409 }) }
+
+      // Update commission if null
+      if (job.commission_percent === null) {
+        await connection.execute('UPDATE bookings SET commission_percent = ? WHERE id = ?', [commPct, id])
+      }
 
       await connection.execute(
         `UPDATE bookings SET provider_id=?, status='confirmed', accepted_at=NOW(), updated_at=NOW() WHERE id=?`,
@@ -142,21 +163,20 @@ export async function POST(request, { params }) {
       await connection.query('COMMIT')
 
       const otRate = parseFloat(job.overtime_rate || 0)
-      const commPct = parseFloat(job.commission_percent || 0)
       const netOT = otRate * (1 - commPct / 100)
       const baseEarnings = parseFloat(job.service_price || 0) * (1 - commPct / 100)
 
       const response = {
         success: true,
         message: `Job accepted: ${job.service_name}`,
-        provider_amount: job.provider_amount,
+        provider_amount: job.provider_amount || baseEarnings,
       }
 
       if (otRate > 0) {
         response.overtime_info = {
           rate_per_hour: otRate,
           net_rate_per_hour: netOT,
-          message: `Overtime: $${otRate.toFixed(2)}/hr ($${netOT.toFixed(2)} after commission)`,
+          message: `Overtime available at $${otRate.toFixed(2)}/hr.`,
           potential: { one_hour: baseEarnings + netOT, two_hour: baseEarnings + netOT * 2 }
         }
       }

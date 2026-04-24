@@ -286,7 +286,7 @@ export default function ProviderJobDetail({ params }) {
               </span>
               {hasOvertime && (
                 <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md rounded-full px-3.5 py-1.5 text-xs font-bold text-green-100">
-                  ⏰ +${otRate.toFixed(2)}/hr OT
+                  ⏰ +${netOT.toFixed(2)}/hr OT
                 </span>
               )}
             </div>
@@ -294,34 +294,23 @@ export default function ProviderJobDetail({ params }) {
 
           <div className="flex-shrink-0 bg-white/15 rounded-3xl p-5 backdrop-blur-md border border-white/10 text-center md:text-right min-w-[140px]">
             <p className="text-green-100 text-[10px] uppercase tracking-widest font-bold mb-1 opacity-70">Guaranteed</p>
-            <p className="text-4xl font-black leading-none">${amount.toFixed(2)}</p>
+            <p className="text-4xl font-black leading-none">${baseEarnings.toFixed(2)}</p>
           </div>
         </div>
       </div>
 
       {/* Status banners */}
       {!job.is_available && !job.is_my_job && (
-        <div className={`border rounded-2xl p-4 mb-6 flex items-center gap-3 ${job.availability_reason === 'awaiting_approval'
-            ? 'bg-amber-50 border-amber-200'
-            : 'bg-red-50 border-red-200'
-          }`}>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${job.availability_reason === 'awaiting_approval' ? 'bg-amber-100' : 'bg-red-100'
-            }`}>
-            <span className="text-xl">{job.availability_reason === 'awaiting_approval' ? '⏳' : '⚠️'}</span>
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-red-100">
+            <span className="text-xl">⚠️</span>
           </div>
           <div>
-            <p className={`text-sm font-bold ${job.availability_reason === 'awaiting_approval' ? 'text-amber-800' : 'text-red-700'
-              }`}>
+            <p className="text-sm font-bold text-red-700">
               {job.availability_reason === 'already_accepted' && 'Already accepted by another provider.'}
-              {job.availability_reason === 'awaiting_approval' && 'Awaiting Admin Approval'}
               {job.availability_reason === 'not_available' && 'This job is no longer available.'}
               {!job.availability_reason && 'Job is currently unavailable.'}
             </p>
-            {/* {job.availability_reason === 'awaiting_approval' && (
-              <p className="text-xs text-amber-700/70 mt-0.5 font-medium">
-                The administrator needs to set the commission for this job before it can be accepted.
-              </p>
-            )} */}
           </div>
         </div>
       )}
@@ -379,10 +368,10 @@ export default function ProviderJobDetail({ params }) {
                 ['🐕', 'Pets', hasPets, 'amber'],
               ].map(([icon, label, val, color]) => (
                 <div key={label} className={`rounded-xl border p-2.5 text-center transition-colors ${val
-                    ? color === 'green'
-                      ? 'bg-green-50 border-green-200 text-green-700'
-                      : 'bg-amber-50 border-amber-200 text-amber-700'
-                    : 'bg-gray-50 border-gray-100 text-gray-300'
+                  ? color === 'green'
+                    ? 'bg-green-50 border-green-200 text-green-700'
+                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                  : 'bg-gray-50 border-gray-100 text-gray-300'
                   }`}>
                   <span className="block text-lg mb-0.5">{icon}</span>
                   <p className="text-[10px] font-bold uppercase tracking-tight">{label}</p>
@@ -414,16 +403,19 @@ export default function ProviderJobDetail({ params }) {
         {selectedPhoto && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-200">
             <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setSelectedPhoto(null)} />
-            <button 
-              onClick={() => setSelectedPhoto(null)}
-              className="absolute top-6 right-6 z-[110] p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
-              <X className="h-6 w-6" />
+            <button
+              onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
+              type="button"
+              className="absolute top-4 right-4 z-[120] p-4 bg-white/20 hover:bg-white/30 rounded-full text-white transition-all active:scale-90 shadow-lg"
+              aria-label="Close preview"
+            >
+              <X className="h-8 w-8" />
             </button>
             <div className="relative z-[110] max-w-5xl w-full h-full flex items-center justify-center">
-              <img 
-                src={selectedPhoto} 
-                alt="Enlarged view" 
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300" 
+              <img
+                src={selectedPhoto}
+                alt="Enlarged view"
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
               />
             </div>
           </div>
@@ -440,17 +432,13 @@ export default function ProviderJobDetail({ params }) {
                   <p className="text-sm font-bold text-gray-900">{formatDuration(dur)}</p>
                 </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500 font-medium">Service Base Price</span>
-                <span className="font-bold text-gray-900">${basePrice.toFixed(2)}</span>
+              <div className="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 mb-2">
+                <span className="text-gray-500 font-bold uppercase tracking-tight text-[10px]">Platform Cost</span>
+                <span className="text-gray-900 font-bold text-sm">$0.00</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500 font-medium">Platform Fee ({commPct}%)</span>
-                <span className="font-bold text-orange-600">−${commAmt.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm font-black pt-3 border-t border-gray-100">
-                <span className="text-gray-900 uppercase tracking-tighter">Your Base Earnings</span>
-                <span className="text-green-600 text-lg">${baseEarnings.toFixed(2)}</span>
+              <div className="flex justify-between items-center bg-green-50 border border-green-100 rounded-xl p-4">
+                <span className="text-gray-900 font-bold uppercase tracking-tight text-xs">Your Guaranteed Earnings</span>
+                <span className="text-green-600 text-2xl font-black">${baseEarnings.toFixed(2)}</span>
               </div>
 
               {hasOvertime && (
@@ -465,7 +453,7 @@ export default function ProviderJobDetail({ params }) {
                       <span className="text-sm font-black">${total.toFixed(2)}</span>
                     </div>
                   ))}
-                  <p className="text-[10px] mt-3 italic font-medium">Net OT rate: ${netOT.toFixed(2)}/hr after commission</p>
+                  <p className="text-[10px] mt-3 italic font-medium">Overtime is paid after the standard duration.</p>
                 </div>
               )}
             </div>
@@ -488,23 +476,23 @@ export default function ProviderJobDetail({ params }) {
       </div>
 
       {/* Debug Info */}
-      <div className="mt-12 p-4 bg-gray-50 border border-gray-100 rounded-2xl opacity-40 hover:opacity-100 transition-opacity">
+      {/* <div className="mt-12 p-4 bg-gray-50 border border-gray-100 rounded-2xl opacity-40 hover:opacity-100 transition-opacity">
         <p className="text-[10px] text-gray-400 font-mono">DEBUG: job.photos.length = {job.photos?.length || 0} | booking_id={id}</p>
-      </div>
+      </div> */}
 
       {/* Sticky Accept Button */}
       {job.is_available && (
-        <div className="fixed bottom-0 left-0 right-0 lg:left-64 z-40 p-4 md:p-6 bg-white/80 backdrop-blur-xl border-t border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
+        <div className="fixed bottom-0 left-0 right-0 lg:left-64 z-40 p-4 md:p-5 bg-white backdrop-blur-2xl border-t border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] pb-safe">
           <div className="max-w-4xl mx-auto">
             <button
               onClick={() => { if (!stripeConnected) { setStripeModal(true) } else { setShowConfirm(true) } }}
-              className={`w-full py-4.5 text-white rounded-2xl font-black text-lg transition-all shadow-xl hover:scale-[1.01] active:scale-95 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 ${hasOvertime
-                  ? 'bg-gradient-to-r from-green-700 to-teal-600 shadow-green-900/20'
-                  : 'bg-green-600 hover:bg-green-700 shadow-green-600/20'
+              className={`w-full py-3.5 md:py-4.5 text-white rounded-2xl font-black text-base md:text-lg transition-all shadow-xl hover:scale-[1.01] active:scale-95 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-4 ${hasOvertime
+                ? 'bg-gradient-to-r from-green-700 to-teal-600 shadow-green-900/20'
+                : 'bg-green-600 hover:bg-green-700 shadow-green-600/20'
                 }`}>
-              <span>Accept this Job — Earn ${amount.toFixed(2)}</span>
+              <span className="tracking-tight">Accept this Job — Earn ${baseEarnings.toFixed(2)}</span>
               {hasOvertime && (
-                <span className="text-[10px] md:text-xs bg-white/20 px-3 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-sm">
+                <span className="text-[9px] md:text-xs bg-white/20 px-3 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-sm border border-white/10">
                   Potential up to ${(baseEarnings + netOT * 2).toFixed(2)}
                 </span>
               )}

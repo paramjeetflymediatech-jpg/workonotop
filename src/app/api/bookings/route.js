@@ -140,8 +140,8 @@ export async function POST(request) {
 
     try {
       console.log('[API Bookings] Creating booking for:', email, bookingNumber);
-      console.log('[API Bookings] Payload:', { 
-        service_id, first_name, last_name, email, phone, address_line1, job_description 
+      console.log('[API Bookings] Payload:', {
+        service_id, first_name, last_name, email, phone, address_line1, job_description
       });
 
       const [result] = await connection.execute(
@@ -191,9 +191,9 @@ export async function POST(request) {
       execute("SELECT id FROM users WHERE role = 'admin'").then(admins => {
         admins.forEach(admin => {
           notifyUser(admin.id, 'New Booking Created', `New booking #${bookingNumber} for ${service_name}`, { bookingId, type: 'booking_created' }, execute, 'admin')
-            .catch(() => {});
+            .catch(() => { });
         });
-      }).catch(_ => {});
+      }).catch(_ => { });
 
       return NextResponse.json({
         success: true,
@@ -223,7 +223,7 @@ export async function PUT(request) {
     const id = searchParams.get('id');
     const body = await request.json();
     console.log(`[API PUT /api/bookings] ID: ${id}, Body:`, body);
-    
+
     const { status, provider_id, notes, job_time_slot, commission_percent, payment_status } = body;
 
     if (!id) return NextResponse.json({ success: false, message: 'Booking ID required' }, { status: 400 });
@@ -343,10 +343,10 @@ export async function PUT(request) {
             let bodyMsg = `Your booking #${bookingData.booking_number} is now ${status.replace('_', ' ')}`;
             if (status === 'matching') { title = 'Provider Assigned'; bodyMsg = `A provider has been assigned to #${bookingData.booking_number}`; }
             else if (status === 'completed') { title = 'Service Completed'; bodyMsg = `Service #${bookingData.booking_number} has been completed.`; }
-            notifyUser(bookingData.user_id, title, bodyMsg, { bookingId: id, status, type: 'status_update' }, execute, 'customer').catch(() => {});
+            notifyUser(bookingData.user_id, title, bodyMsg, { bookingId: id, status, type: 'status_update' }, execute, 'customer').catch(() => { });
           }
           if (provider_id && provider_id !== current.current_provider) {
-            notifyUser(provider_id, 'New Job Assigned', `You have been assigned to #${bookingData.booking_number}`, { bookingId: id, type: 'new_job' }, execute, 'provider').catch(() => {});
+            notifyUser(provider_id, 'New Job Assigned', `You have been assigned to #${bookingData.booking_number}`, { bookingId: id, type: 'new_job' }, execute, 'provider').catch(() => { });
           }
         }
       } catch (notifyErr) {

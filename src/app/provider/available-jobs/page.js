@@ -78,11 +78,11 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, amount, hasO
               </div>
             </div>
           )}
-          {amount && (
-            <div className={`inline-flex items-center gap-1.5 ${hasOvertime ? 'bg-purple-50 border border-purple-100' : 'bg-green-50 border border-green-100'} text-${hasOvertime ? 'purple' : 'green'}-700 text-lg font-bold px-4 py-2 rounded-xl mt-1`}>
+          {/* {amount && (
+            <div className={`inline-flex items-center gap-1.5 ${hasOvertime ? 'bg-green-50 border border-green-100' : 'bg-green-50 border border-green-100'} text-${hasOvertime ? 'purple' : 'green'}-700 text-lg font-bold px-4 py-2 rounded-xl mt-1`}>
               You earn: {amount}
             </div>
-          )}
+          )} */}
         </div>
         <div className="flex gap-3 px-6 pb-6">
           <button onClick={onClose}
@@ -90,10 +90,7 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, amount, hasO
             Cancel
           </button>
           <button onClick={() => { onConfirm(); onClose(); }}
-            className={`flex-1 py-2.5 text-white font-bold rounded-xl text-sm transition ${hasOvertime
-                ? 'bg-gradient-to-r from-green-700 to-teal-600 hover:from-purple-700 hover:to-blue-700'
-                : 'bg-green-600 hover:bg-green-700'
-              }`}>
+            className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition cursor-pointer">
             Accept Job
           </button>
         </div>
@@ -132,6 +129,9 @@ export default function ProviderAvailableJobs() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [providerCity, setProviderCity] = useState('')
+  const [searchCity, setSearchCity] = useState('')
+  const [activeCity, setActiveCity] = useState('')
+  const [showAllAreas, setShowAllAreas] = useState(false)
   const [toast, setToast] = useState(null)
   const [filter, setFilter] = useState('all')
   const [stripeConnected, setStripeConnected] = useState(true)
@@ -142,11 +142,17 @@ export default function ProviderAvailableJobs() {
 
   useEffect(() => { loadJobs() }, [])
 
-  const loadJobs = async (silent = false) => {
+  const loadJobs = async (silent = false, city = '', all = false) => {
     silent ? setRefreshing(true) : setLoading(true)
     try {
+      let url = '/api/provider/available-jobs'
+      if (!all) {
+        const filterCity = city || activeCity || providerCity
+        if (filterCity) url += `?city=${encodeURIComponent(filterCity)}`
+      }
+
       const [jobsRes, provRes] = await Promise.all([
-        fetch('/api/provider/available-jobs'),
+        fetch(url),
         fetch('/api/provider/me')
       ])
       const data = await jobsRes.json()
@@ -157,8 +163,14 @@ export default function ProviderAvailableJobs() {
       }
       if (data.success) {
         setJobs(data.data || [])
-        if (data.provider_city) setProviderCity(data.provider_city)
-        if (!data.data?.length && !silent) showToast('info', 'No jobs available in your area')
+        setShowAllAreas(all)
+        if (data.provider_city) {
+          setProviderCity(data.provider_city)
+          if (!city && !activeCity) setActiveCity(data.provider_city)
+        }
+        if (!data.data?.length && !silent) {
+          showToast('info', all ? 'No jobs available anywhere right now' : (city || activeCity) ? `No jobs found in ${city || activeCity}` : 'No jobs available in your area')
+        }
       } else {
         showToast('error', data.message || 'Failed to load jobs')
       }
@@ -167,6 +179,30 @@ export default function ProviderAvailableJobs() {
     } finally {
       setLoading(false)
       setRefreshing(false)
+    }
+  }
+
+  const handleCitySearch = (e) => {
+    e.preventDefault()
+    setActiveCity(searchCity)
+    loadJobs(false, searchCity)
+  }
+
+  const clearCitySearch = () => {
+    setSearchCity('')
+    setActiveCity(providerCity)
+    loadJobs(false, providerCity, false)
+  }
+
+  const toggleAllAreas = () => {
+    const next = !showAllAreas
+    setShowAllAreas(next)
+    if (next) {
+      setActiveCity('All Areas')
+      loadJobs(false, '', true)
+    } else {
+      setActiveCity(providerCity)
+      loadJobs(false, providerCity, false)
     }
   }
 
@@ -230,21 +266,51 @@ export default function ProviderAvailableJobs() {
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Available Jobs</h1>
-          {providerCity && (
-            <p className="text-sm text-gray-400 mt-0.5 flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5 text-green-500" />
-              Jobs near <strong className="text-gray-600 ml-1">{providerCity}</strong>
-            </p>
-          )}
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Available Jobs</h1>
+          <p className="text-sm text-gray-400 mt-1 flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5 text-green-500" />
+            {showAllAreas ? 'Showing jobs from ' : 'Jobs near '}
+            <strong className="text-gray-700">{showAllAreas ? 'All Areas' : (activeCity || providerCity || 'you')}</strong>
+            {!showAllAreas && (providerCity || activeCity) && (
+              <button onClick={toggleAllAreas} className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-md hover:bg-gray-200 transition ml-1 font-bold text-gray-500">
+                Show All
+              </button>
+            )}
+            {showAllAreas && (
+              <button onClick={toggleAllAreas} className="text-[10px] bg-green-50 px-2 py-0.5 rounded-md hover:bg-green-100 transition ml-1 font-bold text-green-600 border border-green-100">
+                Back to Local
+              </button>
+            )}
+          </p>
         </div>
-        <button onClick={() => loadJobs(true)} disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition disabled:opacity-50">
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+
+        <div className="flex items-center gap-2 flex-1 md:flex-none md:min-w-[300px]">
+          <form onSubmit={handleCitySearch} className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search by city..."
+              value={searchCity}
+              onChange={(e) => setSearchCity(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all outline-none"
+            />
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            {searchCity && (
+              <button
+                type="button"
+                onClick={clearCitySearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            )}
+          </form>
+          <button onClick={() => loadJobs(true, activeCity)} disabled={refreshing}
+            className="flex-shrink-0 p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl transition disabled:opacity-50">
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Stripe warning banner */}
@@ -298,18 +364,28 @@ export default function ProviderAvailableJobs() {
       ) : filteredJobs.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">🔍</span>
+            <MapPin className="h-8 w-8 text-gray-300" />
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-1">No jobs available</h3>
-          <p className="text-sm text-gray-400 max-w-xs mx-auto">
-            {filter === 'assigned' ? 'No jobs assigned to you by admin right now'
-              : filter !== 'all' ? `No ${filter === 'with_overtime' ? 'overtime' : 'base'} jobs in ${providerCity || 'your area'}`
-                : `No open jobs in ${providerCity || 'your area'} right now`}
+          <h3 className="text-lg font-bold text-gray-900 mb-2">
+            No jobs in {showAllAreas ? 'any area' : (activeCity || providerCity || 'your area')}
+          </h3>
+          <p className="text-sm text-gray-400 mb-8 max-w-xs mx-auto">
+            {showAllAreas
+              ? "We don't have any open jobs at the moment. Please check back later!"
+              : `There are currently no open jobs in ${activeCity || providerCity}. Try searching another city or view all areas.`}
           </p>
-          <button onClick={() => { setFilter('all'); loadJobs() }}
-            className="mt-5 px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
-            Check Again
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {!showAllAreas && (
+              <button onClick={toggleAllAreas}
+                className="px-6 py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition shadow-lg shadow-green-600/20">
+                View All Areas
+              </button>
+            )}
+            <button onClick={() => loadJobs(true, showAllAreas ? '' : (activeCity || providerCity), showAllAreas)}
+              className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition">
+              Check Again
+            </button>
+          </div>
         </div>
 
       ) : (
@@ -329,8 +405,8 @@ export default function ProviderAvailableJobs() {
 
             return (
               <div key={job.id} className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all overflow-hidden ${job.is_admin_assigned ? 'border-blue-200 hover:border-blue-300' :
-                  hasOvertime ? 'border-purple-200 hover:border-purple-300 ring-1 ring-purple-100' :
-                    'border-gray-100 hover:border-green-200'
+                hasOvertime ? 'border-purple-200 hover:border-purple-300 ring-1 ring-purple-100' :
+                  'border-gray-100 hover:border-green-200'
                 }`}>
 
                 {job.is_admin_assigned && (
@@ -344,7 +420,7 @@ export default function ProviderAvailableJobs() {
                   <div className="bg-gradient-to-r from-green-700 to-teal-600 px-5 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 text-white" />
-                      <p className="text-xs font-semibold text-white">⏰ Overtime eligible — max 2 hours at ${otRate.toFixed(2)}/hr</p>
+                      <p className="text-xs font-semibold text-white">⏰ Overtime eligible — max 2 hours at ${netOT.toFixed(2)}/hr</p>
                     </div>
                     <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full">+OT</span>
                   </div>
@@ -365,8 +441,8 @@ export default function ProviderAvailableJobs() {
                         </div>
                       ) : (
                         <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl ${job.is_admin_assigned ? 'bg-blue-50 border border-blue-100 text-blue-600' :
-                            hasOvertime ? 'bg-purple-50 border border-purple-100 text-purple-600' :
-                              'bg-green-50 border border-green-100 text-green-600'
+                          hasOvertime ? 'bg-purple-50 border border-purple-100 text-purple-600' :
+                            'bg-green-50 border border-green-100 text-green-600'
                           }`}>
                           {job.category_icon ? <ion-icon name={job.category_icon}></ion-icon> : '🔧'}
                         </div>
@@ -381,10 +457,10 @@ export default function ProviderAvailableJobs() {
                   <div className="text-right flex-shrink-0 ml-3">
                     <p className="text-[10px] text-gray-400 uppercase tracking-wide">You earn</p>
                     <p className={`text-2xl font-extrabold leading-tight ${job.is_admin_assigned ? 'text-black' :
-                        hasOvertime ? 'text-black-600' :
-                          'text-black'
+                      hasOvertime ? 'text-black-600' :
+                        'text-black'
                       }`}>
-                      {job.display_amount}
+                      ${baseEarnings.toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -395,7 +471,7 @@ export default function ProviderAvailableJobs() {
                   </span>
                   {hasOvertime && (
                     <span className="inline-flex items-center gap-1 text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2.5 py-1 rounded-lg font-semibold">
-                      ⏰ +${otRate.toFixed(2)}/hr OT
+                      ⏰ +${netOT.toFixed(2)}/hr OT
                     </span>
                   )}
                 </div>
@@ -415,7 +491,7 @@ export default function ProviderAvailableJobs() {
                         2hr OT: ${(baseEarnings + netOT * 2).toFixed(2)}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1.5">Net rate {netOT.toFixed(2)}/hr</p>
+                    <p className="text-xs text-gray-400 mt-1.5">Net rate ${netOT.toFixed(2)}/hr</p>
                   </div>
                 )}
 
@@ -491,7 +567,7 @@ export default function ProviderAvailableJobs() {
                     <span className="truncate">
                       {!stripeConnected
                         ? "🔒 Connect Stripe"
-                        : `Accept — ${job.display_amount}`}
+                        : `Accept — ${baseEarnings.toFixed(2)}`}
                     </span>
 
                     {stripeConnected && hasOvertime && !job.is_admin_assigned && (
