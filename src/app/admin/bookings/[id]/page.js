@@ -270,7 +270,7 @@ export default function BookingDetailsPage({ params }) {
                 {booking.job_description && (
                   <div>
                     <p className={`text-xs font-medium mb-1 ${lbl}`}>Description</p>
-                    <div className={`p-3 rounded-xl border ${divCls} ${muted} text-sm ${val} leading-relaxed break-words`}>{booking.job_description}</div>
+                    <div className={`p-3 rounded-xl border ${divCls} ${muted} text-sm ${val} leading-relaxed break-all break-words`}>{booking.job_description}</div>
                   </div>
                 )}
                 {booking.timing_constraints && (
@@ -279,7 +279,7 @@ export default function BookingDetailsPage({ params }) {
 
                     <div className="p-3 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800 flex gap-2">
                       <span className="flex-shrink-0">⏰</span>
-                      <span className="break-words min-w-0">
+                      <span className="break-all break-words min-w-0">
                         {booking.timing_constraints}
                       </span>
                     </div>
@@ -288,7 +288,7 @@ export default function BookingDetailsPage({ params }) {
                 {booking.instructions && (
                   <div>
                     <p className={`text-xs font-medium mb-1 ${lbl}`}>Special Instructions</p>
-                    <div className="p-3 rounded-xl border border-blue-200 bg-blue-50 text-sm text-blue-800 flex gap-2 break-words">
+                    <div className="p-3 rounded-xl border border-blue-200 bg-blue-50 text-sm text-blue-800 flex gap-2 break-all break-words">
                       <span className="flex-shrink-0">📌</span><span>{booking.instructions}</span>
                     </div>
                   </div>
@@ -632,7 +632,7 @@ function Field({ label, value, lbl, val }) {
   return (
     <div>
       <p className={`text-xs mb-0.5 ${lbl}`}>{label}</p>
-      <p className={`text-sm font-medium ${val} break-words`}>{value || '—'}</p>
+      <p className={`text-sm font-medium ${val} break-all break-words`}>{value || '—'}</p>
     </div>
   )
 }

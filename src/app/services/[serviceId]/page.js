@@ -12,9 +12,9 @@ export default function ServiceDetailPage({ params }) {
   const serviceId = unwrappedParams.serviceId;
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState('Please enter your service location');
+  const [selectedAddress, setSelectedAddress] = useState('');
   const [addressModalOpen, setAddressModalOpen] = useState(false);
-  const [tempAddress, setTempAddress] = useState(selectedAddress);
+  const [tempAddress, setTempAddress] = useState('');
   const [service, setService] = useState(null);
   const [relatedServices, setRelatedServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +26,7 @@ export default function ServiceDetailPage({ params }) {
     }
 
     const savedAddress = sessionStorage.getItem('userAddress');
-    if (savedAddress) {
+    if (savedAddress && savedAddress !== 'Please enter your service location') {
       setSelectedAddress(savedAddress);
       setTempAddress(savedAddress);
     }
@@ -304,7 +304,9 @@ export default function ServiceDetailPage({ params }) {
                         setAddressModalOpen(true);
                       }}
                     >
-                      <span className="text-sm flex-1 line-clamp-1">{selectedAddress}</span>
+                      <span className={`text-sm flex-1 line-clamp-1 ${!selectedAddress ? 'text-gray-400' : ''}`}>
+                        {selectedAddress || "Please enter your service location"}
+                      </span>
                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
@@ -316,7 +318,7 @@ export default function ServiceDetailPage({ params }) {
 
                   <button 
                     onClick={() => {
-                      if (!selectedAddress || selectedAddress === 'Please enter your service location' || selectedAddress.trim() === '') {
+                      if (!selectedAddress || selectedAddress.trim() === '') {
                         setAddressError('Required');
                         toast.error('Please enter your service location');
                         setAddressModalOpen(true);
@@ -353,7 +355,7 @@ export default function ServiceDetailPage({ params }) {
                 className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
                 value={tempAddress}
                 onChange={(e) => setTempAddress(e.target.value)}
-                placeholder="Enter your full address"
+                placeholder="Please enter your service location"
               />
             </div>
             <div className="flex gap-3">

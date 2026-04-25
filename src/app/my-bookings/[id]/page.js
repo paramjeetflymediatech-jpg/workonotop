@@ -30,7 +30,7 @@ function Toast({ message, type, onClose }) {
 function Lightbox({ src, onClose }) {
   if (!src) return null
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4" onClick={onClose}>
       <button className="absolute top-4 right-6 text-white text-4xl font-light" onClick={onClose}>×</button>
       <img src={src} alt="Full size" className="max-w-full max-h-[90vh] object-contain rounded-xl"
         onClick={e => e.stopPropagation()} />
@@ -54,10 +54,10 @@ function PhotoGrid({ photos, onOpen }) {
         if (!src) return null
         return (
           <div key={i} onClick={() => onOpen(src)}
-            className="aspect-square rounded-xl overflow-hidden border border-gray-200 cursor-pointer hover:opacity-90 transition shadow-sm">
+            className="aspect-square rounded-xl overflow-hidden border border-gray-200 cursor-pointer hover:opacity-90 transition shadow-sm bg-gray-50">
             {errors[i]
-              ? <div className="w-full h-full bg-gray-100 flex items-center justify-center text-2xl">🖼️</div>
-              : <img src={src} alt={`Photo ${i + 1}`} className="w-full h-full object-contain"
+              ? <div className="w-full h-full flex items-center justify-center text-2xl">🖼️</div>
+              : <img src={src} alt={`Photo ${i + 1}`} className="w-full h-full object-cover"
                 onError={() => setErrors(p => ({ ...p, [i]: true }))} />
             }
           </div>
@@ -155,7 +155,6 @@ export default function CustomerBookingDetails() {
   const [booking, setBooking] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState('details')
   const [lightbox, setLightbox] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [showDisputeModal, setShowDisputeModal] = useState(false)
@@ -254,11 +253,8 @@ export default function CustomerBookingDetails() {
   const isOvertime = actualMinutes > standardMinutes && overtimeRate > 0
   const overtimeMins = isOvertime ? Math.min(actualMinutes - standardMinutes, 120) : 0
   const overtimeCost = isOvertime ? Math.round((overtimeRate * overtimeMins / 60) * 100) / 100 : 0
-
-  // Authorized amount = base + 2hr overtime hold
   const overtimeHoldAmount = overtimeRate * 2
   const totalAuthorized = parseFloat(booking.authorized_amount || (basePrice + overtimeHoldAmount))
-
   const allPhotos = [...(booking.before_photos || []), ...(booking.after_photos || []), ...(booking.photos || []).map(url => ({ url }))]
 
   return (
@@ -344,136 +340,253 @@ export default function CustomerBookingDetails() {
             </div>
           )}
 
-
           {/* Details Section */}
-          <div className="space-y-5">
+          <div className="space-y-6">
 
-            {/* Provider */}
+            {/* 1. Planned Schedule */}
+            <div className="bg-white rounded-2xl p-6 border shadow-sm">
+              <h2 className="text-base font-bold mb-4 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-teal-600" /> Job Schedule
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Service Date</p>
+                  <p className="text-gray-900 font-semibold text-lg">
+                    {booking.job_date ? new Date(booking.job_date).toLocaleDateString('en-US', { 
+                      weekday: 'short', 
+                      month: 'long', 
+                      day: 'numeric', 
+                      year: 'numeric' 
+                    }) : 'TBD'}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Time Window</p>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-teal-600" />
+                    <p className="text-gray-900 font-semibold text-lg capitalize">
+                      {Array.isArray(booking.job_time_slot) ? booking.job_time_slot.join(', ') : (booking.job_time_slot || 'Anytime')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Job Description */}
+            <div className="bg-white rounded-2xl p-6 border shadow-sm">
+              <h2 className="text-base font-bold mb-4 flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-teal-600" /> Job Description
+              </h2>
+              <div className="bg-teal-50/30 rounded-xl p-5 border border-teal-100/50">
+                <p className="text-gray-800 whitespace-pre-wrap break-all leading-relaxed text-base font-medium">
+                  {booking.job_description || "No specific description provided."}
+                </p>
+              </div>
+              
+              {booking.timing_constraints && (
+                <div className="mt-5 p-4 bg-amber-50 rounded-xl border border-amber-100 flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-amber-800 uppercase font-bold tracking-wider mb-1">Special Instructions / Timing</p>
+                    <p className="text-amber-900 text-sm italic font-medium break-all">{booking.timing_constraints}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Provider Details (if assigned) */}
             {booking.provider_name && (
-              <div className="bg-white rounded-2xl p-6 border">
-                <h2 className="text-base font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5 text-teal-600" /> Provider</h2>
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-                    {booking.provider_name[0]?.toUpperCase()}
+              <div className="bg-white rounded-2xl p-6 border shadow-sm">
+                <h2 className="text-base font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5 text-teal-600" /> Your Professional</h2>
+                <div className="flex items-center gap-5">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-teal-200/50 overflow-hidden">
+                      {booking.provider_avatar ? (
+                        <img src={booking.provider_avatar} alt={booking.provider_name} className="w-full h-full object-cover" />
+                      ) : booking.provider_name[0]?.toUpperCase()}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white shadow-sm" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">{booking.provider_name}</h3>
-                    {booking.provider_rating > 0 && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex">{[1, 2, 3, 4, 5].map(s => <Star key={s} className={`w-4 h-4 ${s <= Math.round(booking.provider_rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />)}</div>
-                        <span className="text-sm text-gray-600">{parseFloat(booking.provider_rating).toFixed(1)} ({booking.provider_reviews || 0} reviews)</span>
+                    <h3 className="font-bold text-xl text-gray-900">{booking.provider_name}</h3>
+                    {booking.provider_rating > 0 ? (
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <div className="flex bg-yellow-50 px-2 py-0.5 rounded-lg border border-yellow-100">
+                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1.5" />
+                          <span className="text-sm font-bold text-yellow-700">{parseFloat(booking.provider_rating).toFixed(1)}</span>
+                        </div>
+                        <span className="text-sm text-gray-500 font-medium">({booking.provider_reviews || 0} reviews)</span>
                       </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 mt-1">New Professional</p>
                     )}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Service Location */}
+            {/* 4. Service Location */}
             {booking.address_line1 && (
-              <div className="bg-white rounded-2xl p-6 border">
+              <div className="bg-white rounded-2xl p-6 border shadow-sm">
                 <h2 className="text-base font-bold mb-4 flex items-center gap-2"><MapPin className="w-5 h-5 text-teal-600" /> Service Location</h2>
-                <p className="text-gray-800">{booking.address_line1}{booking.address_line2 && `, ${booking.address_line2}`}</p>
-                <p className="text-gray-600">{booking.city}{booking.postal_code && `, ${booking.postal_code}`}</p>
+                <div className="flex items-start gap-3">
+                  <div className="bg-gray-100 p-2 rounded-lg">
+                    <MapPin className="w-5 h-5 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-gray-900 font-bold text-lg leading-tight">{booking.address_line1}{booking.address_line2 && `, ${booking.address_line2}`}</p>
+                    <p className="text-gray-600 font-medium mt-1">{booking.city}{booking.postal_code && `, ${booking.postal_code}`}</p>
+                  </div>
+                </div>
+                
                 {(booking.parking_access || booking.elevator_access || booking.has_pets) && (
-                  <div className="mt-3 pt-3 border-t flex flex-wrap gap-2">
-                    {booking.parking_access === 1 && <span className="px-2.5 py-1 rounded-full text-xs bg-blue-50 text-blue-700">🅿️ Parking Available</span>}
-                    {booking.elevator_access === 1 && <span className="px-2.5 py-1 rounded-full text-xs bg-purple-50 text-purple-700">🛗 Elevator Access</span>}
-                    {booking.has_pets === 1 && <span className="px-2.5 py-1 rounded-full text-xs bg-amber-50 text-amber-700">🐕 Pets on Premises</span>}
+                  <div className="mt-5 pt-5 border-t border-gray-100 flex flex-wrap gap-3">
+                    {booking.parking_access === 1 && (
+                      <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-xl border border-blue-100">
+                        <span className="text-sm font-bold">🅿️</span>
+                        <span className="text-xs font-bold uppercase tracking-wide">Free Parking</span>
+                      </div>
+                    )}
+                    {booking.elevator_access === 1 && (
+                      <div className="flex items-center gap-2 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-xl border border-purple-100">
+                        <span className="text-sm font-bold">🛗</span>
+                        <span className="text-xs font-bold uppercase tracking-wide">Elevator</span>
+                      </div>
+                    )}
+                    {booking.has_pets === 1 && (
+                      <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-xl border border-amber-100">
+                        <span className="text-sm font-bold">🐕</span>
+                        <span className="text-xs font-bold uppercase tracking-wide">Pets Home</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
 
-            {/* ── PAYMENT DETAILS ── */}
-            <div className="bg-white rounded-2xl p-6 border">
+            {/* 5. Payment Breakdown */}
+            <div className="bg-white rounded-2xl p-6 border shadow-sm">
               <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-teal-600" /> Payment Details
+                <CreditCard className="w-5 h-5 text-teal-600" /> Payment Summary
               </h2>
 
-              <div className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-2.5 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Payment Breakdown</span>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${booking.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
-                      booking.payment_status === 'authorized' ? 'bg-blue-100 text-blue-700' :
-                        'bg-yellow-100 text-yellow-700'}`}>
+              <div className="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="bg-white/50 backdrop-blur-sm px-5 py-3.5 flex items-center justify-between border-b border-gray-200">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Billing Details</span>
+                  <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${
+                    booking.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
+                    booking.payment_status === 'authorized' ? 'bg-blue-100 text-blue-700' :
+                    'bg-yellow-100 text-yellow-700'}`}>
                     {(booking.payment_status || 'PENDING').toUpperCase()}
                   </span>
                 </div>
 
-                <div className="px-4 py-3 space-y-0.5">
-                  <div className="flex justify-between items-center py-2.5 border-b border-gray-200">
-                    <div><p className="text-sm font-medium text-gray-700">Base Service Price</p><p className="text-xs text-gray-400">Flat rate ({standardMinutes}min)</p></div>
-                    <span className="text-sm font-bold text-gray-900">{fmt(basePrice)}</span>
+                <div className="p-5 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-bold text-gray-800">Base Service</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Fixed rate for first {standardMinutes} minutes</p>
+                    </div>
+                    <span className="text-base font-bold text-gray-900">{fmt(basePrice)}</span>
                   </div>
 
                   {overtimeRate > 0 && (
-                    <div className="flex justify-between items-center py-2.5 border-b border-gray-200">
+                    <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
-                        <div className="flex items-center gap-1.5 mb-0.5"><Clock className="w-3.5 h-3.5 text-amber-500" /><p className="text-sm font-medium text-gray-700">Overtime Hold</p></div>
-                        <p className="text-xs text-gray-400">{fmt(overtimeRate)}/hr × 2 hrs</p>
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <Clock className="w-4 h-4 text-amber-500" />
+                          <p className="text-sm font-bold text-gray-800">Authorization Hold</p>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">Estimated overtime protection (2 hrs)</p>
                       </div>
-                      <span className="text-sm font-bold text-amber-600">+{fmt(overtimeHoldAmount)}</span>
+                      <span className="text-base font-bold text-amber-600">+{fmt(overtimeHoldAmount)}</span>
                     </div>
                   )}
 
                   {isOvertime && (
-                    <div className="flex justify-between items-center py-2.5 border-b border-gray-200">
+                    <div className="flex justify-between items-start bg-purple-50 -mx-5 px-5 py-4 border-y border-purple-100">
                       <div className="flex-1 pr-4">
-                        <div className="flex items-center gap-1.5 mb-0.5"><Clock className="w-3.5 h-3.5 text-purple-500" /><p className="text-sm font-medium text-purple-700">Actual Overtime Used</p></div>
-                        <p className="text-xs text-gray-400">{overtimeMins}min at {fmt(overtimeRate)}/hr</p>
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <Clock className="w-4 h-4 text-purple-600" />
+                          <p className="text-sm font-bold text-purple-800">Actual Overtime</p>
+                        </div>
+                        <p className="text-xs text-purple-600/70 mt-0.5">{overtimeMins} mins extra at {fmt(overtimeRate)}/hr</p>
                       </div>
-                      <span className="text-sm font-bold text-purple-600">+{fmt(overtimeCost)}</span>
+                      <span className="text-base font-bold text-purple-700">+{fmt(overtimeCost)}</span>
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center py-2.5 border-b border-gray-200">
-                    <div><p className="text-sm font-medium text-gray-600">Total Authorized (Hold)</p><p className="text-xs text-gray-400">Card hold — not charged yet</p></div>
-                    <span className="text-sm font-bold text-blue-600">{fmt(totalAuthorized)}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-3 pb-1">
-                    <div><p className="text-sm font-bold text-gray-900">{booking.status === 'completed' ? 'Amount Charged' : 'You Pay'}</p></div>
-                    <span className={`text-2xl font-extrabold ${isOvertime ? 'text-purple-700' : 'text-teal-600'}`}>{fmt(customerTotal)}</span>
+                  <div className="pt-2">
+                    <div className="flex justify-between items-center bg-teal-600 p-5 rounded-2xl shadow-lg shadow-teal-100">
+                      <div>
+                        <p className="text-teal-100 text-xs font-bold uppercase tracking-wider">Final Amount</p>
+                        <p className="text-white text-[10px] mt-0.5 font-medium opacity-80">
+                          {booking.status === 'completed' ? 'Total charged to card' : 'Authorized amount'}
+                        </p>
+                      </div>
+                      <span className="text-3xl font-black text-white">{fmt(customerTotal)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ── PHOTOS SECTION (After Payment Details) ── */}
+            {/* 6. Photos & Media */}
             {allPhotos.length > 0 && (
-              <div className="space-y-5">
+              <div className="space-y-6">
                 {booking.before_photos?.length > 0 && (
                   <div className="bg-white rounded-2xl p-6 border shadow-sm">
-                    <h2 className="text-base font-bold mb-4 flex items-center gap-2"><ImageIcon className="w-5 h-5 text-orange-500" /> Before Photos <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">{booking.before_photos.length}</span></h2>
+                    <h2 className="text-base font-bold mb-4 flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-orange-500" /> 
+                      Work Started
+                      <span className="text-[10px] font-black bg-orange-100 text-orange-600 rounded-full px-2 py-0.5 ml-auto">BEFORE</span>
+                    </h2>
                     <PhotoGrid photos={booking.before_photos} onOpen={setLightbox} />
                   </div>
                 )}
                 {booking.after_photos?.length > 0 && (
                   <div className="bg-white rounded-2xl p-6 border shadow-sm">
-                    <h2 className="text-base font-bold mb-4 flex items-center gap-2"><ImageIcon className="w-5 h-5 text-green-500" /> After Photos <span className="text-xs bg-green-100 text-green-600 rounded-full px-2 py-0.5">{booking.after_photos.length}</span></h2>
+                    <h2 className="text-base font-bold mb-4 flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-green-600" /> 
+                      Work Completed
+                      <span className="text-[10px] font-black bg-green-100 text-green-700 rounded-full px-2 py-0.5 ml-auto">AFTER</span>
+                    </h2>
                     <PhotoGrid photos={booking.after_photos} onOpen={setLightbox} />
                   </div>
                 )}
                 {booking.photos?.length > 0 && (
                   <div className="bg-white rounded-2xl p-6 border shadow-sm">
-                    <h2 className="text-base font-bold mb-4 flex items-center gap-2"><ImageIcon className="w-5 h-5 text-blue-500" /> Customer Uploads <span className="text-xs bg-blue-100 text-blue-600 rounded-full px-2 py-0.5">{booking.photos.length}</span></h2>
+                    <h2 className="text-base font-bold mb-4 flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-blue-500" /> 
+                      Your Uploads
+                      <span className="text-[10px] font-black bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 ml-auto">{booking.photos.length}</span>
+                    </h2>
                     <PhotoGrid photos={booking.photos} onOpen={setLightbox} />
                   </div>
                 )}
               </div>
             )}
 
-            {/* Status Timeline */}
+            {/* 7. Timeline */}
             {booking.status_history?.length > 0 && (
-              <div className="bg-white rounded-2xl p-6 border">
-                <h2 className="text-base font-bold mb-4 flex items-center gap-2"><Clock className="w-5 h-5 text-teal-600" /> Status Timeline</h2>
-                <div className="space-y-4">
+              <div className="bg-white rounded-2xl p-6 border shadow-sm">
+                <h2 className="text-base font-bold mb-6 flex items-center gap-2"><Clock className="w-5 h-5 text-teal-600" /> Booking Timeline</h2>
+                <div className="space-y-0">
                   {booking.status_history.map((item, i) => (
-                    <div key={i} className="relative pl-4 pb-4 border-l-2 border-teal-500 last:pb-0 last:border-l-0">
-                      <div className="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-teal-500" />
-                      <p className="text-sm font-semibold text-gray-800 capitalize">{item.status?.replace(/_/g, ' ')}</p>
-                      <p className="text-xs text-gray-400 mt-1">{new Date(item.created_at).toLocaleString()}</p>
+                    <div key={i} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-3 h-3 rounded-full mt-1.5 ${i === 0 ? 'bg-teal-600 ring-4 ring-teal-100' : 'bg-gray-300'}`} />
+                        {i !== booking.status_history.length - 1 && <div className="w-0.5 h-full bg-gray-100 my-1" />}
+                      </div>
+                      <div className="pb-8">
+                        <p className={`text-sm font-bold capitalize ${i === 0 ? 'text-teal-700' : 'text-gray-600'}`}>
+                          {item.status?.replace(/_/g, ' ')}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1 font-medium">{new Date(item.created_at).toLocaleString('en-US', {
+                          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                        })}</p>
+                        {item.notes && <p className="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100 italic">{item.notes}</p>}
+                      </div>
                     </div>
                   ))}
                 </div>

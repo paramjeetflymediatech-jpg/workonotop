@@ -347,15 +347,15 @@ export default function ProviderJobDetail({ params }) {
             {job.timing_constraints && (
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <p className="text-xs text-gray-400 mb-1 font-medium italic">Timing Notes</p>
-                <p className="text-sm text-gray-700 break-words whitespace-pre-wrap">{job.timing_constraints}</p>
+                <p className="text-sm text-gray-700 break-all break-words whitespace-pre-wrap">{job.timing_constraints}</p>
               </div>
             )}
           </InfoCard>
 
           <InfoCard title="Location" icon="📍">
             <div className="bg-gray-50 rounded-2xl p-4 mb-4 border border-gray-100">
-              <p className="text-sm font-bold text-gray-900 break-words">{job.address_line1}</p>
-              {job.address_line2 && <p className="text-sm text-gray-500 mt-0.5 break-words">{job.address_line2}</p>}
+              <p className="text-sm font-bold text-gray-900 break-all break-words">{job.address_line1}</p>
+              {job.address_line2 && <p className="text-sm text-gray-500 mt-0.5 break-all break-words">{job.address_line2}</p>}
               {(job.city || job.postal_code) && (
                 <p className="text-xs text-gray-400 mt-1 font-medium">{[job.city, job.postal_code].filter(Boolean).join(', ')}</p>
               )}
@@ -461,14 +461,14 @@ export default function ProviderJobDetail({ params }) {
 
           {job.job_description && (
             <InfoCard title="Job Description" icon="📝">
-              <p className="text-sm text-gray-700 leading-relaxed break-words whitespace-pre-wrap font-medium">{job.job_description}</p>
+              <p className="text-sm text-gray-700 leading-relaxed break-all break-words whitespace-pre-wrap font-medium">{job.job_description}</p>
             </InfoCard>
           )}
 
           {job.instructions && (
             <InfoCard title="Special Instructions" icon="💡">
               <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
-                <p className="text-sm text-amber-900 leading-relaxed break-words whitespace-pre-wrap font-medium">{job.instructions}</p>
+                <p className="text-sm text-amber-900 leading-relaxed break-all break-words whitespace-pre-wrap font-medium">{job.instructions}</p>
               </div>
             </InfoCard>
           )}

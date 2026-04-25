@@ -36,7 +36,10 @@ export async function POST(request) {
       currency: 'gbp', 
       capture_method: 'manual',
       description: `Authorization for: ${service_name || 'Service Booking'}`,
-      automatic_payment_methods: { enabled: true },
+      automatic_payment_methods: { 
+        enabled: true,
+        allow_redirects: 'always' 
+      },
       metadata: {
         service_name: service_name || '',
         base_price: basePrice.toFixed(2),

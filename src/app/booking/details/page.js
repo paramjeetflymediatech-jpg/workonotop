@@ -17,7 +17,7 @@ export default function BookingDetailsPage() {
   const [parkingAccess, setParkingAccess] = useState(false);
   const [elevatorAccess, setElevatorAccess] = useState(false);
   const [hasPets, setHasPets] = useState(false);
-  const [address, setAddress] = useState('Please enter your service location');
+  const [address, setAddress] = useState('');
   const [addressError, setAddressError] = useState('');
   const fileInputRef = useRef(null);
 
@@ -35,7 +35,7 @@ export default function BookingDetailsPage() {
       router.push('/services');
     }
     
-    if (savedAddress) {
+    if (savedAddress && savedAddress !== 'Please enter your service location') {
       setAddress(savedAddress);
     }
   }, [router]);
@@ -104,7 +104,7 @@ export default function BookingDetailsPage() {
   };
 
   const handleContinue = () => {
-    if (!address || address === 'Please enter your service location' || address.trim() === '') {
+    if (!address || address.trim() === '') {
       setAddressError('Required');
       toast.error('Please enter your service location');
       return;
@@ -237,7 +237,7 @@ export default function BookingDetailsPage() {
                       if (e.target.value.trim()) setAddressError('');
                     }}
                     className={`w-full p-3 border-2 rounded-xl focus:ring-2 focus:ring-green-200 transition outline-none text-gray-700 ${addressError ? 'border-red-400' : 'border-gray-200 focus:border-green-500'}`}
-                    placeholder="Enter your full service address"
+                    placeholder="Please enter your service location"
                     required
                   />
                   <p className="text-xs text-gray-500 mt-3 flex items-center">

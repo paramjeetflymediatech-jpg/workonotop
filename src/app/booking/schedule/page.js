@@ -64,7 +64,28 @@ function ScheduleContent() {
     { id: 'evening', label: 'Evening', icon: '🌙', time: '4pm - 8pm' }
   ];
 
+  const isSlotAvailable = (slotId) => {
+    if (!selectedDate) return true;
+    
+    const now = new Date();
+    const isToday = selectedDate === now.getDate() && 
+                    currentMonth === (now.getMonth() + 1) && 
+                    currentYear === now.getFullYear();
+    
+    if (!isToday) return true;
+    
+    const hour = now.getHours();
+    // Disable if the current time is past the slot's midpoint/end to avoid last-minute bookings
+    if (slotId === 'morning' && hour >= 11) return false;   // Morning (8am-12pm) disabled after 11am
+    if (slotId === 'afternoon' && hour >= 15) return false; // Afternoon (12pm-4pm) disabled after 3pm
+    if (slotId === 'evening' && hour >= 19) return false;   // Evening (4pm-8pm) disabled after 7pm
+    
+    return true;
+  };
+
   const toggleTimeSlot = (slot) => {
+    if (!isSlotAvailable(slot)) return;
+    
     if (selectedTimes.includes(slot)) {
       setSelectedTimes(selectedTimes.filter(s => s !== slot));
     } else {
@@ -304,27 +325,35 @@ function ScheduleContent() {
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {timeSlots.map((slot) => (
-                        <button
-                          key={slot.id}
-                          onClick={() => toggleTimeSlot(slot.id)}
-                          className={`
-                            p-4 rounded-xl border-2 transition-all duration-200
-                            ${selectedTimes.includes(slot.id)
-                              ? 'bg-gradient-to-br from-green-700 to-green-600 border-green-700 text-white shadow-md scale-[1.02]'
-                              : 'bg-white border-gray-200 hover:border-green-500 hover:bg-green-50/50 text-gray-800'
-                            }
-                          `}
-                        >
-                          <div className="flex flex-col items-center">
-                            <span className="text-2xl mb-1">{slot.icon}</span>
-                            <span className="font-bold text-base">{slot.label}</span>
-                            <span className={`text-xs mt-1 ${selectedTimes.includes(slot.id) ? 'text-green-100' : 'text-gray-500'}`}>
-                              {slot.time}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
+                      {timeSlots.map((slot) => {
+                        const available = isSlotAvailable(slot.id);
+                        const isSelected = selectedTimes.includes(slot.id);
+                        
+                        return (
+                          <button
+                            key={slot.id}
+                            onClick={() => available && toggleTimeSlot(slot.id)}
+                            disabled={!available}
+                            className={`
+                              p-4 rounded-xl border-2 transition-all duration-200
+                              ${isSelected
+                                ? 'bg-gradient-to-br from-green-700 to-green-600 border-green-700 text-white shadow-md scale-[1.02]'
+                                : available
+                                  ? 'bg-white border-gray-200 hover:border-green-500 hover:bg-green-50/50 text-gray-800'
+                                  : 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed opacity-60'
+                              }
+                            `}
+                          >
+                            <div className="flex flex-col items-center">
+                              <span className={`text-2xl mb-1 ${!available && 'grayscale opacity-50'}`}>{slot.icon}</span>
+                              <span className="font-bold text-base">{slot.label}</span>
+                              <span className={`text-xs mt-1 ${isSelected ? 'text-green-100' : 'text-gray-500'}`}>
+                                {available ? slot.time : 'Slot passed'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

@@ -133,7 +133,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
     const nextStep = async () => {
         if (step === 1 && (!bookingData.address_line1 || bookingData.address_line1.trim() === '')) {
-            setAddressError('Please enter your service location');
+            setAddressError('Required');
             if (Platform.OS === 'android') {
                 ToastAndroid.show('Please enter your service location', ToastAndroid.SHORT);
             }
@@ -233,8 +233,23 @@ const CreateBookingScreen = ({ navigation, route }) => {
         setShowDatePicker(Platform.OS === 'ios');
         setBookingData({
             ...bookingData,
-            job_date: currentDate.toISOString().split('T')[0]
+            job_date: currentDate.toISOString().split('T')[0],
+            job_time_slot: '' // Reset time slot when date changes
         });
+    };
+
+    const isSlotAvailable = (slot) => {
+        const now = new Date();
+        const selectedDateStr = bookingData.job_date;
+        const todayStr = now.toISOString().split('T')[0];
+
+        if (selectedDateStr !== todayStr) return true;
+
+        const currentHour = now.getHours();
+        const slotStartHour = parseInt(slot.split(':')[0]);
+        
+        // Disable slots that have already started or passed
+        return currentHour < slotStartHour;
     };
 
     const openViewer = (url) => {
@@ -279,7 +294,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
                 style={styles.input}
                 value={bookingData.address_line1}
                 onChangeText={txt => setBookingData({ ...bookingData, address_line1: txt })}
-                placeholder="Please enter your service location"
+                placeholder="Where do you need service?"
             />
 
             <View style={{ height: 40 }} />
@@ -311,21 +326,29 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
             <Text style={styles.label}>Select Time Slot</Text>
             <View style={styles.slotsGrid}>
-                {timeSlots.map(slot => (
-                    <TouchableOpacity
-                        key={slot}
-                        style={[
-                            styles.slotBtn,
-                            bookingData.job_time_slot === slot && styles.slotBtnActive
-                        ]}
-                        onPress={() => setBookingData({ ...bookingData, job_time_slot: slot })}
-                    >
-                        <Text style={[
-                            styles.slotText,
-                            bookingData.job_time_slot === slot && styles.slotTextActive
-                        ]}>{slot}</Text>
-                    </TouchableOpacity>
-                ))}
+                {timeSlots.map(slot => {
+                    const available = isSlotAvailable(slot);
+                    const isActive = bookingData.job_time_slot === slot;
+                    
+                    return (
+                        <TouchableOpacity
+                            key={slot}
+                            disabled={!available}
+                            style={[
+                                styles.slotBtn,
+                                isActive && styles.slotBtnActive,
+                                !available && styles.slotBtnDisabled
+                            ]}
+                            onPress={() => available && setBookingData({ ...bookingData, job_time_slot: slot })}
+                        >
+                            <Text style={[
+                                styles.slotText,
+                                isActive && styles.slotTextActive,
+                                !available && styles.slotTextDisabled
+                            ]}>{available ? slot : 'Slot Passed'}</Text>
+                        </TouchableOpacity>
+                    );
+                })}
             </View>
             <View style={{ height: 40 }} />
         </ScrollView>
@@ -628,8 +651,10 @@ const styles = StyleSheet.create({
         minWidth: '45%',
     },
     slotBtnActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
+    slotBtnDisabled: { backgroundColor: '#f1f5f9', borderColor: '#e2e8f0', opacity: 0.6 },
     slotText: { color: '#64748b', fontSize: moderateScale(14), textAlign: 'center' },
     slotTextActive: { color: '#fff', fontWeight: 'bold' },
+    slotTextDisabled: { color: '#cbd5e1' },
 
     input: {
         padding: moderateScale(15),
