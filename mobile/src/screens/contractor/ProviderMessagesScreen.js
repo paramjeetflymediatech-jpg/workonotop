@@ -11,12 +11,12 @@ import { moderateScale, scale, verticalScale } from '../../utils/responsive';
 import Typography from '../../theme/Typography';
 
 const TEAL = '#0f766e';
-const TEAL_DARK = '#134e4a';
-const TEAL_LIGHT = '#14b8a6';
+const TEAL_DARK = '#15843E';
+const TEAL_LIGHT = '#15843E';
 
 const STATUS_CONFIG = {
     confirmed: { bg: '#dbeafe', text: '#1d4ed8', label: 'Confirmed' },
-    in_progress: { bg: '#f3e8ff', text: '#7c3aed', label: 'In Progress' },
+    in_progress: { bg: '#f3e8ff', text: '#15843E', label: 'In Progress' },
     completed: { bg: '#dcfce7', text: '#15803d', label: 'Completed' },
     pending: { bg: '#fef3c7', text: '#b45309', label: 'Pending' },
     cancelled: { bg: '#fee2e2', text: '#b91c1c', label: 'Cancelled' },
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     },
     avatarText: { fontSize: Typography.h5, fontWeight: '800', color: TEAL },
     cardBody: { flex: 1 },
-    customerName: { fontSize: Typography.bodyLarge, fontWeight: '700', color: '#0f172a',textTransform:'capitalize' },
+    customerName: { fontSize: Typography.bodyLarge, fontWeight: '700', color: '#0f172a', textTransform: 'capitalize' },
     serviceName: { fontSize: Typography.caption, color: '#64748b', marginTop: 2 },
     dateText: { fontSize: Typography.tiny, color: '#94a3b8', marginTop: 4 },
 

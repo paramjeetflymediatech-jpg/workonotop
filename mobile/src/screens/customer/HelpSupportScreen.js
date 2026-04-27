@@ -65,7 +65,7 @@ const HelpSupportScreen = ({ navigation }) => {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.illustrationContainer}>
                     <View style={styles.illustrationCircle}>
-                        <Ionicons name="help-buoy" size={moderateScale(60)} color="#14b8a6" />
+                        <Ionicons name="help-buoy" size={moderateScale(60)} color="#15843E" />
                     </View>
                     <Text style={styles.supportIntro}>How can we help you today?</Text>
                 </View>

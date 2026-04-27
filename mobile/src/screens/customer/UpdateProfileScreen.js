@@ -221,7 +221,7 @@ const UpdateProfileScreen = ({ navigation }) => {
                         <Switch
                             value={form.receive_offers}
                             onValueChange={(val) => setForm({ ...form, receive_offers: val })}
-                            trackColor={{ false: '#e2e8f0', true: '#14b8a6' }}
+                            trackColor={{ false: '#e2e8f0', true: '#15843E' }}
                             thumbColor={'#fff'}
                         />
                     </View>
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
         borderRadius: moderateScale(50),
         backgroundColor: '#f1f5f9',
         borderWidth: 2,
-        borderColor: '#14b8a6',
+        borderColor: '#15843E',
     },
     profileImage: {
         width: '100%',

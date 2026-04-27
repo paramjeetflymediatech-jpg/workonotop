@@ -9,8 +9,8 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
 const TEAL = '#0f766e';
-const TEAL_DARK = '#134e4a';
-const TEAL_LIGHT = '#14b8a6';
+const TEAL_DARK = '#15843E';
+const TEAL_LIGHT = '#15843E';
 
 const EarningsScreen = ({ navigation }) => {
     const { user } = useAuth();

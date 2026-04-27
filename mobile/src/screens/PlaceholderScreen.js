@@ -27,13 +27,13 @@ const PlaceholderScreen = ({ navigation, route }) => {
 
             <View style={styles.content}>
                 <View style={styles.iconContainer}>
-                    <Ionicons name="construct-outline" size={80} color="#14b8a6" />
+                    <Ionicons name="construct-outline" size={80} color="#15843E" />
                 </View>
                 <Text style={styles.title}>{title} is coming soon!</Text>
                 <Text style={styles.subtitle}>
                     We're working hard to bring this feature to you. Stay tuned for updates!
                 </Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.button}
                     onPress={() => navigation.goBack()}
                 >
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(40),
     },
     button: {
-        backgroundColor: '#14b8a6',
+        backgroundColor: '#15843E',
         paddingHorizontal: moderateScale(30),
         paddingVertical: verticalScale(12),
         borderRadius: moderateScale(12),

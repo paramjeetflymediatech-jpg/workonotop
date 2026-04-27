@@ -6,7 +6,7 @@ import { api } from '../../utils/api';
 import { moderateScale, verticalScale, scale } from '../../utils/responsive';
 
 const TEAL = '#0f766e';
-const TEAL_DARK = '#134e4a';
+const TEAL_DARK = '#15843E';
 
 const AdminNotificationsScreen = ({ navigation }) => {
     const [notifications, setNotifications] = useState([]);
@@ -31,7 +31,7 @@ const AdminNotificationsScreen = ({ navigation }) => {
         try {
             const response = await api.put('/api/admin/notifications', { id });
             if (response.success) {
-                setNotifications(prev => 
+                setNotifications(prev =>
                     prev.map(n => n.id === id ? { ...n, is_read: 1 } : n)
                 );
             }
@@ -61,16 +61,16 @@ const AdminNotificationsScreen = ({ navigation }) => {
     };
 
     const renderItem = ({ item }) => (
-        <TouchableOpacity 
+        <TouchableOpacity
             style={[styles.notificationItem, !item.is_read && styles.unreadItem]}
             onPress={() => markAsRead(item.id)}
             activeOpacity={0.7}
         >
             <View style={[styles.iconCircle, { backgroundColor: item.is_read ? '#f1f5f9' : '#f0fdfa' }]}>
-                <Ionicons 
-                    name={getIconName(item.type)} 
-                    size={moderateScale(20)} 
-                    color={item.is_read ? '#94a3b8' : TEAL} 
+                <Ionicons
+                    name={getIconName(item.type)}
+                    size={moderateScale(20)}
+                    color={item.is_read ? '#94a3b8' : TEAL}
                 />
             </View>
             <View style={styles.content}>
@@ -98,7 +98,7 @@ const AdminNotificationsScreen = ({ navigation }) => {
         const now = new Date();
         const diffMs = now - date;
         const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMins / 60) ;
+        const diffHours = Math.floor(diffMins / 60);
         const diffDays = Math.floor(diffHours / 24);
 
         if (diffMins < 60) return `${diffMins}m ago`;
@@ -117,7 +117,7 @@ const AdminNotificationsScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
-            
+
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>

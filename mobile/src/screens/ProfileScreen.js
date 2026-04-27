@@ -32,14 +32,14 @@ const ProfileScreen = ({ navigation }) => {
     };
 
     return (
-        <ScrollView 
-            style={styles.container} 
+        <ScrollView
+            style={styles.container}
             showsVerticalScrollIndicator={false}
             refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" />
             }
         >
-            <TouchableOpacity 
+            <TouchableOpacity
                 onPress={() => navigation.goBack()}
                 style={{ position: 'absolute', top: verticalScale(20), left: 0, zIndex: 10, padding: 10 }}
             >
@@ -48,9 +48,9 @@ const ProfileScreen = ({ navigation }) => {
             <View style={styles.header}>
                 <View style={styles.avatar}>
                     {user?.image_url ? (
-                        <Image 
-                            source={{ uri: user.image_url.startsWith('http') ? user.image_url : `${API_BASE_URL}${user.image_url}` }} 
-                            style={styles.avatarImage} 
+                        <Image
+                            source={{ uri: user.image_url.startsWith('http') ? user.image_url : `${API_BASE_URL}${user.image_url}` }}
+                            style={styles.avatarImage}
                         />
                     ) : (
                         <Text style={styles.avatarText}>
@@ -106,8 +106,8 @@ const ProfileScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 )}
 
-                <TouchableOpacity 
-                    style={styles.menuItem} 
+                <TouchableOpacity
+                    style={styles.menuItem}
                     onPress={() => navigation.navigate(user?.role === 'provider' ? 'ProviderUpdateProfile' : 'UpdateProfile')}
                 >
                     <View style={styles.menuIconContainer}>
@@ -146,7 +146,7 @@ const ProfileScreen = ({ navigation }) => {
                 <Text style={styles.logoutText}>Log Out</Text>
             </TouchableOpacity>
 
-            <LogoutConfirmationModal 
+            <LogoutConfirmationModal
                 visible={logoutModalVisible}
                 onCancel={handleLogoutCancel}
                 onConfirm={handleLogoutConfirm}
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: '#14b8a6',
+        backgroundColor: '#15843E',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,

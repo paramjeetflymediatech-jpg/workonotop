@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     imagePickerContainer: { alignItems: 'center', marginBottom: verticalScale(24) },
     imagePickerBubble: {
         position: 'relative', width: moderateScale(100), height: moderateScale(100),
-        borderRadius: moderateScale(50), backgroundColor: '#f1f5f9', borderWidth: 2, borderColor: '#14b8a6'
+        borderRadius: moderateScale(50), backgroundColor: '#f1f5f9', borderWidth: 2, borderColor: '#15843E'
     },
     profileImage: { width: '100%', height: '100%', borderRadius: moderateScale(50) },
     profileImagePlaceholder: { width: '100%', height: '100%', borderRadius: moderateScale(50), justifyContent: 'center', alignItems: 'center' },

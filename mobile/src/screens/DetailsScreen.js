@@ -68,27 +68,27 @@ const DetailsScreen = ({ navigation, route }) => {
 
     return (
         <View style={styles.container}>
-            <ScrollView 
+            <ScrollView
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     bookingId ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" /> : null
                 }
             >
                 {(data.image_url || data.service_image) ? (
-                    <Image 
-                        source={{ 
-                            uri: (data.image_url || data.service_image).startsWith('http') 
-                                ? (data.image_url || data.service_image) 
-                                : `${API_BASE_URL}${data.image_url || data.service_image}` 
-                        }} 
-                        style={styles.imageConfig} 
+                    <Image
+                        source={{
+                            uri: (data.image_url || data.service_image).startsWith('http')
+                                ? (data.image_url || data.service_image)
+                                : `${API_BASE_URL}${data.image_url || data.service_image}`
+                        }}
+                        style={styles.imageConfig}
                     />
                 ) : (
                     <View style={styles.imagePlaceholder}>
                         <Ionicons name="construct-outline" size={moderateScale(60)} color="#cbd5e1" />
                     </View>
                 )}
-                
+
                 <View style={styles.content}>
                     <View style={styles.headerRow}>
                         <Text style={styles.title}>{data.name || data.service_name || 'Service Details'}</Text>
@@ -115,9 +115,9 @@ const DetailsScreen = ({ navigation, route }) => {
                             <Text style={styles.metaValue}>{data.duration_minutes || 'Flexible'} min</Text>
                         </View>
                     </View>
-                    
+
                     <View style={styles.divider} />
-                    
+
                     <Text style={styles.sectionTitle}>Short Description</Text>
                     <Text style={styles.description}>
                         {data.short_description || 'No short description provided.'}
@@ -151,12 +151,12 @@ const DetailsScreen = ({ navigation, route }) => {
                     <Text style={styles.secondaryButtonText}>Back</Text>
                 </TouchableOpacity>
                 {isService && data.is_active !== 0 && !route.params?.hideBooking && (
-                    <TouchableOpacity 
-                        style={styles.primaryButton} 
+                    <TouchableOpacity
+                        style={styles.primaryButton}
                         onPress={() => {
                             if (!user) {
                                 // Guest tries to book -> Redirect to Auth
-                                navigation.navigate('AuthChoice', { 
+                                navigation.navigate('AuthChoice', {
                                     initialState: 'login',
                                     redirectTo: 'CreateBooking',
                                     redirectParams: { service: data }
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     backButton: {
-        backgroundColor: '#14b8a6',
+        backgroundColor: '#15843E',
         paddingHorizontal: moderateScale(24),
         paddingVertical: verticalScale(12),
         borderRadius: moderateScale(12),

@@ -9,8 +9,8 @@ import Typography from '../theme/Typography';
 
 
 const TEAL = '#0f766e';
-const TEAL_DARK = '#134e4a';
-const TEAL_LIGHT = '#14b8a6';
+const TEAL_DARK = '#15843E';
+const TEAL_LIGHT = '#15843E';
 const POLL_INTERVAL = 5000;
 
 const ChatScreen = ({ navigation, route }) => {
@@ -96,10 +96,10 @@ const ChatScreen = ({ navigation, route }) => {
             <StatusBar barStyle="light-content" backgroundColor={TEAL_DARK} />
 
             {/* Header */}
-            <View style={[styles.header, { 
-                paddingTop: Platform.OS === 'android' 
-                    ? StatusBar.currentHeight + verticalScale(10) 
-                    : Math.max(insets.top, verticalScale(10)) 
+            <View style={[styles.header, {
+                paddingTop: Platform.OS === 'android'
+                    ? StatusBar.currentHeight + verticalScale(10)
+                    : Math.max(insets.top, verticalScale(10))
             }]}>
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                     <Ionicons name="arrow-back" size={moderateScale(22)} color="#fff" />
@@ -191,37 +191,37 @@ const styles = StyleSheet.create({
 
     msgList: { padding: scale(14), paddingBottom: verticalScale(10) },
 
-    msgWrapper: { 
-        marginBottom: verticalScale(6), 
-        maxWidth: '85%', 
+    msgWrapper: {
+        marginBottom: verticalScale(6),
+        maxWidth: '85%',
         alignSelf: 'flex-start',
         position: 'relative',
     },
-    msgWrapperMine: { 
+    msgWrapperMine: {
         alignSelf: 'flex-end',
     },
 
-    senderName: { 
-        fontSize: Typography.tiny, 
-        color: '#94a3b8', 
-        fontWeight: '600', 
-        marginBottom: 3, 
+    senderName: {
+        fontSize: Typography.tiny,
+        color: '#94a3b8',
+        fontWeight: '600',
+        marginBottom: 3,
     },
 
     bubble: {
-        backgroundColor: '#fff', 
-        borderRadius: moderateScale(18), 
+        backgroundColor: '#fff',
+        borderRadius: moderateScale(18),
         paddingHorizontal: moderateScale(14),
         paddingVertical: moderateScale(10),
-        elevation: 1, 
-        shadowColor: '#000', 
-        shadowOffset: { width: 0, height: 1 }, 
-        shadowOpacity: 0.1, 
+        elevation: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
         shadowRadius: 3,
     },
     bubbleMine: {
-        backgroundColor: '#22c55e', 
-        borderBottomLeftRadius: moderateScale(18), 
+        backgroundColor: '#22c55e',
+        borderBottomLeftRadius: moderateScale(18),
         borderBottomRightRadius: moderateScale(4),
     },
     bubbleOther: {
@@ -231,22 +231,22 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#f1f5f9',
     },
-    bubbleText: { 
-        fontSize: Typography.body, 
-        color: '#1e293b', 
-        lineHeight: Typography.getLineHeight(Typography.body) 
+    bubbleText: {
+        fontSize: Typography.body,
+        color: '#1e293b',
+        lineHeight: Typography.getLineHeight(Typography.body)
     },
-    bubbleTextMine: { 
-        color: '#fff' 
+    bubbleTextMine: {
+        color: '#fff'
     },
-    timeText: { 
-        fontSize: Typography.tiny, 
-        color: '#94a3b8', 
-        marginTop: 4, 
+    timeText: {
+        fontSize: Typography.tiny,
+        color: '#94a3b8',
+        marginTop: 4,
         textAlign: 'right',
     },
-    timeTextMine: { 
-        color: 'rgba(255,255,255,0.7)' 
+    timeTextMine: {
+        color: 'rgba(255,255,255,0.7)'
     },
 
     inputBar: {

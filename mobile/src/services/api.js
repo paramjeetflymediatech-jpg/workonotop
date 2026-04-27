@@ -246,6 +246,21 @@ export const apiService = {
     },
 
     /**
+     * 👑 ADMIN SERVICES
+     */
+    admin: {
+        // Fetch global system settings
+        getSettings: (token) => request('/api/admin/settings', { method: 'GET', token }),
+
+        // Update a specific system setting
+        updateSetting: (key, value, token) => request('/api/admin/settings', { 
+            method: 'POST', 
+            body: JSON.stringify({ key, value }), 
+            token 
+        }),
+    },
+
+    /**
      * 🌐 GENERAL SERVICES
      * Publicly accessible data for app content.
      */

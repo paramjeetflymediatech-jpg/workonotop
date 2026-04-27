@@ -267,7 +267,7 @@ export default function Sidebar() {
                   onClick={() => setIsMobileOpen(false)}
                   className="w-full flex items-center rounded-lg transition-all duration-200 no-underline"
                   style={{
-                    background: isActive ? 'linear-gradient(to right, #14b8a6, #06b6d4)' : 'transparent',
+                    background: isActive ? 'linear-gradient(to right, #15843E, #06b6d4)' : 'transparent',
                     color: isActive ? '#ffffff' : isDarkMode ? '#94a3b8' : '#475569',
                     padding: isCollapsed ? '12px' : '12px 16px',
                     justifyContent: isCollapsed ? 'center' : 'flex-start',

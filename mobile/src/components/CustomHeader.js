@@ -19,7 +19,7 @@ const CustomHeader = ({ title }) => {
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: '#14b8a6',
+        backgroundColor: '#15843E',
     },
     headerContent: {
         height: 60,

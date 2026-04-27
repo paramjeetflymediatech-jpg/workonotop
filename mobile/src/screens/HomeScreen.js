@@ -17,36 +17,36 @@ const HomeScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <ScrollView 
+            <ScrollView
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#115e59" />
                 }
             >
                 <View style={[styles.header, { marginTop: Math.max(insets.top, verticalScale(10)) }]}>
-                <Text style={styles.title}>WorkOnTop</Text>
-                <Text style={styles.subtitle}>Stay on top of every job</Text>
-            </View>
+                    <Text style={styles.title}>WorkOnTop</Text>
+                    <Text style={styles.subtitle}>Stay on top of every job</Text>
+                </View>
 
-            <View style={styles.grid}>
-                <TouchableOpacity
-                    style={styles.card}
-                    onPress={() => navigation.navigate('Services')}
-                >
-                    <Text style={styles.cardIcon}>🛠️</Text>
-                    <Text style={styles.cardTitle}>Services</Text>
-                    <Text style={styles.cardDesc}>Browse our trade offerings</Text>
-                </TouchableOpacity>
+                <View style={styles.grid}>
+                    <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => navigation.navigate('Services')}
+                    >
+                        <Text style={styles.cardIcon}>🛠️</Text>
+                        <Text style={styles.cardTitle}>Services</Text>
+                        <Text style={styles.cardDesc}>Browse our trade offerings</Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={styles.card}
-                    onPress={() => navigation.navigate('Profile')}
-                >
-                    <Text style={styles.cardIcon}>👤</Text>
-                    <Text style={styles.cardTitle}>My Profile</Text>
-                    <Text style={styles.cardDesc}>Manage your account</Text>
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => navigation.navigate('Profile')}
+                    >
+                        <Text style={styles.cardIcon}>👤</Text>
+                        <Text style={styles.cardTitle}>My Profile</Text>
+                        <Text style={styles.cardDesc}>Manage your account</Text>
+                    </TouchableOpacity>
+                </View>
 
                 <View style={styles.infoBox}>
                     <Text style={styles.infoTitle}>Quick Tips</Text>
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         marginTop: 10,
         borderLeftWidth: 4,
-        borderLeftColor: '#14b8a6',
+        borderLeftColor: '#15843E',
     },
     infoTitle: {
         fontSize: 16,
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     },
     infoText: {
         fontSize: 14,
-        color: '#134e4a',
+        color: '#15843E',
         marginTop: 4,
         lineHeight: 20,
     },

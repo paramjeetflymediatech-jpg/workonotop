@@ -20,7 +20,7 @@ import Typography from '../theme/Typography';
 import { API_BASE_URL } from '../config';
 
 const PRIMARY = '#115e59'; // Deep Teal
-const PRIMARY_LIGHT = '#14b8a6'; // Teal
+const PRIMARY_LIGHT = '#15843E'; // Teal
 const ACCENT = '#f59e0b'; // Amber
 const BG_COLOR = '#f8fafc';
 
@@ -48,7 +48,7 @@ const CustomerDashboard = ({ navigation }) => {
         try {
             const categoriesPromise = api.get('/api/categories');
             const featuredPromise = api.get('/api/services?homepage=true&limit=6');
-            
+
             let bookingsPromise = Promise.resolve({ data: [] });
             if (user?.id) {
                 bookingsPromise = api.get(`/api/customer/bookings?user_id=${user.id}`);
@@ -59,7 +59,7 @@ const CustomerDashboard = ({ navigation }) => {
                 bookingsPromise,
                 featuredPromise
             ]);
-            
+
             setCategories(categoriesRes.data || []);
             setBookings(bookingsRes.data || []);
             setFeaturedServices(featuredRes.data || []);
@@ -116,9 +116,9 @@ const CustomerDashboard = ({ navigation }) => {
                         >
                             <View style={styles.avatarWrap}>
                                 {user?.image_url ? (
-                                    <Image 
-                                        source={{ uri: user.image_url.startsWith('http') ? user.image_url : `${API_BASE_URL}${user.image_url}` }} 
-                                        style={styles.avatarImg} 
+                                    <Image
+                                        source={{ uri: user.image_url.startsWith('http') ? user.image_url : `${API_BASE_URL}${user.image_url}` }}
+                                        style={styles.avatarImg}
                                     />
                                 ) : (
                                     <Text style={styles.avatarTxt}>{firstName.charAt(0)}</Text>
@@ -161,7 +161,7 @@ const CustomerDashboard = ({ navigation }) => {
                     const renderCategoryIcon = (icon) => {
                         // Check if icon is an Ionicons name (likely ends with -outline or -sharp or is a known name)
                         const isVectorIcon = icon && (icon.includes('-outline') || icon.includes('-sharp') || ['build', 'construct', 'bus', 'trash', 'leaf', 'brush', 'water'].some(k => icon.includes(k)));
-                        
+
                         if (isVectorIcon) {
                             return <Ionicons name={icon} size={moderateScale(32)} color={PRIMARY} />;
                         }
@@ -169,7 +169,7 @@ const CustomerDashboard = ({ navigation }) => {
                     };
 
                     return null; // This is just to define the helper within the scope if needed, 
-                                 // but actually it's better to define it outside or use it directly.
+                    // but actually it's better to define it outside or use it directly.
                 })()}
 
                 {/* --- CATEGORIES --- */}
@@ -194,7 +194,7 @@ const CustomerDashboard = ({ navigation }) => {
                             { id: 5, name: 'Maintenance', icon: 'build-outline', color: '#06b6d4' },
                         ]).map((cat) => {
                             const isVectorIcon = cat.icon && (cat.icon.includes('-outline') || cat.icon.includes('-sharp') || ['build', 'construct', 'bus', 'trash', 'leaf', 'brush', 'water'].some(k => cat.icon.includes(k)));
-                            
+
                             return (
                                 <TouchableOpacity
                                     key={cat.id || cat._id}
@@ -238,9 +238,9 @@ const CustomerDashboard = ({ navigation }) => {
                                     activeOpacity={0.8}
                                 >
                                     <View style={styles.featuredImageContainer}>
-                                        <Image 
-                                            source={{ uri: service.image_url?.startsWith('http') ? service.image_url : `${API_BASE_URL}${service.image_url}` }} 
-                                            style={styles.featuredImage} 
+                                        <Image
+                                            source={{ uri: service.image_url?.startsWith('http') ? service.image_url : `${API_BASE_URL}${service.image_url}` }}
+                                            style={styles.featuredImage}
                                         />
                                         <View style={styles.priceTag}>
                                             <Text style={styles.priceTagText}>${service.base_price}</Text>

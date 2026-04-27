@@ -153,7 +153,7 @@ export async function POST(request) {
           address_line1, address_line2, city, postal_code,
           commission_percent, provider_amount, status, job_timer_status, payment_status,
           standard_duration_minutes, payment_intent_id, authorized_amount)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,?,'pending','not_started','authorized',?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,'pending','not_started','authorized',?,?,?)`,
         [
           bookingNumber, authenticatedUserId || null, service_id || null, service_name || null,
           service_price || 0, additional_price || 0,
@@ -162,7 +162,7 @@ export async function POST(request) {
           job_description || '', instructions || null,
           parking_access ? 1 : 0, elevator_access ? 1 : 0, has_pets ? 1 : 0,
           address_line1 || '', address_line2 || null, city || '', postal_code || null,
-          basePrice || 0, standardDuration || 60,
+          standardDuration || 60,
           payment_intent_id || null, totalAuthorizedAmount || 0,
         ]
       )

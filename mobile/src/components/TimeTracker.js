@@ -4,21 +4,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { api } from '../utils/api';
 import { moderateScale, scale, verticalScale } from '../utils/responsive';
 
-const TimeTracker = ({ 
-    bookingId, 
-    onStart, 
-    onComplete, 
-    standardDuration = 60, 
+const TimeTracker = ({
+    bookingId,
+    onStart,
+    onComplete,
+    standardDuration = 60,
     overtimeRate = 0,
     hasBeforePhotos = false,
-    hasAfterPhotos = false 
+    hasAfterPhotos = false
 }) => {
     const [timerStatus, setTimerStatus] = useState('not_started');
     const [elapsedTime, setElapsedTime] = useState(0);
     const [startTime, setStartTime] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showCompleteModal, setShowCompleteModal] = useState(false);
-    
+
     // Completion Form states
     const [workSummary, setWorkSummary] = useState('');
     const [recommendations, setRecommendations] = useState('');
@@ -138,7 +138,7 @@ const TimeTracker = ({
     if (timerStatus === 'completed') {
         return (
             <View style={styles.completedBox}>
-                <Ionicons name="checkmark-circle" size={40} color='#134e4a' />
+                <Ionicons name="checkmark-circle" size={40} color='#15843E' />
                 <Text style={styles.completedTitle}>Job Finished</Text>
                 <Text style={styles.completedText}>Awaiting customer approval.</Text>
             </View>
@@ -165,8 +165,8 @@ const TimeTracker = ({
 
             <View style={styles.actions}>
                 {timerStatus === 'not_started' && (
-                    <TouchableOpacity 
-                        style={[styles.btn, styles.startBtn, !hasBeforePhotos && styles.disabledBtn]} 
+                    <TouchableOpacity
+                        style={[styles.btn, styles.startBtn, !hasBeforePhotos && styles.disabledBtn]}
                         onPress={() => handleAction('start')}
                         disabled={loading || !hasBeforePhotos}
                     >
@@ -208,20 +208,20 @@ const TimeTracker = ({
                         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                             <Text style={styles.modalTitle}>Complete Job</Text>
                             <Text style={styles.modalLabel}>Work Summary *</Text>
-                            <TextInput 
-                                style={styles.textArea} 
-                                multiline 
-                                placeholder="Describe exactly what was done..." 
+                            <TextInput
+                                style={styles.textArea}
+                                multiline
+                                placeholder="Describe exactly what was done..."
                                 value={workSummary}
                                 onChangeText={setWorkSummary}
                                 maxLength={1000}
                             />
-                            
+
                             <Text style={styles.modalLabel}>Recommendations (Optional)</Text>
-                            <TextInput 
-                                style={[styles.textArea, { height: 80 }]} 
-                                multiline 
-                                placeholder="Any future work needed?" 
+                            <TextInput
+                                style={[styles.textArea, { height: 80 }]}
+                                multiline
+                                placeholder="Any future work needed?"
                                 value={recommendations}
                                 onChangeText={setRecommendations}
                                 maxLength={500}
@@ -264,8 +264,8 @@ const styles = StyleSheet.create({
     stopBtn: { flex: 1, backgroundColor: '#1e293b' },
     disabledBtn: { backgroundColor: '#cbd5e1' },
     completedBox: { alignItems: 'center', padding: 30, backgroundColor: '#ecfdf5', borderRadius: 20, width: '100%' },
-    completedTitle: { fontSize: 18, fontWeight: 'bold', color: '#134e4a', marginTop: 12 },
-    completedText: { fontSize: 14, color: '#134e4a', marginTop: 4 },
+    completedTitle: { fontSize: 18, fontWeight: 'bold', color: '#15843E', marginTop: 12 },
+    completedText: { fontSize: 14, color: '#15843E', marginTop: 4 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, maxHeight: '80%' },
     modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#0f172a', marginBottom: 20 },

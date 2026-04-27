@@ -33,7 +33,7 @@ const PremiumAlert = ({ visible, type = 'error', title, message, onClose }) => {
     }, [visible]);
 
     const isError = type === 'error';
-    const mainColor = isError ? '#ef4444' : '#14b8a6';
+    const mainColor = isError ? '#ef4444' : '#15843E';
     const iconName = isError ? 'alert-circle' : 'checkmark-circle';
 
     return (
@@ -52,7 +52,7 @@ const PremiumAlert = ({ visible, type = 'error', title, message, onClose }) => {
                     }
                 ]}>
                     <View style={[styles.glow, { shadowColor: mainColor }]} />
-                    
+
                     <View style={[styles.iconContainer, { backgroundColor: isError ? '#fef2f2' : '#f0fdfa', borderColor: isError ? '#fee2e2' : '#ccfbf1' }]}>
                         <Ionicons name={iconName} size={moderateScale(40)} color={mainColor} />
                     </View>
@@ -60,8 +60,8 @@ const PremiumAlert = ({ visible, type = 'error', title, message, onClose }) => {
                     <Text style={styles.title}>{title || (isError ? 'Oops!' : 'Success')}</Text>
                     <Text style={styles.message}>{message}</Text>
 
-                    <TouchableOpacity 
-                        style={[styles.button, { backgroundColor: mainColor, shadowColor: mainColor }]} 
+                    <TouchableOpacity
+                        style={[styles.button, { backgroundColor: mainColor, shadowColor: mainColor }]}
                         onPress={onClose}
                         activeOpacity={0.8}
                     >

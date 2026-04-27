@@ -10,7 +10,7 @@ import { apiService } from '../../services/api';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
 
 const TEAL = '#0f766e';
-const TEAL_DARK = '#134e4a';
+const TEAL_DARK = '#15843E';
 const GOLD = '#f59e0b';
 
 const RatingsScreen = ({ navigation }) => {

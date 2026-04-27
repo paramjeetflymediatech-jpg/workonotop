@@ -45,7 +45,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
             if (res && res.data) {
                 const b = Array.isArray(res.data) ? res.data[0] : res.data;
                 setBooking(b);
-                
+
                 // API returns: before_photos = [{url, uploaded_at}], after_photos = [{url, uploaded_at}], photos = [string]
                 setPhotos({
                     before: b.before_photos || [],
@@ -145,16 +145,18 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
 
         setActionLoading('dispute');
         try {
-            await apiService.post(`/api/customer/bookings/${bookingId}/approve`, { 
-                action: 'dispute', 
-                dispute_reason: disputeText 
+            await apiService.post(`/api/customer/bookings/${bookingId}/approve`, {
+                action: 'dispute',
+                dispute_reason: disputeText
             }, user?.token);
-            
+
             Alert.alert('Dispute Opened', 'Our team will contact you shortly.', [
-                { text: 'OK', onPress: () => {
-                    setDisputeVisible(false);
-                    fetchDetails();
-                }}
+                {
+                    text: 'OK', onPress: () => {
+                        setDisputeVisible(false);
+                        fetchDetails();
+                    }
+                }
             ]);
         } catch (err) {
             Alert.alert('Error', 'Failed to open dispute. Please try again.');
@@ -192,17 +194,17 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
             onRequestClose={() => setViewerVisible(false)}
         >
             <View style={styles.viewerContainer}>
-                <TouchableOpacity 
-                    style={styles.viewerCloseBtn} 
+                <TouchableOpacity
+                    style={styles.viewerCloseBtn}
                     onPress={() => setViewerVisible(false)}
                 >
                     <Ionicons name="close" size={32} color="#fff" />
                 </TouchableOpacity>
                 {selectedImage && (
-                    <Image 
-                        source={{ uri: selectedImage }} 
-                        style={styles.viewerImage} 
-                        resizeMode="contain" 
+                    <Image
+                        source={{ uri: selectedImage }}
+                        style={styles.viewerImage}
+                        resizeMode="contain"
                     />
                 )}
             </View>
@@ -223,7 +225,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     </TouchableOpacity>
                     <Text style={styles.modalTitle}>Open a Dispute</Text>
                     <Text style={styles.modalSubtitle}>Please tell us why you are disputing this job. Our team will review it.</Text>
-                    
+
                     <TextInput
                         style={styles.reviewInput}
                         placeholder="Describe the issue in detail..."
@@ -232,9 +234,9 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                         value={disputeText}
                         onChangeText={setDisputeText}
                     />
-                    
-                    <TouchableOpacity 
-                        style={[styles.disputeSubmitBtn, actionLoading === 'dispute' && { opacity: 0.7 }]} 
+
+                    <TouchableOpacity
+                        style={[styles.disputeSubmitBtn, actionLoading === 'dispute' && { opacity: 0.7 }]}
                         onPress={submitDispute}
                         disabled={actionLoading === 'dispute'}
                     >
@@ -263,7 +265,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     </TouchableOpacity>
                     <Text style={styles.modalTitle}>Rate Your Experience</Text>
                     <Text style={styles.modalSubtitle}>How was the service provided by {booking?.provider_name}?</Text>
-                    
+
                     <View style={styles.starsRow}>
                         {[1, 2, 3, 4, 5].map(i => (
                             <TouchableOpacity key={i} onPress={() => setRatingValue(i)}>
@@ -271,7 +273,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                             </TouchableOpacity>
                         ))}
                     </View>
-                    
+
                     <TextInput
                         style={styles.reviewInput}
                         placeholder="Write a brief review (optional)..."
@@ -280,9 +282,9 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                         value={reviewText}
                         onChangeText={setReviewText}
                     />
-                    
-                    <TouchableOpacity 
-                        style={styles.submitReviewBtn} 
+
+                    <TouchableOpacity
+                        style={styles.submitReviewBtn}
                         onPress={submitReview}
                         disabled={actionLoading === 'review'}
                     >
@@ -336,7 +338,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     const overtimeRate = parseFloat(booking.additional_price || 0);
     const actualMinutes = parseInt(booking.actual_duration_minutes || 0);
     const standardMinutes = parseInt(booking.standard_duration_minutes || 60);
-    
+
     const overtimeHoldAmount = overtimeRate * 2;
     const authAmount = booking.authorized_amount ? parseFloat(booking.authorized_amount) : (basePrice + overtimeHoldAmount);
     const isOvertime = actualMinutes > standardMinutes && overtimeRate > 0;
@@ -367,8 +369,8 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                 <View style={{ width: scale(40) }} />
             </View>
 
-            <ScrollView 
-                showsVerticalScrollIndicator={false} 
+            <ScrollView
+                showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} color={PRIMARY} />
@@ -396,10 +398,10 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                 )}
 
                 {imageUrl && !imgError ? (
-                    <Image 
-                        source={{ uri: imageUrl }} 
-                        onError={() => setImgError(true)} 
-                        style={styles.serviceImage} 
+                    <Image
+                        source={{ uri: imageUrl }}
+                        onError={() => setImgError(true)}
+                        style={styles.serviceImage}
                     />
                 ) : (
                     <View style={[styles.serviceImage, { backgroundColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' }]}>
@@ -628,7 +630,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                                 </Text>
                             </View>
                         </View>
-                        
+
                         <View style={styles.invoiceItem}>
                             <View>
                                 <Text style={styles.invoiceItemLabel}>Base Service Price</Text>
@@ -655,11 +657,11 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                                 <View>
                                     <View style={styles.row}>
                                         <Ionicons name="time-outline" size={14} color="#8b5cf6" style={{ marginRight: 4 }} />
-                                        <Text style={[styles.invoiceItemLabel, { color: '#7c3aed' }]}>Actual Overtime Used</Text>
+                                        <Text style={[styles.invoiceItemLabel, { color: '#15843E' }]}>Actual Overtime Used</Text>
                                     </View>
                                     <Text style={styles.invoiceItemSub}>{overtimeMinutes}min at {formatCurrency(overtimeRate)}/hr</Text>
                                 </View>
-                                <Text style={[styles.invoiceItemValue, { color: '#7c3aed' }]}>+{formatCurrency(overtimeCost)}</Text>
+                                <Text style={[styles.invoiceItemValue, { color: '#15843E' }]}>+{formatCurrency(overtimeCost)}</Text>
                             </View>
                         )}
 
@@ -678,7 +680,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                                 </Text>
                                 <Text style={styles.invoiceTotalSub}>Based on actual work time</Text>
                             </View>
-                            <Text style={[styles.invoiceTotalValue, { color: isOvertime ? '#7c3aed' : PRIMARY }]}>
+                            <Text style={[styles.invoiceTotalValue, { color: isOvertime ? '#15843E' : PRIMARY }]}>
                                 {formatCurrency(totalAmount)}
                             </Text>
                         </View>
@@ -790,7 +792,7 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: moderateScale(18), fontWeight: 'bold', color: '#0f172a' },
 
     scrollContent: { padding: moderateScale(20), paddingBottom: verticalScale(40) },
-    
+
     cardInfo: { marginBottom: verticalScale(20) },
     statusRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
     statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
@@ -810,7 +812,7 @@ const styles = StyleSheet.create({
 
     section: { marginBottom: verticalScale(25) },
     sectionTitle: { fontSize: moderateScale(14), fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', marginBottom: verticalScale(10), marginLeft: scale(5) },
-    
+
     card: {
         backgroundColor: '#fff',
         borderRadius: moderateScale(16),

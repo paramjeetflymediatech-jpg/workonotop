@@ -16,7 +16,7 @@ const DrawerItem = ({ label, icon, onPress, active, isLocked }) => (
         <Ionicons
             name={icon}
             size={moderateScale(22)}
-            color={active ? '#115e59' : isLocked ? '#94a3b8' : '#64748b'}
+            color={active ? '#15843E' : isLocked ? '#94a3b8' : '#64748b'}
             style={styles.drawerIcon}
         />
         <Text style={[styles.drawerLabel, active && styles.activeDrawerLabel, isLocked && styles.lockedLabel]}>
@@ -44,6 +44,7 @@ const CustomDrawerContent = (props) => {
         { label: 'Earnings', icon: 'wallet-outline', route: 'Earnings' },
         { label: 'Disputes', icon: 'alert-circle-outline', route: 'Disputes' },
         { label: 'Deletion Requests', icon: 'trash-outline', route: 'DeletionRequests' },
+        { label: 'Commission Setup', icon: 'pie-chart-outline', route: 'CommissionSetup' },
         { label: 'Settings', icon: 'options-outline', route: 'Settings' },
     ];
 
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
     logoTextBold: {
         fontSize: moderateScale(22),
         fontWeight: '900',
-        color: '#115e59', // Deep teal
+        color: '#15843E', // New Green Theme
         letterSpacing: 1.5,
 
         marginTop: verticalScale(12),
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
     logoText: {
         fontSize: moderateScale(22),
         fontWeight: '400',
-        color: '#0f766e',
+        color: '#15843E',
         marginLeft: scale(8),
         letterSpacing: 1.5,
         marginTop: verticalScale(12),
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     activeDrawerLabel: {
-        color: '#115e59',
+        color: '#15843E',
         fontWeight: '700',
     },
     footer: {

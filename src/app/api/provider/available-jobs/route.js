@@ -168,7 +168,7 @@ export async function GET(request) {
       const commPct = j.commission_percent !== null ? parseFloat(j.commission_percent) : defaultComm
       const basePrice = parseFloat(j.service_price || 0)
       const otRate = parseFloat(j.overtime_rate || 0)
-      const providerAmount = parseFloat(j.provider_amount || 0)
+      const providerAmount = j.commission_percent !== null ? parseFloat(j.provider_amount || 0) : 0
       const duration = j.service_duration || 60
       const commAmt = basePrice * (commPct / 100)
       const baseEarnings = basePrice - commAmt

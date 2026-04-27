@@ -7,8 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../utils/responsive';
 
-const TEAL_DARK = '#134e4a';
-const TEAL_LIGHT = '#14b8a6';
+const TEAL_DARK = '#15843E';
+const TEAL_LIGHT = '#15843E';
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -330,12 +330,12 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     jobsCard: {
-        backgroundColor: '#115e59',
+        backgroundColor: '#15843E',
         borderRadius: moderateScale(20),
         padding: moderateScale(20),
         marginBottom: verticalScale(25),
         elevation: 8,
-        shadowColor: '#115e59',
+        // shadowColor: '#115e59',
         shadowOffset: { width: 0, height: verticalScale(5) },
         shadowOpacity: 0.3,
         shadowRadius: moderateScale(15),
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
         width: moderateScale(8),
         height: moderateScale(8),
         borderRadius: moderateScale(4),
-        backgroundColor: '#14b8a6',
+        backgroundColor: '#15843E',
         marginRight: scale(8),
     },
     takingOrdersText: {

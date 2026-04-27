@@ -34,7 +34,7 @@ const LoginScreen = ({ navigation }) => {
     const [appleLoading, setAppleLoading] = useState(false);
     const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
     const { login, loginWithGoogle, loginWithApple } = useAuth();
-    const role = type === 'pro' || type === 'provider' ? 'Provider' : 'Customer';
+    const role = type === 'admin' ? 'Admin' : (type === 'pro' || type === 'provider' ? 'Provider' : 'Customer');
     const showPremiumAlert = (message, title = 'Login Failed', type = 'error') => {
         setAlert({ visible: true, title, message, type });
     };
@@ -79,12 +79,12 @@ const LoginScreen = ({ navigation }) => {
                         })
                     );
                 } else {
-                    const targetRoute = userData.role === 'provider' ? 'OnboardingIntro' : 'Main';
-                    console.log(`🚀 [Login] Resetting to ${targetRoute} for ${userData.role}`);
+                    console.log(`🚀 [Login] Success! Explicitly navigating to Main.`);
+                    // Force navigation to Main to ensure the UI switches out of the Auth flow
                     navigation.dispatch(
                         CommonActions.reset({
                             index: 0,
-                            routes: [{ name: targetRoute }],
+                            routes: [{ name: 'Main' }],
                         })
                     );
                 }
@@ -113,12 +113,11 @@ const LoginScreen = ({ navigation }) => {
             const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
             const result = await loginWithGoogle(role, 'login');
             if (result.success) {
-                const targetRoute = result.user?.role === 'provider' ? 'OnboardingIntro' : 'Main';
-                console.log(`🚀 [GoogleAuth] Resetting to ${targetRoute}`);
+                console.log(`🚀 [GoogleAuth] Success! Explicitly navigating to Main.`);
                 navigation.dispatch(
                     CommonActions.reset({
                         index: 0,
-                        routes: [{ name: targetRoute }],
+                        routes: [{ name: 'Main' }],
                     })
                 );
             } else {
@@ -137,12 +136,11 @@ const LoginScreen = ({ navigation }) => {
             const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
             const result = await loginWithApple(role);
             if (result.success) {
-                const targetRoute = result.user?.role === 'provider' ? 'OnboardingIntro' : 'Main';
-                console.log(`🚀 [AppleAuth] Resetting to ${targetRoute}`);
+                console.log(`🚀 [AppleAuth] Success! Explicitly navigating to Main.`);
                 navigation.dispatch(
                     CommonActions.reset({
                         index: 0,
-                        routes: [{ name: targetRoute }],
+                        routes: [{ name: 'Main' }],
                     })
                 );
             } else {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, StatusBar, Dimensions, RefreshControl, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, StatusBar, Dimensions, RefreshControl, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../utils/api';
@@ -13,7 +13,7 @@ import TimeTracker from '../../components/TimeTracker';
 const { width } = Dimensions.get('window');
 
 const PURPLE_DARK = '#6b21a8';
-const TEAL_DARK = '#134e4a';
+const TEAL_DARK = '#15843E';
 
 const JobDetailsScreen = ({ navigation, route }) => {
     const { job: initialJob } = route.params || {};
@@ -24,6 +24,15 @@ const JobDetailsScreen = ({ navigation, route }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [stripeConnected, setStripeConnected] = useState(true);
     const [photos, setPhotos] = useState({ before: [], after: [] });
+    
+    // Viewer states
+    const [viewerVisible, setViewerVisible] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
+
+    const openViewer = (uri) => {
+        setSelectedImage(uri);
+        setViewerVisible(true);
+    };
 
     const fetchPhotos = useCallback(async () => {
         try {
@@ -37,11 +46,20 @@ const JobDetailsScreen = ({ navigation, route }) => {
     const fetchLatestJob = useCallback(async (isRefresh = false) => {
         try {
             if (!isRefresh) setLoading(true);
-            const [res, provRes] = await Promise.all([
+            const fetchPromises = [
                 api.get(`/api/provider/jobs/${job.id}`),
-                api.get('/api/provider/me'),
-                fetchPhotos()
-            ]);
+                api.get('/api/provider/me')
+            ];
+
+            // Only fetch photos if the job is assigned to this provider
+            const isAssignedToMe = job?.provider_id === user?.id;
+            const isAssignedStatus = ['confirmed', 'in_progress', 'awaiting_approval', 'completed'].includes(job?.status);
+
+            if (isAssignedToMe || isAssignedStatus) {
+                fetchPromises.push(fetchPhotos());
+            }
+
+            const [res, provRes] = await Promise.all(fetchPromises);
 
             if (res.success && res.data) {
                 setJob(res.data);
@@ -117,7 +135,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
         );
     };
 
-    const DetailItem = ({ icon, label, value, color = "#14b8a6" }) => (
+    const DetailItem = ({ icon, label, value, color = "#15843E" }) => (
         <View style={styles.detailItem}>
             <View style={[styles.iconContainer, { backgroundColor: color + '10' }]}>
                 <Ionicons name={icon} size={20} color={color} />
@@ -162,7 +180,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#14b8a6" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#15843E" />}
             >
                 {/* Premium Header */}
                 <View style={[styles.premiumHeader, { backgroundColor: headerColor, paddingTop: Math.max(insets.top, 20) }]}>
@@ -203,7 +221,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
                         </View>
                         {hasOvertime && (
                             <View style={[styles.hBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                                <Text style={styles.hBadgeText}>⏰ +${otRate.toFixed(2)}/hr overtime</Text>
+                                <Text style={styles.hBadgeText}>⏰ +${netOT.toFixed(2)}/hr overtime</Text>
                             </View>
                         )}
                     </View>
@@ -278,12 +296,16 @@ const JobDetailsScreen = ({ navigation, route }) => {
                                         {photos.before.map((p, i) => {
                                             const rawUrl = p.photo_url || p.url || '';
                                             const uri = rawUrl.startsWith('http') ? rawUrl : `${API_BASE_URL}${rawUrl}`;
-                                            return <Image key={i} source={{ uri }} style={styles.historyPhoto} />;
+                                            return (
+                                                <TouchableOpacity key={i} onPress={() => openViewer(uri)}>
+                                                    <Image source={{ uri }} style={styles.historyPhoto} />
+                                                </TouchableOpacity>
+                                            );
                                         })}
                                     </ScrollView>
                                 </View>
                             )}
-
+ 
                             {/* History: After Photos Display */}
                             {photos.after.length > 0 && (
                                 <View style={styles.historySection}>
@@ -292,7 +314,11 @@ const JobDetailsScreen = ({ navigation, route }) => {
                                         {photos.after.map((p, i) => {
                                             const rawUrl = p.photo_url || p.url || '';
                                             const uri = rawUrl.startsWith('http') ? rawUrl : `${API_BASE_URL}${rawUrl}`;
-                                            return <Image key={i} source={{ uri }} style={styles.historyPhoto} />;
+                                            return (
+                                                <TouchableOpacity key={i} onPress={() => openViewer(uri)}>
+                                                    <Image source={{ uri }} style={styles.historyPhoto} />
+                                                </TouchableOpacity>
+                                            );
                                         })}
                                     </ScrollView>
                                 </View>
@@ -311,16 +337,12 @@ const JobDetailsScreen = ({ navigation, route }) => {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>💰 Payment Breakdown</Text>
                         <View style={styles.detailsCard}>
-                            <PriceRow label="Service Base Price" value={`$${basePrice.toFixed(2)}`} color={TEAL_DARK} />
-                            <PriceRow label={`Commission (${commPct}%)`} value={`-$${commAmt.toFixed(2)}`} color="#ea580c" />
-                            <PriceRow label="Your Base Earnings" value={`$${baseEarnings.toFixed(2)}`} isTotal color={TEAL_DARK} />
+                            <PriceRow label="Your Earnings" value={`$${baseEarnings.toFixed(2)}`} isTotal color={TEAL_DARK} />
 
                             {hasOvertime && (
                                 <View style={styles.otBreakdown}>
                                     <View style={styles.otDivider} />
-                                    <PriceRow label="Overtime Rate (Gross)" value={`+$${otRate.toFixed(2)}/hr`} color={TEAL_DARK} />
-                                    <PriceRow label={`Commission on OT (${commPct}%)`} value={`-$${(otRate * commPct / 100).toFixed(2)}/hr`} color="#ea580c" />
-                                    <PriceRow label="Net Overtime Rate" value={`+$${netOT.toFixed(2)}/hr`} color={TEAL_DARK} />
+                                    <PriceRow label="Overtime Pay (Net)" value={`+$${netOT.toFixed(2)}/hr`} color={TEAL_DARK} />
 
                                     <View style={styles.potentialCard}>
                                         <Text style={styles.potentialTitle}>With overtime, you could earn:</Text>
@@ -423,7 +445,11 @@ const JobDetailsScreen = ({ navigation, route }) => {
                                 {job.photos.map((photo, i) => {
                                     const uri = photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`;
                                     return (
-                                        <TouchableOpacity key={i} style={styles.photoContainer}>
+                                        <TouchableOpacity 
+                                            key={i} 
+                                            style={styles.photoContainer}
+                                            onPress={() => openViewer(uri)}
+                                        >
                                             <Image source={{ uri }} style={styles.photo} />
                                         </TouchableOpacity>
                                     );
@@ -448,13 +474,36 @@ const JobDetailsScreen = ({ navigation, route }) => {
                             <View style={styles.btnRow}>
                                 <Text style={styles.acceptBtnText}>✓ Accept Job — Earn ${earnings.toFixed(2)}</Text>
                                 {hasOvertime && (
-                                    <Text style={styles.otSnippet}>Up to ${(baseEarnings + netOT * 2).toFixed(2)} with 2hr OT</Text>
+                                    <Text style={styles.otSnippet}>+${netOT.toFixed(2)}/hr for work over {dur} mins</Text>
                                 )}
                             </View>
                         )}
                     </TouchableOpacity>
                 </View>
             )}
+            {/* Full Screen Image Viewer */}
+            <Modal
+                visible={viewerVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setViewerVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <TouchableOpacity 
+                        style={styles.modalClose} 
+                        onPress={() => setViewerVisible(false)}
+                    >
+                        <Ionicons name="close" size={30} color="#fff" />
+                    </TouchableOpacity>
+                    {selectedImage && (
+                        <Image 
+                            source={{ uri: selectedImage }} 
+                            style={styles.fullImage} 
+                            resizeMode="contain" 
+                        />
+                    )}
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -547,7 +596,26 @@ const styles = StyleSheet.create({
     activePhase: { marginBottom: 8 },
     historySection: { marginTop: 20, padding: 16, backgroundColor: '#f8fafc', borderRadius: 20, borderEraser: 1, borderColor: '#f1f5f9' },
     historyTitle: { fontSize: Typography.caption, fontWeight: 'bold', color: '#64748b', marginBottom: 12, textTransform: 'uppercase' },
-    historyPhoto: { width: 80, height: 80, borderRadius: 12, backgroundColor: '#e2e8f0' }
+    historyPhoto: { width: 80, height: 80, borderRadius: 12, backgroundColor: '#e2e8f0' },
+
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalClose: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 60 : 40,
+        right: 20,
+        zIndex: 10,
+        padding: 10,
+    },
+    fullImage: {
+        width: '100%',
+        height: '80%',
+    }
 });
 
 export default JobDetailsScreen;

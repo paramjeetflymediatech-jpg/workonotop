@@ -143,7 +143,7 @@ export default function AdminLayout({ children }) {
                     )}
                   </button>
                   <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold"
-                    style={{ background: 'linear-gradient(135deg, #14b8a6, #06b6d4)', color: '#ffffff' }}>
+                    style={{ background: 'linear-gradient(135deg, #15843E, #06b6d4)', color: '#ffffff' }}>
                     A
                   </div>
                 </div>

@@ -368,7 +368,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
             />
 
             <Text style={styles.label}>Job Description *</Text>
-            <Text style={styles.labelHelper}>Please describe the job in detail (at least 50 characters).</Text>
+            <Text style={styles.labelHelper}>Please describe the job in detail (at least 20 characters).</Text>
             <TextInput
                 style={[styles.input, styles.textArea]}
                 value={bookingData.job_description}

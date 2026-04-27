@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
         minHeight: verticalScale(100),
     },
     finishBtn: {
-        backgroundColor: '#14b8a6', padding: moderateScale(18),
+        backgroundColor: '#15843E', padding: moderateScale(18),
         borderRadius: moderateScale(16), alignItems: 'center', marginTop: verticalScale(8),
     },
     btnDisabled: { opacity: 0.6 },

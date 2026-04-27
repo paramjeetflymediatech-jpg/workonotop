@@ -54,7 +54,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
         }
     };
 
-    const SettingItem = ({ icon, title, subtitle, value, onValueChange, color = "#14b8a6" }) => (
+    const SettingItem = ({ icon, title, subtitle, value, onValueChange, color = "#15843E" }) => (
         <View style={styles.settingItem}>
             <View style={[styles.iconBox, { backgroundColor: color + '10' }]}>
                 <Ionicons name={icon} size={moderateScale(20)} color={color} />
@@ -76,7 +76,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.centerContainer}>
-                    <ActivityIndicator size="large" color="#14b8a6" />
+                    <ActivityIndicator size="large" color="#15843E" />
                 </View>
             </SafeAreaView>
         );
@@ -106,7 +106,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
                         value={settings.push_notifications_enabled}
                         onValueChange={(val) => toggleSetting('push_notifications_enabled', val)}
                     />
-                    
+
                     {(user?.role === 'customer' || user?.role === 'provider') && (
                         <>
                             <View style={styles.divider} />

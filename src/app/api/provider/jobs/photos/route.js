@@ -7,14 +7,21 @@ import { verifyToken } from '@/lib/jwt'  // Import from jwt utility
 export async function POST(request) {
   let connection
   try {
-    // ✅ Cookie-based auth
-    const token = request.cookies.get('provider_token')?.value
+    // ✅ Handle both Cookie and Bearer token auth
+    let token = request.cookies.get('provider_token')?.value
+    if (!token) {
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1]
+      }
+    }
+
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
     
     const decoded = verifyToken(token)
-    if (!decoded || decoded.type !== 'provider') {
+    if (!decoded || (decoded.type !== 'provider' && decoded.role !== 'provider')) {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
@@ -98,14 +105,21 @@ export async function POST(request) {
 // GET: Get photos for a booking
 export async function GET(request) {
   try {
-    // ✅ Cookie-based auth
-    const token = request.cookies.get('provider_token')?.value
+    // ✅ Handle both Cookie and Bearer token auth
+    let token = request.cookies.get('provider_token')?.value
+    if (!token) {
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1]
+      }
+    }
+
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
     
     const decoded = verifyToken(token)
-    if (!decoded || decoded.type !== 'provider') {
+    if (!decoded || (decoded.type !== 'provider' && decoded.role !== 'provider')) {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 

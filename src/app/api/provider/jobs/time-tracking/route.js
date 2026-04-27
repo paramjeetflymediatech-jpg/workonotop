@@ -123,7 +123,8 @@ export async function POST(request) {
           }
 
           const overtimeMinutes = Math.max(0, totalMinutes - standardDuration)
-          const overtimeEarnings = (overtimeMinutes / 60) * overtimeRate
+          const commPct = parseFloat(booking.commission_percent || 20)
+          const overtimeEarnings = (overtimeMinutes / 60) * overtimeRate * (1 - commPct / 100)
           const finalAmount = parseFloat(booking.provider_amount || 0) + overtimeEarnings
 
           await connection.execute(
@@ -245,7 +246,7 @@ export async function POST(request) {
                     ${overtimeMinutes > 0 ? `
                     <tr>
                       <td style="padding:5px 0;font-size:14px;color:#64748b;">Overtime</td>
-                      <td style="padding:5px 0;font-size:14px;font-weight:600;color:#7c3aed;">${formatDuration(overtimeMinutes)}</td>
+                      <td style="padding:5px 0;font-size:14px;font-weight:600;color:#15843E;">${formatDuration(overtimeMinutes)}</td>
                     </tr>
                     ` : ''}
                   </table>

@@ -16,8 +16,8 @@ import { api } from '../../utils/api';
 import { scale, verticalScale, moderateScale, SCREEN_WIDTH } from '../../utils/responsive';
 
 const TEAL = '#0f766e';
-const TEAL_DARK = '#134e4a';
-const TEAL_LIGHT = '#14b8a6';
+const TEAL_DARK = '#15843E';
+const TEAL_LIGHT = '#15843E';
 
 const AdminDashboard = ({ navigation }) => {
     const { user } = useAuth();
@@ -78,7 +78,7 @@ const AdminDashboard = ({ navigation }) => {
         switch (status) {
             case 'pending': return { bg: '#fef3c7', text: '#b45309', label: 'Pending' };
             case 'confirmed': return { bg: '#dbeafe', text: '#1d4ed8', label: 'Confirmed' };
-            case 'in_progress': return { bg: '#f3e8ff', text: '#7c3aed', label: 'In Progress' };
+            case 'in_progress': return { bg: '#f3e8ff', text: '#15843E', label: 'In Progress' };
             case 'completed': return { bg: '#dcfce7', text: '#15803d', label: 'Completed' };
             case 'cancelled': return { bg: '#fee2e2', text: '#b91c1c', label: 'Cancelled' };
             default: return { bg: '#f1f5f9', text: '#64748b', label: status };

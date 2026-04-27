@@ -139,7 +139,7 @@
 //     if (loading) {
 //         return (
 //             <View style={styles.loader}>
-//                 <ActivityIndicator size="large" color="#14b8a6" />
+//                 <ActivityIndicator size="large" color="#15843E" />
 //             </View>
 //         );
 //     }
@@ -178,7 +178,7 @@
 //         return (
 //             <Stack.Navigator
 //                 screenOptions={{
-//                     headerStyle: { backgroundColor: '#14b8a6' },
+//                     headerStyle: { backgroundColor: '#15843E' },
 //                     headerTintColor: '#fff',
 //                     headerTitleStyle: { fontWeight: 'bold' },
 //                 }}
@@ -219,7 +219,7 @@
 //             key={initialScreen}
 //             initialRouteName={initialScreen}
 //             screenOptions={{
-//                 headerStyle: { backgroundColor: '#14b8a6' },
+//                 headerStyle: { backgroundColor: '#15843E' },
 //                 headerTintColor: '#fff',
 //                 headerTitleStyle: { fontWeight: 'bold' },
 //             }}
@@ -465,7 +465,7 @@ const RootNavigator = () => {
     if (loading) {
         return (
             <View style={styles.loader}>
-                <ActivityIndicator size="large" color="#14b8a6" />
+                <ActivityIndicator size="large" color="#15843E" />
             </View>
         );
     }
@@ -473,15 +473,15 @@ const RootNavigator = () => {
     // ── Admin ────────────────────────────────────────────────────────────────
     if (user?.role === 'admin') {
         return (
-            <Stack.Navigator 
+            <Stack.Navigator
                 key={`admin-${user.id || 'primary'}`}
                 initialRouteName="Main"
                 screenOptions={{ headerShown: false }}
             >
-                <Stack.Screen name="Main"               component={AdminDrawerNavigator} />
-                <Stack.Screen name="AdminJobDetails"    component={AdminJobDetailsScreen} />
+                <Stack.Screen name="Main" component={AdminDrawerNavigator} />
+                <Stack.Screen name="AdminJobDetails" component={AdminJobDetailsScreen} />
                 <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
-                <Stack.Screen name="Chat"               component={ChatScreen} />
+                <Stack.Screen name="Chat" component={ChatScreen} />
             </Stack.Navigator>
         );
     }
@@ -495,7 +495,7 @@ const RootNavigator = () => {
                 key={initialScreen}
                 initialRouteName={initialScreen}
                 screenOptions={{
-                    headerStyle: { backgroundColor: '#14b8a6' },
+                    headerStyle: { backgroundColor: '#15843E' },
                     headerTintColor: '#fff',
                     headerTitleStyle: { fontWeight: 'bold' },
                 }}
@@ -553,27 +553,27 @@ const RootNavigator = () => {
                 />
 
                 {/* ── Provider job & profile screens ────────────────────────── */}
-                <Stack.Screen name="MyJobs"                component={MyJobsScreen}                options={{ headerShown: false }} />
-                <Stack.Screen name="JobDetails"            component={JobDetailsScreen}            options={{ headerShown: false }} />
-                <Stack.Screen name="StartJob"              component={StartJobScreen}              options={{ headerShown: false }} />
-                <Stack.Screen name="FinishJob"             component={FinishJobScreen}             options={{ headerShown: false }} />
-                <Stack.Screen name="JobReport"             component={JobReportScreen}             options={{ title: 'Job Report' }} />
+                <Stack.Screen name="MyJobs" component={MyJobsScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="JobDetails" component={JobDetailsScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="StartJob" component={StartJobScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="FinishJob" component={FinishJobScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="JobReport" component={JobReportScreen} options={{ title: 'Job Report' }} />
                 <Stack.Screen name="ProviderUpdateProfile" component={ProviderUpdateProfileScreen} options={{ headerShown: false }} />
 
                 {/* ── Shared screens ────────────────────────────────────────── */}
-                <Stack.Screen name="AdminJobDetails"        component={AdminJobDetailsScreen}        options={{ headerShown: false }} />
-                <Stack.Screen name="AdminNotifications"     component={AdminNotificationsScreen}     options={{ headerShown: false }} />
+                <Stack.Screen name="AdminJobDetails" component={AdminJobDetailsScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="CustomerBookingDetails" component={CustomerBookingDetailsScreen} options={{ headerShown: false }} />
-                <Stack.Screen name="UpdateProfile"          component={UpdateProfileScreen}          options={{ headerShown: false }} />
-                <Stack.Screen name="Settings"               component={SettingsScreen}               options={{ headerShown: false }} />
-                <Stack.Screen name="NotificationSettings"   component={NotificationSettingsScreen}   options={{ headerShown: false }} />
-                <Stack.Screen name="HelpSupport"            component={HelpSupportScreen}            options={{ headerShown: false }} />
-                <Stack.Screen name="ChangePassword"         component={ChangePasswordScreen}         options={{ headerShown: false }} />
-                <Stack.Screen name="Invoices"               component={InvoicesScreen}               options={{ headerShown: false }} />
-                <Stack.Screen name="Legal"                  component={LegalScreen}                  options={{ headerShown: false }} />
-                <Stack.Screen name="DataDeletion"           component={DataDeletionScreen}           options={{ headerShown: false }} />
-                <Stack.Screen name="Chat"                   component={ChatScreen}                   options={{ headerShown: false }} />
-                <Stack.Screen name="Details"                component={DetailsScreen} />
+                <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="DataDeletion" component={DataDeletionScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="Details" component={DetailsScreen} />
             </Stack.Navigator>
         );
     }
@@ -592,35 +592,35 @@ const RootNavigator = () => {
                 headerTitleStyle: { fontWeight: 'bold' },
             }}
         >
-            <Stack.Screen name="Main"                   component={BottomTabNavigator}           options={{ headerShown: false }} />
-            
+            <Stack.Screen name="Main" component={BottomTabNavigator} options={{ headerShown: false }} />
+
             {/* Auth flow (now accessible from everywhere) */}
-            <Stack.Screen name="Welcome"           component={WelcomeScreen}            options={{ headerShown: false }} />
-            <Stack.Screen name="AuthChoice"        component={AuthChoiceScreen}         options={{ headerShown: false }} />
-            <Stack.Screen name="Login"             component={LoginScreen}              options={{ headerShown: false }} />
-            <Stack.Screen name="ProviderSignup"    component={ProviderSignupScreen}     options={{ headerShown: false }} />
-            <Stack.Screen name="CustomerSignup"    component={CustomerSignupScreen}     options={{ headerShown: false }} />
-            <Stack.Screen name="ForgotPassword"    component={ForgotPasswordScreen}     options={{ headerShown: false }} />
-            <Stack.Screen name="OtpVerification"   component={OtpVerificationScreen}    options={{ headerShown: false }} />
-            <Stack.Screen name="EmailVerification" component={EmailVerificationScreen}  options={{ headerShown: false }} />
-            <Stack.Screen name="ResetPassword"     component={ResetPasswordScreen}      options={{ headerShown: false }} />
+            <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="AuthChoice" component={AuthChoiceScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ProviderSignup" component={ProviderSignupScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CustomerSignup" component={CustomerSignupScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
 
             {/* Customer internal screens */}
-            <Stack.Screen name="CreateBooking"          component={CreateBookingScreen}          options={{ title: 'Book Service' }} />
-            <Stack.Screen name="BookingSuccess"         component={BookingSuccessScreen}         options={{ headerShown: false }} />
+            <Stack.Screen name="CreateBooking" component={CreateBookingScreen} options={{ title: 'Book Service' }} />
+            <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} options={{ headerShown: false }} />
             <Stack.Screen name="CustomerBookingDetails" component={CustomerBookingDetailsScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="JobReport"              component={JobReportScreen}              options={{ title: 'Job Report' }} />
-            <Stack.Screen name="UpdateProfile"          component={UpdateProfileScreen}          options={{ headerShown: false }} />
-            <Stack.Screen name="Settings"               component={SettingsScreen}               options={{ headerShown: false }} />
-            <Stack.Screen name="NotificationSettings"   component={NotificationSettingsScreen}   options={{ headerShown: false }} />
-            <Stack.Screen name="HelpSupport"            component={HelpSupportScreen}            options={{ headerShown: false }} />
-            <Stack.Screen name="ChangePassword"         component={ChangePasswordScreen}         options={{ headerShown: false }} />
-            <Stack.Screen name="Invoices"               component={InvoicesScreen}               options={{ headerShown: false }} />
-            <Stack.Screen name="Legal"                  component={LegalScreen}                  options={{ headerShown: false }} />
-            <Stack.Screen name="DataDeletion"           component={DataDeletionScreen}           options={{ headerShown: false }} />
-            <Stack.Screen name="Chat"                   component={ChatScreen}                   options={{ headerShown: false }} />
-            <Stack.Screen name="Details"                component={DetailsScreen} />
-            <Stack.Screen name="GuestPlaceholder"       component={GuestPlaceholderScreen}       options={{ headerShown: false }} />
+            <Stack.Screen name="JobReport" component={JobReportScreen} options={{ title: 'Job Report' }} />
+            <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="DataDeletion" component={DataDeletionScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Details" component={DetailsScreen} />
+            <Stack.Screen name="GuestPlaceholder" component={GuestPlaceholderScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 };

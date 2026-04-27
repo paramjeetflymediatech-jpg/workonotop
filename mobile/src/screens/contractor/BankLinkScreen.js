@@ -107,7 +107,7 @@ const BankLinkScreen = ({ navigation, route }) => {
                 </View>
                 {webLoading && (
                     <View style={styles.webLoader}>
-                        <ActivityIndicator size="large" color="#14b8a6" />
+                        <ActivityIndicator size="large" color="#15843E" />
                     </View>
                 )}
                 <WebView
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     featureItem: { color: '#10b981', fontSize: moderateScale(14), fontWeight: '600', marginVertical: verticalScale(3) },
     successCard: {
         backgroundColor: '#f0fdfa', borderRadius: moderateScale(20), padding: moderateScale(30),
-        alignItems: 'center', marginBottom: verticalScale(32), borderWidth: 2, borderColor: '#14b8a6',
+        alignItems: 'center', marginBottom: verticalScale(32), borderWidth: 2, borderColor: '#15843E',
     },
     successIcon: { fontSize: moderateScale(48), marginBottom: verticalScale(8) },
     successText: { fontSize: moderateScale(18), fontWeight: 'bold', color: '#0f766e' },

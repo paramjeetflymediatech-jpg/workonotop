@@ -68,7 +68,7 @@ export default function ProviderChats() {
   )
 
   const statusBadge = (status) => {
-    if (status === 'confirmed')   return 'bg-blue-50 text-blue-600 border-blue-100'
+    if (status === 'confirmed') return 'bg-blue-50 text-blue-600 border-blue-100'
     if (status === 'in_progress') return 'bg-violet-50 text-violet-600 border-violet-100'
     return 'bg-gray-50 text-gray-500 border-gray-100'
   }
@@ -189,10 +189,11 @@ export default function ProviderChats() {
                         <span style={{ fontWeight: 600, fontSize: 14, color: isActive ? '#15803d' : '#1f2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {booking.customer_name}
                         </span>
-                        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 99, border: '1px solid', flexShrink: 0,
+                        <span style={{
+                          fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 99, border: '1px solid', flexShrink: 0,
                           ...(booking.status === 'confirmed' ? { background: '#eff6ff', color: '#2563eb', borderColor: '#bfdbfe' } :
-                             booking.status === 'in_progress' ? { background: '#f5f3ff', color: '#7c3aed', borderColor: '#ddd6fe' } :
-                             { background: '#f9fafb', color: '#6b7280', borderColor: '#e5e7eb' })
+                            booking.status === 'in_progress' ? { background: '#f5f3ff', color: '#15843E', borderColor: '#ddd6fe' } :
+                              { background: '#f9fafb', color: '#6b7280', borderColor: '#e5e7eb' })
                         }}>
                           {booking.status === 'in_progress' ? 'active' : booking.status}
                         </span>
@@ -232,10 +233,11 @@ export default function ProviderChats() {
                       <p style={{ fontWeight: 700, fontSize: 14, color: '#111827', margin: 0 }}>{activeBooking.customer_name}</p>
                       <p style={{ fontSize: 12, color: '#6b7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeBooking.service_name}</p>
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 99, border: '1px solid', flexShrink: 0,
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 99, border: '1px solid', flexShrink: 0,
                       ...(activeBooking.status === 'confirmed' ? { background: '#eff6ff', color: '#2563eb', borderColor: '#bfdbfe' } :
-                         activeBooking.status === 'in_progress' ? { background: '#f5f3ff', color: '#7c3aed', borderColor: '#ddd6fe' } :
-                         { background: '#f9fafb', color: '#6b7280', borderColor: '#e5e7eb' })
+                        activeBooking.status === 'in_progress' ? { background: '#f5f3ff', color: '#15843E', borderColor: '#ddd6fe' } :
+                          { background: '#f9fafb', color: '#6b7280', borderColor: '#e5e7eb' })
                     }}>
                       {activeBooking.status}
                     </span>

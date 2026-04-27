@@ -66,7 +66,7 @@ const JobReportScreen = ({ navigation, route }) => {
         ]);
     };
 
-    if (loading) return <View style={styles.loaderContainer}><ActivityIndicator size="large" color="#14b8a6" /></View>;
+    if (loading) return <View style={styles.loaderContainer}><ActivityIndicator size="large" color="#15843E" /></View>;
 
     if (!booking) return (
         <SafeAreaView style={styles.container}>

@@ -7,8 +7,8 @@ import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context'
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
 import Typography from '../../theme/Typography';
 
-const TEAL_DARK = '#134e4a';
-const TEAL_LIGHT = '#14b8a6';
+const TEAL_DARK = '#15843E';
+const TEAL_LIGHT = '#15843E';
 
 const MyJobsScreen = ({ navigation }) => {
     const { user } = useAuth();
@@ -98,7 +98,7 @@ const MyJobsScreen = ({ navigation }) => {
                         onPress={() => navigation.navigate('JobDetails', { job: item })}
                     >
                         <Text style={styles.detailsBtnText}>View Details</Text>
-                        <Ionicons name="chevron-forward" size={16} color="#14b8a6" />
+                        <Ionicons name="chevron-forward" size={16} color="#15843E" />
                     </TouchableOpacity>
                 </View>
             </TouchableOpacity>
@@ -140,7 +140,7 @@ const MyJobsScreen = ({ navigation }) => {
 
             {loading ? (
                 <View style={styles.centerContainer}>
-                    <ActivityIndicator size="large" color="#14b8a6" />
+                    <ActivityIndicator size="large" color="#15843E" />
                 </View>
             ) : (
                 <FlatList
@@ -150,7 +150,7 @@ const MyJobsScreen = ({ navigation }) => {
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#14b8a6']} />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#15843E']} />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
         flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         paddingVertical: 10, borderRadius: 10, gap: 8
     },
-    activeTab: { backgroundColor: '#14b8a6' },
+    activeTab: { backgroundColor: '#15843E' },
     tabText: { fontSize: Typography.body, fontWeight: '600', color: '#64748b' },
     activeTabText: { color: '#fff' },
     tabBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, minWidth: 20, alignItems: 'center' },
@@ -219,9 +219,9 @@ const styles = StyleSheet.create({
     },
     earningsContainer: {},
     earningsLabel: { fontSize: Typography.tiny, color: '#94a3b8' },
-    earningsValue: { fontSize: Typography.bodyLarge, fontWeight: 'bold', color: '#14b8a6' },
+    earningsValue: { fontSize: Typography.bodyLarge, fontWeight: 'bold', color: '#15843E' },
     detailsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    detailsBtnText: { fontSize: Typography.body, fontWeight: '600', color: '#14b8a6' },
+    detailsBtnText: { fontSize: Typography.body, fontWeight: '600', color: '#15843E' },
     centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
     emptyText: { fontSize: Typography.h5, fontWeight: 'bold', color: '#475569', marginTop: 16 },

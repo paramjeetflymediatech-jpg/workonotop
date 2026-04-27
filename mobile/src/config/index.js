@@ -10,6 +10,6 @@ import { Platform } from 'react-native';
 // export const API_BASE_URL = "https://workontap.com";
 
 
-const DEV_URL = "http://192.168.1.14:3000";
+const DEV_URL = "http://192.168.1.3:3000";
 console.log(DEV_URL, '-api');
 export const API_BASE_URL = DEV_URL;

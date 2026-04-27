@@ -5,7 +5,15 @@ import jwt from 'jsonwebtoken'
 const JWT_SECRET = process.env.JWT_SECRET
 
 async function getAdmin(request) {
-    const token = request.cookies.get('adminAuth')?.value
+    let token = request.cookies.get('adminAuth')?.value
+    
+    if (!token) {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        }
+    }
+
     if (!token) {
         console.log('Admin Auth: No token found')
         return null

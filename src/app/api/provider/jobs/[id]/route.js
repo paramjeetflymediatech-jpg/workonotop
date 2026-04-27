@@ -5,8 +5,15 @@ import { verifyToken } from '@/lib/jwt'  // Import from jwt utility
 
 export async function GET(request, { params }) {
   try {
-    // ✅ Cookie-based auth
-    const token = request.cookies.get('provider_token')?.value
+    // ✅ Cookie or Bearer auth
+    let token = request.cookies.get('provider_token')?.value
+    if (!token) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
+    }
+
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
@@ -43,6 +50,19 @@ export async function GET(request, { params }) {
       }, { status: 404 })
     }
 
+    // Helper to get system settings
+    async function getSystemSetting(key, defaultValue = null) {
+      try {
+        const results = await execute('SELECT `value` FROM system_settings WHERE `key` = ?', [key])
+        return results && results.length > 0 ? results[0].value : defaultValue
+      } catch (error) {
+        return defaultValue
+      }
+    }
+
+    const defaultCommRaw = await getSystemSetting('default_commission', '20')
+    const defaultComm = parseFloat(defaultCommRaw)
+
     const job = jobs[0]
     
     // Fetch customer-provided photos
@@ -57,14 +77,37 @@ export async function GET(request, { params }) {
       job.job_time_slot = job.job_time_slot.split(',')
     }
 
-    // Ensure numeric values
-    job.service_price = parseFloat(job.service_price || 0)
-    job.additional_price = parseFloat(job.additional_price || 0)
-    job.provider_amount = parseFloat(job.provider_amount || 0)
-    job.overtime_earnings = parseFloat(job.overtime_earnings || 0)
-    job.final_provider_amount = job.final_provider_amount ? parseFloat(job.final_provider_amount) : null
-    job.commission_percent = job.commission_percent ? parseFloat(job.commission_percent) : null
-    job.duration_minutes = job.duration_minutes || 60
+    // Pricing Calculation Logic (matches available-jobs)
+    const commPct = job.commission_percent !== null ? parseFloat(job.commission_percent) : defaultComm
+    const basePrice = parseFloat(job.service_price || 0)
+    const otRate = parseFloat(job.additional_price || 0)
+    const providerAmount = job.commission_percent !== null ? parseFloat(job.provider_amount || 0) : 0
+    const duration = job.duration_minutes || 60
+    const commAmt = basePrice * (commPct / 100)
+    const baseEarnings = basePrice - commAmt
+    const netOT = otRate * (1 - commPct / 100)
+
+    job.pricing = {
+      is_approved: true,
+      base_price: basePrice,
+      commission_percent: commPct,
+      commission_amount: commAmt,
+      provider_base_earnings: baseEarnings,
+      has_overtime: otRate > 0,
+      overtime_rate: otRate,
+      net_overtime_rate: netOT,
+      total_provider_amount: providerAmount || baseEarnings,
+      duration_minutes: duration,
+    }
+
+    job.display_amount = `$${(providerAmount || baseEarnings).toFixed(2)}`
+
+    // Ensure numeric values for legacy compatibility
+    job.service_price = basePrice
+    job.additional_price = otRate
+    job.provider_amount = providerAmount
+    job.commission_percent = commPct
+    job.duration_minutes = duration
 
     return NextResponse.json({
       success: true,
