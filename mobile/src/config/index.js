@@ -1,15 +1,8 @@
 import { Platform } from 'react-native';
 
-// Deelopment (local testing)
-// Host IP: 192.168.1.146 (from Ethernet adapter)
-// const DEV_URL = Platform.OS === 'android' ? "http://192.168.1.146:3000" : "http://[IP_ADDRESS]";
-// console.log(DEV_URL, '-api')
-// export const API_BASE_URL = DEV_URL;
-
 // Production
-// export const API_BASE_URL = "https://workontap.com";
+export const API_BASE_URL = "https://workontap.com";
 
-
-const DEV_URL = "http://192.168.1.3:3000";
-console.log(DEV_URL, '-api');
-export const API_BASE_URL = DEV_URL;
+// Development (Uncomment to use local backend)
+// const DEV_URL = Platform.OS === 'android' ? "http://192.168.1.146:3000" : "http://localhost:3000";
+// export const API_BASE_URL = DEV_URL;

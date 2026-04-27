@@ -75,12 +75,11 @@ export async function POST(request) {
     // 🔔 Notify Admin about application ready for review
     try {
       const providerInfo = await execute(
-        `SELECT first_name, last_name, email, specialty FROM service_providers WHERE id = ?`,
+        `SELECT name, email, specialty FROM service_providers WHERE id = ?`,
         [providerId]
       );
       if (providerInfo.length > 0) {
-        const { first_name, last_name, email, specialty } = providerInfo[0];
-        const fullName = `${first_name} ${last_name || ''}`.trim();
+        const { name: fullName, email, specialty } = providerInfo[0];
         const adminEmail = process.env.ADMIN_EMAIL || 'amandeepkumar.flymediatech@gmail.com';
         
         await sendEmail({

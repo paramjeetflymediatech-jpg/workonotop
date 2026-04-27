@@ -79,14 +79,9 @@ const LoginScreen = ({ navigation }) => {
                         })
                     );
                 } else {
-                    console.log(`🚀 [Login] Success! Explicitly navigating to Main.`);
-                    // Force navigation to Main to ensure the UI switches out of the Auth flow
-                    navigation.dispatch(
-                        CommonActions.reset({
-                            index: 0,
-                            routes: [{ name: 'Main' }],
-                        })
-                    );
+                    console.log(`🚀 [Login] Success! Auth state update will trigger RootNavigator redirection.`);
+                    // Removing explicit reset to 'Main' to allow RootNavigator's resolveProviderScreen logic
+                    // to gate the user based on their status (e.g., PendingApproval or Onboarding).
                 }
             } else {
                 showPremiumAlert(response.message || 'Invalid credentials');
@@ -113,13 +108,7 @@ const LoginScreen = ({ navigation }) => {
             const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
             const result = await loginWithGoogle(role, 'login');
             if (result.success) {
-                console.log(`🚀 [GoogleAuth] Success! Explicitly navigating to Main.`);
-                navigation.dispatch(
-                    CommonActions.reset({
-                        index: 0,
-                        routes: [{ name: 'Main' }],
-                    })
-                );
+                console.log(`🚀 [GoogleAuth] Success! Auth state update will trigger redirection.`);
             } else {
                 showPremiumAlert(result.message);
             }
@@ -136,13 +125,7 @@ const LoginScreen = ({ navigation }) => {
             const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
             const result = await loginWithApple(role);
             if (result.success) {
-                console.log(`🚀 [AppleAuth] Success! Explicitly navigating to Main.`);
-                navigation.dispatch(
-                    CommonActions.reset({
-                        index: 0,
-                        routes: [{ name: 'Main' }],
-                    })
-                );
+                console.log(`🚀 [AppleAuth] Success! Auth state update will trigger redirection.`);
             } else {
                 showPremiumAlert(result.message);
             }
