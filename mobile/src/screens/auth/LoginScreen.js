@@ -78,9 +78,17 @@ const LoginScreen = ({ navigation }) => {
                             ],
                         })
                     );
+                } else if (userData.role === 'customer') {
+                    console.log(`🚀 [Login] Success! Customer redirecting to Main.`);
+                    navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [{ name: 'Main' }],
+                        })
+                    );
                 } else {
                     console.log(`🚀 [Login] Success! Auth state update will trigger RootNavigator redirection.`);
-                    // Removing explicit reset to 'Main' to allow RootNavigator's resolveProviderScreen logic
+                    // For Providers, we rely on RootNavigator's resolveProviderScreen logic
                     // to gate the user based on their status (e.g., PendingApproval or Onboarding).
                 }
             } else {
@@ -108,7 +116,15 @@ const LoginScreen = ({ navigation }) => {
             const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
             const result = await loginWithGoogle(role, 'login');
             if (result.success) {
-                console.log(`🚀 [GoogleAuth] Success! Auth state update will trigger redirection.`);
+                console.log(`🚀 [GoogleAuth] Success!`);
+                if (result.user?.role === 'customer') {
+                    navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [{ name: 'Main' }],
+                        })
+                    );
+                }
             } else {
                 showPremiumAlert(result.message);
             }
@@ -125,7 +141,15 @@ const LoginScreen = ({ navigation }) => {
             const role = type === 'pro' || type === 'provider' ? 'provider' : 'customer';
             const result = await loginWithApple(role);
             if (result.success) {
-                console.log(`🚀 [AppleAuth] Success! Auth state update will trigger redirection.`);
+                console.log(`🚀 [AppleAuth] Success!`);
+                if (result.user?.role === 'customer') {
+                    navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [{ name: 'Main' }],
+                        })
+                    );
+                }
             } else {
                 showPremiumAlert(result.message);
             }

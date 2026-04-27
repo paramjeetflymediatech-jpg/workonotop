@@ -47,7 +47,15 @@ const CustomerSignupScreen = ({ navigation }) => {
         setGoogleLoading(true);
         try {
             const result = await loginWithGoogle('customer', 'signup');
-            if (!result.success) {
+            if (result.success) {
+                console.log('🚀 [GoogleSignup] Success! Redirecting to Main.');
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'Main' }],
+                    })
+                );
+            } else {
                 setError(result.message);
                 setShowError(true);
             }
@@ -63,7 +71,15 @@ const CustomerSignupScreen = ({ navigation }) => {
         setAppleLoading(true);
         try {
             const result = await loginWithApple('customer');
-            if (!result.success) {
+            if (result.success) {
+                console.log('🚀 [AppleSignup] Success! Redirecting to Main.');
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'Main' }],
+                    })
+                );
+            } else {
                 setError(result.message);
                 setShowError(true);
             }

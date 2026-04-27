@@ -44,7 +44,9 @@ const ProviderSignupScreen = ({ navigation }) => {
         setGoogleLoading(true);
         try {
             const result = await loginWithGoogle('provider', 'signup');
-            if (!result.success) {
+            if (result.success) {
+                console.log('🚀 [GoogleSignup] Success! RootNavigator will handle redirection to onboarding.');
+            } else {
                 setError(result.message);
                 setShowError(true);
             }
@@ -60,7 +62,9 @@ const ProviderSignupScreen = ({ navigation }) => {
         setAppleLoading(true);
         try {
             const result = await loginWithApple('provider');
-            if (!result.success) {
+            if (result.success) {
+                console.log('🚀 [AppleSignup] Success! RootNavigator will handle redirection to onboarding.');
+            } else {
                 setError(result.message);
                 setShowError(true);
             }
