@@ -24,7 +24,8 @@ export const AuthProvider = ({ children }) => {
                 if (!isExpoGo) {
                     await GoogleSignin.configure({
                         webClientId: '221840398936-4e0923mpq8viaoljni102if07j5cj0bq.apps.googleusercontent.com',
-                        iosClientId: '221840398936-4e0923mpq8viaoljni102if07j5cj0bq.apps.googleusercontent.com',
+                        // iosClientId: '221840398936-4e0923mpq8viaoljni102if07j5cj0bq.apps.googleusercontent.com',
+                        iosClientId: '221840398936-ljq6kpaamsfelh42habii7os2kfib5qf.apps.googleusercontent.com',
                         offlineAccess: true,
                     });
                     console.log('✅ [AuthContext] Google Sign-In configured');

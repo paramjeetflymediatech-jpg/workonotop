@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "493642235157",
+    "project_id": "workontap-6e005",
+    "storage_bucket": "workontap-6e005.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:493642235157:android:7995174f97ebc1b585fd1c",
+        "android_client_info": {
+          "package_name": "com.nh_aman.workontap"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3QghU43JrumB_rurnW-VZAOOBmg3tr5Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
