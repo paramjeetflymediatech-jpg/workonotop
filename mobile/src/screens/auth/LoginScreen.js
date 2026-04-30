@@ -61,6 +61,7 @@ const LoginScreen = ({ navigation }) => {
 
                 // Standardize role for the app
                 if (userData.role === 'user') userData.role = 'customer';
+                if (userData.role === 'pro') userData.role = 'provider';
 
                 login(userData, response.token);
 
@@ -117,7 +118,9 @@ const LoginScreen = ({ navigation }) => {
             const result = await loginWithGoogle(role, 'login');
             if (result.success) {
                 console.log(`🚀 [GoogleAuth] Success!`);
-                if (result.user?.role === 'customer') {
+                const userRole = result.user?.role === 'user' ? 'customer' : (result.user?.role === 'pro' ? 'provider' : result.user?.role);
+                
+                if (userRole === 'customer') {
                     navigation.dispatch(
                         CommonActions.reset({
                             index: 0,
@@ -142,7 +145,9 @@ const LoginScreen = ({ navigation }) => {
             const result = await loginWithApple(role);
             if (result.success) {
                 console.log(`🚀 [AppleAuth] Success!`);
-                if (result.user?.role === 'customer') {
+                const userRole = result.user?.role === 'user' ? 'customer' : (result.user?.role === 'pro' ? 'provider' : result.user?.role);
+
+                if (userRole === 'customer') {
                     navigation.dispatch(
                         CommonActions.reset({
                             index: 0,

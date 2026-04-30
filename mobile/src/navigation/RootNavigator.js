@@ -403,6 +403,11 @@ const Stack = createNativeStackNavigator();
 //   4. status === 'active'                          → Main (dashboard) ✅ ONLY HERE
 // ─────────────────────────────────────────────────────────────────────────────
 const resolveProviderScreen = (user) => {
+    console.log('🔍 [resolveProviderScreen] Checking user status/onboarding:', {
+        status: user.status,
+        onboarding_completed: user.onboarding_completed,
+        documents_uploaded: user.documents_uploaded
+    });
 
     // 1. Rejected — hard stop
     if (user.status === 'rejected') {
@@ -416,22 +421,24 @@ const resolveProviderScreen = (user) => {
         return { screen: 'EmailVerificationPending', params: {} };
     }
 
-    // 3. Onboarding not complete — ALWAYS go to Intro screen first
-    // This acts as a gateway/checkpoint to ensure new providers complete their profile.
-    if (Number(user.onboarding_completed) !== 1) {
+    // 3. Onboarding check — CRITICAL for new providers
+    // If onboarding_completed is 0, false, null, undefined, or "0", they MUST go to onboarding.
+    const onboardingComplete = user.onboarding_completed == 1 || user.onboarding_completed === true;
+    
+    if (!onboardingComplete) {
         console.log('🔵 [Nav] onboarding incomplete → OnboardingIntro');
         return { screen: 'OnboardingIntro', params: {} };
     }
 
-    // 4. status === 'active' — ONLY place dashboard is granted ✅
+    // 4. status === 'active' — Grant dashboard access ONLY if onboarding is finished
     if (user.status === 'active') {
         console.log('🟢 [Nav] active → Main');
         return { screen: 'Main', params: {} };
     }
 
-    // 5. Onboarding complete but not active (pending or documents reset)
-    if (Number(user.documents_uploaded) !== 1) {
-        console.log('🟠 [Nav] docs reset by admin → DocumentUpload (entry point)');
+    // 5. Onboarding complete but not active yet (pending or documents reset)
+    if (user.documents_uploaded == 0 || user.documents_uploaded === false) {
+        console.log('🟠 [Nav] docs missing/reset → DocumentUpload');
         return { screen: 'DocumentUpload', params: { isEntryPoint: true } };
     }
 
@@ -439,6 +446,7 @@ const resolveProviderScreen = (user) => {
     console.log('🟡 [Nav] pending approval → PendingApproval');
     return { screen: 'PendingApproval', params: {} };
 };
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -485,7 +493,7 @@ const RootNavigator = () => {
     }
 
     // ── Provider ─────────────────────────────────────────────────────────────
-    if (user?.role === 'provider') {
+    if (user?.role === 'provider' || user?.role === 'pro') {
         const { screen: initialScreen, params: initialParams } = resolveProviderScreen(user);
 
         return (

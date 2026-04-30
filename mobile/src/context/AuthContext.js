@@ -299,6 +299,7 @@ export const AuthProvider = ({ children }) => {
                 }
 
                 if (userData.role === 'user') userData.role = 'customer';
+                if (userData.role === 'pro') userData.role = 'provider';
 
                 console.log(`✅ [GoogleAuth] Success! Logged in as: ${userData.role}`);
                 await login(userData, userToken);
@@ -362,6 +363,7 @@ export const AuthProvider = ({ children }) => {
                 }
 
                 if (userData.role === 'user') userData.role = 'customer';
+                if (userData.role === 'pro') userData.role = 'provider';
 
                 console.log(`✅ [AppleAuth] Success! Logged in as: ${userData.role}`);
                 await login(userData, userToken);
