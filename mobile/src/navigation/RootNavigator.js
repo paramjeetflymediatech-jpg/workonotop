@@ -416,32 +416,30 @@ const resolveProviderScreen = (user) => {
         return { screen: 'EmailVerificationPending', params: {} };
     }
 
-    // 3. Not active yet — block dashboard entirely
-    if (user.status !== 'active') {
-        console.log('🔵 [Nav] status:', user.status, '— not active, checking onboarding...');
-
-        // 3a. Onboarding not complete — ALWAYS go to Intro screen first
-        // This acts as a gateway/checkpoint to "apply checks" and show progress.
-        if (Number(user.onboarding_completed) !== 1) {
-            console.log('🔵 [Nav] onboarding incomplete → OnboardingIntro');
-            return { screen: 'OnboardingIntro', params: {} };
-        }
-
-        // 3b. Onboarding complete but docs were reset by admin → re-upload
-        if (Number(user.documents_uploaded) !== 1) {
-            console.log('🟠 [Nav] docs reset by admin → DocumentUpload (entry point)');
-            return { screen: 'DocumentUpload', params: { isEntryPoint: true } };
-        }
-
-        // 3c. Onboarding complete, docs uploaded, waiting for admin approval
-        console.log('🟡 [Nav] pending approval → PendingApproval');
-        return { screen: 'PendingApproval', params: {} };
+    // 3. Onboarding not complete — ALWAYS go to Intro screen first
+    // This acts as a gateway/checkpoint to ensure new providers complete their profile.
+    if (Number(user.onboarding_completed) !== 1) {
+        console.log('🔵 [Nav] onboarding incomplete → OnboardingIntro');
+        return { screen: 'OnboardingIntro', params: {} };
     }
 
     // 4. status === 'active' — ONLY place dashboard is granted ✅
-    console.log('🟢 [Nav] active → Main');
-    return { screen: 'Main', params: {} };
+    if (user.status === 'active') {
+        console.log('🟢 [Nav] active → Main');
+        return { screen: 'Main', params: {} };
+    }
+
+    // 5. Onboarding complete but not active (pending or documents reset)
+    if (Number(user.documents_uploaded) !== 1) {
+        console.log('🟠 [Nav] docs reset by admin → DocumentUpload (entry point)');
+        return { screen: 'DocumentUpload', params: { isEntryPoint: true } };
+    }
+
+    // Docs uploaded, waiting for admin approval
+    console.log('🟡 [Nav] pending approval → PendingApproval');
+    return { screen: 'PendingApproval', params: {} };
 };
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RootNavigator
