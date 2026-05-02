@@ -273,13 +273,13 @@ const ProviderSignupScreen = ({ navigation }) => {
                             </Text>
                         </TouchableOpacity>
 
-                        <View style={styles.divider}>
+                        {/* <View style={styles.divider}>
                             <View style={styles.dividerLine} />
                             <Text style={styles.dividerText}>OR</Text>
                             <View style={styles.dividerLine} />
-                        </View>
+                        </View> */}
 
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                             style={[styles.googleButton, googleLoading && styles.disabledButton]}
                             onPress={handleGoogleSignup}
                             disabled={loading || googleLoading}
@@ -296,7 +296,7 @@ const ProviderSignupScreen = ({ navigation }) => {
                                     <Text style={styles.googleButtonText}>Signup with Google</Text>
                                 </View>
                             )}
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
 
                         {Platform.OS === 'ios' && (
                             <AppleAuthentication.AppleAuthenticationButton

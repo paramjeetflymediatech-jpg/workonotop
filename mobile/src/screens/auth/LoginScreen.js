@@ -242,13 +242,13 @@ const LoginScreen = ({ navigation }) => {
                             )}
                         </TouchableOpacity>
 
-                        <View style={styles.divider}>
+                        {/* <View style={styles.divider}>
                             <View style={styles.dividerLine} />
                             <Text style={styles.dividerText}>OR</Text>
                             <View style={styles.dividerLine} />
-                        </View>
+                        </View> */}
 
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                             style={[styles.googleButton, googleLoading && styles.buttonDisabled]}
                             onPress={handleGoogleLogin}
                             disabled={loading || googleLoading}
@@ -265,7 +265,7 @@ const LoginScreen = ({ navigation }) => {
                                     <Text style={styles.googleButtonText}>Continue with Google</Text>
                                 </View>
                             )}
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
 
                         {Platform.OS === 'ios' && (
                             <AppleAuthentication.AppleAuthenticationButton
