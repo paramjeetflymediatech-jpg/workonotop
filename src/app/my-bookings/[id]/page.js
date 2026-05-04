@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from 'src/context/AuthContext'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import {
@@ -150,7 +150,9 @@ export default function CustomerBookingDetails() {
   const { user } = useAuth()
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const bookingId = params.id
+  const actionParam = searchParams.get('action')
 
   const [booking, setBooking] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -186,6 +188,16 @@ export default function CustomerBookingDetails() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!loading && booking && booking.status === 'awaiting_approval') {
+      if (actionParam === 'approve') {
+        setShowConfirmModal(true)
+      } else if (actionParam === 'dispute') {
+        setShowDisputeModal(true)
+      }
+    }
+  }, [loading, booking, actionParam])
 
   const checkExistingReview = async (id) => {
     try {
@@ -240,6 +252,14 @@ export default function CustomerBookingDetails() {
   const formatDate = (d) => !d ? 'N/A' : new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   const formatDuration = (m) => { if (!m) return '0 min'; if (m < 60) return `${m} min`; const h = Math.floor(m / 60), r = m % 60; return r ? `${h}h ${r}m` : `${h}h` }
   const statusColor = (s) => ({ pending: 'bg-yellow-50 text-yellow-700 border-yellow-200', confirmed: 'bg-blue-50 text-blue-700 border-blue-200', in_progress: 'bg-purple-50 text-purple-700 border-purple-200', awaiting_approval: 'bg-amber-50 text-amber-700 border-amber-200', completed: 'bg-green-50 text-green-700 border-green-200', disputed: 'bg-red-50 text-red-700 border-red-200', cancelled: 'bg-gray-50 text-gray-700 border-gray-200' }[s] || 'bg-gray-50 text-gray-700 border-gray-200')
+
+  const cleanNotes = (notes) => {
+    if (!notes) return null
+    return notes
+      .replace(/Commission set to .*?\(.*?\)/gi, '')
+      .replace(/\| Platform: .*? \| Provider: .*?$/gi, '')
+      .trim()
+  }
 
   if (loading) return (<><Header /><div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" /></div></>)
   if (error || !booking) return (<><Header /><div className="min-h-screen bg-gray-50 py-8"><div className="max-w-3xl mx-auto px-4"><div className="bg-white rounded-2xl p-8 text-center border"><AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" /><h2 className="text-2xl font-bold mb-2">Booking Not Found</h2><p className="text-gray-500 mb-6">{error}</p><Link href="/my-bookings" className="inline-flex items-center gap-2 bg-teal-600 text-white px-6 py-3 rounded-xl"><ArrowLeft className="w-4 h-4" /> Back</Link></div></div></div></>)
@@ -585,7 +605,11 @@ export default function CustomerBookingDetails() {
                         <p className="text-xs text-gray-400 mt-1 font-medium">{new Date(item.created_at).toLocaleString('en-US', {
                           month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                         })}</p>
-                        {item.notes && <p className="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100 italic">{item.notes}</p>}
+                        {cleanNotes(item.notes) && (
+                          <p className="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100 italic">
+                            {cleanNotes(item.notes)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}

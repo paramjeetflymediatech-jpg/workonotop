@@ -104,16 +104,15 @@ export default function ProviderLayout({ children }) {
 
   const checkAuth = async () => {
     try {
-      if (isPublic) {
-        setLoading(false);
-        return;
-      }
-
       const res = await fetch('/api/provider/me');
       const data = await res.json();
 
       if (!data.success || !data.provider) {
-        router.push('/provider/login');
+        if (!isPublic) {
+          router.push('/provider/login');
+        } else {
+          setLoading(false);
+        }
         return;
       }
 

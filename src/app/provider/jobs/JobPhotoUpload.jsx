@@ -189,39 +189,65 @@
 
 import { useState } from 'react'
 
-export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete }) {
+export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete, existingCount = 0 }) {
   const [uploading, setUploading] = useState(false)
   const [photos, setPhotos] = useState([])
   const [error, setError] = useState('')
   const [previews, setPreviews] = useState([])
 
-  const MAX_PHOTOS = photoType === 'before' ? 2 : 3
+  const MAX_PHOTOS = 10
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files)
+    if (files.length === 0) return
 
-    if (files.length > MAX_PHOTOS) {
-      setError(`Maximum ${MAX_PHOTOS} photos allowed`)
+    const totalExpected = photos.length + files.length + existingCount
+    if (totalExpected > MAX_PHOTOS) {
+      setError(`Maximum ${MAX_PHOTOS} photos allowed (you have ${existingCount} uploaded and ${photos.length} selected)`)
+      // Clear input so they can try again
+      e.target.value = ''
       return
     }
 
-    const validFiles = files.filter(file => {
+    const validFiles = []
+    const newErrors = []
+
+    files.forEach(file => {
       if (!file.type.startsWith('image/')) {
-        setError('Please upload only image files')
-        return false
+        newErrors.push(`${file.name} is not an image`)
+      } else if (file.size > 10 * 1024 * 1024) {
+        newErrors.push(`${file.name} exceeds 10MB`)
+      } else {
+        validFiles.push(file)
       }
-      if (file.size > 10 * 1024 * 1024) {
-        setError('File size exceeds 10MB')
-        return false
-      }
-      return true
     })
 
-    setPhotos(validFiles)
-    previews.forEach(p => URL.revokeObjectURL(p))
-    const newPreviews = validFiles.map(file => URL.createObjectURL(file))
+    if (newErrors.length > 0) {
+      setError(newErrors.join(', '))
+    }
+
+    if (validFiles.length > 0) {
+      const newPhotos = [...photos, ...validFiles]
+      setPhotos(newPhotos)
+      
+      const newPreviews = validFiles.map(file => URL.createObjectURL(file))
+      setPreviews([...previews, ...newPreviews])
+      setError('')
+    }
+
+    // Clear input value so same file can be re-selected if needed
+    e.target.value = ''
+  }
+
+  const removePhoto = (index) => {
+    const newPhotos = [...photos]
+    newPhotos.splice(index, 1)
+    setPhotos(newPhotos)
+
+    const newPreviews = [...previews]
+    URL.revokeObjectURL(newPreviews[index])
+    newPreviews.splice(index, 1)
     setPreviews(newPreviews)
-    setError('')
   }
 
   const uploadPhotos = async () => {
@@ -283,8 +309,15 @@ export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete 
       {previews.length > 0 && (
         <div className="grid grid-cols-3 gap-2 mb-3">
           {previews.map((preview, index) => (
-            <div key={index} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+            <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group">
               <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+              <button
+                onClick={() => removePhoto(index)}
+                className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Remove"
+              >
+                ✕
+              </button>
             </div>
           ))}
         </div>
@@ -309,7 +342,7 @@ export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete 
           />
         </label>
         <p className="text-xs text-gray-400 mt-1">
-          Up to {MAX_PHOTOS} photos · max 10MB each
+          Up to {MAX_PHOTOS} photos total ({Math.max(0, MAX_PHOTOS - existingCount - photos.length)} remaining) · max 10MB each
         </p>
       </div>
 

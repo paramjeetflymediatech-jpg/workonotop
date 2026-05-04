@@ -28,9 +28,11 @@ export async function POST(request) {
     try {
       const [[booking]] = await connection.execute(
         `SELECT b.*, s.duration_minutes as standard_duration,
+                u.email as customer_email, u.first_name as customer_first_name,
                 TIMESTAMPDIFF(MINUTE, b.start_time, NOW()) as current_duration
          FROM bookings b
          LEFT JOIN services s ON b.service_id = s.id
+         LEFT JOIN users u ON b.user_id = u.id
          WHERE b.id = ? AND b.provider_id = ?
          FOR UPDATE`,
         [booking_id, decoded.providerId]
@@ -160,6 +162,15 @@ export async function POST(request) {
               [decoded.providerId]
             )
 
+            // Fetch job photos
+            const jobPhotos = await execute(
+              `SELECT photo_url, photo_type FROM job_photos WHERE booking_id = ?`,
+              [booking_id]
+            )
+
+            const beforePhotos = jobPhotos.filter(p => p.photo_type === 'before').map(p => p.photo_url)
+            const afterPhotos = jobPhotos.filter(p => p.photo_type === 'after').map(p => p.photo_url)
+
             const providerName = provider?.name || 'Your Provider'
             const customerName = booking.customer_first_name || 'Customer'
 
@@ -178,6 +189,36 @@ export async function POST(request) {
                 month: 'short', day: 'numeric', year: 'numeric',
                 hour: '2-digit', minute: '2-digit'
               })
+            }
+
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+            const approveUrl = `${baseUrl}/my-bookings/${booking_id}?action=approve`
+            const disputeUrl = `${baseUrl}/my-bookings/${booking_id}?action=dispute`
+
+            const getAbsoluteUrl = (url) => {
+              if (!url) return ''
+              if (url.startsWith('http')) return url
+              return `${baseUrl}${url}`
+            }
+
+            const renderPhotoSection = (label, photos, color) => {
+              if (!photos || photos.length === 0) return ''
+              return `
+                <div style="margin-top: 24px;">
+                  <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.5px;">📸 ${label} Photos</p>
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:0;">
+                        ${photos.map(url => `
+                          <div style="display:inline-block;width:170px;margin-right:10px;margin-bottom:10px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;background:#f8fafc;">
+                            <img src="${getAbsoluteUrl(url)}" alt="${label}" style="width:170px;height:170px;object-cover;display:block;" />
+                          </div>
+                        `).join('')}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              `
             }
 
             const emailHtml = `<!DOCTYPE html>
@@ -271,9 +312,41 @@ export async function POST(request) {
               </table>
               ` : ''}
 
-              <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 24px;" />
+              <!-- Photos Section -->
+              ${renderPhotoSection('Before', beforePhotos, '#f97316')}
+              ${renderPhotoSection('After', afterPhotos, '#16a34a')}
 
-              <p style="margin:0;font-size:14px;color:#64748b;line-height:1.7;">
+              <hr style="border:none;border-top:1px solid #e2e8f0;margin:32px 0 24px;" />
+
+              <!-- CTA Buttons -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+                <tr>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:0 10px;">
+                          <a href="${approveUrl}"
+                             style="display:inline-block;padding:14px 30px;background:#16a34a;color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:700;box-shadow:0 4px 12px rgba(22,163,74,0.2);">
+                            ✅ Accept & Pay
+                          </a>
+                        </td>
+                        <td style="padding:0 10px;">
+                          <a href="${disputeUrl}"
+                             style="display:inline-block;padding:14px 30px;background:#ffffff;color:#dc2626;text-decoration:none;border:2px solid #dc2626;border-radius:10px;font-size:15px;font-weight:700;">
+                            ⚠️ Dispute
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0;font-size:14px;color:#64748b;line-height:1.7;text-align:center;">
+                If no action is taken, the job will be automatically approved in 12 hours.
+              </p>
+
+              <p style="margin:20px 0 0;font-size:13px;color:#94a3b8;line-height:1.7;text-align:center;">
                 Questions? Contact us at <a href="mailto:support@workontap.com" style="color:#0891b2;text-decoration:none;">support@workontap.com</a>
               </p>
 

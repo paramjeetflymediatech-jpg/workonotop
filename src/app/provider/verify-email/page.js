@@ -28,7 +28,10 @@ export default function VerifyEmail() {
         if (data.success) {
           setStatus('success');
           setMessage('Email verified successfully!');
-          setTimeout(() => router.push('/provider/login'), 3000);
+          const redirectUrl = data.email 
+            ? `/provider/login?email=${encodeURIComponent(data.email)}` 
+            : '/provider/login';
+          setTimeout(() => router.push(redirectUrl), 3000);
         } else {
           setStatus('error');
           setMessage(data.message || 'Verification failed');

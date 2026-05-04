@@ -3,17 +3,28 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
-export default function ProviderLogin() {
+function LoginFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+    
     const initGoogle = () => {
       const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
       if (typeof window !== 'undefined' && window.google && clientId) {
@@ -70,11 +81,6 @@ export default function ProviderLogin() {
 
     initGoogle();
   }, [router]);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleGoogleLogin = () => {
     if (typeof window === 'undefined' || !window.google) {
@@ -160,7 +166,6 @@ export default function ProviderLogin() {
 
   return (
     <>
-      <Header />
       <div className="w-full max-w-[100vw] min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex overflow-x-hidden">
         {/* Left panel - branding */}
         <div className="hidden lg:flex flex-col justify-center w-2/5 bg-gradient-to-br from-green-700 to-teal-700 p-12 text-white relative overflow-hidden">
@@ -192,7 +197,6 @@ export default function ProviderLogin() {
               </div>
             </div>
           </div>
-          {/* <p className="relative z-10 text-blue-200/50 text-xs font-bold uppercase tracking-widest leading-none">© 2025 WorkOnTap Professional</p> */}
         </div>
 
         {/* Right panel - form */}
@@ -207,12 +211,6 @@ export default function ProviderLogin() {
             <div className="lg:hidden mb-8 text-center animate-fadeIn">
               <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Professional Account</p>
             </div>
-            {/* Mobile logo */}
-            {/* <div className="lg:hidden mb-10 text-center animate-fadeInUp">
-              <Link href="/">
-                <h1 className="text-3xl font-black text-blue-700 tracking-tight italic">WorkOnTap <span className="text-blue-500 font-medium">Pro</span></h1>
-              </Link>
-            </div> */}
 
             <div className="mb-8 text-center lg:text-left space-y-2">
               <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight leading-tight font-outfit">Welcome back.</h2>
@@ -305,8 +303,22 @@ export default function ProviderLogin() {
           </div>
         </div>
       </div>
-      <Footer />
+    </>
+  );
+}
 
+export default function ProviderLogin() {
+  return (
+    <>
+      <Header />
+      <Suspense fallback={
+        <div className="flex-1 flex items-center justify-center min-h-screen">
+          <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }>
+        <LoginFormContent />
+      </Suspense>
+      <Footer />
     </>
   );
 }

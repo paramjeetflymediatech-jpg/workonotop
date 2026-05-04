@@ -60,6 +60,7 @@ export async function GET(request) {
         return NextResponse.json({
           success: true,
           message: 'Email verified successfully! Redirecting to login...',
+          email: provider.email,
         });
       }
     }
@@ -124,6 +125,7 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       message: 'Email verified successfully! Redirecting to login...',
+      email: provider.email,
     });
 
   } catch (error) {
