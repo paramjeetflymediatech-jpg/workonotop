@@ -4,6 +4,41 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAdminTheme } from '../layout';
 
+const PAGE_SIZE = 10;
+
+function Pagination({ total, page, setPage, isDarkMode }) {
+  const totalPages = Math.ceil(total / PAGE_SIZE)
+  const pages = []
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= page - 1 && i <= page + 1)) {
+      pages.push(i)
+    } else if (pages[pages.length - 1] !== '...') {
+      pages.push('...')
+    }
+  }
+  return (
+    <div className="flex items-center justify-between p-4 border-t flex-wrap gap-3 dark:border-slate-700 border-gray-200">
+      <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+        {total === 0 ? 'No results' : totalPages <= 1 ? `${total} total` : `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total} total`}
+      </p>
+      {totalPages > 1 && (
+        <div className="flex items-center gap-1">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            className={`px-3 py-1.5 rounded-lg text-sm disabled:opacity-40 transition ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>‹</button>
+          {pages.map((p, i) => (
+            p === '...'
+              ? <span key={`e-${i}`} className="px-2 text-slate-400 text-sm">…</span>
+              : <button key={p} onClick={() => setPage(p)}
+                className={`w-8 h-8 rounded-lg text-sm font-medium transition ${page === p ? 'bg-teal-600 text-white shadow-sm' : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>{p}</button>
+          ))}
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+            className={`px-3 py-1.5 rounded-lg text-sm disabled:opacity-40 transition ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>›</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AdminProviders() {
   const router = useRouter();
   const { isDarkMode } = useAdminTheme();
@@ -21,8 +56,10 @@ export default function AdminProviders() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
+    setPage(1);
     loadProviders();
   }, [filter, search]);
 
@@ -70,16 +107,16 @@ export default function AdminProviders() {
   const getStripeBadge = (connected, complete) => {
     if (connected && complete) {
       return isDarkMode
-        ? <span className="px-2 py-1 text-xs bg-green-900/30 text-green-400 rounded-full whitespace-nowrap">✓ Connected & Verified</span>
-        : <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full whitespace-nowrap">✓ Connected & Verified</span>;
+        ? <span className="px-2 py-1 text-xs bg-green-900/30 text-green-400 rounded-full">✓ Connected & Verified</span>
+        : <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">✓ Connected & Verified</span>;
     } else if (connected) {
       return isDarkMode
-        ? <span className="px-2 py-1 text-xs bg-yellow-900/30 text-yellow-400 rounded-full whitespace-nowrap">⏳ Pending Setup</span>
-        : <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full whitespace-nowrap">⏳ Pending Setup</span>;
+        ? <span className="px-2 py-1 text-xs bg-yellow-900/30 text-yellow-400 rounded-full">⏳ Pending Setup</span>
+        : <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">⏳ Pending Setup</span>;
     } else {
       return isDarkMode
-        ? <span className="px-2 py-1 text-xs bg-slate-800 text-slate-400 rounded-full whitespace-nowrap">✗ Not Connected</span>
-        : <span className="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full whitespace-nowrap">✗ Not Connected</span>;
+        ? <span className="px-2 py-1 text-xs bg-slate-800 text-slate-400 rounded-full">✗ Not Connected</span>
+        : <span className="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">✗ Not Connected</span>;
     }
   };
 
@@ -175,7 +212,7 @@ export default function AdminProviders() {
                       setFilter(s);
                       setShowMobileFilters(false);
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium capitalize whitespace-nowrap transition flex-shrink-0 
+                    className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium capitalize transition flex-shrink-0 
                       ${filter === s
                         ? 'bg-teal-600 text-white shadow-md'
                         : isDarkMode
@@ -229,7 +266,7 @@ export default function AdminProviders() {
                     </tr>
                   </thead>
                   <tbody className={`divide-y ${isDarkMode ? 'divide-slate-700' : 'divide-gray-200'}`}>
-                    {providers.map((provider) => (
+                    {providers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((provider) => (
                       <tr key={provider.id} className={`transition duration-150 ${isDarkMode ? 'hover:bg-slate-700/50' : 'hover:bg-teal-50/30'}`}>
                         <td className="px-4 xl:px-6 py-3 xl:py-4">
                           <div className="flex items-center gap-2 xl:gap-3">
@@ -237,33 +274,33 @@ export default function AdminProviders() {
                               {provider.name?.charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <div className={`font-semibold text-sm xl:text-base truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                              <div className={`font-semibold text-sm xl:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                 {provider.name}
                               </div>
-                              <div className={`text-[10px] xl:text-xs truncate ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                              <div className={`text-[10px] xl:text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                                 {provider.specialty || 'Not specified'}
                               </div>
                               <div className={`text-[8px] xl:text-[10px] flex items-center gap-1 mt-0.5 xl:mt-1 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
                                 <svg className="w-2.5 h-2.5 xl:w-3 xl:h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                 </svg>
-                                <span className="truncate">{provider.city || 'Not set'}</span>
+                                <span >{provider.city || 'Not set'}</span>
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 xl:px-6 py-3 xl:py-4">
-                          <div className={`text-xs xl:text-sm font-medium truncate max-w-[150px] xl:max-w-[200px] ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={provider.email}>
+                          <div className={`text-xs xl:text-sm font-medium  ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={provider.email}>
                             {provider.email}
                           </div>
-                          <div className={`text-[10px] xl:text-xs truncate max-w-[150px] xl:max-w-[200px] ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} title={provider.phone}>
+                          <div className={`text-[10px] xl:text-xs  ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} title={provider.phone}>
                             {provider.phone}
                           </div>
                         </td>
                         <td className="px-4 xl:px-6 py-3 xl:py-4">
-                          <div className="flex flex-wrap gap-1 max-w-[120px] xl:max-w-[150px]">
+                          <div className="flex flex-wrap gap-1 ">
                             {provider.documents_verified ? (
-                              <span className={`inline-flex items-center gap-1 px-1.5 xl:px-2 py-0.5 text-[8px] xl:text-[10px] font-bold rounded-full whitespace-nowrap ${isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'}`}>
+                              <span className={`inline-flex items-center gap-1 px-1.5 xl:px-2 py-0.5 text-[8px] xl:text-[10px] font-bold rounded-full ${isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'}`}>
                                 <svg className="w-2 h-2 xl:w-2.5 xl:h-2.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
@@ -272,22 +309,22 @@ export default function AdminProviders() {
                             ) : (
                               <>
                                 {provider.approved_docs > 0 && (
-                                  <span className={`px-1.5 xl:px-2 py-0.5 text-[8px] xl:text-[10px] font-bold rounded-full whitespace-nowrap ${isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'}`}>
+                                  <span className={`px-1.5 xl:px-2 py-0.5 text-[8px] xl:text-[10px] font-bold rounded-full ${isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'}`}>
                                     ✓ {provider.approved_docs}
                                   </span>
                                 )}
                                 {provider.pending_docs > 0 && (
-                                  <span className={`px-1.5 xl:px-2 py-0.5 text-[8px] xl:text-[10px] font-bold rounded-full whitespace-nowrap ${isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800'}`}>
+                                  <span className={`px-1.5 xl:px-2 py-0.5 text-[8px] xl:text-[10px] font-bold rounded-full ${isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800'}`}>
                                     ⏳ {provider.pending_docs}
                                   </span>
                                 )}
                                 {provider.rejected_docs > 0 && (
-                                  <span className={`px-1.5 xl:px-2 py-0.5 text-[8px] xl:text-[10px] font-bold rounded-full whitespace-nowrap ${isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800'}`}>
+                                  <span className={`px-1.5 xl:px-2 py-0.5 text-[8px] xl:text-[10px] font-bold rounded-full ${isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800'}`}>
                                     ✗ {provider.rejected_docs}
                                   </span>
                                 )}
                                 {provider.documents_count === 0 && (
-                                  <span className={`px-1.5 xl:px-2 py-0.5 text-[8px] xl:text-[10px] font-bold rounded-full whitespace-nowrap ${isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-800'}`}>
+                                  <span className={`px-1.5 xl:px-2 py-0.5 text-[8px] xl:text-[10px] font-bold rounded-full ${isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-800'}`}>
                                     No Docs
                                   </span>
                                 )}
@@ -301,17 +338,17 @@ export default function AdminProviders() {
                           </div>
                         </td>
                         <td className="px-4 xl:px-6 py-3 xl:py-4">
-                          <span className={`px-2 xl:px-3 py-0.5 xl:py-1 text-[8px] xl:text-[10px] font-bold rounded-full border whitespace-nowrap ${getStatusBadge(provider.status)}`}>
+                          <span className={`px-2 xl:px-3 py-0.5 xl:py-1 text-[8px] xl:text-[10px] font-bold rounded-full border ${getStatusBadge(provider.status)}`}>
                             {provider.status?.toUpperCase()}
                           </span>
                         </td>
-                        <td className={`px-4 xl:px-6 py-3 xl:py-4 text-[10px] xl:text-xs whitespace-nowrap ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                        <td className={`px-4 xl:px-6 py-3 xl:py-4 text-[10px] xl:text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                           {formatShortDate(provider.created_at)}
                         </td>
                         <td className="px-4 xl:px-6 py-3 xl:py-4">
                           <button
                             onClick={() => router.push(`/admin/providers/${provider.id}/documents`)}
-                            className="px-2 xl:px-3 py-1 xl:py-1.5 bg-teal-600 text-white rounded-lg text-[8px] xl:text-xs font-bold hover:bg-teal-700 transition shadow-sm whitespace-nowrap"
+                            className="px-2 xl:px-3 py-1 xl:py-1.5 bg-teal-600 text-white rounded-lg text-[8px] xl:text-xs font-bold hover:bg-teal-700 transition shadow-sm"
                           >
                             Review
                           </button>
@@ -324,7 +361,7 @@ export default function AdminProviders() {
 
               {/* Mobile View - Cards (below lg) */}
               <div className="lg:hidden divide-y divide-gray-100 dark:divide-slate-700">
-                {providers.map((provider) => (
+                {providers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((provider) => (
                   <div key={provider.id} className={`p-4 sm:p-5 transition duration-150 ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700/50' : 'bg-white hover:bg-teal-50/20'}`}>
                     {/* Header with Avatar and Status */}
                     <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
@@ -333,17 +370,17 @@ export default function AdminProviders() {
                           {provider.name?.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className={`font-bold text-sm sm:text-base leading-tight truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          <div className={`font-bold text-sm sm:text-base leading-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                             {provider.name}
                           </div>
-                          <div className={`text-[10px] sm:text-xs mt-0.5 font-medium truncate ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                          <div className={`text-[10px] sm:text-xs mt-0.5 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                             {provider.specialty || 'Service Provider'}
                           </div>
-                          <div className={`text-[8px] sm:text-[10px] flex items-center gap-1 mt-0.5 sm:mt-1 font-medium truncate ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
+                          <div className={`text-[8px] sm:text-[10px] flex items-center gap-1 mt-0.5 sm:mt-1 font-medium ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
                             <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             </svg>
-                            <span className="truncate">{provider.city || 'Location not set'}</span>
+                            <span >{provider.city || 'Location not set'}</span>
                           </div>
                         </div>
                       </div>
@@ -356,10 +393,10 @@ export default function AdminProviders() {
                     <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-5">
                       <div className={`p-2 sm:p-3 rounded-lg ${isDarkMode ? 'bg-slate-900/50' : 'bg-gray-50'}`}>
                         <p className={`text-[8px] sm:text-[10px] uppercase font-bold tracking-wider mb-1 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Contact</p>
-                        <p className={`text-[10px] sm:text-xs font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={provider.email}>
+                        <p className={`text-[10px] sm:text-xs font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={provider.email}>
                           {provider.email}
                         </p>
-                        <p className={`text-[8px] sm:text-[10px] mt-0.5 font-medium truncate ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} title={provider.phone}>
+                        <p className={`text-[8px] sm:text-[10px] mt-0.5 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} title={provider.phone}>
                           {provider.phone}
                         </p>
                       </div>
@@ -385,22 +422,22 @@ export default function AdminProviders() {
                         ) : (
                           <>
                             {provider.approved_docs > 0 && (
-                              <span className={`px-2 sm:px-2.5 py-1 text-[8px] sm:text-[10px] font-bold rounded-full border whitespace-nowrap ${isDarkMode ? 'bg-green-900/30 text-green-400 border-green-800/50' : 'bg-green-50 text-green-700 border-green-100'}`}>
+                              <span className={`px-2 sm:px-2.5 py-1 text-[8px] sm:text-[10px] font-bold rounded-full border ${isDarkMode ? 'bg-green-900/30 text-green-400 border-green-800/50' : 'bg-green-50 text-green-700 border-green-100'}`}>
                                 ✓ {provider.approved_docs} Approved
                               </span>
                             )}
                             {provider.pending_docs > 0 && (
-                              <span className={`px-2 sm:px-2.5 py-1 text-[8px] sm:text-[10px] font-bold rounded-full border whitespace-nowrap ${isDarkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800/50' : 'bg-yellow-50 text-yellow-700 border-yellow-100'}`}>
+                              <span className={`px-2 sm:px-2.5 py-1 text-[8px] sm:text-[10px] font-bold rounded-full border ${isDarkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800/50' : 'bg-yellow-50 text-yellow-700 border-yellow-100'}`}>
                                 ⏳ {provider.pending_docs} Pending
                               </span>
                             )}
                             {provider.rejected_docs > 0 && (
-                              <span className={`px-2 sm:px-2.5 py-1 text-[8px] sm:text-[10px] font-bold rounded-full border whitespace-nowrap ${isDarkMode ? 'bg-red-900/30 text-red-400 border-red-800/50' : 'bg-red-50 text-red-700 border-red-100'}`}>
+                              <span className={`px-2 sm:px-2.5 py-1 text-[8px] sm:text-[10px] font-bold rounded-full border ${isDarkMode ? 'bg-red-900/30 text-red-400 border-red-800/50' : 'bg-red-50 text-red-700 border-red-100'}`}>
                                 ✗ {provider.rejected_docs} Rejected
                               </span>
                             )}
                             {provider.documents_count === 0 && (
-                              <span className={`px-2 sm:px-2.5 py-1 text-[8px] sm:text-[10px] font-bold rounded-full border whitespace-nowrap ${isDarkMode ? 'bg-slate-700 text-slate-400 border-slate-600' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                              <span className={`px-2 sm:px-2.5 py-1 text-[8px] sm:text-[10px] font-bold rounded-full border ${isDarkMode ? 'bg-slate-700 text-slate-400 border-slate-600' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                                 No Documents
                               </span>
                             )}
@@ -413,13 +450,13 @@ export default function AdminProviders() {
                     <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-gray-100 dark:border-slate-700">
                       <div className="flex flex-col min-w-0">
                         <span className={`text-[8px] sm:text-[10px] font-bold tracking-tighter uppercase ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Member Since</span>
-                        <span className={`text-[9px] sm:text-[11px] font-semibold truncate ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                        <span className={`text-[9px] sm:text-[11px] font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                           {formatShortDate(provider.created_at)}
                         </span>
                       </div>
                       <button
                         onClick={() => router.push(`/admin/providers/${provider.id}/documents`)}
-                        className="px-2.5 sm:px-4 py-1 sm:py-2 bg-teal-600 text-white rounded-lg sm:rounded-xl text-[8px] sm:text-xs font-black hover:bg-teal-700 transition active:scale-95 shadow-lg shadow-teal-500/20 whitespace-nowrap"
+                        className="px-2.5 sm:px-4 py-1 sm:py-2 bg-teal-600 text-white rounded-lg sm:rounded-xl text-[8px] sm:text-xs font-black hover:bg-teal-700 transition active:scale-95 shadow-lg shadow-teal-500/20"
                       >
                         REVIEW
                       </button>
@@ -427,6 +464,7 @@ export default function AdminProviders() {
                   </div>
                 ))}
               </div>
+              <Pagination total={providers.length} page={page} setPage={setPage} isDarkMode={isDarkMode} />
             </>
           ) : (
             <div className="text-center py-8 sm:py-12 px-4">
