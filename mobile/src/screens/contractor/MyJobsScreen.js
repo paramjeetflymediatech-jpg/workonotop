@@ -205,9 +205,10 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: '#f1f5f9'
     },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-    serviceName: { fontSize: Typography.bodyLarge, fontWeight: 'bold', color: '#0f172a' },
-    bookingNumber: { fontSize: Typography.caption, color: '#94a3b8', marginTop: 2 },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    serviceInfo: { flex: 1, paddingRight: 10 },
+    serviceName: { fontSize: Typography.bodyLarge, fontWeight: 'bold', color: '#0f172a', flexWrap: 'wrap' },
+    bookingNumber: { fontSize: Typography.caption, color: '#94a3b8', marginTop: 2, flexWrap: 'wrap' },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, flexShrink: 0 },
     statusText: { fontSize: Typography.getCustom(10), fontWeight: 'bold' },
     cardBody: { marginBottom: 16, gap: 8 },
     infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import toast from 'react-hot-toast';
 
 // Separate component that uses useSearchParams
 function ScheduleContent() {
@@ -21,7 +22,7 @@ function ScheduleContent() {
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedDates, setSelectedDates] = useState([]);
-  const [selectedTimes, setSelectedTimes] = useState([]);
+  const [selectedTimes, setSelectedTimes] = useState({}); // Now maps dateStr -> [timeSlots]
   const [timingConstraints, setTimingConstraints] = useState('');
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -64,17 +65,13 @@ function ScheduleContent() {
     { id: 'evening', label: 'Evening', icon: '🌙', time: '4pm - 8pm' }
   ];
 
-  const isSlotAvailable = (slotId) => {
-    if (selectedDates.length === 0) return true;
-    
+  const isSlotAvailable = (dateStr, slotId) => {
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const allToday = selectedDates.every(d => d === todayStr);
     
-    if (!allToday) return true;
+    if (dateStr !== todayStr) return true;
     
     const hour = now.getHours();
-    // Disable if the current time is past the slot's midpoint/end to avoid last-minute bookings
     if (slotId === 'morning' && hour >= 11) return false;   // Morning (8am-12pm) disabled after 11am
     if (slotId === 'afternoon' && hour >= 15) return false; // Afternoon (12pm-4pm) disabled after 3pm
     if (slotId === 'evening' && hour >= 19) return false;   // Evening (4pm-8pm) disabled after 7pm
@@ -82,13 +79,20 @@ function ScheduleContent() {
     return true;
   };
 
-  const toggleTimeSlot = (slot) => {
-    if (!isSlotAvailable(slot)) return;
+  const toggleTimeSlot = (dateStr, slot) => {
+    if (!isSlotAvailable(dateStr, slot)) return;
     
-    if (selectedTimes.includes(slot)) {
-      setSelectedTimes(selectedTimes.filter(s => s !== slot));
+    const currentSlots = selectedTimes[dateStr] || [];
+    if (currentSlots.includes(slot)) {
+      setSelectedTimes({
+        ...selectedTimes,
+        [dateStr]: currentSlots.filter(s => s !== slot)
+      });
     } else {
-      setSelectedTimes([...selectedTimes, slot]);
+      setSelectedTimes({
+        ...selectedTimes,
+        [dateStr]: [...currentSlots, slot]
+      });
     }
   };
 
@@ -151,13 +155,39 @@ function ScheduleContent() {
   };
 
   const handleContinue = () => {
+    if (selectedDates.length === 0) {
+      toast.error('Please select 1 to 3 dates to continue', { position: 'top-right' });
+      return;
+    }
+
+    if (selectedDates.some(d => !selectedTimes[d] || selectedTimes[d].length === 0)) {
+      toast.error('Please select at least one time slot for each date', { position: 'top-right' });
+      return;
+    }
+
+    // Format times for backend
+    const aggregatedTimes = [];
+    selectedDates.forEach(dateStr => {
+      const slots = selectedTimes[dateStr];
+      if (slots && slots.length > 0) {
+        const displayDate = new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const displaySlots = slots.map(s => {
+          if (s === 'morning') return 'Morning';
+          if (s === 'afternoon') return 'Afternoon';
+          if (s === 'evening') return 'Evening';
+          return s;
+        });
+        aggregatedTimes.push(`${displayDate}: ${displaySlots.join(' & ')}`);
+      }
+    });
+
     const scheduleData = {
       service_id: service.id,
       service_name: service.name,
       service_price: service.base_price,
       additional_price: service.additional_price,
       job_date: selectedDates,
-      job_time_slot: selectedTimes,
+      job_time_slot: aggregatedTimes.length > 0 ? aggregatedTimes : [],
       timing_constraints: timingConstraints
     };
 
@@ -260,7 +290,7 @@ function ScheduleContent() {
                     When should we send someone?
                   </h2>
                   <p className="text-green-100 text-sm mt-1 ml-1">
-                    Select exactly 1 to 3 dates that work for you
+                    Select 1 to 3 dates that work for you
                   </p>
                 </div>
 
@@ -321,47 +351,60 @@ function ScheduleContent() {
                     ))}
                   </div>
 
-                  {/* Time Slots */}
+                  {/* Time Slots (Per Date) */}
                   <div className="mt-8">
                     <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
                       <span className="mr-2">⏰</span>
                       Select your preferred times
                     </h4>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Choose all time slots that work for you — we&apos;ll match you with available pros
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {timeSlots.map((slot) => {
-                        const available = isSlotAvailable(slot.id);
-                        const isSelected = selectedTimes.includes(slot.id);
-                        
-                        return (
-                          <button
-                            key={slot.id}
-                            onClick={() => available && toggleTimeSlot(slot.id)}
-                            disabled={!available}
-                            className={`
-                              p-4 rounded-xl border-2 transition-all duration-200
-                              ${isSelected
-                                ? 'bg-gradient-to-br from-green-700 to-green-600 border-green-700 text-white shadow-md scale-[1.02]'
-                                : available
-                                  ? 'bg-white border-gray-200 hover:border-green-500 hover:bg-green-50/50 text-gray-800'
-                                  : 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed opacity-60'
-                              }
-                            `}
-                          >
-                            <div className="flex flex-col items-center">
-                              <span className={`text-2xl mb-1 ${!available && 'grayscale opacity-50'}`}>{slot.icon}</span>
-                              <span className="font-bold text-base">{slot.label}</span>
-                              <span className={`text-xs mt-1 ${isSelected ? 'text-green-100' : 'text-gray-500'}`}>
-                                {available ? slot.time : 'Slot passed'}
-                              </span>
+                    
+                    {selectedDates.length === 0 ? (
+                      <div className="bg-gray-50 border border-gray-100 rounded-xl p-6 text-center">
+                        <p className="text-gray-500">Please select a date from the calendar first.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {selectedDates.map(dateStr => {
+                          const displayDate = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+                          return (
+                            <div key={dateStr} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                              <h5 className="font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">{displayDate}</h5>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {timeSlots.map((slot) => {
+                                  const available = isSlotAvailable(dateStr, slot.id);
+                                  const isSelected = (selectedTimes[dateStr] || []).includes(slot.id);
+                                  
+                                  return (
+                                    <button
+                                      key={slot.id}
+                                      onClick={() => available && toggleTimeSlot(dateStr, slot.id)}
+                                      disabled={!available}
+                                      className={`
+                                        p-3 rounded-xl border-2 transition-all duration-200
+                                        ${isSelected
+                                          ? 'bg-gradient-to-br from-green-700 to-green-600 border-green-700 text-white shadow-sm'
+                                          : available
+                                            ? 'bg-white border-gray-200 hover:border-green-500 hover:bg-green-50/50 text-gray-800'
+                                            : 'bg-gray-100 border-gray-100 text-gray-300 cursor-not-allowed opacity-60'
+                                        }
+                                      `}
+                                    >
+                                      <div className="flex flex-col items-center">
+                                        <span className={`text-xl mb-1 ${!available && 'grayscale opacity-50'}`}>{slot.icon}</span>
+                                        <span className="font-bold text-sm">{slot.label}</span>
+                                        <span className={`text-[10px] mt-0.5 ${isSelected ? 'text-green-100' : 'text-gray-500'}`}>
+                                          {available ? slot.time : 'Slot passed'}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -431,15 +474,7 @@ function ScheduleContent() {
 
                 <button
                   onClick={handleContinue}
-                  disabled={selectedDates.length !== 3 || selectedTimes.length === 0}
-                  className={`
-                    w-full sm:w-auto px-10 py-4 rounded-xl font-bold text-lg shadow-lg
-                    flex items-center justify-center transition-all duration-300
-                    ${selectedDates.length === 3 && selectedTimes.length > 0
-                      ? 'bg-gradient-to-r from-green-700 to-green-600 text-white hover:from-green-800 hover:to-green-700 hover:scale-[1.02] shadow-green-200'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }
-                  `}
+                  className="w-full sm:w-auto px-10 py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center transition-all duration-300 bg-gradient-to-r from-green-700 to-green-600 text-white hover:from-green-800 hover:to-green-700 hover:scale-[1.02] shadow-green-200"
                 >
                   Continue
                   <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -447,23 +482,6 @@ function ScheduleContent() {
                   </svg>
                 </button>
               </div>
-
-              {selectedDates.length !== 3 && (
-                <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg flex items-center">
-                  <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Please select exactly 1 to 3 dates
-                </p>
-              )}
-              {selectedDates.length === 3 && selectedTimes.length === 0 && (
-                <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg flex items-center">
-                  <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Please select at least one time slot to continue
-                </p>
-              )}
             </div>
 
             {/* Right Column - Booking Summary */}
@@ -508,7 +526,7 @@ function ScheduleContent() {
                       </div>
                     </div>
 
-                    {selectedDates.length === 3 && selectedTimes.length > 0 ? (
+                    {selectedDates.length > 0 && selectedDates.every(d => selectedTimes[d] && selectedTimes[d].length > 0) ? (
                       <div className="mb-5 pb-5 border-b border-gray-200">
                         <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
                           <svg className="w-5 h-5 text-green-700 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -517,25 +535,28 @@ function ScheduleContent() {
                           Your selection
                         </h4>
                         <div className="bg-gray-50 rounded-lg p-3">
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-3">
                             {selectedDates.map(d => {
                               const [y, m, day] = d.split('-');
+                              const slots = selectedTimes[d] || [];
                               return (
-                                <span key={d} className="text-sm font-medium text-gray-700">
-                                  {monthNames[parseInt(m) - 1]} {day}, {y}
-                                </span>
+                                <div key={d}>
+                                  <span className="text-sm font-medium text-gray-700 block mb-1">
+                                    {monthNames[parseInt(m) - 1]} {day}, {y}
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {slots.map(time => (
+                                      <span key={time} className="px-2 py-0.5 bg-green-700 text-white text-xs font-medium rounded-full capitalize flex items-center">
+                                        {time === 'morning' && '🌅'}
+                                        {time === 'afternoon' && '☀️'}
+                                        {time === 'evening' && '🌙'}
+                                        <span className="ml-1">{time}</span>
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
                               );
                             })}
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {selectedTimes.map(time => (
-                              <span key={time} className="px-3 py-1 bg-green-700 text-white text-xs font-medium rounded-full capitalize flex items-center">
-                                {time === 'morning' && '🌅'}
-                                {time === 'afternoon' && '☀️'}
-                                {time === 'evening' && '🌙'}
-                                <span className="ml-1">{time}</span>
-                              </span>
-                            ))}
                           </div>
                         </div>
                       </div>
@@ -543,8 +564,8 @@ function ScheduleContent() {
                       <div className="mb-5 pb-5 border-b border-gray-200">
                         <div className="bg-amber-50 rounded-lg p-4 text-center">
                           <span className="text-2xl mb-2 block">📅</span>
-                          <p className="text-sm text-amber-800">{selectedDates.length} of 3 dates selected</p>
-                          <p className="text-xs text-amber-600 mt-1">Please choose exactly 3 dates to continue</p>
+                          <p className="text-sm text-amber-800">{selectedDates.length > 0 ? `${selectedDates.length} date(s) selected` : 'No dates selected'}</p>
+                          <p className="text-xs text-amber-600 mt-1">Please select dates and time slots to continue</p>
                         </div>
                       </div>
                     )}

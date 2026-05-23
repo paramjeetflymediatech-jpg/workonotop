@@ -354,13 +354,15 @@ export default function MyBookings() {
 
                     <div className="p-5">
                       {/* Status row */}
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusDot[booking.status] || 'bg-gray-300'}`} />
                         <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${st.cls}`}>
                           {st.label}
                         </span>
                         {booking.booking_number && (
-                          <span className="ml-auto text-[10px] text-gray-300 font-mono">{booking.booking_number}</span>
+                          <span className="sm:ml-auto text-[10px] text-gray-500 font-mono bg-gray-50 px-2 py-0.5 rounded border border-gray-200">
+                            ID: {booking.booking_number}
+                          </span>
                         )}
                       </div>
 

@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     cardBody: { padding: moderateScale(16) },
 
     /* Status */
-    statusRow: { flexDirection: 'row', alignItems: 'center', gap: scale(6), marginBottom: verticalScale(10) },
+    statusRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: scale(6), marginBottom: verticalScale(10) },
     statusDot: { width: 8, height: 8, borderRadius: 4 },
     statusBadge: {
         paddingHorizontal: scale(10), paddingVertical: 3,

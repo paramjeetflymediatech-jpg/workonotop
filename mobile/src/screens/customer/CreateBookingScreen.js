@@ -69,6 +69,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
         photos: [],
     });
 
+    const [selectedTimes, setSelectedTimes] = useState({}); // Maps dateStr -> [slots]
     const [showDatePicker, setShowDatePicker] = useState(false);
 
     const timeSlots = ['08:00 - 10:00', '10:00 - 12:00', '12:00 - 14:00', '14:00 - 16:00', '16:00 - 18:00'];
@@ -142,13 +143,14 @@ const CreateBookingScreen = ({ navigation, route }) => {
         setAddressError('');
         if (step === 2) {
             const dates = bookingData.job_date || [];
-            const times = bookingData.job_time_slot || [];
             if (dates.length < 1 || dates.length > 3) {
                 Alert.alert('Selection Required', 'Please select 1 to 3 dates.');
                 return;
             }
-            if (times.length === 0) {
-                Alert.alert('Selection Required', 'Please select at least one time slot.');
+            
+            const hasMissingSlots = dates.some(date => !selectedTimes[date] || selectedTimes[date].length === 0);
+            if (hasMissingSlots) {
+                Alert.alert('Selection Required', 'Please select at least one time slot for each date.');
                 return;
             }
         }
@@ -202,8 +204,21 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const handleConfirm = async (paymentIntentId) => {
         setLoading(true);
         try {
+            // Aggregate times
+            const aggregatedTimes = [];
+            (bookingData.job_date || []).forEach(dateStr => {
+                const slots = selectedTimes[dateStr];
+                if (slots && slots.length > 0) {
+                    // Create a valid date object replacing hyphens with slashes for Safari/mobile compatibility
+                    const dateObj = new Date(dateStr.replace(/-/g, '/'));
+                    const displayDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    aggregatedTimes.push(`${displayDate}: ${slots.join(' & ')}`);
+                }
+            });
+
             const payload = {
                 ...bookingData,
+                job_time_slot: aggregatedTimes,
                 user_id: user.id,
                 payment_intent_id: paymentIntentId,
             };
@@ -263,29 +278,24 @@ const CreateBookingScreen = ({ navigation, route }) => {
         });
     };
 
-    const toggleTimeSlot = (slot) => {
-        const currentSlots = bookingData.job_time_slot || [];
+    const toggleTimeSlot = (dateStr, slot) => {
+        const currentSlots = selectedTimes[dateStr] || [];
         if (currentSlots.includes(slot)) {
-            setBookingData({ ...bookingData, job_time_slot: currentSlots.filter(s => s !== slot) });
+            setSelectedTimes({ ...selectedTimes, [dateStr]: currentSlots.filter(s => s !== slot) });
         } else {
-            setBookingData({ ...bookingData, job_time_slot: [...currentSlots, slot] });
+            setSelectedTimes({ ...selectedTimes, [dateStr]: [...currentSlots, slot] });
         }
     };
 
-    const isSlotAvailable = (slot) => {
+    const isSlotAvailable = (dateStr, slot) => {
         const now = new Date();
-        const dates = bookingData.job_date || [];
-        if (dates.length === 0) return true;
-
         const todayStr = now.toISOString().split('T')[0];
-        const allToday = dates.every(d => d === todayStr);
-
-        if (!allToday) return true;
+        
+        if (dateStr !== todayStr) return true;
 
         const currentHour = now.getHours();
         const slotStartHour = parseInt(slot.split(':')[0]);
         
-        // Disable slots that have already started or passed
         return currentHour < slotStartHour;
     };
 
@@ -375,31 +385,49 @@ const CreateBookingScreen = ({ navigation, route }) => {
             )}
 
             <Text style={styles.label}>Select Time Slot(s)</Text>
-            <View style={styles.slotsGrid}>
-                {timeSlots.map(slot => {
-                    const available = isSlotAvailable(slot);
-                    const isActive = (bookingData.job_time_slot || []).includes(slot);
+            
+            {(bookingData.job_date || []).length === 0 ? (
+                <View style={styles.emptySlotsContainer}>
+                    <Text style={styles.emptySlotsText}>Please select a date first.</Text>
+                </View>
+            ) : (
+                (bookingData.job_date || []).map(dateStr => {
+                    // Reformat dateStr for display safely (handle timezone parsing)
+                    const dateObj = new Date(dateStr.replace(/-/g, '/'));
+                    const displayDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
                     
                     return (
-                        <TouchableOpacity
-                            key={slot}
-                            disabled={!available}
-                            style={[
-                                styles.slotBtn,
-                                isActive && styles.slotBtnActive,
-                                !available && styles.slotBtnDisabled
-                            ]}
-                            onPress={() => available && toggleTimeSlot(slot)}
-                        >
-                            <Text style={[
-                                styles.slotText,
-                                isActive && styles.slotTextActive,
-                                !available && styles.slotTextDisabled
-                            ]}>{available ? slot : 'Slot Passed'}</Text>
-                        </TouchableOpacity>
+                        <View key={dateStr} style={styles.dateSlotGroup}>
+                            <Text style={styles.dateSlotGroupTitle}>{displayDate}</Text>
+                            <View style={styles.slotsGrid}>
+                                {timeSlots.map(slot => {
+                                    const available = isSlotAvailable(dateStr, slot);
+                                    const isActive = (selectedTimes[dateStr] || []).includes(slot);
+                                    
+                                    return (
+                                        <TouchableOpacity
+                                            key={slot}
+                                            disabled={!available}
+                                            style={[
+                                                styles.slotBtn,
+                                                isActive && styles.slotBtnActive,
+                                                !available && styles.slotBtnDisabled
+                                            ]}
+                                            onPress={() => available && toggleTimeSlot(dateStr, slot)}
+                                        >
+                                            <Text style={[
+                                                styles.slotText,
+                                                isActive && styles.slotTextActive,
+                                                !available && styles.slotTextDisabled
+                                            ]}>{available ? slot : 'Passed'}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </View>
                     );
-                })}
-            </View>
+                })
+            )}
             <View style={{ height: 40 }} />
         </ScrollView>
     );
