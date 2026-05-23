@@ -52,8 +52,8 @@ const CreateBookingScreen = ({ navigation, route }) => {
         service_name: service.name,
         service_price: service.base_price || service.price || 0,
         additional_price: service.additional_price || 0,
-        job_date: new Date().toISOString().split('T')[0],
-        job_time_slot: '',
+        job_date: [],
+        job_time_slot: [],
         address_line1: user?.address || '',
         address_line2: '',
         job_description: '',
@@ -140,9 +140,17 @@ const CreateBookingScreen = ({ navigation, route }) => {
             return;
         }
         setAddressError('');
-        if (step === 2 && (!bookingData.job_date || !bookingData.job_time_slot)) {
-            Alert.alert('Selection Required', 'Please select a date and time slot.');
-            return;
+        if (step === 2) {
+            const dates = bookingData.job_date || [];
+            const times = bookingData.job_time_slot || [];
+            if (dates.length < 1 || dates.length > 3) {
+                Alert.alert('Selection Required', 'Please select 1 to 3 dates.');
+                return;
+            }
+            if (times.length === 0) {
+                Alert.alert('Selection Required', 'Please select at least one time slot.');
+                return;
+            }
         }
         if (step === 3) {
             if (!bookingData.phone || !bookingData.job_description || !bookingData.timing_constraints) {
@@ -229,21 +237,50 @@ const CreateBookingScreen = ({ navigation, route }) => {
     };
 
     const onDateChange = (event, selectedDate) => {
-        const currentDate = selectedDate || new Date();
         setShowDatePicker(Platform.OS === 'ios');
+        if (event.type === 'set' && selectedDate) {
+            const dateStr = selectedDate.toISOString().split('T')[0];
+            let newDates = [...(bookingData.job_date || [])];
+            if (!newDates.includes(dateStr)) {
+                if (newDates.length < 3) {
+                    newDates.push(dateStr);
+                    newDates.sort();
+                    setBookingData({
+                        ...bookingData,
+                        job_date: newDates,
+                    });
+                } else {
+                    Alert.alert('Limit Reached', 'You can select a maximum of 3 dates.');
+                }
+            }
+        }
+    };
+
+    const removeDate = (dateToRemove) => {
         setBookingData({
             ...bookingData,
-            job_date: currentDate.toISOString().split('T')[0],
-            job_time_slot: '' // Reset time slot when date changes
+            job_date: (bookingData.job_date || []).filter(d => d !== dateToRemove)
         });
+    };
+
+    const toggleTimeSlot = (slot) => {
+        const currentSlots = bookingData.job_time_slot || [];
+        if (currentSlots.includes(slot)) {
+            setBookingData({ ...bookingData, job_time_slot: currentSlots.filter(s => s !== slot) });
+        } else {
+            setBookingData({ ...bookingData, job_time_slot: [...currentSlots, slot] });
+        }
     };
 
     const isSlotAvailable = (slot) => {
         const now = new Date();
-        const selectedDateStr = bookingData.job_date;
-        const todayStr = now.toISOString().split('T')[0];
+        const dates = bookingData.job_date || [];
+        if (dates.length === 0) return true;
 
-        if (selectedDateStr !== todayStr) return true;
+        const todayStr = now.toISOString().split('T')[0];
+        const allToday = dates.every(d => d === todayStr);
+
+        if (!allToday) return true;
 
         const currentHour = now.getHours();
         const slotStartHour = parseInt(slot.split(':')[0]);
@@ -305,18 +342,31 @@ const CreateBookingScreen = ({ navigation, route }) => {
         <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>When should we come?</Text>
 
-            <Text style={styles.label}>Select Date</Text>
-            <TouchableOpacity
-                style={styles.dateSelector}
-                onPress={() => setShowDatePicker(true)}
-            >
-                <Ionicons name="calendar-outline" size={20} color={PRIMARY} />
-                <Text style={styles.dateText}>{bookingData.job_date}</Text>
-            </TouchableOpacity>
+            <Text style={styles.label}>Select Date (1 to 3 dates)</Text>
+            <View style={styles.selectedDatesContainer}>
+                {(bookingData.job_date || []).map((date, index) => (
+                    <View key={index} style={styles.selectedDateBadge}>
+                        <Ionicons name="calendar-outline" size={16} color="#fff" />
+                        <Text style={styles.selectedDateText}>{date}</Text>
+                        <TouchableOpacity onPress={() => removeDate(date)}>
+                            <Ionicons name="close-circle" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                ))}
+                {(bookingData.job_date || []).length < 3 && (
+                    <TouchableOpacity
+                        style={styles.addDateBtn}
+                        onPress={() => setShowDatePicker(true)}
+                    >
+                        <Ionicons name="add" size={20} color={PRIMARY} />
+                        <Text style={styles.addDateBtnText}>Add Date</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
 
             {showDatePicker && (
                 <DateTimePicker
-                    value={new Date(bookingData.job_date)}
+                    value={new Date()}
                     mode="date"
                     display="default"
                     onChange={onDateChange}
@@ -324,11 +374,11 @@ const CreateBookingScreen = ({ navigation, route }) => {
                 />
             )}
 
-            <Text style={styles.label}>Select Time Slot</Text>
+            <Text style={styles.label}>Select Time Slot(s)</Text>
             <View style={styles.slotsGrid}>
                 {timeSlots.map(slot => {
                     const available = isSlotAvailable(slot);
-                    const isActive = bookingData.job_time_slot === slot;
+                    const isActive = (bookingData.job_time_slot || []).includes(slot);
                     
                     return (
                         <TouchableOpacity
@@ -339,7 +389,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
                                 isActive && styles.slotBtnActive,
                                 !available && styles.slotBtnDisabled
                             ]}
-                            onPress={() => available && setBookingData({ ...bookingData, job_time_slot: slot })}
+                            onPress={() => available && toggleTimeSlot(slot)}
                         >
                             <Text style={[
                                 styles.slotText,
@@ -454,11 +504,11 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     <Text style={styles.reviewLabel}>SCHEDULE</Text>
                     <View style={styles.reviewRow}>
                         <Ionicons name="calendar-outline" size={16} color="#64748b" />
-                        <Text style={styles.reviewText}>{bookingData.job_date}</Text>
+                        <Text style={styles.reviewText}>{(bookingData.job_date || []).join(', ')}</Text>
                     </View>
                     <View style={styles.reviewRow}>
                         <Ionicons name="time-outline" size={16} color="#64748b" />
-                        <Text style={styles.reviewText}>{bookingData.job_time_slot}</Text>
+                        <Text style={styles.reviewText}>{(bookingData.job_time_slot || []).join(', ')}</Text>
                     </View>
                 </View>
 
@@ -640,6 +690,30 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(10),
     },
     dateText: { marginLeft: scale(12), fontSize: moderateScale(16), fontWeight: '600', color: '#1e293b' },
+    selectedDatesContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(10), marginBottom: verticalScale(15), marginTop: verticalScale(10) },
+    selectedDateBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: PRIMARY,
+        paddingHorizontal: scale(12),
+        paddingVertical: verticalScale(8),
+        borderRadius: moderateScale(20),
+        gap: scale(6),
+    },
+    selectedDateText: { color: '#fff', fontSize: moderateScale(14), fontWeight: '600', marginRight: scale(4) },
+    addDateBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        paddingHorizontal: scale(12),
+        paddingVertical: verticalScale(8),
+        borderRadius: moderateScale(20),
+        borderWidth: 1,
+        borderColor: PRIMARY,
+        borderStyle: 'dashed',
+        gap: scale(4),
+    },
+    addDateBtnText: { color: PRIMARY, fontSize: moderateScale(14), fontWeight: '600' },
     slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(10) },
     slotBtn: {
         paddingHorizontal: scale(16),

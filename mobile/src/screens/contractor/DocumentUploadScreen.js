@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image, ActivityIndicator, Platform, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as DocumentPicker from 'expo-document-picker';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -102,20 +103,31 @@ const DocumentUploadScreen = ({ navigation, route }) => {
     //   3. Some setups need the full absolute API URL rather than a relative path.
     //
     // Fix: bypass apiService for this call, use raw fetch, omit Content-Type header.
-    const uploadFile = async (uri, type, label) => {
+    const uploadFile = async (uri, type, label, mimeType = 'image/jpeg', origName = null) => {
         setUploadingSlots(prev => ({ ...prev, [type]: true }));
         setGlobalLoading(true);
-        setLoadingText(`Optimizing & Uploading ${label}...`);
+        setLoadingText(`Uploading ${label}...`);
 
         try {
-            // 1. Compress
-            const manipulated = await ImageManipulator.manipulateAsync(
-                uri,
-                [{ resize: { width: 800 } }],
-                { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
-            );
+            let uploadUri = uri;
+            let filename = origName || `doc_${Date.now()}`;
+            
+            const isImage = mimeType.startsWith('image/');
 
-            let uploadUri = manipulated.uri;
+            if (isImage) {
+                setLoadingText(`Optimizing & Uploading ${label}...`);
+                try {
+                    // 1. Compress
+                    const manipulated = await ImageManipulator.manipulateAsync(
+                        uri,
+                        [{ resize: { width: 800 } }],
+                        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+                    );
+                    uploadUri = manipulated.uri;
+                } catch (err) {
+                    console.log('Image manipulation skipped:', err.message);
+                }
+            }
 
             // 2. Ensure file:// on Android — manipulator sometimes returns a bare path
             if (Platform.OS === 'android') {
@@ -125,15 +137,16 @@ const DocumentUploadScreen = ({ navigation, route }) => {
             }
 
             // 3. Clean filename
-            const rawName = uploadUri.split('/').pop() || `doc_${Date.now()}`;
-            const filename = rawName.includes('.') ? rawName : `${rawName}.jpg`;
+            if (isImage && !filename.includes('.')) {
+                filename = `${filename}.jpg`;
+            }
 
             // 4. Build FormData with RN object form (uri/name/type)
             const formData = new FormData();
             formData.append('file', {
                 uri: uploadUri,
                 name: filename,
-                type: 'image/jpeg',
+                type: mimeType,
             });
             formData.append('type', type);
 
@@ -189,36 +202,51 @@ const DocumentUploadScreen = ({ navigation, route }) => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) { showPremiumAlert('Please allow access to your photo library.', 'Permission Required'); return; }
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: false, quality: 0.8 });
-        if (!result.canceled) await uploadFile(result.assets[0].uri, key, label);
+        if (!result.canceled) await uploadFile(result.assets[0].uri, key, label, 'image/jpeg');
+    };
+
+    const pickDocumentFile = async (key, label) => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                copyToCacheDirectory: true,
+            });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const asset = result.assets[0];
+                await uploadFile(asset.uri, key, label, asset.mimeType, asset.name);
+            }
+        } catch (err) {
+            console.error('Document picker error:', err);
+            showPremiumAlert('Failed to pick document. Please try again.', 'Error');
+        }
     };
 
     const takePhoto = async (key, label) => {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) { showPremiumAlert('Please allow camera access.', 'Permission Required'); return; }
         const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: false, quality: 0.8 });
-        if (!result.canceled) await uploadFile(result.assets[0].uri, key, label);
+        if (!result.canceled) await uploadFile(result.assets[0].uri, key, label, 'image/jpeg');
     };
 
     const showPickOptions = (key, label) => {
         const hasDoc = !!documents[key];
+        const options = [
+            { text: 'Camera', onPress: () => takePhoto(key, label) },
+            { text: 'Gallery', onPress: () => pickDocument(key, label) },
+            { text: 'Files (PDF/Word)', onPress: () => pickDocumentFile(key, label) },
+            { text: 'Cancel', style: 'cancel' },
+        ];
+
         if (hasDoc) {
             Alert.alert(`Manage ${label}`, 'Choose action', [
                 { text: 'View Document', onPress: () => { setViewerImage(documents[key]); setViewerVisible(true); } },
                 {
-                    text: 'Upload New', onPress: () => Alert.alert(`Upload ${label}`, 'Choose source', [
-                        { text: 'Camera', onPress: () => takePhoto(key, label) },
-                        { text: 'Gallery', onPress: () => pickDocument(key, label) },
-                        { text: 'Cancel', style: 'cancel' },
-                    ])
+                    text: 'Upload New', onPress: () => Alert.alert(`Upload ${label}`, 'Choose source', options)
                 },
                 { text: 'Cancel', style: 'cancel' },
             ]);
         } else {
-            Alert.alert(`Upload ${label}`, 'Choose source', [
-                { text: 'Camera', onPress: () => takePhoto(key, label) },
-                { text: 'Gallery', onPress: () => pickDocument(key, label) },
-                { text: 'Cancel', style: 'cancel' },
-            ]);
+            Alert.alert(`Upload ${label}`, 'Choose source', options);
         }
     };
 

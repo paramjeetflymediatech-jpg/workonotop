@@ -76,6 +76,10 @@ export const AuthProvider = ({ children }) => {
                             
                             // Re-standardize 'user' to 'customer'
                             if (freshUser.role === 'user') freshUser.role = 'customer';
+                            // Normalize avatar field for providers
+                            if (freshUser.role === 'provider' && freshUser.avatar_url && !freshUser.image_url) {
+                                freshUser.image_url = freshUser.avatar_url;
+                            }
                             
                             console.log(`✅ [AuthContext] Refresh complete: ${freshUser.role}`);
                             
@@ -219,6 +223,9 @@ export const AuthProvider = ({ children }) => {
             if (response.success && response.user) {
                 const freshUser = response.user;
                 if (freshUser.role === 'user') freshUser.role = 'customer';
+                if (freshUser.role === 'provider' && freshUser.avatar_url && !freshUser.image_url) {
+                    freshUser.image_url = freshUser.avatar_url;
+                }
                 setUser(freshUser);
                 await AsyncStorage.setItem('user', JSON.stringify(freshUser));
                 return freshUser;

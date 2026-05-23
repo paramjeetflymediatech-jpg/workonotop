@@ -90,6 +90,39 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
         try {
             setSaving(true);
 
+            let uploadedImageUrl = profileImage;
+
+            // If profileImage is a local file uri (starts with file:// or content://), upload it first
+            if (profileImage && (profileImage.startsWith('file://') || profileImage.startsWith('content://'))) {
+                const formData = new FormData();
+                const filename = profileImage.split('/').pop() || 'profile.jpg';
+                const match = /\.(\w+)$/.exec(filename);
+                const type = match ? `image/${match[1]}` : `image/jpeg`;
+                formData.append('file', {
+                    uri: profileImage,
+                    name: filename,
+                    type,
+                });
+
+                // Do not use apiService wrappers because we need a custom fetch for multipart to avoid Content-Type header issues on Android
+                const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                const uploadData = await uploadRes.json();
+                if (uploadData.success) {
+                    uploadedImageUrl = uploadData.url;
+                } else {
+                    Alert.alert('Upload Error', uploadData.message || 'Failed to upload profile picture.');
+                    setSaving(false);
+                    return;
+                }
+            }
+
             // We'll use /api/provider (PUT) which supports Bearer tokens as verified in Step 728
             const updateData = {
                 name: form.name,
@@ -100,8 +133,7 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                 bio: form.bio,
                 location: form.location,
                 city: form.city,
-                // If we had image upload ready for this endpoint we'd add it
-                // For now sticking to text fields to fix the 403 error logic
+                avatar_url: uploadedImageUrl?.replace(API_BASE_URL, '') // send relative path
             };
 
             const res = await apiService.put('/api/provider', updateData, token);
@@ -112,7 +144,7 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                     name: res.data.name,
                     first_name: res.data.name.split(' ')[0], // Compatibility with other screens
                     phone: res.data.phone,
-                    image_url: res.data.avatar_url || profileImage
+                    image_url: res.data.avatar_url ? (res.data.avatar_url.startsWith('http') ? res.data.avatar_url : `${API_BASE_URL}${res.data.avatar_url}`) : uploadedImageUrl
                 });
                 Alert.alert('Success', 'Profile updated successfully!', [
                     { text: 'OK', onPress: () => navigation.goBack() }

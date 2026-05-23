@@ -18,7 +18,7 @@ export async function GET(request) {
     FROM bookings b
     LEFT JOIN service_providers sp ON b.provider_id = sp.id
     WHERE b.status = 'awaiting_approval'
-      AND b.updated_at < DATE_SUB(NOW(), INTERVAL 1 HOUR)
+      AND b.updated_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)
       AND b.payment_intent_id IS NOT NULL
   `)
 

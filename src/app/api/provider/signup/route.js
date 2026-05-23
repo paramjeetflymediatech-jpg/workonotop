@@ -299,20 +299,20 @@ export async function POST(request) {
         };
       }
 
-      const emailResult = await sendEmail(emailOptions);
-      if (emailResult.success) {
-        console.log('✅ Verification email sent to:', email);
-      }
-
-      // 🔔 Notify Admin about new provider signup
       const adminEmail = process.env.ADMIN_EMAIL || 'amandeepkumar.flymediatech@gmail.com';
-      await sendEmail({
+      const adminEmailOptions = {
         to: adminEmail,
         subject: `New Pro Signup: ${fullName}`,
         html: getAdminNewProviderSignupEmailHtml({ name: fullName, email, phone }),
         text: `New provider registered: ${fullName} (${email}, ${phone || 'No phone'})`
-      });
-      console.log('✅ Admin notification sent to:', adminEmail);
+      };
+
+      // Fire emails concurrently and wait for them to finish
+      const results = await Promise.allSettled([
+        sendEmail(emailOptions),
+        sendEmail(adminEmailOptions)
+      ]);
+      console.log('✅ Emails processed concurrently');
     } catch (emailError) {
       console.error('❌ Email error:', emailError.message);
     }
