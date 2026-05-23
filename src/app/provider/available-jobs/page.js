@@ -102,6 +102,9 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, amount, hasO
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatDate(d) {
   if (!d) return ''
+  if (typeof d === 'string' && d.includes(',')) {
+    return d.split(',').map(dateStr => new Date(dateStr.trim()).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })).join(' • ')
+  }
   return new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 function fmtSlots(s) {

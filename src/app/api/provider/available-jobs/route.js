@@ -79,7 +79,7 @@ export async function GET(request) {
           (b.provider_id = ? AND b.status = 'matching')
           OR
           (b.provider_id IS NULL AND b.status IN ('pending', 'matching') ${locationCondition})
-        )
+        ) AND EXISTS (SELECT 1 FROM users u WHERE u.email = b.customer_email)
       `
       const countResult = await query(countSql, [providerId, ...locationParams])
 
@@ -90,7 +90,7 @@ export async function GET(request) {
           (b.provider_id = ? AND b.status = 'matching')
           OR
           (b.provider_id IS NULL AND b.status IN ('pending', 'matching') ${locationCondition})
-        )
+        ) AND EXISTS (SELECT 1 FROM users u WHERE u.email = b.customer_email)
         ORDER BY created_at DESC
         LIMIT ?
       `
@@ -146,7 +146,7 @@ export async function GET(request) {
           AND b.status IN ('pending', 'matching')
           ${locationCondition}
         )
-      )
+      ) AND EXISTS (SELECT 1 FROM users u WHERE u.email = b.customer_email)
       ORDER BY admin_assigned DESC, b.created_at DESC
     `
 

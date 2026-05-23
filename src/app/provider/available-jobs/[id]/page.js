@@ -111,6 +111,9 @@ function ConfirmModal({ isOpen, onClose, onConfirm, loading, amount, hasOvertime
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatDate(d) {
   if (!d) return ''
+  if (typeof d === 'string' && d.includes(',')) {
+    return d.split(',').map(dateStr => new Date(dateStr.trim()).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })).join(' • ')
+  }
   return new Date(d).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 function formatDuration(m) {

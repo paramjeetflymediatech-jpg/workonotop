@@ -70,7 +70,7 @@ export default function BookingConfirmPage() {
       last_name: lastName,
       email: email,
       phone: phone,
-      job_date: scheduleData.job_date,
+      job_date: Array.isArray(scheduleData.job_date) ? scheduleData.job_date.join(',') : scheduleData.job_date,
       job_time_slot: scheduleData.job_time_slot,
       timing_constraints: scheduleData.timing_constraints || '',
       job_description: detailsData.job_description,
@@ -150,8 +150,8 @@ export default function BookingConfirmPage() {
   }
 
   const formatDate = (dateStr) => {
-    const [year, month, day] = dateStr.split('-');
-    return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const d = new Date(dateStr.trim());
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -233,7 +233,15 @@ export default function BookingConfirmPage() {
 
                       {/* Info Notice */}
                       <div className="mb-4 sm:mb-6 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
-                        <div className="flex items-start gap-2">
+                        <div className="flex justify-between gap-2">
+                          <span className="text-gray-600 text-xs sm:text-sm">Dates:</span>
+                          <span className="font-medium text-right text-xs sm:text-sm flex flex-col items-end">
+                            {Array.isArray(scheduleData.job_date) 
+                              ? scheduleData.job_date.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ')
+                              : scheduleData.job_date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ')}
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-2 mt-3">
                           <span className="text-amber-500 text-lg">ℹ️</span>
                           <p className="text-xs sm:text-sm text-amber-800">
                             <span className="font-semibold">Next step:</span> Authorize payment on the next page.
@@ -327,11 +335,15 @@ export default function BookingConfirmPage() {
                       <h4 className="font-bold text-gray-900 text-sm sm:text-base">{scheduleData.service_name}</h4>
                     </div>
                     <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200">
-                      <div className="flex items-center mb-2">
+                      <div className="flex items-center mb-2 flex-wrap gap-1">
                         <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-700 mr-2" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                         </svg>
-                        <span className="font-semibold text-gray-800 text-xs sm:text-sm">{formatDate(scheduleData.job_date)}</span>
+                        <span className="font-semibold text-gray-800 text-xs sm:text-sm">
+                          {Array.isArray(scheduleData.job_date) 
+                            ? scheduleData.job_date.map(formatDate).join(' • ')
+                            : scheduleData.job_date.split(',').map(formatDate).join(' • ')}
+                        </span>
                       </div>
                       <div className="flex flex-wrap gap-1 sm:gap-2 mt-2">
                         {scheduleData.job_time_slot?.map((time) => (

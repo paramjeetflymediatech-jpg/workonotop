@@ -82,16 +82,20 @@ export async function POST(request) {
         const { name: fullName, email, specialty } = providerInfo[0];
         const adminEmail = process.env.ADMIN_EMAIL || 'amandeepkumar.flymediatech@gmail.com';
         
-        await sendEmail({
-          to: adminEmail,
-          subject: `Review Required: ${fullName}`,
-          html: getAdminProviderApplicationSubmittedEmailHtml({ name: fullName, email, specialty }),
-          text: `Professional application submitted: ${fullName} (${email}, Specialty: ${specialty || 'None'})`
-        });
-        console.log('✅ Admin notification sent (Application Review) to:', adminEmail);
+        try {
+          await sendEmail({
+            to: adminEmail,
+            subject: `Review Required: ${fullName}`,
+            html: getAdminProviderApplicationSubmittedEmailHtml({ name: fullName, email, specialty }),
+            text: `Professional application submitted: ${fullName} (${email}, Specialty: ${specialty || 'None'})`
+          });
+          console.log('✅ Admin notification sent (Application Review) to:', adminEmail);
+        } catch (err) {
+          console.error('❌ Admin notification error:', err.message);
+        }
       }
     } catch (adminEmailError) {
-      console.error('❌ Admin notification error:', adminEmailError.message);
+      console.error('❌ Admin notification setup error:', adminEmailError.message);
     }
 
     return NextResponse.json({

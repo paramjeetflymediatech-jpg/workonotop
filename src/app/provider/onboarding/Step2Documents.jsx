@@ -9,28 +9,28 @@ const DOC_TYPES = {
     icon: '👤',
     required: true,
     help: 'Clear, professional photo of yourself',
-    accept: '.jpg,.jpeg,.png'
+    accept: 'image/*'
   },
   id_proof: {
     label: 'Government ID (Driver\'s License/Passport)',
     icon: '🆔',
     required: true,
-    help: 'Clear photo of your government-issued ID',
-    accept: '.jpg,.jpeg,.png,.pdf'
+    help: 'Clear photo or scan of your government-issued ID',
+    accept: 'image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   },
   trade_license: {
     label: 'Trade License/Certification',
     icon: '📜',
     required: false,
     help: 'If applicable for your trade (optional)',
-    accept: '.jpg,.jpeg,.png,.pdf'
+    accept: 'image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   },
   insurance: {
     label: 'Insurance Document',
     icon: '📄',
     required: true,
     help: 'Liability insurance certificate',
-    accept: '.jpg,.jpeg,.png,.pdf'
+    accept: 'image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   }
 };
 
@@ -40,7 +40,7 @@ export default function Step2Documents({ onNext, onBack }) {
   const [uploading, setUploading] = useState({});
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
-  
+
   const fileInputRefs = {
     profile_photo: useRef(),
     id_proof: useRef(),
@@ -57,21 +57,21 @@ export default function Step2Documents({ onNext, onBack }) {
     try {
       const res = await fetch('/api/provider/onboarding/documents');
       const data = await res.json();
-      
+
       if (data.success) {
         // Get latest version of each document type
         const docsMap = {};
         const statusMap = {};
-        
+
         data.documents.forEach(doc => {
           // Only keep the latest version
-          if (!docsMap[doc.document_type] || 
-              new Date(doc.created_at) > new Date(docsMap[doc.document_type].created_at)) {
+          if (!docsMap[doc.document_type] ||
+            new Date(doc.created_at) > new Date(docsMap[doc.document_type].created_at)) {
             docsMap[doc.document_type] = doc.document_url;
             statusMap[doc.document_type] = doc.status;
           }
         });
-        
+
         setDocuments(docsMap);
         setDocumentStatus(statusMap);
       }
@@ -91,9 +91,14 @@ export default function Step2Documents({ onNext, onBack }) {
       return;
     }
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/jpg', 
+      'application/pdf', 
+      'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
     if (!allowedTypes.includes(file.type)) {
-      setErrors(prev => ({ ...prev, [type]: 'Please upload JPG, PNG, or PDF file' }));
+      setErrors(prev => ({ ...prev, [type]: 'Please upload JPG, PNG, PDF, or DOC file' }));
       return;
     }
 
@@ -116,7 +121,7 @@ export default function Step2Documents({ onNext, onBack }) {
         // Update UI
         setDocuments(prev => ({ ...prev, [type]: data.fileUrl }));
         setDocumentStatus(prev => ({ ...prev, [type]: 'pending' }));
-        
+
         // Show success message briefly
         setTimeout(() => {
           setErrors(prev => ({ ...prev, [type]: '✅ Upload successful!' }));
@@ -138,19 +143,19 @@ export default function Step2Documents({ onNext, onBack }) {
   const getStatusBadge = (type) => {
     const status = documentStatus[type];
     if (!status) return null;
-    
+
     const badges = {
       approved: 'bg-green-100 text-green-800 border-green-200',
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       rejected: 'bg-red-100 text-red-800 border-red-200'
     };
-    
+
     const labels = {
       approved: '✓ Verified',
       pending: '⏳ Pending ',
       rejected: '✗ Rejected'
     };
-    
+
     return (
       <span className={`ml-2 px-2 py-0.5 text-xs rounded-full border ${badges[status]}`}>
         {labels[status]}
@@ -162,7 +167,7 @@ export default function Step2Documents({ onNext, onBack }) {
     // Check required documents
     const required = ['profile_photo', 'id_proof', 'insurance'];
     const missing = required.filter(type => !documents[type]);
-    
+
     if (missing.length > 0) {
       alert(`Please upload: ${missing.map(t => DOC_TYPES[t].label).join(', ')}`);
       return;
@@ -192,7 +197,7 @@ export default function Step2Documents({ onNext, onBack }) {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <h2 className="text-2xl font-bold text-gray-900">Upload Documents</h2>
-      
+
       <div className="space-y-4">
         {Object.entries(DOC_TYPES).map(([type, config]) => (
           <div key={type} className="border rounded-lg p-3 md:p-4 bg-white shadow-sm">
@@ -207,22 +212,21 @@ export default function Step2Documents({ onNext, onBack }) {
                   {getStatusBadge(type)}
                 </div>
                 <p className="text-xs md:text-sm text-gray-500 mt-1 line-clamp-2">{config.help}</p>
-                
+
                 {documents[type] && (
                   <p className="text-[10px] md:text-xs text-gray-400 mt-1 truncate max-w-[200px] md:max-w-md">
                     File: {documents[type].split('/').pop()}
                   </p>
                 )}
               </div>
-              
+
               <div className="flex flex-shrink-0 items-center gap-3">
                 {documents[type] ? (
                   <div className="relative">
-                    <div className={`w-12 h-12 md:w-16 md:h-16 rounded-lg flex items-center justify-center border-2 ${
-                      documentStatus[type] === 'approved' ? 'border-green-500 bg-green-50' :
-                      documentStatus[type] === 'rejected' ? 'border-red-500 bg-red-50' :
-                      'border-teal-500 bg-teal-50'
-                    }`}>
+                    <div className={`w-12 h-12 md:w-16 md:h-16 rounded-lg flex items-center justify-center border-2 ${documentStatus[type] === 'approved' ? 'border-green-500 bg-green-50' :
+                        documentStatus[type] === 'rejected' ? 'border-red-500 bg-red-50' :
+                          'border-teal-500 bg-teal-50'
+                      }`}>
                       {documentStatus[type] === 'approved' && (
                         <svg className="w-6 h-6 md:w-8 md:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -256,7 +260,7 @@ export default function Step2Documents({ onNext, onBack }) {
                     {uploading[type] ? '...' : 'Upload'}
                   </button>
                 )}
-                
+
                 <input
                   ref={fileInputRefs[type]}
                   type="file"
@@ -270,11 +274,10 @@ export default function Step2Documents({ onNext, onBack }) {
                 />
               </div>
             </div>
-            
+
             {errors[type] && (
-              <p className={`mt-2 text-sm ${
-                errors[type].includes('✅') ? 'text-green-600' : 'text-red-500'
-              }`}>
+              <p className={`mt-2 text-sm ${errors[type].includes('✅') ? 'text-green-600' : 'text-red-500'
+                }`}>
                 {errors[type]}
               </p>
             )}
@@ -288,15 +291,14 @@ export default function Step2Documents({ onNext, onBack }) {
         <div className="flex gap-4">
           {['profile_photo', 'id_proof', 'insurance'].map(type => (
             <div key={type} className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-1 ${
-                documents[type] ? 
+              <div className={`w-3 h-3 rounded-full mr-1 ${documents[type] ?
                   documentStatus[type] === 'approved' ? 'bg-green-500' :
-                  documentStatus[type] === 'rejected' ? 'bg-red-500' : 'bg-yellow-500'
+                    documentStatus[type] === 'rejected' ? 'bg-red-500' : 'bg-yellow-500'
                   : 'bg-gray-300'
-              }`}></div>
+                }`}></div>
               <span className="text-xs text-gray-600">
-                {type === 'profile_photo' ? 'Photo' : 
-                 type === 'id_proof' ? 'ID' : 'Insurance'}
+                {type === 'profile_photo' ? 'Photo' :
+                  type === 'id_proof' ? 'ID' : 'Insurance'}
               </span>
             </div>
           ))}
@@ -313,11 +315,10 @@ export default function Step2Documents({ onNext, onBack }) {
         <button
           onClick={handleSubmit}
           disabled={!allRequiredUploaded}
-          className={`px-6 py-2 rounded-lg transition ${
-            allRequiredUploaded 
-              ? 'bg-teal-600 text-white hover:bg-teal-700' 
+          className={`px-6 py-2 rounded-lg transition ${allRequiredUploaded
+              ? 'bg-teal-600 text-white hover:bg-teal-700'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
+            }`}
         >
           Continue to Payment
         </button>

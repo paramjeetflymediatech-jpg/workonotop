@@ -520,10 +520,18 @@ export default function BookingDetailsPage() {
                         Your schedule
                       </h4>
                       <div className="bg-green-50 rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-700">
-                            {formatDate(scheduleData.job_date)}
-                          </span>
+                        <div className="flex flex-col gap-1">
+                          {Array.isArray(scheduleData.job_date) ? (
+                            scheduleData.job_date.map(dateStr => (
+                              <span key={dateStr} className="text-sm font-medium text-gray-700">
+                                {formatDate(dateStr)}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm font-medium text-gray-700">
+                              {formatDate(scheduleData.job_date)}
+                            </span>
+                          )}
                         </div>
                         <div className="flex flex-wrap gap-2 mt-2">
                           <span className="px-3 py-1 bg-green-700 text-white text-xs font-medium rounded-full capitalize flex items-center">

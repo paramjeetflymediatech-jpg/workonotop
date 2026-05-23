@@ -18,6 +18,10 @@ export default function TimeTracker({
   const [error, setError] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
 
+  // Photo upload states
+  const [beforeUploaded, setBeforeUploaded] = useState(hasBeforePhotos)
+  const [afterUploaded, setAfterUploaded] = useState(hasAfterPhotos)
+
   // Completion form
   const [workSummary, setWorkSummary] = useState('')
   const [recommendations, setRecommendations] = useState('')
@@ -26,6 +30,14 @@ export default function TimeTracker({
   useEffect(() => {
     loadTimerStatus()
   }, [bookingId])
+
+  useEffect(() => {
+    setBeforeUploaded(prev => hasBeforePhotos || prev)
+  }, [hasBeforePhotos])
+
+  useEffect(() => {
+    setAfterUploaded(prev => hasAfterPhotos || prev)
+  }, [hasAfterPhotos])
 
   useEffect(() => {
     let interval
@@ -39,20 +51,23 @@ export default function TimeTracker({
   }, [timerStatus, startTime])
 
   useEffect(() => {
-    if (hasAfterPhotos && error.includes('after')) setError('')
-  }, [hasAfterPhotos])
+    if (afterUploaded && error.includes('after')) setError('')
+  }, [afterUploaded])
 
   useEffect(() => {
-    if (hasBeforePhotos && error.includes('before')) setError('')
-  }, [hasBeforePhotos])
+    if (beforeUploaded && error.includes('before')) setError('')
+  }, [beforeUploaded])
 
   const loadTimerStatus = async () => {
     try {
-      const res = await fetch(`/api/provider/jobs/time-tracking?booking_id=${bookingId}`)
+      const res = await fetch(`/api/provider/jobs/time-tracking?booking_id=${bookingId}&_t=${Date.now()}`)
       const data = await res.json()
       if (data.success) {
         const status = data.data.job_timer_status || 'not_started'
         setTimerStatus(status)
+        setBeforeUploaded(Boolean(data.data.has_before_photos || hasBeforePhotos))
+        setAfterUploaded(Boolean(data.data.has_after_photos || hasAfterPhotos))
+
         if (data.data.start_time && status === 'running') {
           setStartTime(data.data.start_time)
           const elapsed = Math.floor((Date.now() - new Date(data.data.start_time).getTime()) / 1000)
@@ -87,17 +102,50 @@ export default function TimeTracker({
   const isOvertime = elapsedMinutes > standardDuration
 
   const handleAction = async (action) => {
-    if (action === 'start' && !hasBeforePhotos) {
-      setError('Please upload before photos first')
-      return
-    }
-    if (action === 'stop') {
-      if (!hasAfterPhotos) {
-        setError('Please upload after photos before completing the job')
-        return
+    if (action === 'start') {
+      let isBeforeUploaded = beforeUploaded;
+      if (!isBeforeUploaded) {
+        try {
+          const res = await fetch(`/api/provider/jobs/time-tracking?booking_id=${bookingId}&_t=${Date.now()}`);
+          const data = await res.json();
+          if (data.success && data.data.has_before_photos) {
+            isBeforeUploaded = true;
+            setBeforeUploaded(true);
+            if (error.includes('before')) setError('');
+          }
+        } catch (e) {
+          console.error('Check photos error:', e);
+        }
       }
-      setShowConfirm(true)
-      return
+
+      if (!isBeforeUploaded) {
+        setError('Please upload before photos first');
+        return;
+      }
+    }
+
+    if (action === 'stop') {
+      let isAfterUploaded = afterUploaded;
+      if (!isAfterUploaded) {
+        try {
+          const res = await fetch(`/api/provider/jobs/time-tracking?booking_id=${bookingId}&_t=${Date.now()}`);
+          const data = await res.json();
+          if (data.success && data.data.has_after_photos) {
+            isAfterUploaded = true;
+            setAfterUploaded(true);
+            if (error.includes('after')) setError('');
+          }
+        } catch (e) {
+          console.error('Check photos error:', e);
+        }
+      }
+
+      if (!isAfterUploaded) {
+        setError('Please upload after photos before completing the job');
+        return;
+      }
+      setShowConfirm(true);
+      return;
     }
 
     setLoading(true)
@@ -297,7 +345,7 @@ export default function TimeTracker({
         {timerStatus === 'not_started' && (
           <button
             onClick={() => handleAction('start')}
-            disabled={loading || !hasBeforePhotos}
+            disabled={loading || !beforeUploaded}
             className="flex-1 py-3 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading
@@ -352,16 +400,16 @@ export default function TimeTracker({
         )}
       </div>
 
-      {timerStatus === 'not_started' && !hasBeforePhotos && (
+      {timerStatus === 'not_started' && !beforeUploaded && (
         <p className="text-xs text-center text-amber-600 bg-amber-50 py-2 px-3 rounded-lg">
           ⚠ Upload before photos above to enable Start - Click on view details
         </p>
       )}
-      {(timerStatus === 'running' || timerStatus === 'paused') && !hasAfterPhotos && (
+      {(timerStatus === 'running' || timerStatus === 'paused') && !afterUploaded && (
         <p className="text-xs text-center text-amber-600 bg-amber-50 py-2 px-3 rounded-lg">
           📸 Upload after photos below before finishing
         </p>
       )}
     </div>
   )
-}
+}

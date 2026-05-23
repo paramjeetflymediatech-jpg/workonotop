@@ -336,8 +336,12 @@ export default function BookingDetailsPage({ params }) {
           <Card card={card} icon="📅" title="Schedule" val={val}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field
-                label="Job Date"
-                value={booking.job_date ? new Date(booking.job_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
+                label="Job Dates"
+                value={booking.job_date 
+                  ? (booking.job_date.includes(',') 
+                      ? booking.job_date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })).join(' • ')
+                      : new Date(booking.job_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+                  : '—'}
                 lbl={lbl} val={val}
               />
               <div>

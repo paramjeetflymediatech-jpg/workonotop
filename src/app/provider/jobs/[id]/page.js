@@ -39,7 +39,7 @@ export default function ProviderJobDetail({ params }) {
 
   const loadJob = async () => {
     try {
-      const res = await fetch(`/api/provider/jobs/${id}`)
+      const res = await fetch(`/api/provider/jobs/${id}?_t=${Date.now()}`)
       const data = await res.json()
       if (data.success) {
         console.log('✅ [DEBUG] Fetched accepted job data:', data.data)
@@ -59,7 +59,7 @@ export default function ProviderJobDetail({ params }) {
 
   const loadPhotos = useCallback(async () => {
     try {
-      const res = await fetch(`/api/provider/jobs/photos?booking_id=${id}`)
+      const res = await fetch(`/api/provider/jobs/photos?booking_id=${id}&_t=${Date.now()}`)
       const data = await res.json()
       if (data.success) setPhotos(data.data)
     } catch (error) {
@@ -89,6 +89,11 @@ export default function ProviderJobDetail({ params }) {
 
   const formatDate = (dateString) => {
     if (!dateString) return ''
+    if (typeof dateString === 'string' && dateString.includes(',')) {
+      return dateString.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-US', {
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+      })).join(' • ')
+    }
     return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     })
@@ -516,7 +521,13 @@ function JobDetailsCard({ job, showContact, setShowContact }) {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Date</p>
-              <p className="font-medium">{new Date(job.job_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+              <p className="font-medium">
+                {job.job_date 
+                  ? (job.job_date.includes(',') 
+                      ? job.job_date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ')
+                      : new Date(job.job_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
+                  : '—'}
+              </p>
             </div>
             {job.job_time_slot?.length > 0 && (
               <div>

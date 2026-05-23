@@ -32,7 +32,7 @@ export async function GET(request) {
         LEFT JOIN services s ON b.service_id = s.id
         LEFT JOIN service_categories c ON s.category_id = c.id
         LEFT JOIN service_providers sp ON b.provider_id = sp.id
-        WHERE 1=1
+        WHERE EXISTS (SELECT 1 FROM users u WHERE u.email = b.customer_email)
       `
       const params = []
       if (email) { sql += ' AND b.customer_email = ?'; params.push(email) }

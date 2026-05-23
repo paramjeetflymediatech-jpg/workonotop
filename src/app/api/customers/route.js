@@ -224,6 +224,11 @@ export async function DELETE(request) {
         `DELETE FROM invoices WHERE user_id = ?`, [id]
       )
 
+      // 8.5 Delete mobile auth sessions
+      await connection.execute(
+        `DELETE FROM mobile_auth_users WHERE user_id = ?`, [id]
+      )
+
       // 9. Finally delete the user
       const [userResult] = await connection.execute(
         `DELETE FROM users WHERE id = ?`, [id]

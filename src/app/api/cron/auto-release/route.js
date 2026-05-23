@@ -12,13 +12,13 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Find all bookings awaiting_approval for more than 12 hours with no customer response
+  // Find all bookings awaiting_approval for more than 24 hours with no customer response
   const expiredBookings = await execute(`
     SELECT b.*, sp.stripe_account_id 
     FROM bookings b
     LEFT JOIN service_providers sp ON b.provider_id = sp.id
     WHERE b.status = 'awaiting_approval'
-      AND b.updated_at < DATE_SUB(NOW(), INTERVAL 12 HOUR)
+      AND b.updated_at < DATE_SUB(NOW(), INTERVAL 1 HOUR)
       AND b.payment_intent_id IS NOT NULL
   `)
 
@@ -61,7 +61,7 @@ export async function GET(request) {
         [booking.id]
       )
       await connection.execute(
-        `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'completed', 'Auto-released after 12 hours - no customer response')`,
+        `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'completed', 'Auto-released after 24 hours - no customer response')`,
         [booking.id]
       )
 

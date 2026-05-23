@@ -242,9 +242,13 @@ export default function PaymentPage() {
                     <span className="font-medium text-right break-words max-w-[60%]">{pendingBookingData.service_name}</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-gray-600">Date:</span>
-                    <span className="font-medium text-right">
-                      {new Date(pendingBookingData.job_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    <span className="text-gray-600">Dates:</span>
+                    <span className="font-medium text-right flex flex-col items-end text-xs sm:text-sm">
+                      {Array.isArray(pendingBookingData.job_date) 
+                        ? pendingBookingData.job_date.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ')
+                        : (pendingBookingData.job_date?.includes(',') 
+                            ? pendingBookingData.job_date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ')
+                            : new Date(pendingBookingData.job_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))}
                     </span>
                   </div>
                   <div className="flex justify-between gap-2">

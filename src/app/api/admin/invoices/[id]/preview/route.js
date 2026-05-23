@@ -727,7 +727,11 @@ export async function GET(request, { params }) {
             </div>
             <div class="date-cell">
               <label>Job Date</label>
-              <span>${new Date(invoice.job_date).toLocaleDateString('en-GB')}</span>
+              <span>${invoice.job_date 
+                      ? (invoice.job_date.includes(',') 
+                          ? invoice.job_date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-GB')).join(', ')
+                          : new Date(invoice.job_date).toLocaleDateString('en-GB'))
+                      : '—'}</span>
             </div>
             <div class="date-cell">
               <label>Invoice No.</label>

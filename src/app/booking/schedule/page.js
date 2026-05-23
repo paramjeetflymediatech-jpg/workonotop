@@ -20,7 +20,7 @@ function ScheduleContent() {
 
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDates, setSelectedDates] = useState([]);
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [timingConstraints, setTimingConstraints] = useState('');
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
@@ -65,14 +65,13 @@ function ScheduleContent() {
   ];
 
   const isSlotAvailable = (slotId) => {
-    if (!selectedDate) return true;
+    if (selectedDates.length === 0) return true;
     
     const now = new Date();
-    const isToday = selectedDate === now.getDate() && 
-                    currentMonth === (now.getMonth() + 1) && 
-                    currentYear === now.getFullYear();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const allToday = selectedDates.every(d => d === todayStr);
     
-    if (!isToday) return true;
+    if (!allToday) return true;
     
     const hour = now.getHours();
     // Disable if the current time is past the slot's midpoint/end to avoid last-minute bookings
@@ -130,7 +129,6 @@ function ScheduleContent() {
       setCurrentMonth(12);
       setCurrentYear(currentYear - 1);
     }
-    setSelectedDate(null);
   };
 
   const handleNextMonth = () => {
@@ -140,7 +138,16 @@ function ScheduleContent() {
       setCurrentMonth(1);
       setCurrentYear(currentYear + 1);
     }
-    setSelectedDate(null);
+  };
+
+  const handleDateClick = (day) => {
+    const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (selectedDates.includes(dateStr)) {
+      setSelectedDates(selectedDates.filter(d => d !== dateStr));
+    } else {
+      if (selectedDates.length >= 3) return;
+      setSelectedDates([...selectedDates, dateStr].sort());
+    }
   };
 
   const handleContinue = () => {
@@ -149,7 +156,7 @@ function ScheduleContent() {
       service_name: service.name,
       service_price: service.base_price,
       additional_price: service.additional_price,
-      job_date: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`,
+      job_date: selectedDates,
       job_time_slot: selectedTimes,
       timing_constraints: timingConstraints
     };
@@ -253,7 +260,7 @@ function ScheduleContent() {
                     When should we send someone?
                   </h2>
                   <p className="text-green-100 text-sm mt-1 ml-1">
-                    Select available date and times — pros in your area are ready
+                    Select exactly 1 to 3 dates that work for you
                   </p>
                 </div>
 
@@ -292,12 +299,12 @@ function ScheduleContent() {
                       <div key={index} className="aspect-square">
                         {day.day ? (
                           <button
-                            onClick={() => day.available && setSelectedDate(day.day)}
+                            onClick={() => day.available && handleDateClick(day.day)}
                             disabled={!day.available}
                             className={`
                               w-full h-full rounded-xl flex items-center justify-center text-sm md:text-base font-medium
                               transition-all duration-200
-                              ${selectedDate === day.day
+                              ${selectedDates.includes(`${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`)
                                 ? 'bg-gradient-to-br from-green-700 to-green-600 text-white shadow-md scale-105'
                                 : day.available
                                   ? 'hover:bg-gray-100 text-gray-800 border border-gray-200 hover:border-green-400'
@@ -424,11 +431,11 @@ function ScheduleContent() {
 
                 <button
                   onClick={handleContinue}
-                  disabled={!selectedDate || selectedTimes.length === 0}
+                  disabled={selectedDates.length !== 3 || selectedTimes.length === 0}
                   className={`
                     w-full sm:w-auto px-10 py-4 rounded-xl font-bold text-lg shadow-lg
                     flex items-center justify-center transition-all duration-300
-                    ${selectedDate && selectedTimes.length > 0
+                    ${selectedDates.length === 3 && selectedTimes.length > 0
                       ? 'bg-gradient-to-r from-green-700 to-green-600 text-white hover:from-green-800 hover:to-green-700 hover:scale-[1.02] shadow-green-200'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }
@@ -441,12 +448,20 @@ function ScheduleContent() {
                 </button>
               </div>
 
-              {(!selectedDate || selectedTimes.length === 0) && (
+              {selectedDates.length !== 3 && (
                 <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg flex items-center">
                   <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
-                  Please select a date and at least one time slot to continue
+                  Please select exactly 1 to 3 dates
+                </p>
+              )}
+              {selectedDates.length === 3 && selectedTimes.length === 0 && (
+                <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg flex items-center">
+                  <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  Please select at least one time slot to continue
                 </p>
               )}
             </div>
@@ -493,7 +508,7 @@ function ScheduleContent() {
                       </div>
                     </div>
 
-                    {selectedDate && selectedTimes.length > 0 ? (
+                    {selectedDates.length === 3 && selectedTimes.length > 0 ? (
                       <div className="mb-5 pb-5 border-b border-gray-200">
                         <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
                           <svg className="w-5 h-5 text-green-700 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -502,10 +517,15 @@ function ScheduleContent() {
                           Your selection
                         </h4>
                         <div className="bg-gray-50 rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">
-                              {monthNames[currentMonth - 1]} {selectedDate}, {currentYear}
-                            </span>
+                          <div className="flex flex-col gap-1">
+                            {selectedDates.map(d => {
+                              const [y, m, day] = d.split('-');
+                              return (
+                                <span key={d} className="text-sm font-medium text-gray-700">
+                                  {monthNames[parseInt(m) - 1]} {day}, {y}
+                                </span>
+                              );
+                            })}
                           </div>
                           <div className="flex flex-wrap gap-2 mt-2">
                             {selectedTimes.map(time => (
@@ -523,8 +543,8 @@ function ScheduleContent() {
                       <div className="mb-5 pb-5 border-b border-gray-200">
                         <div className="bg-amber-50 rounded-lg p-4 text-center">
                           <span className="text-2xl mb-2 block">📅</span>
-                          <p className="text-sm text-amber-800">No date selected yet</p>
-                          <p className="text-xs text-amber-600 mt-1">Please choose a date and time to continue</p>
+                          <p className="text-sm text-amber-800">{selectedDates.length} of 3 dates selected</p>
+                          <p className="text-xs text-amber-600 mt-1">Please choose exactly 3 dates to continue</p>
                         </div>
                       </div>
                     )}

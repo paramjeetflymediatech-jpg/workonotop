@@ -255,8 +255,16 @@ export default function Users() {
   const pagedAdmins = filteredAdmins.slice((adminPage - 1) * PAGE_SIZE, adminPage * PAGE_SIZE)
   const pagedProviders = filteredProviders.slice((providerPage - 1) * PAGE_SIZE, providerPage * PAGE_SIZE)
 
-  const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'
-  const formatDateTime = (d) => d ? new Date(d).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'
+  const formatDate = (d) => {
+    if (!d) return 'N/A'
+    if (typeof d === 'string' && d.includes(',')) return d.split(',').map(date => new Date(date.trim()).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })).join(', ')
+    return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  }
+  const formatDateTime = (d) => {
+    if (!d) return 'N/A'
+    if (typeof d === 'string' && d.includes(',')) return d.split(',').map(date => new Date(date.trim()).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })).join(', ')
+    return new Date(d).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  }
   const calculateTotal = (b) => (parseFloat(b.service_price || 0) + parseFloat(b.additional_price || 0)).toFixed(2)
   const formatRating = (r) => { const n = parseFloat(r); return isNaN(n) ? '0.0' : n.toFixed(1) }
   const getRatingValue = (r) => { const n = parseFloat(r); return isNaN(n) ? 0 : Math.round(n) }

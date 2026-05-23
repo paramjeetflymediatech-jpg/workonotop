@@ -74,6 +74,11 @@ export default function ProviderJobs() {
 
   const formatDate = (date) => {
     if (!date) return ''
+    if (typeof date === 'string' && date.includes(',')) {
+      return date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+      })).join(' • ')
+    }
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',

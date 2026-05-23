@@ -191,20 +191,18 @@ import { useState } from 'react'
 
 export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete, existingCount = 0 }) {
   const [uploading, setUploading] = useState(false)
-  const [photos, setPhotos] = useState([])
   const [error, setError] = useState('')
   const [previews, setPreviews] = useState([])
 
   const MAX_PHOTOS = 10
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files)
     if (files.length === 0) return
 
-    const totalExpected = photos.length + files.length + existingCount
+    const totalExpected = files.length + existingCount
     if (totalExpected > MAX_PHOTOS) {
-      setError(`Maximum ${MAX_PHOTOS} photos allowed (you have ${existingCount} uploaded and ${photos.length} selected)`)
-      // Clear input so they can try again
+      setError(`Maximum ${MAX_PHOTOS} photos allowed (you have ${existingCount} uploaded and ${files.length} selected)`)
       e.target.value = ''
       return
     }
@@ -227,42 +225,24 @@ export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete,
     }
 
     if (validFiles.length > 0) {
-      const newPhotos = [...photos, ...validFiles]
-      setPhotos(newPhotos)
-      
       const newPreviews = validFiles.map(file => URL.createObjectURL(file))
-      setPreviews([...previews, ...newPreviews])
+      setPreviews(newPreviews)
       setError('')
+      
+      await uploadFiles(validFiles, newPreviews)
     }
 
-    // Clear input value so same file can be re-selected if needed
     e.target.value = ''
   }
 
-  const removePhoto = (index) => {
-    const newPhotos = [...photos]
-    newPhotos.splice(index, 1)
-    setPhotos(newPhotos)
-
-    const newPreviews = [...previews]
-    URL.revokeObjectURL(newPreviews[index])
-    newPreviews.splice(index, 1)
-    setPreviews(newPreviews)
-  }
-
-  const uploadPhotos = async () => {
-    if (photos.length === 0) {
-      setError('Please select photos to upload')
-      return
-    }
-
+  const uploadFiles = async (filesToUpload, currentPreviews) => {
     setUploading(true)
     setError('')
 
     try {
       const uploadedUrls = []
 
-      for (const photo of photos) {
+      for (const photo of filesToUpload) {
         const formData = new FormData()
         formData.append('file', photo)
 
@@ -288,13 +268,13 @@ export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete,
         if (!saveData.success) throw new Error(saveData.message || 'Failed to save photo')
       }
 
-      previews.forEach(preview => URL.revokeObjectURL(preview))
+      currentPreviews.forEach(preview => URL.revokeObjectURL(preview))
       onUploadComplete?.(uploadedUrls)
-      setPhotos([])
       setPreviews([])
 
     } catch (err) {
       setError(err.message || 'Upload failed')
+      setPreviews([]) // clear previews on error so they try again
     } finally {
       setUploading(false)
     }
@@ -310,14 +290,12 @@ export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete,
         <div className="grid grid-cols-3 gap-2 mb-3">
           {previews.map((preview, index) => (
             <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group">
-              <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
-              <button
-                onClick={() => removePhoto(index)}
-                className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Remove"
-              >
-                ✕
-              </button>
+              <img src={preview} alt={`Preview ${index + 1}`} className={`w-full h-full object-cover ${uploading ? 'opacity-50' : ''}`} />
+              {uploading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -342,7 +320,7 @@ export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete,
           />
         </label>
         <p className="text-xs text-gray-400 mt-1">
-          Up to {MAX_PHOTOS} photos total ({Math.max(0, MAX_PHOTOS - existingCount - photos.length)} remaining) · max 10MB each
+          Up to {MAX_PHOTOS} photos total ({Math.max(0, MAX_PHOTOS - existingCount)} remaining) · max 10MB each
         </p>
       </div>
 
@@ -351,23 +329,6 @@ export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete,
           {error}
         </div>
       )}
-
-      <button
-        onClick={uploadPhotos}
-        disabled={photos.length === 0 || uploading}
-        className="w-full py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
-      >
-        {uploading ? (
-          <>
-            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Uploading...
-          </>
-        ) : (
-          <>
-            <span>📤</span> Upload {photoType === 'before' ? 'Before' : 'After'} Photo{photos.length > 1 ? 's' : ''}
-          </>
-        )}
-      </button>
     </div>
   )
 }

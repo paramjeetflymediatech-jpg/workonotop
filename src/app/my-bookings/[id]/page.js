@@ -372,12 +372,11 @@ export default function CustomerBookingDetails() {
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Service Date</p>
                   <p className="text-gray-900 font-semibold text-lg">
-                    {booking.job_date ? new Date(booking.job_date).toLocaleDateString('en-US', { 
-                      weekday: 'short', 
-                      month: 'long', 
-                      day: 'numeric', 
-                      year: 'numeric' 
-                    }) : 'TBD'}
+                    {booking.job_date 
+                      ? (booking.job_date.includes(',') 
+                          ? booking.job_date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })).join(' • ')
+                          : new Date(booking.job_date).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }))
+                      : 'TBD'}
                   </p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">

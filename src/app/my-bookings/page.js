@@ -257,7 +257,12 @@ export default function MyBookings() {
   }
 
   const formatDate = (d) => {
-    try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }
+    try { 
+      if (typeof d === 'string' && d.includes(',')) {
+        return d.split(',').map(dateStr => new Date(dateStr.trim()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(' • ')
+      }
+      return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
+    }
     catch { return '—' }
   }
 

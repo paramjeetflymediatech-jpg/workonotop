@@ -140,7 +140,11 @@ export default function BookingSuccessPage({ params }) {
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Invoice Summary</span>
             </div>
             <span className="text-xs text-gray-400">
-              {new Date(booking.job_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              {booking.job_date 
+                ? (booking.job_date.includes(',') 
+                    ? booking.job_date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })).join(', ')
+                    : new Date(booking.job_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }))
+                : '—'}
             </span>
           </div>
 
@@ -150,7 +154,11 @@ export default function BookingSuccessPage({ params }) {
             <div className="space-y-3">
               {[
                 { label: 'Service',  value: booking.service_name },
-                { label: 'Date',     value: new Date(booking.job_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) },
+                { label: 'Date',     value: booking.job_date 
+                                            ? (booking.job_date.includes(',') 
+                                                ? booking.job_date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })).join(', ')
+                                                : new Date(booking.job_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }))
+                                            : '—' },
                 { label: 'Time',     value: formatTimeSlot(booking.job_time_slot) },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-start py-2 border-b border-dashed border-gray-100">

@@ -60,10 +60,15 @@ export async function POST(request) {
     }
 
     // Check file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    const validTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
     if (!validTypes.includes(file.type)) {
       return NextResponse.json(
-        { success: false, message: 'Invalid file type. Only JPG, PNG, and PDF are allowed.' },
+        { success: false, message: 'Invalid file type. Only JPG, PNG, PDF, and DOC are allowed.' },
         { status: 400 }
       );
     }

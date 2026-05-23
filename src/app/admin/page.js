@@ -145,6 +145,13 @@ const checkAuth = async () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
+    if (typeof dateString === 'string' && dateString.includes(',')) {
+      return dateString.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      })).join(', ')
+    }
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
       month: 'short',

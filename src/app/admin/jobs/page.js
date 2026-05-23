@@ -391,7 +391,11 @@ export default function JobRequests() {
                         <div>
                           <p className={`text-[10px] font-semibold uppercase tracking-wide mb-0.5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Date</p>
                           <p className={`text-xs font-medium ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                            {new Date(job.job_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                            {job.job_date 
+                              ? (job.job_date.includes(',') 
+                                  ? job.job_date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })).join(', ')
+                                  : new Date(job.job_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }))
+                              : '—'}
                           </p>
                         </div>
                         <div>

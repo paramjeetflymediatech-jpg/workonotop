@@ -247,6 +247,19 @@ export async function DELETE(request) {
       [id]
     )
 
+    await connection.execute(
+      `DELETE FROM provider_documents WHERE provider_id = ?`,
+      [id]
+    )
+    await connection.execute(
+      `DELETE FROM provider_bank_accounts WHERE provider_id = ?`,
+      [id]
+    )
+    await connection.execute(
+      `DELETE FROM mobile_auth_users WHERE provider_id = ?`,
+      [id]
+    )
+
     // finally delete provider
     const [provResult] = await connection.execute(
       'DELETE FROM service_providers WHERE id = ?',
