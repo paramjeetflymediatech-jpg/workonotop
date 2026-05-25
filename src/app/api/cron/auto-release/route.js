@@ -19,13 +19,13 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Find all bookings awaiting_approval for more than 2 minutes with no customer response
+  // Find all bookings awaiting_approval for more than 24 hours with no customer response
   const expiredBookings = await execute(`
     SELECT b.*, sp.stripe_account_id 
     FROM bookings b
     LEFT JOIN service_providers sp ON b.provider_id = sp.id
     WHERE b.status = 'awaiting_approval'
-      AND b.updated_at < DATE_SUB(NOW(), INTERVAL 2 MINUTE)
+      AND b.updated_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)
       AND b.payment_intent_id IS NOT NULL
   `)
 
