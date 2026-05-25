@@ -6,9 +6,16 @@ import { execute, getConnection } from '@/lib/db'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock')
 
 export async function GET(request) {
-  // Security check - only allow Vercel cron or your secret (bypassed in development for easier testing)
   const authHeader = request.headers.get('authorization')
-  if (process.env.NODE_ENV !== 'development' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const secretQuery = request.nextUrl.searchParams.get('secret')
+  
+  // Allow if in dev, if header matches, or if query parameter matches
+  const isAuthorized = 
+    process.env.NODE_ENV === 'development' || 
+    authHeader === `Bearer ${process.env.CRON_SECRET}` ||
+    (secretQuery && secretQuery === process.env.CRON_SECRET)
+
+  if (!isAuthorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
