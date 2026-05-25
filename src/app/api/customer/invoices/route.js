@@ -5,27 +5,38 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('user_id')
+    const email = searchParams.get('email')
 
-    if (!userId) {
+    if (!userId && !email) {
       return NextResponse.json(
-        { success: false, message: 'User ID is required' },
+        { success: false, message: 'User ID or email is required' },
         { status: 400 }
       )
     }
 
-    // Fetch invoices for this user with service details
-    const invoices = await execute(
-      `SELECT 
+    let sql = `
+      SELECT 
         i.*,
         s.name as service_name
-       FROM invoices i
-       JOIN bookings b ON i.booking_id = b.id
-       JOIN services s ON b.service_id = s.id
-       WHERE i.user_id = ? 
-       AND i.invoice_type = 'customer'
-       ORDER BY i.created_at DESC`,
-      [userId]
-    )
+      FROM invoices i
+      JOIN bookings b ON i.booking_id = b.id
+      JOIN services s ON b.service_id = s.id
+      WHERE i.invoice_type = 'customer'
+    `
+    const params = []
+
+    if (userId && userId !== 'null' && userId !== 'undefined') {
+      sql += ' AND (i.user_id = ? OR b.customer_email = ?)'
+      params.push(userId, email || '')
+    } else if (email) {
+      sql += ' AND b.customer_email = ?'
+      params.push(email)
+    }
+
+    sql += ' ORDER BY i.created_at DESC'
+
+    // Fetch invoices for this user with service details
+    const invoices = await execute(sql, params)
 
     return NextResponse.json({ 
       success: true, 

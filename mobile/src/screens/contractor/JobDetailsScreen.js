@@ -15,6 +15,30 @@ const { width } = Dimensions.get('window');
 const PURPLE_DARK = '#6b21a8';
 const TEAL_DARK = '#15843E';
 
+const formatDate = (d) => {
+    if (!d) return '—';
+    try {
+        const parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
+        if (Array.isArray(parsed)) {
+            return parsed.map(dateStr => new Date(dateStr.replace(/-/g, '/')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })).join(', ');
+        }
+        return new Date(parsed.replace(/-/g, '/')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    } catch {
+        return '—';
+    }
+};
+
+const formatSlot = (slot) => {
+    if (!slot) return 'Flexible';
+    try {
+        const parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
+        if (Array.isArray(parsed)) return parsed.join(', ');
+        return String(parsed);
+    } catch {
+        return String(slot);
+    }
+};
+
 const JobDetailsScreen = ({ navigation, route }) => {
     const { job: initialJob } = route.params || {};
     const { user } = useAuth();
@@ -371,13 +395,13 @@ const JobDetailsScreen = ({ navigation, route }) => {
                                 icon="calendar-outline"
                                 label="Job Date"
                                 color={TEAL_DARK}
-                                value={new Date(job.job_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                value={formatDate(job.job_date)}
                             />
                             <DetailItem
                                 icon="time-outline"
                                 label="Time Slot(s)"
                                 color={TEAL_DARK}
-                                value={Array.isArray(job.job_time_slot) ? job.job_time_slot.join(', ') : (job.job_time_slot || 'Flexible')}
+                                value={formatSlot(job.job_time_slot)}
                             />
                             {job.timing_constraints && (
                                 <View style={styles.timingNote}>

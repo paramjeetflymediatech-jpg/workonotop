@@ -530,14 +530,29 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
                 <View style={styles.reviewSection}>
                     <Text style={styles.reviewLabel}>SCHEDULE</Text>
-                    <View style={styles.reviewRow}>
-                        <Ionicons name="calendar-outline" size={16} color="#64748b" />
-                        <Text style={styles.reviewText}>{(bookingData.job_date || []).join(', ')}</Text>
-                    </View>
-                    <View style={styles.reviewRow}>
-                        <Ionicons name="time-outline" size={16} color="#64748b" />
-                        <Text style={styles.reviewText}>{(bookingData.job_time_slot || []).join(', ')}</Text>
-                    </View>
+                    {(bookingData.job_date || []).length === 0 ? (
+                        <Text style={styles.reviewText}>No schedule selected</Text>
+                    ) : (
+                        (bookingData.job_date || []).map((dateStr, idx) => {
+                            const slots = selectedTimes[dateStr] || [];
+                            const dateObj = new Date(dateStr.replace(/-/g, '/'));
+                            const displayDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                            return (
+                                <View key={idx} style={{ marginBottom: 10 }}>
+                                    <View style={styles.reviewRow}>
+                                        <Ionicons name="calendar-outline" size={16} color="#64748b" />
+                                        <Text style={[styles.reviewText, { fontWeight: '600', color: '#334155' }]}>{displayDate}</Text>
+                                    </View>
+                                    {slots.length > 0 ? (
+                                        <View style={[styles.reviewRow, { marginTop: 4, marginLeft: 24 }]}>
+                                            <Ionicons name="time-outline" size={16} color="#64748b" />
+                                            <Text style={styles.reviewText}>{slots.join(', ')}</Text>
+                                        </View>
+                                    ) : null}
+                                </View>
+                            );
+                        })
+                    )}
                 </View>
 
                 <View style={styles.reviewSection}>
@@ -608,7 +623,11 @@ const CreateBookingScreen = ({ navigation, route }) => {
     );
 
     const renderStep5 = () => (
-        <View style={styles.stepContainer}>
+        <ScrollView 
+            style={styles.stepContainer} 
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+        >
             <View style={{ marginBottom: 15 }}>
                 <Text style={styles.sectionTitle}>Payment & Authorization</Text>
 
@@ -633,14 +652,14 @@ const CreateBookingScreen = ({ navigation, route }) => {
             </View>
 
             {paymentUrl ? (
-                <View style={styles.webviewContainer}>
+                <View style={[styles.webviewContainer, { minHeight: 600 }]}>
                     <WebView
                         source={{ uri: paymentUrl }}
                         onMessage={handleWebViewMessage}
                         showsVerticalScrollIndicator={true}
                         bounces={false}
                         scrollEnabled={true}
-                        style={{ backgroundColor: 'transparent' }}
+                        style={{ backgroundColor: 'transparent', flex: 1 }}
                         nestedScrollEnabled={true}
                     />
                 </View>
@@ -649,7 +668,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     <Text>Loading secure payment gateway...</Text>
                 </View>
             )}
-        </View>
+        </ScrollView>
     );
 
     return (

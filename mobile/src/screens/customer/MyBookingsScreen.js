@@ -25,13 +25,26 @@ const getStatus = (s) => statusConfig[s] || { label: s, dot: '#94a3b8', bg: '#f8
 
 const formatSlot = (slot) => {
     const map = { morning: '8:00 AM – 12:00 PM', afternoon: '12:00 PM – 5:00 PM', evening: '5:00 PM – 9:00 PM' };
-    if (Array.isArray(slot)) return map[slot[0]] || slot[0];
-    return map[slot] || slot;
+    try {
+        const parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
+        if (Array.isArray(parsed)) return parsed.map(s => map[s] || s).join(', ');
+        return map[parsed] || parsed;
+    } catch {
+        return String(slot);
+    }
 };
 
 const formatDate = (d) => {
-    try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
-    catch { return '—'; }
+    if (!d) return '—';
+    try {
+        const parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
+        if (Array.isArray(parsed)) {
+            return parsed.map(dateStr => new Date(dateStr.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ');
+        }
+        return new Date(parsed.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+        return '—';
+    }
 };
 
 // ── BookingCard ───────────────────────────────────────────────────────────────

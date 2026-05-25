@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from '../../utils/responsive';
-import { apiService } from '../../services/api';
+import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../config';
 
@@ -25,7 +25,7 @@ const InvoicesScreen = ({ navigation }) => {
 
     const fetchInvoices = async () => {
         try {
-            const res = await apiService.customer.getInvoices(user.id);
+            const res = await api.get(`/api/customer/invoices?user_id=${user.id}&email=${encodeURIComponent(user.email || '')}`);
             if (res.success) {
                 setInvoices(res.data);
             }

@@ -11,6 +11,30 @@ import { API_BASE_URL } from '../../config';
 const PRIMARY = '#115e59';
 const BG_COLOR = '#f8fafc';
 
+const formatDate = (d) => {
+    if (!d) return '—';
+    try {
+        const parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
+        if (Array.isArray(parsed)) {
+            return parsed.map(dateStr => new Date(dateStr.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ');
+        }
+        return new Date(parsed.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+        return '—';
+    }
+};
+
+const formatSlot = (slot) => {
+    if (!slot) return '—';
+    try {
+        const parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
+        if (Array.isArray(parsed)) return parsed.join(', ');
+        return String(parsed);
+    } catch {
+        return String(slot);
+    }
+};
+
 const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     const { bookingId } = route.params;
     const insets = useSafeAreaInsets();
@@ -415,11 +439,11 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     <View style={styles.card}>
                         <View style={styles.iconRow}>
                             <Ionicons name="calendar-outline" size={moderateScale(20)} color={PRIMARY} />
-                            <Text style={styles.cardTextVals}>{(new Date(booking.job_date)).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+                            <Text style={styles.cardTextVals}>{formatDate(booking.job_date)}</Text>
                         </View>
                         <View style={[styles.iconRow, { marginTop: 10 }]}>
                             <Ionicons name="time-outline" size={moderateScale(20)} color={PRIMARY} />
-                            <Text style={styles.cardTextVals}>{booking.job_time_slot}</Text>
+                            <Text style={styles.cardTextVals}>{formatSlot(booking.job_time_slot)}</Text>
                         </View>
                     </View>
                 </View>

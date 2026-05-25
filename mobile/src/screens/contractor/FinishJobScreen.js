@@ -49,18 +49,47 @@ const FinishJobScreen = ({ navigation, route }) => {
         }
         setLoading(true);
         try {
+            // Upload photos first
+            for (const uri of afterPhotos) {
+                const formData = new FormData();
+                const filename = uri.split('/').pop() || 'photo.jpg';
+                const match = /\.(\w+)$/.exec(filename);
+                const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+                formData.append('file', {
+                    uri,
+                    name: filename,
+                    type,
+                });
+
+                const uploadRes = await api.post('/api/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+
+                if (uploadRes.success) {
+                    await api.post('/api/provider/jobs/photos', {
+                        booking_id: job?.id,
+                        photo_url: uploadRes.url,
+                        photo_type: 'after',
+                    });
+                }
+            }
+
+            // Then stop time tracking
             await api.post('/api/provider/jobs/time-tracking', {
                 booking_id: job?.id,
                 action: 'stop',
                 work_summary: summary,
                 recommendations,
             });
+
             Alert.alert(
                 'Job Submitted!',
                 'The customer will review your work and approve payment. Great job!',
                 [{ text: 'OK', onPress: () => navigation.navigate('Main', { screen: 'MyJobs' }) }]
             );
         } catch (err) {
+            console.error('Finish job error:', err);
             Alert.alert('Error', 'Failed to submit job. Please try again.');
         } finally {
             setLoading(false);

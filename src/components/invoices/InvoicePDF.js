@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
 
 // Register fonts for a more professional look
 Font.register({
@@ -29,6 +29,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#115e59', // PRIMARY color
+  },
+  logo: {
+    width: 130,
+    height: 35,
+    objectFit: 'contain',
   },
   brandSpan: {
     color: '#333',
@@ -146,12 +151,31 @@ const InvoicePDF = ({ booking, invoiceNumber, date }) => {
   const overtimeHold = additionalPrice * 2;
   const totalAmount = basePrice + overtimeHold;
 
+  const formatArrayData = (data, isDate = false) => {
+    if (!data) return 'N/A';
+    try {
+      const parsed = typeof data === 'string' && data.startsWith('[') ? JSON.parse(data) : data;
+      if (Array.isArray(parsed)) {
+        if (isDate) {
+          return parsed.map(d => new Date(d.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ');
+        }
+        return parsed.join(', ');
+      }
+      if (isDate && typeof parsed === 'string' && !isNaN(Date.parse(parsed))) {
+        return new Date(parsed.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+      return String(parsed);
+    } catch (error) {
+      return String(data);
+    }
+  };
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.brand}>WorkOnTap</Text>
+            <Image src="/logo.png" style={styles.logo} />
             <Text style={{ color: '#64748b', marginTop: 4 }}>Professional Home Services</Text>
           </View>
           <View style={styles.invoiceMeta}>
@@ -180,9 +204,9 @@ const InvoicePDF = ({ booking, invoiceNumber, date }) => {
             <Text style={styles.label}>Booking ID</Text>
             <Text style={styles.value}>{booking.booking_number}</Text>
             <Text style={styles.label}>Job Date</Text>
-            <Text style={styles.value}>{new Date(booking.job_date).toLocaleDateString()}</Text>
+            <Text style={styles.value}>{formatArrayData(booking.job_date, true)}</Text>
             <Text style={styles.label}>Time Slot</Text>
-            <Text style={styles.value}>{booking.job_time_slot}</Text>
+            <Text style={styles.value}>{formatArrayData(booking.job_time_slot)}</Text>
           </View>
         </View>
 
@@ -197,7 +221,7 @@ const InvoicePDF = ({ booking, invoiceNumber, date }) => {
               <Text style={{ fontWeight: 'bold' }}>{booking.service_name}</Text>
               <Text style={{ color: '#64748b', fontSize: 9 }}>Base service charge</Text>
             </View>
-            <Text style={styles.tableColAmount}>${basePrice.toFixed(2)}</Text>
+            <Text style={styles.tableColAmount}>$ {basePrice.toFixed(2)}</Text>
           </View>
 
           {overtimeHold > 0 && (
@@ -206,7 +230,7 @@ const InvoicePDF = ({ booking, invoiceNumber, date }) => {
                 <Text style={{ fontWeight: 'bold' }}>Overtime Authorization (Hold)</Text>
                 <Text style={{ color: '#64748b', fontSize: 9 }}>Up to 2 hours of additional time if required</Text>
               </View>
-              <Text style={styles.tableColAmount}>${overtimeHold.toFixed(2)}</Text>
+              <Text style={styles.tableColAmount}>$ {overtimeHold.toFixed(2)}</Text>
             </View>
           )}
         </View>
@@ -215,15 +239,15 @@ const InvoicePDF = ({ booking, invoiceNumber, date }) => {
           <View style={styles.totalBox}>
             <View style={styles.totalRow}>
               <Text style={styles.label}>Subtotal</Text>
-              <Text style={styles.value}>${totalAmount.toFixed(2)}</Text>
+              <Text style={styles.value}>$ {totalAmount.toFixed(2)}</Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.label}>Tax (0%)</Text>
-              <Text style={styles.value}>$0.00</Text>
+              <Text style={styles.value}>$ 0.00</Text>
             </View>
             <View style={styles.grandTotalRow}>
               <Text style={styles.grandTotalLabel}>Total Authorized</Text>
-              <Text style={styles.grandTotalValue}>${totalAmount.toFixed(2)}</Text>
+              <Text style={styles.grandTotalValue}>$ {totalAmount.toFixed(2)}</Text>
             </View>
           </View>
         </View>
