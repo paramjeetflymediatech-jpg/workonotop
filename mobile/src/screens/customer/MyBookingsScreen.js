@@ -24,17 +24,30 @@ const statusConfig = {
 const getStatus = (s) => statusConfig[s] || { label: s, dot: '#94a3b8', bg: '#f8fafc', text: '#475569', border: '#e2e8f0' };
 
 const formatSlot = (slot) => {
-    const map = { morning: '8:00 AM – 12:00 PM', afternoon: '12:00 PM – 5:00 PM', evening: '5:00 PM – 9:00 PM' };
     if (!slot) return '—';
+    const replaceTime = (timeStr) => {
+        return timeStr.replace(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/g, (match, h1, m1, h2, m2) => {
+            const formatTime = (hrStr, minStr) => {
+                let hr = parseInt(hrStr, 10);
+                const ampm = hr >= 12 ? 'PM' : 'AM';
+                if (hr > 12) hr -= 12;
+                if (hr === 0) hr = 12;
+                return `${hr}:${minStr} ${ampm}`;
+            };
+            return `${formatTime(h1, m1)} – ${formatTime(h2, m2)}`;
+        });
+    };
+
+    const map = { morning: '8:00 AM – 12:00 PM', afternoon: '12:00 PM – 5:00 PM', evening: '5:00 PM – 9:00 PM' };
     try {
         let parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
         if (typeof parsed === 'string' && parsed.includes(',')) {
             parsed = parsed.split(',').map(s => s.trim()).filter(Boolean);
         }
-        if (Array.isArray(parsed)) return parsed.map(s => map[s] || s).join('\n');
-        return String(map[parsed] || parsed);
+        if (Array.isArray(parsed)) return parsed.map(s => replaceTime(map[s] || String(s))).join('\n');
+        return replaceTime(String(map[parsed] || parsed));
     } catch {
-        return String(slot);
+        return replaceTime(String(slot));
     }
 };
 
@@ -127,7 +140,7 @@ const BookingCard = ({ booking, onViewDetails, onChat }) => {
                 </View>
 
                 {/* Date + Time slot */}
-                <View style={[styles.metaRow, { flexDirection: 'column', gap: 6 }]}>
+                {/* <View style={[styles.metaRow, { flexDirection: 'column', gap: 6 }]}>
                     {(() => {
                         let dates = [];
                         let slots = [];
@@ -191,7 +204,7 @@ const BookingCard = ({ booking, onViewDetails, onChat }) => {
                             );
                         });
                     })()}
-                </View>
+                </View> */}
 
                 {/* Action buttons */}
                 <View style={styles.actionRow}>

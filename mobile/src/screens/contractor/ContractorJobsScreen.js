@@ -109,31 +109,73 @@ const ContractorJobsScreen = ({ navigation }) => {
 
     const formatDate = (d) => {
         if (!d) return '';
-        let dateStr = Array.isArray(d) ? d[0] : String(d);
-        if (dateStr.includes(',')) {
-            dateStr = dateStr.split(',')[0].trim();
-        }
-        
-        if (dateStr.includes('-')) {
-            const parts = dateStr.split('T')[0].split('-');
-            if (parts.length === 3) {
-                const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                const dateParts = dateObj.toDateString().split(' ');
-                if (dateParts.length >= 3 && dateParts[0] !== 'Invalid') {
-                    return `${dateParts[0]}, ${dateParts[1]} ${dateParts[2]}`;
+        try {
+            let parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
+            if (typeof parsed === 'string' && parsed.includes(',')) {
+                parsed = parsed.split(',').map(s => s.trim()).filter(Boolean);
+            }
+            const dateArr = Array.isArray(parsed) ? parsed : [parsed];
+            if (dateArr.length === 0) return '';
+            
+            let dateStr = dateArr[0];
+            let displayDate = dateStr;
+            
+            if (typeof dateStr === 'string' && dateStr.includes('-')) {
+                const parts = dateStr.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    if (!isNaN(dateObj.getTime())) {
+                        const dateParts = dateObj.toDateString().split(' ');
+                        if (dateParts.length >= 4) {
+                            displayDate = `${dateParts[1]} ${dateParts[2]}, ${dateParts[3]}`;
+                        }
+                    }
                 }
             }
-        }
-        
-        try {
-            const dateObj = new Date(dateStr);
-            const dateParts = dateObj.toDateString().split(' ');
-            if (dateParts.length >= 3 && dateParts[0] !== 'Invalid') {
-                 return `${dateParts[0]}, ${dateParts[1]} ${dateParts[2]}`;
+            
+            if (dateArr.length > 1) {
+                return `${displayDate} & ${dateArr.length - 1} more`;
             }
-        } catch(e) {}
+            return displayDate;
+        } catch {
+            return String(d);
+        }
+    };
 
-        return dateStr;
+    const formatSlotPreview = (slot) => {
+        if (!slot) return 'Flexible';
+        try {
+            let parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
+            if (typeof parsed === 'string' && parsed.includes(',')) {
+                parsed = parsed.split(',').map(s => s.trim()).filter(Boolean);
+            }
+            const slotArr = Array.isArray(parsed) ? parsed : [parsed];
+            if (slotArr.length === 0) return 'Flexible';
+            
+            let displaySlot = slotArr[0];
+            if (typeof displaySlot === 'string' && displaySlot.includes(': ')) {
+                displaySlot = displaySlot.split(': ').slice(1).join(': ');
+            }
+            
+            // Add AM/PM
+            displaySlot = displaySlot.replace(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/g, (match, h1, m1, h2, m2) => {
+                const formatTime = (hrStr, minStr) => {
+                    let hr = parseInt(hrStr, 10);
+                    const ampm = hr >= 12 ? 'PM' : 'AM';
+                    if (hr > 12) hr -= 12;
+                    if (hr === 0) hr = 12;
+                    return `${hr}:${minStr} ${ampm}`;
+                };
+                return `${formatTime(h1, m1)} – ${formatTime(h2, m2)}`;
+            });
+
+            if (slotArr.length > 1) {
+                return `${displaySlot} & ${slotArr.length - 1} more`;
+            }
+            return displaySlot;
+        } catch {
+            return String(slot);
+        }
     };
 
     const formatDuration = (m) => {
@@ -220,7 +262,7 @@ const ContractorJobsScreen = ({ navigation }) => {
                         </View>
                         <View style={styles.infoItem}>
                             <Ionicons name="time-outline" size={14} color="#000000ff" />
-                            <Text style={styles.infoItemText} numberOfLines={1}>{Array.isArray(job.job_time_slot) ? job.job_time_slot[0] : job.job_time_slot}</Text>
+                            <Text style={styles.infoItemText} numberOfLines={1}>{formatSlotPreview(job.job_time_slot)}</Text>
                         </View>
                         <View style={styles.infoItem}>
                             <Ionicons name="location-outline" size={14} color="#000000ff" />

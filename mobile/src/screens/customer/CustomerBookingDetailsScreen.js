@@ -55,15 +55,28 @@ const formatDate = (d) => {
 
 const formatSlot = (slot) => {
     if (!slot) return '—';
+    const replaceTime = (timeStr) => {
+        return timeStr.replace(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/g, (match, h1, m1, h2, m2) => {
+            const formatTime = (hrStr, minStr) => {
+                let hr = parseInt(hrStr, 10);
+                const ampm = hr >= 12 ? 'PM' : 'AM';
+                if (hr > 12) hr -= 12;
+                if (hr === 0) hr = 12;
+                return `${hr}:${minStr} ${ampm}`;
+            };
+            return `${formatTime(h1, m1)} – ${formatTime(h2, m2)}`;
+        });
+    };
+
     try {
         let parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
         if (typeof parsed === 'string' && parsed.includes(',')) {
             parsed = parsed.split(',').map(s => s.trim()).filter(Boolean);
         }
-        if (Array.isArray(parsed)) return parsed.join('\n');
-        return String(parsed);
+        if (Array.isArray(parsed)) return parsed.map(s => replaceTime(String(s))).join('\n');
+        return replaceTime(String(parsed));
     } catch {
-        return String(slot);
+        return replaceTime(String(slot));
     }
 };
 
@@ -84,6 +97,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     const [disputeText, setDisputeText] = useState('');
     const [photos, setPhotos] = useState({ before: [], after: [], customer: [] });
     const [imgError, setImgError] = useState(false);
+    const [expandedDate, setExpandedDate] = useState(null);
 
     useEffect(() => {
         fetchDetails();
@@ -467,17 +481,91 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                 )}
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Schedule</Text>
-                    <View style={styles.card}>
-                        <View style={styles.iconRow}>
-                            <Ionicons name="calendar-outline" size={moderateScale(20)} color={PRIMARY} />
-                            <Text style={styles.cardTextVals}>{formatDate(booking.job_date)}</Text>
-                        </View>
-                        <View style={[styles.iconRow, { marginTop: 10 }]}>
-                            <Ionicons name="time-outline" size={moderateScale(20)} color={PRIMARY} />
-                            <Text style={styles.cardTextVals}>{formatSlot(booking.job_time_slot)}</Text>
-                        </View>
-                    </View>
+                    <Text style={styles.sectionTitle}>📅 Schedule</Text>
+                    
+                    {(() => {
+                        let dates = [];
+                        let slots = [];
+                        try {
+                            dates = typeof booking.job_date === 'string' && booking.job_date.startsWith('[') ? JSON.parse(booking.job_date) : booking.job_date;
+                            if (typeof dates === 'string') dates = dates.split(',').map(s => s.trim()).filter(Boolean);
+                            if (!Array.isArray(dates)) dates = [dates];
+
+                            slots = typeof booking.job_time_slot === 'string' && booking.job_time_slot.startsWith('[') ? JSON.parse(booking.job_time_slot) : booking.job_time_slot;
+                            if (typeof slots === 'string') slots = slots.split(',').map(s => s.trim()).filter(Boolean);
+                            if (!Array.isArray(slots)) slots = [slots];
+                        } catch (e) {
+                            dates = [booking.job_date];
+                            slots = [booking.job_time_slot];
+                        }
+
+                        if (dates.length === 0 || !dates[0]) {
+                            return (
+                                <View style={styles.card}>
+                                    <Text style={{color: '#64748b'}}>No schedule selected</Text>
+                                </View>
+                            );
+                        }
+
+                        return (
+                            <View style={{ gap: 12 }}>
+                                {dates.map((rawDate, idx) => {
+                                    const rawSlot = slots[idx] || 'Flexible';
+                                    
+                                    // Format Date nicely
+                                    let displayDate = rawDate;
+                                    if (typeof rawDate === 'string' && rawDate.includes('-')) {
+                                        const parts = rawDate.split('T')[0].split('-');
+                                        if (parts.length === 3) {
+                                            const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                                            if (!isNaN(dateObj.getTime())) {
+                                                const dateParts = dateObj.toDateString().split(' ');
+                                                if (dateParts.length >= 4) displayDate = `${dateParts[1]} ${dateParts[2]}, ${dateParts[3]}`;
+                                            }
+                                        }
+                                    }
+
+                                    // Parse out the date prefix if present in the aggregated slot string
+                                    let displaySlot = formatSlot(rawSlot);
+                                    if (displaySlot.includes(': ')) {
+                                        const splitSlot = displaySlot.split(': ');
+                                        displaySlot = splitSlot.slice(1).join(': ');
+                                    }
+                                    
+                                    // Split slots if multiple joined by '&'
+                                    const individualSlots = displaySlot.split(' & ');
+                                    const isExpanded = expandedDate === rawDate;
+
+                                    return (
+                                        <View key={idx} style={[styles.card, { padding: 0, overflow: 'hidden' }]}>
+                                            <TouchableOpacity 
+                                                style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', padding: 14, borderBottomWidth: isExpanded ? 1 : 0, borderBottomColor: '#f1f5f9' }}
+                                                onPress={() => setExpandedDate(isExpanded ? null : rawDate)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <Ionicons name="calendar-outline" size={18} color={PRIMARY} />
+                                                    <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '600', color: '#1e293b' }}>
+                                                        {displayDate}
+                                                    </Text>
+                                                </View>
+                                                <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#64748b" />
+                                            </TouchableOpacity>
+                                            {isExpanded && individualSlots.length > 0 && (
+                                                <View style={{ padding: 14, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                                                    {individualSlots.map((s, sIdx) => (
+                                                        <View key={sIdx} style={{ backgroundColor: '#ccfbf1', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#99f6e4' }}>
+                                                            <Text style={{ color: '#0f766e', fontSize: 13, fontWeight: '600' }}>{s}</Text>
+                                                        </View>
+                                                    ))}
+                                                </View>
+                                            )}
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        );
+                    })()}
                 </View>
 
                 {/* Job Timing - real start/end/duration from provider */}

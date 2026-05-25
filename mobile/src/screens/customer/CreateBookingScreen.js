@@ -71,8 +71,25 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
     const [selectedTimes, setSelectedTimes] = useState({}); // Maps dateStr -> [slots]
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [expandedDate, setExpandedDate] = useState(null);
 
     const timeSlots = ['08:00 - 10:00', '10:00 - 12:00', '12:00 - 14:00', '14:00 - 16:00', '16:00 - 18:00'];
+    
+    const formatTimeSlot = (slot) => {
+        const parts = slot.split('-');
+        if (parts.length !== 2) return slot;
+        
+        const formatTime = (timeStr) => {
+            const [hrStr, minStr] = timeStr.trim().split(':');
+            let hr = parseInt(hrStr, 10);
+            const ampm = hr >= 12 ? 'PM' : 'AM';
+            if (hr > 12) hr -= 12;
+            if (hr === 0) hr = 12;
+            return `${hr}:${minStr} ${ampm}`;
+        };
+        
+        return `${formatTime(parts[0])} – ${formatTime(parts[1])}`;
+    };
 
     const pickImage = async () => {
         if (bookingData.photos.length >= 5) {
@@ -269,9 +286,12 @@ const CreateBookingScreen = ({ navigation, route }) => {
                         ...bookingData,
                         job_date: newDates,
                     });
+                    setExpandedDate(dateStr);
                 } else {
                     Alert.alert('Limit Reached', 'You can select a maximum of 3 dates.');
                 }
+            } else {
+                setExpandedDate(dateStr);
             }
         }
     };
@@ -409,34 +429,53 @@ const CreateBookingScreen = ({ navigation, route }) => {
                         }
                     }
                     
+                    const isExpanded = expandedDate === dateStr;
+                    const activeSlotsCount = (selectedTimes[dateStr] || []).length;
+                    
                     return (
-                        <View key={dateStr} style={styles.dateSlotGroup}>
-                            <Text style={styles.dateSlotGroupTitle}>{displayDate}</Text>
-                            <View style={styles.slotsGrid}>
-                                {timeSlots.map(slot => {
-                                    const available = isSlotAvailable(dateStr, slot);
-                                    const isActive = (selectedTimes[dateStr] || []).includes(slot);
-                                    
-                                    return (
-                                        <TouchableOpacity
-                                            key={slot}
-                                            disabled={!available}
-                                            style={[
-                                                styles.slotBtn,
-                                                isActive && styles.slotBtnActive,
-                                                !available && styles.slotBtnDisabled
-                                            ]}
-                                            onPress={() => available && toggleTimeSlot(dateStr, slot)}
-                                        >
-                                            <Text style={[
-                                                styles.slotText,
-                                                isActive && styles.slotTextActive,
-                                                !available && styles.slotTextDisabled
-                                            ]}>{available ? slot : 'Passed'}</Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </View>
+                        <View key={dateStr} style={[styles.dateSlotGroup, { overflow: 'hidden' }]}>
+                            <TouchableOpacity 
+                                style={[styles.dateSlotGroupHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+                                onPress={() => setExpandedDate(isExpanded ? null : dateStr)}
+                            >
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <Text style={styles.dateSlotGroupTitle}>{displayDate}</Text>
+                                    {activeSlotsCount > 0 && (
+                                        <View style={{ backgroundColor: '#115e59', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 }}>
+                                            <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{activeSlotsCount} Selected</Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#64748b" />
+                            </TouchableOpacity>
+                            
+                            {isExpanded && (
+                                <View style={[styles.slotsGrid, { marginTop: 12 }]}>
+                                    {timeSlots.map(slot => {
+                                        const available = isSlotAvailable(dateStr, slot);
+                                        const isActive = (selectedTimes[dateStr] || []).includes(slot);
+                                        
+                                        return (
+                                            <TouchableOpacity
+                                                key={slot}
+                                                disabled={!available}
+                                                style={[
+                                                    styles.slotBtn,
+                                                    isActive && styles.slotBtnActive,
+                                                    !available && styles.slotBtnDisabled
+                                                ]}
+                                                onPress={() => available && toggleTimeSlot(dateStr, slot)}
+                                            >
+                                                <Text style={[
+                                                    styles.slotText,
+                                                    isActive && styles.slotTextActive,
+                                                    !available && styles.slotTextDisabled
+                                                ]}>{available ? formatTimeSlot(slot) : 'Passed'}</Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            )}
                         </View>
                     );
                 })
@@ -541,7 +580,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
                 <View style={styles.divider} />
 
-                <View style={styles.reviewSection}>
+                <View style={[styles.reviewSection, { paddingBottom: 0 }]}>
                     <Text style={styles.reviewLabel}>SCHEDULE</Text>
                     {(bookingData.job_date || []).length === 0 ? (
                         <Text style={styles.reviewText}>No schedule selected</Text>
@@ -555,23 +594,46 @@ const CreateBookingScreen = ({ navigation, route }) => {
                                     // Use local timezone safe instantiation
                                     const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
                                     const dateParts = d.toDateString().split(' '); // e.g. ["Mon", "May", "25", "2026"]
-                                    if (dateParts.length >= 3) {
-                                        displayDate = `${dateParts[0]}, ${dateParts[1]} ${dateParts[2]}`;
+                                    if (dateParts.length >= 4) {
+                                        displayDate = `${dateParts[1]} ${dateParts[2]}, ${dateParts[3]}`;
                                     }
                                 }
                             }
+                            
+                            const isExpanded = expandedDate === `review_${dateStr}`;
+                            const activeSlotsCount = slots.length;
+                            
                             return (
-                                <View key={idx} style={{ marginBottom: 10 }}>
-                                    <View style={styles.reviewRow}>
-                                        <Ionicons name="calendar-outline" size={16} color="#64748b" />
-                                        <Text style={[styles.reviewText, { fontWeight: '600', color: '#334155' }]}>{displayDate}</Text>
-                                    </View>
-                                    {slots.length > 0 ? (
-                                        <View style={[styles.reviewRow, { marginTop: 4, marginLeft: 24 }]}>
-                                            <Ionicons name="time-outline" size={16} color="#64748b" />
-                                            <Text style={styles.reviewText}>{slots.join(', ')}</Text>
+                                <View key={idx} style={[styles.dateSlotGroup, { overflow: 'hidden', padding: 0, marginBottom: 12, backgroundColor: '#f8fafc' }]}>
+                                    <TouchableOpacity 
+                                        style={[{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 }]}
+                                        onPress={() => setExpandedDate(isExpanded ? null : `review_${dateStr}`)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                            <Ionicons name="calendar-outline" size={16} color="#0f172a" />
+                                            <Text style={[styles.dateSlotGroupTitle, { marginBottom: 0, fontSize: 15 }]}>{displayDate}</Text>
+                                            {activeSlotsCount > 0 && (
+                                                <View style={{ backgroundColor: '#115e59', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 }}>
+                                                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{activeSlotsCount} Selected</Text>
+                                                </View>
+                                            )}
                                         </View>
-                                    ) : null}
+                                        <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#64748b" />
+                                    </TouchableOpacity>
+                                    
+                                    {isExpanded && slots.length > 0 && (
+                                        <View style={[styles.slotsGrid, { paddingHorizontal: 14, paddingBottom: 14 }]}>
+                                            {slots.map(slot => (
+                                                <View
+                                                    key={slot}
+                                                    style={[styles.slotBtn, styles.slotBtnActive]}
+                                                >
+                                                    <Text style={[styles.slotText, styles.slotTextActive]}>{formatTimeSlot(slot)}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    )}
                                 </View>
                             );
                         })
