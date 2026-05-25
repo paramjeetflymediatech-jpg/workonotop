@@ -18,11 +18,40 @@ const TEAL_DARK = '#15843E';
 const formatDate = (d) => {
     if (!d) return '—';
     try {
-        const parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
-        if (Array.isArray(parsed)) {
-            return parsed.map(dateStr => new Date(dateStr.replace(/-/g, '/')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })).join(', ');
+        let parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
+        if (typeof parsed === 'string' && parsed.includes(',')) {
+            parsed = parsed.split(',').map(s => s.trim()).filter(Boolean);
         }
-        return new Date(parsed.replace(/-/g, '/')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+        const formatSingle = (dateStr) => {
+            if (typeof dateStr === 'string' && dateStr.includes('-')) {
+                const parts = dateStr.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    if (!isNaN(dateObj.getTime())) {
+                        const dd = String(dateObj.getDate()).padStart(2, '0');
+                        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const yyyy = dateObj.getFullYear();
+                        return `${dd}-${mm}-${yyyy}`;
+                    }
+                }
+            }
+            try {
+                const dateObj = new Date(dateStr);
+                if (!isNaN(dateObj.getTime())) {
+                    const dd = String(dateObj.getDate()).padStart(2, '0');
+                    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const yyyy = dateObj.getFullYear();
+                    return `${dd}-${mm}-${yyyy}`;
+                }
+            } catch (e) { }
+            return dateStr;
+        };
+
+        if (Array.isArray(parsed)) {
+            return parsed.map(formatSingle).join('\n');
+        }
+        return formatSingle(parsed);
     } catch {
         return '—';
     }
@@ -31,8 +60,11 @@ const formatDate = (d) => {
 const formatSlot = (slot) => {
     if (!slot) return 'Flexible';
     try {
-        const parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
-        if (Array.isArray(parsed)) return parsed.join(', ');
+        let parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
+        if (typeof parsed === 'string' && parsed.includes(',')) {
+            parsed = parsed.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        if (Array.isArray(parsed)) return parsed.join('\n');
         return String(parsed);
     } catch {
         return String(slot);
@@ -48,7 +80,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [stripeConnected, setStripeConnected] = useState(true);
     const [photos, setPhotos] = useState({ before: [], after: [] });
-    
+
     // Viewer states
     const [viewerVisible, setViewerVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
@@ -329,7 +361,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
                                     </ScrollView>
                                 </View>
                             )}
- 
+
                             {/* History: After Photos Display */}
                             {photos.after.length > 0 && (
                                 <View style={styles.historySection}>
@@ -397,6 +429,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
                                 color={TEAL_DARK}
                                 value={formatDate(job.job_date)}
                             />
+                            <View style={styles.otDivider} />
                             <DetailItem
                                 icon="time-outline"
                                 label="Time Slot(s)"
@@ -469,8 +502,8 @@ const JobDetailsScreen = ({ navigation, route }) => {
                                 {job.photos.map((photo, i) => {
                                     const uri = photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`;
                                     return (
-                                        <TouchableOpacity 
-                                            key={i} 
+                                        <TouchableOpacity
+                                            key={i}
                                             style={styles.photoContainer}
                                             onPress={() => openViewer(uri)}
                                         >
@@ -513,17 +546,17 @@ const JobDetailsScreen = ({ navigation, route }) => {
                 onRequestClose={() => setViewerVisible(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <TouchableOpacity 
-                        style={styles.modalClose} 
+                    <TouchableOpacity
+                        style={styles.modalClose}
                         onPress={() => setViewerVisible(false)}
                     >
                         <Ionicons name="close" size={30} color="#fff" />
                     </TouchableOpacity>
                     {selectedImage && (
-                        <Image 
-                            source={{ uri: selectedImage }} 
-                            style={styles.fullImage} 
-                            resizeMode="contain" 
+                        <Image
+                            source={{ uri: selectedImage }}
+                            style={styles.fullImage}
+                            resizeMode="contain"
                         />
                     )}
                 </View>

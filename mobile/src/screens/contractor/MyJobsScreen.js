@@ -49,9 +49,38 @@ const MyJobsScreen = ({ navigation }) => {
         setRefreshing(true);
         fetchJobs(false);
     };
+    const formatDate = (d) => {
+        if (!d) return '';
+        try {
+            const parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
+            let dateStr = Array.isArray(parsed) ? parsed[0] : String(parsed);
+            if (dateStr.includes(',')) dateStr = dateStr.split(',')[0].trim();
+            if (dateStr.includes('-')) {
+                const parts = dateStr.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    const dateParts = dateObj.toDateString().split(' ');
+                    if (dateParts.length >= 3 && dateParts[0] !== 'Invalid') return `${dateParts[0]}, ${dateParts[1]} ${dateParts[2]}`;
+                }
+            }
+            const dateObj = new Date(dateStr);
+            const dateParts = dateObj.toDateString().split(' ');
+            if (dateParts.length >= 3 && dateParts[0] !== 'Invalid') return `${dateParts[0]}, ${dateParts[1]} ${dateParts[2]}`;
+            return dateStr;
+        } catch(e) {
+            return String(d).replace(/[[\]"]/g, ''); // Fallback strip brackets
+        }
+    };
 
     const renderJobCard = ({ item }) => {
         const isCompleted = item.status === 'completed';
+        
+        const basePrice = parseFloat(item.service_price || item.pricing?.base_price || 0);
+        const commPct = parseFloat(item.commission_percent ?? item.pricing?.commission_percent ?? 20);
+        const baseEarnings = basePrice - (basePrice * (commPct / 100));
+        const earnings = typeof item.display_amount === 'string'
+            ? parseFloat(item.display_amount.replace(/[^\d.-]/g, ''))
+            : (parseFloat(item.display_amount ?? item.provider_amount ?? baseEarnings));
 
         return (
             <TouchableOpacity
@@ -74,14 +103,18 @@ const MyJobsScreen = ({ navigation }) => {
                 <View style={styles.cardBody}>
                     <View style={styles.infoRow}>
                         <Ionicons name="calendar-outline" size={16} color="#64748b" />
-                        <Text style={styles.infoText}>{new Date(item.job_date).toLocaleDateString()}</Text>
+                        <Text style={[styles.infoText, { flexShrink: 1 }]} numberOfLines={1}>
+                            {formatDate(item.job_date)}
+                        </Text>
                         <View style={styles.dot} />
                         <Ionicons name="time-outline" size={16} color="#64748b" />
-                        <Text style={styles.infoText}>{Array.isArray(item.job_time_slot) ? item.job_time_slot[0] : (item.job_time_slot || 'Flexible')}</Text>
+                        <Text style={[styles.infoText, { flexShrink: 1 }]} numberOfLines={1}>
+                            {Array.isArray(item.job_time_slot) ? item.job_time_slot[0] : (item.job_time_slot || 'Flexible')}
+                        </Text>
                     </View>
                     <View style={styles.infoRow}>
                         <Ionicons name="location-outline" size={16} color="#64748b" />
-                        <Text style={styles.infoText} numberOfLines={1}>
+                        <Text style={[styles.infoText, { flexShrink: 1 }]} numberOfLines={1}>
                             {item.address_line1 || 'Address unavailable'}
                             {item.city ? `, ${item.city}` : ''}
                         </Text>
@@ -91,7 +124,7 @@ const MyJobsScreen = ({ navigation }) => {
                 <View style={styles.cardFooter}>
                     <View style={styles.earningsContainer}>
                         <Text style={styles.earningsLabel}>Earning</Text>
-                        <Text style={styles.earningsValue}>${parseFloat(item.display_amount ?? item.provider_amount ?? 0).toFixed(2)}</Text>
+                        <Text style={styles.earningsValue}>${(isNaN(earnings) ? 0 : earnings).toFixed(2)}</Text>
                     </View>
                     <TouchableOpacity
                         style={styles.detailsBtn}

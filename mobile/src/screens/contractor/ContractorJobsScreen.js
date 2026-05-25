@@ -109,7 +109,31 @@ const ContractorJobsScreen = ({ navigation }) => {
 
     const formatDate = (d) => {
         if (!d) return '';
-        return new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        let dateStr = Array.isArray(d) ? d[0] : String(d);
+        if (dateStr.includes(',')) {
+            dateStr = dateStr.split(',')[0].trim();
+        }
+        
+        if (dateStr.includes('-')) {
+            const parts = dateStr.split('T')[0].split('-');
+            if (parts.length === 3) {
+                const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                const dateParts = dateObj.toDateString().split(' ');
+                if (dateParts.length >= 3 && dateParts[0] !== 'Invalid') {
+                    return `${dateParts[0]}, ${dateParts[1]} ${dateParts[2]}`;
+                }
+            }
+        }
+        
+        try {
+            const dateObj = new Date(dateStr);
+            const dateParts = dateObj.toDateString().split(' ');
+            if (dateParts.length >= 3 && dateParts[0] !== 'Invalid') {
+                 return `${dateParts[0]}, ${dateParts[1]} ${dateParts[2]}`;
+            }
+        } catch(e) {}
+
+        return dateStr;
     };
 
     const formatDuration = (m) => {

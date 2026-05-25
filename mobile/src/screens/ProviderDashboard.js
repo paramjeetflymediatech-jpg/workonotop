@@ -197,10 +197,40 @@ const ProviderDashboard = ({ navigation }) => {
 
                 {dashboardData.recentJobs.length > 0 ? (
                     dashboardData.recentJobs.map((job) => {
-                        const jobDate = new Date(job.job_date);
-                        const day = jobDate.getDate();
-                        const month = jobDate.toLocaleString('default', { month: 'short' }).toUpperCase();
-
+                        let dateStr = job.job_date;
+                        try {
+                            if (typeof dateStr === 'string' && dateStr.startsWith('[')) {
+                                dateStr = JSON.parse(dateStr)[0];
+                            }
+                        } catch(e) {}
+                        
+                        let day = '--';
+                        let month = '---';
+                        
+                        if (typeof dateStr === 'string' && dateStr.includes('-')) {
+                            const parts = dateStr.split('T')[0].split('-');
+                            if (parts.length === 3) {
+                                day = parseInt(parts[2], 10);
+                                const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                                month = months[parseInt(parts[1], 10) - 1];
+                            }
+                        } else {
+                            try {
+                                const jobDate = new Date(dateStr);
+                                if (!isNaN(jobDate.getTime())) {
+                                    day = jobDate.getDate();
+                                    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                                    month = months[jobDate.getMonth()];
+                                }
+                            } catch(e) {}
+                        }
+                        const basePrice = parseFloat(job.service_price || job.pricing?.base_price || 0);
+                        const commPct = parseFloat(job.commission_percent ?? job.pricing?.commission_percent ?? 20);
+                        const baseEarnings = basePrice - (basePrice * (commPct / 100));
+                        const earnings = typeof job.display_amount === 'string'
+                            ? parseFloat(job.display_amount.replace(/[^\d.-]/g, ''))
+                            : (parseFloat(job.display_amount ?? job.provider_amount ?? baseEarnings));
+                            
                         return (
                             <View key={job.id} style={styles.scheduleItem}>
                                 <View style={styles.dateBox}>
@@ -210,7 +240,7 @@ const ProviderDashboard = ({ navigation }) => {
                                 <View style={styles.jobDetails}>
                                     <Text style={styles.jobType}>{job.service_name}</Text>
                                     <Text style={styles.jobTime}>{job.status?.replace('_', ' ')}</Text>
-                                    <Text style={styles.jobLocation}>Earning: {formatCurrency(job.provider_amount)}</Text>
+                                    <Text style={styles.jobLocation}>Earning: {formatCurrency(isNaN(earnings) ? 0 : earnings)}</Text>
                                 </View>
                                 <TouchableOpacity
                                     style={styles.detailsIcon}

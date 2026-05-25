@@ -209,9 +209,14 @@ const CreateBookingScreen = ({ navigation, route }) => {
             (bookingData.job_date || []).forEach(dateStr => {
                 const slots = selectedTimes[dateStr];
                 if (slots && slots.length > 0) {
-                    // Create a valid date object replacing hyphens with slashes for Safari/mobile compatibility
-                    const dateObj = new Date(dateStr.replace(/-/g, '/'));
-                    const displayDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    let displayDate = dateStr;
+                    if (dateStr && dateStr.includes('-')) {
+                        const parts = dateStr.split('-');
+                        if (parts.length === 3) {
+                            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                            displayDate = `${months[parseInt(parts[1], 10) - 1]} ${parseInt(parts[2], 10)}`;
+                        }
+                    }
                     aggregatedTimes.push(`${displayDate}: ${slots.join(' & ')}`);
                 }
             });
@@ -352,7 +357,9 @@ const CreateBookingScreen = ({ navigation, route }) => {
         <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>When should we come?</Text>
 
-            <Text style={styles.label}>Select Date (1 to 3 dates)</Text>
+            <Text style={styles.label}>
+                Select Date ({(bookingData.job_date || []).length} of 3 selected)
+            </Text>
             <View style={styles.selectedDatesContainer}>
                 {(bookingData.job_date || []).map((date, index) => (
                     <View key={index} style={styles.selectedDateBadge}>
@@ -392,9 +399,15 @@ const CreateBookingScreen = ({ navigation, route }) => {
                 </View>
             ) : (
                 (bookingData.job_date || []).map(dateStr => {
-                    // Reformat dateStr for display safely (handle timezone parsing)
-                    const dateObj = new Date(dateStr.replace(/-/g, '/'));
-                    const displayDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+                    // Safe date formatting that won't result in Invalid Date on older JS engines
+                    let displayDate = dateStr;
+                    if (dateStr && dateStr.includes('-')) {
+                        const parts = dateStr.split('-');
+                        if (parts.length === 3) {
+                            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                            displayDate = `${months[parseInt(parts[1], 10) - 1]} ${parseInt(parts[2], 10)}, ${parts[0]}`;
+                        }
+                    }
                     
                     return (
                         <View key={dateStr} style={styles.dateSlotGroup}>
@@ -535,8 +548,18 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     ) : (
                         (bookingData.job_date || []).map((dateStr, idx) => {
                             const slots = selectedTimes[dateStr] || [];
-                            const dateObj = new Date(dateStr.replace(/-/g, '/'));
-                            const displayDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                            let displayDate = dateStr;
+                            if (dateStr && dateStr.includes('-')) {
+                                const parts = dateStr.split('-');
+                                if (parts.length === 3) {
+                                    // Use local timezone safe instantiation
+                                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                                    const dateParts = d.toDateString().split(' '); // e.g. ["Mon", "May", "25", "2026"]
+                                    if (dateParts.length >= 3) {
+                                        displayDate = `${dateParts[0]}, ${dateParts[1]} ${dateParts[2]}`;
+                                    }
+                                }
+                            }
                             return (
                                 <View key={idx} style={{ marginBottom: 10 }}>
                                     <View style={styles.reviewRow}>
@@ -761,6 +784,15 @@ const styles = StyleSheet.create({
         gap: scale(4),
     },
     addDateBtnText: { color: PRIMARY, fontSize: moderateScale(14), fontWeight: '600' },
+    dateSlotGroup: {
+        marginBottom: verticalScale(20),
+    },
+    dateSlotGroupTitle: {
+        fontSize: moderateScale(16),
+        fontWeight: 'bold',
+        color: '#0f172a',
+        marginBottom: verticalScale(10),
+    },
     slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(10) },
     slotBtn: {
         paddingHorizontal: scale(16),

@@ -14,11 +14,40 @@ const BG_COLOR = '#f8fafc';
 const formatDate = (d) => {
     if (!d) return '—';
     try {
-        const parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
-        if (Array.isArray(parsed)) {
-            return parsed.map(dateStr => new Date(dateStr.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ');
+        let parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
+        if (typeof parsed === 'string' && parsed.includes(',')) {
+            parsed = parsed.split(',').map(s => s.trim()).filter(Boolean);
         }
-        return new Date(parsed.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        const formatSingle = (dateStr) => {
+            if (typeof dateStr === 'string' && dateStr.includes('-')) {
+                const parts = dateStr.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    if (!isNaN(dateObj.getTime())) {
+                        const dd = String(dateObj.getDate()).padStart(2, '0');
+                        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const yyyy = dateObj.getFullYear();
+                        return `${dd}-${mm}-${yyyy}`;
+                    }
+                }
+            }
+            try {
+                const dateObj = new Date(dateStr);
+                if (!isNaN(dateObj.getTime())) {
+                    const dd = String(dateObj.getDate()).padStart(2, '0');
+                    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const yyyy = dateObj.getFullYear();
+                    return `${dd}-${mm}-${yyyy}`;
+                }
+            } catch (e) { }
+            return dateStr;
+        };
+
+        if (Array.isArray(parsed)) {
+            return parsed.map(formatSingle).join('\n');
+        }
+        return formatSingle(parsed);
     } catch {
         return '—';
     }
@@ -27,8 +56,11 @@ const formatDate = (d) => {
 const formatSlot = (slot) => {
     if (!slot) return '—';
     try {
-        const parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
-        if (Array.isArray(parsed)) return parsed.join(', ');
+        let parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
+        if (typeof parsed === 'string' && parsed.includes(',')) {
+            parsed = parsed.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        if (Array.isArray(parsed)) return parsed.join('\n');
         return String(parsed);
     } catch {
         return String(slot);
@@ -672,7 +704,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                                     </View>
                                     <Text style={styles.invoiceItemSub}>{formatCurrency(overtimeRate)}/hr × 2 hrs (max hold)</Text>
                                 </View>
-                                <Text style={[styles.invoiceItemValue, { color: '#d97706' }]}>+{formatCurrency(overtimeHoldAmount)}</Text>
+                                <Text style={[styles.invoiceItemValue, { color: '#000000ff' }]}>+{formatCurrency(overtimeHoldAmount)}</Text>
                             </View>
                         )}
 
@@ -685,7 +717,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                                     </View>
                                     <Text style={styles.invoiceItemSub}>{overtimeMinutes}min at {formatCurrency(overtimeRate)}/hr</Text>
                                 </View>
-                                <Text style={[styles.invoiceItemValue, { color: '#15843E' }]}>+{formatCurrency(overtimeCost)}</Text>
+                                <Text style={[styles.invoiceItemValue, { color: '#000000ff' }]}>+{formatCurrency(overtimeCost)}</Text>
                             </View>
                         )}
 
@@ -694,7 +726,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                                 <Text style={styles.invoiceItemLabel}>Total Authorized Hold</Text>
                                 <Text style={styles.invoiceItemSub}>Card hold — not charged yet</Text>
                             </View>
-                            <Text style={[styles.invoiceItemValue, { color: '#2563eb' }]}>{formatCurrency(authAmount)}</Text>
+                            <Text style={[styles.invoiceItemValue, { color: '#000000ff' }]}>{formatCurrency(authAmount)}</Text>
                         </View>
 
                         <View style={styles.invoiceTotal}>
@@ -704,7 +736,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                                 </Text>
                                 <Text style={styles.invoiceTotalSub}>Based on actual work time</Text>
                             </View>
-                            <Text style={[styles.invoiceTotalValue, { color: isOvertime ? '#15843E' : PRIMARY }]}>
+                            <Text style={[styles.invoiceTotalValue, { color: isOvertime ? '#000000ff' : PRIMARY }]}>
                                 {formatCurrency(totalAmount)}
                             </Text>
                         </View>

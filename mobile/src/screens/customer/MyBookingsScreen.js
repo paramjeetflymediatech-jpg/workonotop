@@ -25,10 +25,14 @@ const getStatus = (s) => statusConfig[s] || { label: s, dot: '#94a3b8', bg: '#f8
 
 const formatSlot = (slot) => {
     const map = { morning: '8:00 AM – 12:00 PM', afternoon: '12:00 PM – 5:00 PM', evening: '5:00 PM – 9:00 PM' };
+    if (!slot) return '—';
     try {
-        const parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
-        if (Array.isArray(parsed)) return parsed.map(s => map[s] || s).join(', ');
-        return map[parsed] || parsed;
+        let parsed = typeof slot === 'string' && slot.startsWith('[') ? JSON.parse(slot) : slot;
+        if (typeof parsed === 'string' && parsed.includes(',')) {
+            parsed = parsed.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        if (Array.isArray(parsed)) return parsed.map(s => map[s] || s).join('\n');
+        return String(map[parsed] || parsed);
     } catch {
         return String(slot);
     }
@@ -37,11 +41,40 @@ const formatSlot = (slot) => {
 const formatDate = (d) => {
     if (!d) return '—';
     try {
-        const parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
-        if (Array.isArray(parsed)) {
-            return parsed.map(dateStr => new Date(dateStr.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ');
+        let parsed = typeof d === 'string' && d.startsWith('[') ? JSON.parse(d) : d;
+        if (typeof parsed === 'string' && parsed.includes(',')) {
+            parsed = parsed.split(',').map(s => s.trim()).filter(Boolean);
         }
-        return new Date(parsed.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        const formatSingle = (dateStr) => {
+            if (typeof dateStr === 'string' && dateStr.includes('-')) {
+                const parts = dateStr.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    if (!isNaN(dateObj.getTime())) {
+                        const dd = String(dateObj.getDate()).padStart(2, '0');
+                        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const yyyy = dateObj.getFullYear();
+                        return `${dd}-${mm}-${yyyy}`;
+                    }
+                }
+            }
+            try {
+                const dateObj = new Date(dateStr);
+                if (!isNaN(dateObj.getTime())) {
+                    const dd = String(dateObj.getDate()).padStart(2, '0');
+                    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const yyyy = dateObj.getFullYear();
+                    return `${dd}-${mm}-${yyyy}`;
+                }
+            } catch (e) { }
+            return dateStr;
+        };
+
+        if (Array.isArray(parsed)) {
+            return parsed.map(formatSingle).join('\n');
+        }
+        return formatSingle(parsed);
     } catch {
         return '—';
     }
@@ -94,17 +127,70 @@ const BookingCard = ({ booking, onViewDetails, onChat }) => {
                 </View>
 
                 {/* Date + Time slot */}
-                <View style={styles.metaRow}>
-                    <View style={styles.metaItem}>
-                        <Ionicons name="calendar-outline" size={13} color="#94a3b8" />
-                        <Text style={styles.metaText}>{formatDate(booking.job_date)}</Text>
-                    </View>
-                    {booking.job_time_slot ? (
-                        <View style={styles.metaItem}>
-                            <Ionicons name="time-outline" size={13} color="#94a3b8" />
-                            <Text style={styles.metaText}>{formatSlot(booking.job_time_slot)}</Text>
-                        </View>
-                    ) : null}
+                <View style={[styles.metaRow, { flexDirection: 'column', gap: 6 }]}>
+                    {(() => {
+                        let dates = [];
+                        let slots = [];
+                        try {
+                            const dStr = booking.job_date;
+                            const dParsed = typeof dStr === 'string' && dStr.startsWith('[') ? JSON.parse(dStr) : dStr;
+                            if (typeof dParsed === 'string' && dParsed.includes(',')) {
+                                dates = dParsed.split(',').map(s => s.trim()).filter(Boolean);
+                            } else if (Array.isArray(dParsed)) {
+                                dates = dParsed;
+                            } else if (dParsed) {
+                                dates = [dParsed];
+                            }
+                        } catch {}
+
+                        try {
+                            const sStr = booking.job_time_slot;
+                            const sParsed = typeof sStr === 'string' && sStr.startsWith('[') ? JSON.parse(sStr) : sStr;
+                            if (typeof sParsed === 'string' && sParsed.includes(',')) {
+                                slots = sParsed.split(',').map(s => s.trim()).filter(Boolean);
+                            } else if (Array.isArray(sParsed)) {
+                                slots = sParsed;
+                            } else if (sParsed) {
+                                slots = [sParsed];
+                            }
+                        } catch {}
+
+                        if (dates.length === 0) {
+                            return (
+                                <View style={styles.metaItem}>
+                                    <Ionicons name="calendar-outline" size={13} color="#94a3b8" />
+                                    <Text style={styles.metaText}>—</Text>
+                                </View>
+                            );
+                        }
+
+                        return dates.map((rawDate, idx) => {
+                            const slot = slots[idx] || 'Flexible';
+                            const map = { morning: '8:00 AM – 12:00 PM', afternoon: '12:00 PM – 5:00 PM', evening: '5:00 PM – 9:00 PM' };
+                            const displaySlot = map[slot] || slot;
+                            
+                            // Format date to DD-MM-YYYY
+                            let displayDate = rawDate;
+                            if (typeof rawDate === 'string' && rawDate.includes('-')) {
+                                const parts = rawDate.split('T')[0].split('-');
+                                if (parts.length === 3) {
+                                    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                                    if (!isNaN(dateObj.getTime())) {
+                                        displayDate = `${String(dateObj.getDate()).padStart(2, '0')}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${dateObj.getFullYear()}`;
+                                    }
+                                }
+                            }
+
+                            return (
+                                <View key={idx} style={[styles.metaItem, { marginBottom: 2 }]}>
+                                    <Ionicons name="calendar-outline" size={13} color="#94a3b8" />
+                                    <Text style={styles.metaText}>
+                                        {displayDate} <Text style={{ color: '#cbd5e1' }}>|</Text> {displaySlot}
+                                    </Text>
+                                </View>
+                            );
+                        });
+                    })()}
                 </View>
 
                 {/* Action buttons */}
