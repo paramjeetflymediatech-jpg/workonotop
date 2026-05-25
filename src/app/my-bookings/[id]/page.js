@@ -147,7 +147,7 @@ function calcFinalAmount(basePrice, standardMins, actualMins, overtimeRate = 0) 
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function CustomerBookingDetails() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
@@ -167,13 +167,22 @@ export default function CustomerBookingDetails() {
   const [toast, setToast] = useState({ message: '', type: '' })
 
   useEffect(() => {
+    if (authLoading) return // Wait for authentication check to finish
     if (!user) { router.push('/'); return }
+    
     loadBooking()
-  }, [user, bookingId])
+    
+    // Poll every 10 seconds to catch background updates
+    const interval = setInterval(() => {
+      loadBooking(true) // true = silent load (no spinner)
+    }, 10000)
+    
+    return () => clearInterval(interval)
+  }, [user, authLoading, bookingId])
 
-  const loadBooking = async () => {
+  const loadBooking = async (silent = false) => {
     try {
-      setLoading(true); setError('')
+      if (!silent) { setLoading(true); setError('') }
       const res = await fetch(`/api/customer/booking-details?bookingId=${bookingId}`)
       const data = await res.json()
       if (data.success && data.data?.length > 0) {

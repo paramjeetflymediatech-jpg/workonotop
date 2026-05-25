@@ -79,7 +79,7 @@ function ConfirmModal({ isOpen, onClose, onConfirm, loading, amount, hasOvertime
           <p className="text-sm text-gray-400 mb-4">This job will be assigned to you immediately and removed from the pool.</p>
           <div className={`rounded-xl p-3 mb-2 ${hasOvertime ? 'bg-purple-50 border border-purple-100' : 'bg-green-50 border border-green-100'}`}>
             <p className="text-xs text-gray-500 mb-1">Guaranteed earnings</p>
-            <p className={`text-2xl font-extrabold ${hasOvertime ? 'text-purple-700' : 'text-green-700'}`}>{amount}</p>
+            <p className={`text-2xl font-extrabold ${hasOvertime ? 'text-green-700' : 'text-green-700'}`}>{amount}</p>
           </div>
           {hasOvertime && (
             <div className="text-xs text-gray-500 flex justify-center gap-3 mt-2">
@@ -95,7 +95,7 @@ function ConfirmModal({ isOpen, onClose, onConfirm, loading, amount, hasOvertime
             Cancel
           </button>
           <button onClick={onConfirm} disabled={loading}
-            className={`flex-1 py-3 text-white font-bold rounded-xl text-sm transition disabled:opacity-60 flex items-center justify-center gap-2 ${hasOvertime ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'bg-green-600 hover:bg-green-700'
+            className={`flex-1 py-3 text-white font-bold rounded-xl text-sm transition disabled:opacity-60 flex items-center justify-center gap-2 ${hasOvertime ? 'bg-gradient-to-r from-green-600 to-blue-600' : 'bg-green-600 hover:bg-green-700'
               }`}>
             {loading
               ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Accepting…</>
@@ -230,13 +230,14 @@ export default function ProviderJobDetail({ params }) {
     </div>
   )
 
-  const amount = parseFloat(job.provider_amount || 0)
   const basePrice = parseFloat(job.service_price || job.base_price || 0)
   const commPct = parseFloat(job.commission_percent || 0)
-  const otRate = parseFloat(job.additional_price || job.overtime_rate || 0)
-  const dur = job.service_duration || 60
   const commAmt = basePrice * (commPct / 100)
   const baseEarnings = basePrice - commAmt
+  const amount = parseFloat(job.provider_amount) || baseEarnings
+  
+  const otRate = parseFloat(job.additional_price || job.overtime_rate || 0)
+  const dur = job.service_duration || 60
   const netOT = otRate * (1 - commPct / 100)
   const hasOvertime = otRate > 0
   const slots = fmtSlots(job.job_time_slot)

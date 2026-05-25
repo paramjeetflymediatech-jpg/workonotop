@@ -204,7 +204,7 @@ import Header from '@/components/Header'
 import ChatBox from '@/components/ChatBox'
 
 export default function MyBookings() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -213,9 +213,18 @@ export default function MyBookings() {
   const [navigatingId, setNavigatingId] = useState(null) // ← loader for navigation
 
   useEffect(() => {
+    if (authLoading) return // Wait for authentication check to finish
     if (!user) { router.push('/'); return }
+    
     loadBookings()
-  }, [user])
+    
+    // Poll every 10 seconds to catch background updates (like cron auto-release)
+    const interval = setInterval(() => {
+      loadBookings()
+    }, 10000)
+    
+    return () => clearInterval(interval)
+  }, [user, authLoading])
 
   const loadBookings = async () => {
     try {
