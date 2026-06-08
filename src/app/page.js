@@ -231,6 +231,7 @@ export default function HomePage() {
 
           {homepageServices.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-8">
+              
               {homepageServices.slice(0, 3).map((service, i) => (
                 <Link
                   key={service.id}
