@@ -202,7 +202,7 @@ export default function ProviderJobDetail({ params }) {
               {job.photos.map((url, i) => (
                 <div key={i} onClick={() => setSelectedPhoto(url)}
                   className="aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition border border-gray-100">
-                  <img src={url} alt={`Customer Photo ${i + 1}`} className="w-full h-full object-cover" />
+                  <img src={url} alt={`Customer Photo ${i + 1}`} className="w-full h-full object-contain" />
                 </div>
               ))}
             </div>
@@ -580,7 +580,7 @@ function PhotoGrid({ photos, label, cols = 3, onPhotoClick }) {
       {photos.map((photo, index) => (
         <div key={index} onClick={() => onPhotoClick?.(photo.photo_url)}
           className="aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 border border-gray-200 transition-opacity">
-          <img src={photo.photo_url} alt={`${label} ${index + 1}`} className="w-full h-full object-cover" />
+          <img src={photo.photo_url} alt={`${label} ${index + 1}`} className="w-full h-full object-contain" />
         </div>
       ))}
     </div>
