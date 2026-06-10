@@ -75,7 +75,7 @@ const ProviderMessagesScreen = ({ navigation }) => {
                         {item.first_name} {item.last_name}
                     </Text>
                     <Text style={styles.serviceName} numberOfLines={1}>{item.service_name}</Text>
-                    <Text style={styles.dateText}>📅 {item.job_date}</Text>
+                    {/* <Text style={styles.dateText}>📅 {item.job_date}</Text> */}
                 </View>
                 <View style={styles.cardRight}>
                     <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, RefreshCw } from 'lucide-react';
 
-export default function ChatBox({ bookingId, currentUserType }) {
+export default function ChatBox({ bookingId, currentUserType, bookingStatus }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -134,26 +134,32 @@ export default function ChatBox({ bookingId, currentUserType }) {
       </div>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="flex gap-2 p-3 border-t border-gray-100 bg-white">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
-          className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent"
-        />
-        <button
-          type="submit"
-          disabled={!newMessage.trim() || sending}
-          className="w-10 h-10 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-xl disabled:opacity-40 transition active:scale-95"
-        >
-          {sending ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
-        </button>
-      </form>
+      {bookingStatus === 'completed' || bookingStatus === 'cancelled' ? (
+        <div className="p-4 border-t border-gray-100 bg-gray-50 text-center">
+          <p className="text-sm font-medium text-gray-500">Conversation closed. This job is {bookingStatus}.</p>
+        </div>
+      ) : (
+        <form onSubmit={sendMessage} className="flex gap-2 p-3 border-t border-gray-100 bg-white">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type your message..."
+            className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent"
+          />
+          <button
+            type="submit"
+            disabled={!newMessage.trim() || sending}
+            className="w-10 h-10 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-xl disabled:opacity-40 transition active:scale-95"
+          >
+            {sending ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

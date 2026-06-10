@@ -34,7 +34,7 @@ export default function ProviderChats() {
 
   const loadBookings = async () => {
     try {
-      const res = await fetch('/api/provider/bookings?status=confirmed,in_progress')
+      const res = await fetch('/api/provider/bookings?status=confirmed,in_progress,completed')
       const data = await res.json()
       if (data.success) {
         const list = data.bookings || []
@@ -51,7 +51,7 @@ export default function ProviderChats() {
   // Silent refresh — never resets UI state
   const refreshBookings = async () => {
     try {
-      const res = await fetch('/api/provider/bookings?status=confirmed,in_progress')
+      const res = await fetch('/api/provider/bookings?status=confirmed,in_progress,completed')
       const data = await res.json()
       if (data.success) setBookings(data.bookings || [])
     } catch (e) { console.error(e) }
@@ -244,7 +244,7 @@ export default function ProviderChats() {
                   </div>
                 )}
                 <div style={{ flex: 1, minHeight: 0 }}>
-                  <ChatBox bookingId={activeBooking.id} currentUserType="provider" />
+                  <ChatBox bookingId={activeBooking.id} currentUserType="provider" bookingStatus={activeBooking.status} />
                 </div>
               </>
             ) : (

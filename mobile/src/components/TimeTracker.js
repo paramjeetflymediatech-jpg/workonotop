@@ -22,11 +22,13 @@ const TimeTracker = ({
     // Completion Form states
     const [workSummary, setWorkSummary] = useState('');
     const [recommendations, setRecommendations] = useState('');
+    const [jobData, setJobData] = useState(null);
 
     const loadTimerStatus = useCallback(async () => {
         try {
             const res = await api.get(`/api/provider/jobs/time-tracking?booking_id=${bookingId}`);
             if (res.success) {
+                setJobData(res.data);
                 const status = res.data.job_timer_status || 'not_started';
                 setTimerStatus(status);
                 if (res.data.start_time && status === 'running') {
@@ -135,12 +137,36 @@ const TimeTracker = ({
 
     const isOvertime = Math.floor(elapsedTime / 60) > standardDuration;
 
-    if (timerStatus === 'completed') {
+    if (timerStatus === 'completed' || (jobData && jobData.status === 'completed')) {
+        const fmtDt = (dt) => {
+            if (!dt) return '—';
+            return new Date(dt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        };
+        const actMins = jobData?.actual_duration_minutes || 0;
+        const durStr = actMins >= 60 ? `${Math.floor(actMins/60)}h ${actMins%60}m` : `${actMins}m`;
+
         return (
             <View style={styles.completedBox}>
-                <Ionicons name="checkmark-circle" size={40} color='#15843E' />
+                <Ionicons name="checkmark-circle" size={48} color='#15843E' />
                 <Text style={styles.completedTitle}>Job Finished</Text>
-                <Text style={styles.completedText}>Awaiting customer approval.</Text>
+                <Text style={styles.completedText}>
+                    {jobData?.status === 'completed' ? 'This job is fully completed.' : 'Awaiting customer approval.'}
+                </Text>
+
+                <View style={styles.statsContainer}>
+                    <View style={styles.statRow}>
+                        <Text style={styles.statLabel}>Started</Text>
+                        <Text style={styles.statValue}>{fmtDt(jobData?.start_time)}</Text>
+                    </View>
+                    <View style={styles.statRow}>
+                        <Text style={styles.statLabel}>Finished</Text>
+                        <Text style={styles.statValue}>{fmtDt(jobData?.end_time)}</Text>
+                    </View>
+                    <View style={[styles.statRow, { borderBottomWidth: 0 }]}>
+                        <Text style={styles.statLabel}>Total Time</Text>
+                        <Text style={[styles.statValue, { color: '#15843E', fontWeight: '800' }]}>{durStr}</Text>
+                    </View>
+                </View>
             </View>
         );
     }
@@ -263,9 +289,13 @@ const styles = StyleSheet.create({
     resumeBtn: { flex: 1, backgroundColor: '#10b981' },
     stopBtn: { flex: 1, backgroundColor: '#1e293b' },
     disabledBtn: { backgroundColor: '#cbd5e1' },
-    completedBox: { alignItems: 'center', padding: 30, backgroundColor: '#ecfdf5', borderRadius: 20, width: '100%' },
-    completedTitle: { fontSize: 18, fontWeight: 'bold', color: '#15843E', marginTop: 12 },
-    completedText: { fontSize: 14, color: '#15843E', marginTop: 4 },
+    completedBox: { alignItems: 'center', padding: 24, backgroundColor: '#ecfdf5', borderRadius: 20, width: '100%', borderWidth: 1, borderColor: '#dcfce7' },
+    completedTitle: { fontSize: 20, fontWeight: '800', color: '#15843E', marginTop: 12 },
+    completedText: { fontSize: 14, color: '#15843E', marginTop: 4, fontWeight: '500', marginBottom: 20 },
+    statsContainer: { width: '100%', backgroundColor: '#fff', borderRadius: 16, padding: 16, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
+    statRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+    statLabel: { fontSize: 13, color: '#64748b', fontWeight: '600', textTransform: 'uppercase' },
+    statValue: { fontSize: 14, color: '#1e293b', fontWeight: '700' },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, maxHeight: '80%' },
     modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#0f172a', marginBottom: 20 },

@@ -36,7 +36,14 @@ export async function GET(request) {
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completedJobs,
         SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as inProgressJobs,
         SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as confirmedJobs,
-        SUM(provider_amount) as totalEarnings
+        SUM(
+          CASE 
+            WHEN status = 'completed' AND final_provider_amount > 0 THEN final_provider_amount
+            WHEN provider_amount > 0 THEN provider_amount
+            WHEN service_price > 0 THEN service_price - (service_price * (COALESCE(commission_percent, 20) / 100))
+            ELSE 0
+          END
+        ) as totalEarnings
        FROM bookings 
        WHERE provider_id = ?`,
       [providerId]

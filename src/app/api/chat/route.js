@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { execute, withConnection } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
 
+export const dynamic = 'force-dynamic';
+
 // GET messages
 export async function GET(request) {
   try {
@@ -44,9 +46,17 @@ export async function GET(request) {
         messagesWithNames.push({ ...msg, sender_name });
       }
 
+      // Get booking status
+      const [bookings] = await connection.execute(
+        'SELECT status FROM bookings WHERE id = ?',
+        [bookingId]
+      );
+      const bookingStatus = bookings[0]?.status || 'unknown';
+
       return NextResponse.json({
         success: true,
-        messages: messagesWithNames
+        messages: messagesWithNames,
+        bookingStatus
       });
     });
   } catch (error) {

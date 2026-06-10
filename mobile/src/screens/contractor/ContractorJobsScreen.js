@@ -470,8 +470,8 @@ const styles = StyleSheet.create({
     otBadge: { backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#ddd6fe' },
     otBadgeText: { fontSize: Typography.getCustom(12), color: '#15843E', fontWeight: '800' },
 
-    infoGrid: { flexDirection: 'row', gap: 16, marginBottom: 12 },
-    infoItem: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
+    infoGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 10, columnGap: 16, marginBottom: 12 },
+    infoItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     infoItemText: { fontSize: Typography.getCustom(12), color: '#000000ff', fontWeight: '500' },
 
     accessRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },

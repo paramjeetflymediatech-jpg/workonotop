@@ -21,6 +21,7 @@ const ChatScreen = ({ navigation, route }) => {
     const [loading, setLoading] = useState(true);
     const [text, setText] = useState('');
     const [sending, setSending] = useState(false);
+    const [bookingStatus, setBookingStatus] = useState('active');
     const flatListRef = useRef(null);
     const pollRef = useRef(null);
 
@@ -31,6 +32,9 @@ const ChatScreen = ({ navigation, route }) => {
             const res = await apiService.chat.getMessages(bookingId, token);
             if (res?.success) {
                 setMessages(res.messages || []);
+                if (res.bookingStatus) {
+                    setBookingStatus(res.bookingStatus);
+                }
             }
         } catch (err) {
             console.error('Chat fetch error:', err);
@@ -142,29 +146,35 @@ const ChatScreen = ({ navigation, route }) => {
                 )}
 
                 {/* Input bar */}
-                <View style={[styles.inputBar, { paddingBottom: insets.bottom > 0 ? insets.bottom + verticalScale(8) : verticalScale(12) }]}>
-                    <TextInput
-                        style={styles.input}
-                        value={text}
-                        onChangeText={setText}
-                        placeholder="Type a message..."
-                        placeholderTextColor="#94a3b8"
-                        multiline
-                        maxLength={500}
-                        returnKeyType="send"
-                        onSubmitEditing={sendMessage}
-                    />
-                    <TouchableOpacity
-                        style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]}
-                        onPress={sendMessage}
-                        disabled={!text.trim() || sending}
-                    >
-                        {sending
-                            ? <ActivityIndicator size="small" color="#fff" />
-                            : <Ionicons name="send" size={moderateScale(18)} color="#fff" />
-                        }
-                    </TouchableOpacity>
-                </View>
+                {bookingStatus === 'completed' || bookingStatus === 'cancelled' ? (
+                    <View style={[styles.closedBar, { paddingBottom: insets.bottom > 0 ? insets.bottom + verticalScale(8) : verticalScale(12) }]}>
+                        <Text style={styles.closedText}>Conversation closed. This job is {bookingStatus}.</Text>
+                    </View>
+                ) : (
+                    <View style={[styles.inputBar, { paddingBottom: insets.bottom > 0 ? insets.bottom + verticalScale(8) : verticalScale(12) }]}>
+                        <TextInput
+                            style={styles.input}
+                            value={text}
+                            onChangeText={setText}
+                            placeholder="Type a message..."
+                            placeholderTextColor="#94a3b8"
+                            multiline
+                            maxLength={500}
+                            returnKeyType="send"
+                            onSubmitEditing={sendMessage}
+                        />
+                        <TouchableOpacity
+                            style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]}
+                            onPress={sendMessage}
+                            disabled={!text.trim() || sending}
+                        >
+                            {sending
+                                ? <ActivityIndicator size="small" color="#fff" />
+                                : <Ionicons name="send" size={moderateScale(18)} color="#fff" />
+                            }
+                        </TouchableOpacity>
+                    </View>
+                )}
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -254,6 +264,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: scale(12), paddingTop: scale(12), paddingBottom: scale(12),
         backgroundColor: '#fff',
         borderTopWidth: 1, borderTopColor: '#e2e8f0',
+    },
+    closedBar: {
+        alignItems: 'center', justifyContent: 'center',
+        paddingHorizontal: scale(12), paddingTop: verticalScale(16), paddingBottom: verticalScale(16),
+        backgroundColor: '#f8fafc',
+        borderTopWidth: 1, borderTopColor: '#e2e8f0',
+    },
+    closedText: {
+        fontSize: Typography.bodySmall, color: '#64748b', fontWeight: '500', textAlign: 'center'
     },
     input: {
         flex: 1, backgroundColor: '#f8fafc', borderRadius: moderateScale(22),

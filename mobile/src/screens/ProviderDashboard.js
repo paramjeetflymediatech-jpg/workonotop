@@ -126,7 +126,7 @@ const ProviderDashboard = ({ navigation }) => {
                         <Text style={styles.nameText}>Hi, {user?.name || 'Partner'}</Text>
                     </View>
                 </View>
-                {/* <View style={[styles.statusToggle, {
+                <View style={[styles.statusToggle, {
                     backgroundColor: isAvailable ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
                     borderColor: isAvailable ? 'rgba(255,255,255,0.2)' : 'transparent'
                 }]}>
@@ -141,7 +141,7 @@ const ProviderDashboard = ({ navigation }) => {
                     <Text style={[styles.statusText, { color: '#fff' }]}>
                         {isAvailable ? 'Online' : 'Offline'}
                     </Text>
-                </View> */}
+                </View>
             </View>
 
             <ScrollView
@@ -171,9 +171,11 @@ const ProviderDashboard = ({ navigation }) => {
                 )}
 
                 {/* Status Banner */}
-                <View style={styles.takingOrdersBanner}>
-                    <View style={styles.takingOrdersDot} />
-                    <Text style={styles.takingOrdersText}>Taking orders in your area</Text>
+                <View style={[styles.takingOrdersBanner, !isAvailable && { backgroundColor: '#f1f5f9', borderColor: '#e2e8f0' }]}>
+                    <View style={[styles.takingOrdersDot, !isAvailable && { backgroundColor: '#94a3b8' }]} />
+                    <Text style={[styles.takingOrdersText, !isAvailable && { color: '#64748b' }]}>
+                        {isAvailable ? 'Taking orders in your area' : 'Currently offline'}
+                    </Text>
                 </View>
 
 
@@ -202,11 +204,11 @@ const ProviderDashboard = ({ navigation }) => {
                             if (typeof dateStr === 'string' && dateStr.startsWith('[')) {
                                 dateStr = JSON.parse(dateStr)[0];
                             }
-                        } catch(e) {}
-                        
+                        } catch (e) { }
+
                         let day = '--';
                         let month = '---';
-                        
+
                         if (typeof dateStr === 'string' && dateStr.includes('-')) {
                             const parts = dateStr.split('T')[0].split('-');
                             if (parts.length === 3) {
@@ -222,7 +224,7 @@ const ProviderDashboard = ({ navigation }) => {
                                     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
                                     month = months[jobDate.getMonth()];
                                 }
-                            } catch(e) {}
+                            } catch (e) { }
                         }
                         const basePrice = parseFloat(job.service_price || job.pricing?.base_price || 0);
                         const commPct = parseFloat(job.commission_percent ?? job.pricing?.commission_percent ?? 20);
@@ -230,7 +232,7 @@ const ProviderDashboard = ({ navigation }) => {
                         const earnings = typeof job.display_amount === 'string'
                             ? parseFloat(job.display_amount.replace(/[^\d.-]/g, ''))
                             : (parseFloat(job.display_amount ?? job.provider_amount ?? baseEarnings));
-                            
+
                         return (
                             <View key={job.id} style={styles.scheduleItem}>
                                 <View style={styles.dateBox}>

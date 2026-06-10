@@ -343,7 +343,7 @@ export default function MyBookings() {
               {bookings.map((booking) => {
                 const st = getStatus(booking.status)
                 const isNavigating = navigatingId === booking.id
-                const canChat = booking.status === 'confirmed' || booking.status === 'in_progress'
+                const canChat = booking.status === 'confirmed' || booking.status === 'in_progress' || booking.status === 'completed'
                 const needsApproval = booking.status === 'awaiting_approval'
 
                 return (
@@ -459,7 +459,7 @@ export default function MyBookings() {
                 </button>
               </div>
               <div className="flex-1 min-h-0">
-                <ChatBox bookingId={selectedBooking.id} currentUserType="customer" />
+                <ChatBox bookingId={selectedBooking.id} currentUserType="customer" bookingStatus={selectedBooking.status} />
               </div>
             </div>
           </div>

@@ -126,9 +126,23 @@ const MyJobsScreen = ({ navigation }) => {
         const basePrice = parseFloat(item.service_price || item.pricing?.base_price || 0);
         const commPct = parseFloat(item.commission_percent ?? item.pricing?.commission_percent ?? 20);
         const baseEarnings = basePrice - (basePrice * (commPct / 100));
-        const earnings = typeof item.display_amount === 'string'
-            ? parseFloat(item.display_amount.replace(/[^\d.-]/g, ''))
-            : (parseFloat(item.display_amount ?? item.provider_amount ?? baseEarnings));
+        
+        const getNum = (val) => {
+            if (typeof val === 'string') {
+                const parsed = parseFloat(val.replace(/[^\d.-]/g, ''));
+                return isNaN(parsed) ? 0 : parsed;
+            }
+            return typeof val === 'number' ? val : 0;
+        };
+
+        let earnings = baseEarnings;
+        if (item.status === 'completed' && getNum(item.final_provider_amount) > 0) {
+            earnings = getNum(item.final_provider_amount);
+        } else if (getNum(item.display_amount) > 0) {
+            earnings = getNum(item.display_amount);
+        } else if (getNum(item.provider_amount) > 0) {
+            earnings = getNum(item.provider_amount);
+        }
 
         return (
             <TouchableOpacity

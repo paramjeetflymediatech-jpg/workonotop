@@ -158,6 +158,20 @@ const JobDetailsScreen = ({ navigation, route }) => {
         return unsubscribe;
     }, [navigation, fetchLatestJob]);
 
+    if (!job) return null;
+
+    const basePrice = parseFloat(job.service_price || job.pricing?.base_price || 0);
+    const commPct = parseFloat(job.commission_percent ?? job.pricing?.commission_percent ?? 0);
+    const otRate = parseFloat(job.additional_price ?? job.pricing?.overtime_rate ?? 0);
+    const dur = job.service_duration || job.pricing?.duration_minutes || 60;
+    const commAmt = basePrice * (commPct / 100);
+    const baseEarnings = basePrice - commAmt;
+    const netOT = otRate * (1 - commPct / 100);
+    const hasOvertime = otRate > 0;
+    const earnings = typeof job.display_amount === 'string'
+        ? parseFloat(job.display_amount.replace(/[^\d.-]/g, ''))
+        : (parseFloat(job.display_amount ?? job.provider_amount ?? baseEarnings));
+
     const handleAcceptJob = async () => {
         if (!stripeConnected) {
             Alert.alert('Stripe Not Connected', 'You need to connect your Stripe account before you can accept jobs.', [
@@ -167,13 +181,9 @@ const JobDetailsScreen = ({ navigation, route }) => {
             return;
         }
 
-        const amount = parseFloat(job.display_amount ?? job.provider_amount ?? 0);
-        const otRate = parseFloat(job.pricing?.overtime_rate || 0);
-        const hasOvertime = otRate > 0;
-
         Alert.alert(
             'Accept this Job?',
-            `This job will be assigned to you immediately.\n\nGuaranteed earnings: $${amount.toFixed(2)}${hasOvertime ? '\n\nUp to 2hrs overtime available at $' + otRate.toFixed(2) + '/hr' : ''}`,
+            `This job will be assigned to you immediately.\n\nGuaranteed earnings: $${earnings.toFixed(2)}${hasOvertime ? '\n\nUp to 2hrs overtime available at $' + netOT.toFixed(2) + '/hr' : ''}`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -189,7 +199,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
                                     provider_name: user?.name,
                                     is_my_job: true
                                 }));
-                                Alert.alert('Success', '🎉 Job accepted! Check your schedule in "My Jobs".');
+                                Alert.alert('Success', 'Job accepted! Check your schedule in "My Jobs".');
                                 setTimeout(() => navigation.navigate('MyJobs'), 1000);
                             } else {
                                 Alert.alert('Error', res.message || 'Failed to accept job.');
@@ -226,20 +236,6 @@ const JobDetailsScreen = ({ navigation, route }) => {
             <Text style={[styles.priceValue, isTotal && styles.totalValue, { color }]}>{value}</Text>
         </View>
     );
-
-    if (!job) return null;
-
-    const basePrice = parseFloat(job.service_price || job.pricing?.base_price || 0);
-    const commPct = parseFloat(job.commission_percent ?? job.pricing?.commission_percent ?? 0);
-    const otRate = parseFloat(job.additional_price ?? job.pricing?.overtime_rate ?? 0);
-    const dur = job.service_duration || job.pricing?.duration_minutes || 60;
-    const commAmt = basePrice * (commPct / 100);
-    const baseEarnings = basePrice - commAmt;
-    const netOT = otRate * (1 - commPct / 100);
-    const hasOvertime = otRate > 0;
-    const earnings = typeof job.display_amount === 'string'
-        ? parseFloat(job.display_amount.replace(/[^\d.-]/g, ''))
-        : (parseFloat(job.display_amount ?? job.provider_amount ?? baseEarnings));
 
     const headerColor = hasOvertime ? TEAL_DARK : TEAL_DARK;
 
@@ -519,10 +515,13 @@ const JobDetailsScreen = ({ navigation, route }) => {
                                     })}
                                     
                                     {job.timing_constraints && (
-                                        <View style={styles.detailsCard}>
-                                            <View style={styles.timingNote}>
-                                                <Text style={styles.timingNoteLabel}>Timing Notes:</Text>
-                                                <Text style={styles.timingNoteVal}>{job.timing_constraints}</Text>
+                                        <View style={[styles.detailsCard, { backgroundColor: '#fffbeb', borderColor: '#fde68a' }]}>
+                                            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+                                                <Ionicons name="information-circle" size={20} color="#d97706" style={{ marginTop: 2 }} />
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.timingNoteLabel}>Timing Constraints</Text>
+                                                    <Text style={styles.timingNoteVal}>{job.timing_constraints}</Text>
+                                                </View>
                                             </View>
                                         </View>
                                     )}
@@ -700,9 +699,9 @@ const styles = StyleSheet.create({
     detailLabel: { fontSize: Typography.tiny, color: '#b45309', fontWeight: '700', textTransform: 'uppercase' },
     detailValue: { fontSize: Typography.input, color: TEAL_DARK, fontWeight: '700', marginTop: 2 },
 
-    timingNote: { marginTop: 4, paddingLeft: 60 },
-    timingNoteLabel: { fontSize: Typography.caption, fontWeight: '700', color: '#b45309' },
-    timingNoteVal: { fontSize: Typography.bodySmall, color: TEAL_DARK, marginTop: 2, lineHeight: 18 },
+    timingNote: { marginTop: 4 },
+    timingNoteLabel: { fontSize: Typography.caption, fontWeight: '800', color: '#b45309' },
+    timingNoteVal: { fontSize: Typography.bodySmall, color: '#92400e', marginTop: 4, lineHeight: 20 },
 
     addressBox: { backgroundColor: '#fff', padding: 16, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#f1f5f9' },
     addressLine: { fontSize: Typography.input, fontWeight: '700', color: '#1e293b' },

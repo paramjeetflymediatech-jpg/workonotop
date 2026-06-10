@@ -15,18 +15,35 @@ export async function GET(request) {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
-    // Get provider balance
     const providers = await execute(
       `SELECT 
         stripe_onboarding_complete,
-        COALESCE(total_earnings, 0) as total_earnings,
-        COALESCE(available_balance, 0) as available_balance,
-        COALESCE(pending_balance, 0) as pending_balance,
-        COALESCE(lifetime_balance, 0) as lifetime_balance
+        COALESCE(total_earnings, 0) as static_total_earnings,
+        COALESCE(available_balance, 0) as static_available_balance,
+        COALESCE(pending_balance, 0) as static_pending_balance,
+        COALESCE(lifetime_balance, 0) as static_lifetime_balance
        FROM service_providers 
        WHERE id = ?`,
       [decoded.providerId]
     )
+
+    // Calculate balances dynamically from completed bookings
+    const [bookingStats] = await execute(
+      `SELECT 
+        SUM(
+          CASE 
+            WHEN final_provider_amount > 0 THEN final_provider_amount
+            WHEN provider_amount > 0 THEN provider_amount
+            WHEN service_price > 0 THEN service_price - (service_price * (COALESCE(commission_percent, 20) / 100))
+            ELSE 0
+          END
+        ) as calculated_earnings
+       FROM bookings 
+       WHERE provider_id = ? AND status = 'completed'`,
+      [decoded.providerId]
+    )
+
+    const dynamicEarnings = parseFloat(bookingStats?.calculated_earnings || 0);
 
     // Get payout history
     const payouts = await execute(
@@ -39,7 +56,14 @@ export async function GET(request) {
 
     // Get recent completed jobs
     const recentJobs = await execute(
-      `SELECT service_name, final_provider_amount as amount, end_time
+      `SELECT service_name, 
+        CASE 
+          WHEN final_provider_amount > 0 THEN final_provider_amount
+          WHEN provider_amount > 0 THEN provider_amount
+          WHEN service_price > 0 THEN service_price - (service_price * (COALESCE(commission_percent, 20) / 100))
+          ELSE 0
+        END as amount,
+        end_time
        FROM bookings 
        WHERE provider_id = ? AND status = 'completed'
        ORDER BY end_time DESC
@@ -56,10 +80,10 @@ export async function GET(request) {
           stripe_onboarding: provider.stripe_onboarding_complete ? 'complete' : 'incomplete'
         },
         balances: {
-          available_balance: parseFloat(provider.available_balance || 0),
-          pending_balance: parseFloat(provider.pending_balance || 0),
-          total_earnings: parseFloat(provider.total_earnings || 0),
-          lifetime_balance: parseFloat(provider.lifetime_balance || 0)
+          available_balance: dynamicEarnings, // Use dynamic earnings for now
+          pending_balance: parseFloat(provider.static_pending_balance || 0),
+          total_earnings: dynamicEarnings,
+          lifetime_balance: dynamicEarnings
         },
         payouts: payouts.map(p => ({
           amount: parseFloat(p.amount),

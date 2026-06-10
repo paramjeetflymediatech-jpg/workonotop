@@ -570,7 +570,7 @@ export default function ProviderAvailableJobs() {
                     <span className="truncate">
                       {!stripeConnected
                         ? "🔒 Connect Stripe"
-                        : `Accept — ${baseEarnings.toFixed(2)}`}
+                        : `Accept — $${baseEarnings.toFixed(2)}`}
                     </span>
 
                     {stripeConnected && hasOvertime && !job.is_admin_assigned && (
