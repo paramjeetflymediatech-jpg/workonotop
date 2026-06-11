@@ -15,7 +15,7 @@ import { execute } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
 import { getMobileSession } from '@/lib/mobile-auth';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', { apiVersion: '2026-05-27.dahlia' });
 
 export async function POST(request) {
   console.log('\n' + '='.repeat(80));

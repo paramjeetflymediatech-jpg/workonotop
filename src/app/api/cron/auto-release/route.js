@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { execute, getConnection } from '@/lib/db'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock')
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', { apiVersion: '2026-05-27.dahlia' })
 
 export async function GET(request) {
   const authHeader = request.headers.get('authorization')

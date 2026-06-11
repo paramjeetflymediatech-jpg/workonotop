@@ -1,19 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // app/api/customer/bookings/[id]/approve/route.js
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
@@ -21,7 +5,7 @@ import { withConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
 import { sendEmail } from '@/lib/email'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock')
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', { apiVersion: '2026-05-27.dahlia' })
 
 // ── Helper: calculate final customer charge ───────────────────────────────────
 function calcFinalAmount(basePrice, standardMins, actualMins, overtimeRate = 0) {
