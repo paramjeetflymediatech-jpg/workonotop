@@ -50,24 +50,35 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url)
     const cityParam = searchParams.get('city')
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
+    const page = Math.max(parseInt(searchParams.get('page') || '1'), 1)
+    const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50)
+    const offset = (page - 1) * limit
     countOnly = searchParams.get('count') === 'true'
     const previewLimit = parseInt(searchParams.get('preview') || '3')
 
-    const providers = await execute('SELECT city FROM service_providers WHERE id = ?', [providerId])
+    const providers = await execute('SELECT city, service_areas FROM service_providers WHERE id = ?', [providerId])
     const providerCity = providers && providers.length > 0 ? (providers[0].city || '') : ''
+    const providerServiceAreas = providers && providers.length > 0 ? (providers[0].service_areas || '[]') : '[]'
 
-    // ✅ NEW: Determine the effective city to filter by. 
-    // If user searches for a city, use that.
-    // Otherwise, default to the provider's home city to prevent showing irrelevant jobs (e.g. York vs Ludhiana).
-    const activeCityFilter = (cityParam || providerCity || '').trim()
+    let parsedAreas = [];
+    try { 
+      parsedAreas = typeof providerServiceAreas === 'string' ? JSON.parse(providerServiceAreas) : providerServiceAreas; 
+    } catch (e) {
+      parsedAreas = [];
+    }
+    if (!Array.isArray(parsedAreas)) parsedAreas = [];
 
+    // Filter open jobs strictly by the provider's selected clusters
     let locationCondition = ''
     const locationParams = []
-    if (activeCityFilter) {
-      locationCondition = `AND (LOWER(b.city) LIKE LOWER(?) OR LOWER(b.address_line1) LIKE LOWER(?) OR LOWER(b.postal_code) LIKE LOWER(?))`
-      const locMatch = `%${activeCityFilter}%`
-      locationParams.push(locMatch, locMatch, locMatch)
+    
+    if (parsedAreas.length > 0) {
+      const placeholders = parsedAreas.map(() => '?').join(',')
+      locationCondition = `AND b.cluster IN (${placeholders})`
+      locationParams.push(...parsedAreas)
+    } else {
+      // If provider has no service areas selected, they see no open jobs
+      locationCondition = `AND 1=0`
     }
 
     // ✅ Optimized: If only count is needed, run a lighter query
@@ -120,7 +131,7 @@ export async function GET(request) {
     const sql = `
       SELECT
         b.id, b.booking_number, b.service_name, b.job_date, b.job_time_slot,
-        b.address_line1, b.city, b.postal_code,
+        b.address_line1, b.city, b.cluster, b.postal_code,
         b.job_description, b.parking_access, b.elevator_access, b.has_pets,
         b.status, b.created_at, b.provider_id,
         b.provider_amount, b.commission_percent,
@@ -148,12 +159,27 @@ export async function GET(request) {
         )
       ) AND EXISTS (SELECT 1 FROM users u WHERE u.email = b.customer_email)
       ORDER BY admin_assigned DESC, b.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
     `
+
+    // Execute count query for pagination
+    const countSql = `
+      SELECT COUNT(*) as total
+      FROM bookings b
+      WHERE (
+        (b.provider_id = ? AND b.status = 'matching')
+        OR
+        (b.provider_id IS NULL AND b.status IN ('pending', 'matching') ${locationCondition})
+      ) AND EXISTS (SELECT 1 FROM users u WHERE u.email = b.customer_email)
+    `
+    const countParams = [providerId, ...locationParams]
+    const countResult = await query(countSql, countParams)
+    const totalJobs = countResult && countResult[0] ? countResult[0].total : 0
 
     const params = [
       providerId,
       providerId,
-      ...locationParams,
+      ...locationParams
     ]
 
     const jobs = await execute(sql, params)
@@ -199,10 +225,25 @@ export async function GET(request) {
 
       j.display_amount = `$${(providerAmount || baseEarnings).toFixed(2)}`
       j.is_admin_assigned = j.admin_assigned === 1
+      
+      // MASK ADDRESS FOR AVAILABLE JOBS
+      // If the job is NOT confirmed by THIS provider, hide the exact address.
+      if (j.provider_id !== providerId && j.status !== 'confirmed' && j.status !== 'in_progress') {
+        j.address_line1 = j.city || 'Hidden (Area only)';
+      }
+      
       return j
     })
 
-    return NextResponse.json({ success: true, data: processedJobs, provider_city: providerCity, total: processedJobs.length })
+    return NextResponse.json({ 
+      success: true, 
+      data: processedJobs, 
+      provider_city: providerCity, 
+      total: totalJobs,
+      hasMore: processedJobs.length === limit,
+      page,
+      limit
+    })
 
   } catch (error) {
     console.error('Error fetching available jobs:', error)

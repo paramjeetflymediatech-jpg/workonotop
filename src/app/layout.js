@@ -61,6 +61,12 @@ export default function RootLayout({ children }) {
           src="https://accounts.google.com/gsi/client"
           strategy="beforeInteractive"
         />
+
+        {/* Google Maps Places API */}
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly`}
+          strategy="beforeInteractive"
+        />
       </body>
     </html>
   );

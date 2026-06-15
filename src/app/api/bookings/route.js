@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { NextResponse } from 'next/server'
 import { withConnection, execute, getConnection } from '@/lib/db'
 import { notifyUser } from '@/lib/push'
+import { getClusterFromCity } from '@/lib/location'
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-05-27.dahlia' }) : null
 
@@ -84,7 +85,7 @@ export async function POST(request) {
       first_name, last_name, name, email, phone,
       job_date, job_time_slot, timing_constraints, job_description, instructions,
       parking_access, elevator_access, has_pets,
-      address_line1, address_line2, city = '', postal_code,
+      address_line1, address_line2, city = '', postal_code, latitude, longitude,
       photos = [], user_id,
       payment_intent_id,
     } = body
@@ -135,6 +136,8 @@ export async function POST(request) {
     const maxOvertimeCost = overtimeRate * 2
     const totalAuthorizedAmount = basePrice + maxOvertimeCost
 
+    const jobCluster = getClusterFromCity(city);
+
     connection = await getConnection()
     await connection.query('START TRANSACTION')
 
@@ -150,10 +153,10 @@ export async function POST(request) {
           customer_first_name, customer_last_name, customer_email, customer_phone,
           job_date, job_time_slot, timing_constraints, job_description, instructions,
           parking_access, elevator_access, has_pets,
-          address_line1, address_line2, city, postal_code,
+          address_line1, address_line2, city, postal_code, latitude, longitude, cluster,
           commission_percent, provider_amount, status, job_timer_status, payment_status,
           standard_duration_minutes, payment_intent_id, authorized_amount)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,'pending','not_started','authorized',?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,'pending','not_started','authorized',?,?,?)`,
         [
           bookingNumber, authenticatedUserId || null, service_id || null, service_name || null,
           service_price || 0, additional_price || 0,
@@ -162,6 +165,7 @@ export async function POST(request) {
           job_description || '', instructions || null,
           parking_access ? 1 : 0, elevator_access ? 1 : 0, has_pets ? 1 : 0,
           address_line1 || '', address_line2 || null, city || '', postal_code || null,
+          latitude || null, longitude || null, jobCluster,
           standardDuration || 60,
           payment_intent_id || null, totalAuthorizedAmount || 0,
         ]
@@ -170,9 +174,9 @@ export async function POST(request) {
       const bookingId = result.insertId
 
       if (photos.length > 0) {
-        for (const photo of photos) {
-          await connection.execute('INSERT INTO booking_photos (booking_id, photo_url) VALUES (?, ?)', [bookingId, photo])
-        }
+        await Promise.all(photos.map(photo => 
+          connection.execute('INSERT INTO booking_photos (booking_id, photo_url) VALUES (?, ?)', [bookingId, photo])
+        ));
       }
 
       await connection.execute(
@@ -194,6 +198,55 @@ export async function POST(request) {
             .catch(() => { });
         });
       }).catch(_ => { });
+
+      // 🚀 BLAST LOGIC: Match Providers by Cluster and Service Type
+      // Run completely in the background so it doesn't block the API response
+      (async () => {
+        try {
+          const providers = await execute(
+            `SELECT id, push_token, phone, service_areas, skills FROM service_providers WHERE status = 'active'`
+          );
+          
+          // Match providers
+          const matchedProviders = providers.filter(p => {
+            // Check if provider works in this cluster
+            let areas = [];
+            try { areas = typeof p.service_areas === 'string' ? JSON.parse(p.service_areas) : p.service_areas; } catch (e) {}
+            if (!areas || !Array.isArray(areas) || !areas.includes(jobCluster)) return false;
+            
+            // Check if provider has matching skill (fuzzy match with service name for now)
+            let skills = [];
+            try { skills = typeof p.skills === 'string' ? JSON.parse(p.skills) : p.skills; } catch (e) {}
+            if (!skills || !Array.isArray(skills) || skills.length === 0) return false;
+            
+            const serviceNameLower = (service_name || '').toLowerCase();
+            return skills.some(skill => serviceNameLower.includes(skill.toLowerCase()) || skill.toLowerCase().includes(serviceNameLower));
+          });
+
+          console.log(`[API Bookings] Blasting to ${matchedProviders.length} providers for cluster ${jobCluster}`);
+          
+          const earningsAmount = (basePrice * 0.65).toFixed(2);
+          const displayDate = new Date(job_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          
+          matchedProviders.forEach(p => {
+            // Send Push Notification
+            notifyUser(p.id, 'New Job Available!', `Tap to view details for ${service_name} in ${city || jobCluster}`, { 
+              bookingId, 
+              type: 'job_blast',
+              service_name,
+              estimated_hours: standardDuration / 60,
+              area: city || jobCluster,
+              date_time: `${displayDate} • ${job_time_slot}`,
+              earnings: earningsAmount
+            }, execute, 'provider').catch(() => {});
+            
+            // TODO: WhatsApp Message Integration
+            // if (p.phone) { sendWhatsApp(p.phone, messageText); }
+          });
+        } catch (err) {
+          console.error('[API Bookings] Failed to blast providers in background:', err);
+        }
+      })();
 
       return NextResponse.json({
         success: true,

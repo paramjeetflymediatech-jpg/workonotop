@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { execute as query } from '@/lib/db';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -166,19 +167,20 @@ export async function POST(request) {
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+    const refreshToken = crypto.randomBytes(64).toString('hex');
 
     // 4. Update mobile_auth table
     try {
       const userIdCol = (dbType === 'provider') ? 'provider_id' : 'user_id';
       await query(
           `INSERT INTO mobile_auth_users (${userIdCol}, user_type, last_login, device_id, refresh_token, refresh_token_expires)
-           VALUES (?, ?, NOW(), ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
+           VALUES (?, ?, NOW(), ?, ?, DATE_ADD(NOW(), INTERVAL 365 DAY))
            ON DUPLICATE KEY UPDATE 
              last_login = NOW(), 
              device_id = VALUES(device_id),
              refresh_token = VALUES(refresh_token),
              refresh_token_expires = VALUES(refresh_token_expires)`,
-          [actualId, dbType, device_id || 'mobile-app', authToken]
+          [actualId, dbType, device_id || 'mobile-app', refreshToken]
       );
     } catch (e) {
       console.warn('⚠️ [Mobile Google Auth] Skipping session persistence:', e.message);
@@ -189,6 +191,7 @@ export async function POST(request) {
       success: true,
       message: 'Google login successful',
       token: authToken,
+      refreshToken: refreshToken,
       user: {
         id: actualId,
         email: user.email,

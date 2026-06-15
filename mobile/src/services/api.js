@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Core request helper for the mobile application.
@@ -12,6 +13,20 @@ let logoutHandler = null;
 
 export const setLogoutHandler = (handler) => {
     logoutHandler = handler;
+};
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
 };
 
 const request = async (endpoint, options = {}) => {
@@ -58,16 +73,69 @@ const request = async (endpoint, options = {}) => {
             // Auto-logout triggers:
             // 401 = Unauthorized (Invalid token)
             // 404 = Not Found (Critical profiles missing, especially on load)
-            if (response.status === 401 || (response.status === 404 && data.message?.toLowerCase().includes('not found'))) {
+            const error = new Error(data.message || `Request failed with status ${response.status}`);
+            error.data = data;
+            error.status = response.status;
+
+            if (response.status === 401 && endpoint !== '/api/auth/mobile/refresh') {
+                if (!isRefreshing) {
+                    isRefreshing = true;
+                    try {
+                        const rToken = await AsyncStorage.getItem('refreshToken');
+                        if (rToken) {
+                            console.log('🔄 [API Service] Token expired, attempting refresh...');
+                            const refreshRes = await fetch(`${API_BASE_URL}/api/auth/mobile/refresh`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ refreshToken: rToken })
+                            });
+                            
+                            const refreshData = await refreshRes.json();
+                            
+                            if (refreshData.success) {
+                                console.log('✅ [API Service] Token refreshed successfully');
+                                await AsyncStorage.setItem('token', refreshData.token);
+                                if (refreshData.refreshToken) {
+                                    await AsyncStorage.setItem('refreshToken', refreshData.refreshToken);
+                                }
+                                
+                                processQueue(null, refreshData.token);
+                                
+                                // Retry original request with new token
+                                options.token = refreshData.token;
+                                return await request(endpoint, options);
+                            } else {
+                                throw new Error('Refresh rejected by server');
+                            }
+                        } else {
+                            throw new Error('No refresh token available');
+                        }
+                    } catch (refreshErr) {
+                        console.log('🚪 [API Service] Refresh failed, triggering logout:', refreshErr.message);
+                        processQueue(refreshErr, null);
+                        if (logoutHandler) logoutHandler();
+                        throw error;
+                    } finally {
+                        isRefreshing = false;
+                    }
+                } else {
+                    // Queue this request while token is refreshing
+                    return new Promise((resolve, reject) => {
+                        failedQueue.push({ resolve, reject });
+                    }).then(newToken => {
+                        options.token = newToken;
+                        return request(endpoint, options);
+                    }).catch(err => {
+                        throw error;
+                    });
+                }
+            } else if (response.status === 404 && data.message?.toLowerCase().includes('not found')) {
                 if (logoutHandler) {
-                    console.log('🚪 [API Service] Session invalid or profile missing. Triggering global logout...');
+                    console.log('🚪 [API Service] Profile missing. Triggering global logout...');
                     logoutHandler();
                 }
             }
             
-            const error = new Error(data.message || `Request failed with status ${response.status}`);
-            error.data = data;
-            error.status = response.status;
             throw error;
         }
 

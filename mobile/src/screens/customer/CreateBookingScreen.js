@@ -24,7 +24,8 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { API_BASE_URL } from '../../config';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { API_BASE_URL, GOOGLE_MAPS_API_KEY } from '../../config';
 
 const PRIMARY = '#115e59';
 
@@ -56,6 +57,10 @@ const CreateBookingScreen = ({ navigation, route }) => {
         job_time_slot: [],
         address_line1: user?.address || '',
         address_line2: '',
+        city: '',
+        postal_code: '',
+        latitude: null,
+        longitude: null,
         job_description: '',
         timing_constraints: '',
         parking_access: false,
@@ -362,12 +367,91 @@ const CreateBookingScreen = ({ navigation, route }) => {
                 <Text style={styles.label}>Service Address *</Text>
                 {addressError ? <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '600' }}>{addressError}</Text> : null}
             </View>
-            <TextInput
-                style={styles.input}
-                value={bookingData.address_line1}
-                onChangeText={txt => setBookingData({ ...bookingData, address_line1: txt })}
-                placeholder="Where do you need service?"
-            />
+            <View style={{ flex: 1, zIndex: 999 }}>
+                <GooglePlacesAutocomplete
+                    placeholder="Where do you need service?"
+                    fetchDetails={true}
+                    onPress={(data, details = null) => {
+                        let city = '';
+                        let postalCode = '';
+
+                        if (details?.address_components) {
+                            for (const component of details.address_components) {
+                                if (component.types.includes('locality')) {
+                                    city = component.long_name;
+                                }
+                                if (component.types.includes('postal_code')) {
+                                    postalCode = component.long_name;
+                                }
+                            }
+                        }
+
+                        const lat = details?.geometry?.location?.lat || null;
+                        const lng = details?.geometry?.location?.lng || null;
+
+                        setBookingData({ 
+                            ...bookingData, 
+                            address_line1: data.description,
+                            city,
+                            postal_code: postalCode,
+                            latitude: lat,
+                            longitude: lng
+                        });
+                    }}
+                    query={{
+                        key: GOOGLE_MAPS_API_KEY,
+                        language: 'en',
+                        components: 'country:ca', // Adjust based on primary market
+                    }}
+                    styles={{
+                        textInputContainer: {
+                            width: '100%',
+                        },
+                        textInput: {
+                            backgroundColor: '#fff',
+                            borderWidth: 1,
+                            borderColor: '#e2e8f0',
+                            borderRadius: moderateScale(12),
+                            paddingHorizontal: moderateScale(15),
+                            paddingVertical: verticalScale(12),
+                            fontSize: scale(14),
+                            color: '#1e293b',
+                            height: verticalScale(50),
+                            elevation: 0,
+                            shadowOpacity: 0,
+                        },
+                        listView: {
+                            backgroundColor: '#fff',
+                            borderRadius: moderateScale(8),
+                            marginTop: 5,
+                            borderWidth: 1,
+                            borderColor: '#e2e8f0',
+                            position: 'absolute',
+                            top: 50,
+                            width: '100%',
+                            zIndex: 1000,
+                            elevation: 5,
+                        },
+                        row: {
+                            padding: 13,
+                            height: 44,
+                            flexDirection: 'row',
+                        },
+                        separator: {
+                            height: 1,
+                            backgroundColor: '#e2e8f0',
+                        },
+                        description: {
+                            fontSize: 14,
+                            color: '#1e293b'
+                        }
+                    }}
+                    textInputProps={{
+                        placeholderTextColor: '#94a3b8',
+                    }}
+                    enablePoweredByContainer={false}
+                />
+            </View>
 
             <View style={{ height: 40 }} />
         </ScrollView>

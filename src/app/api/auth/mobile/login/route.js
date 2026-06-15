@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { execute as query } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -108,11 +109,15 @@ export async function POST(request) {
         const { password_hash, password: p, ...userData } = user
         userData.role = dbRole;
 
+        // Generate a secure Refresh Token for mobile sessions
+        const refreshToken = crypto.randomBytes(64).toString('hex');
+
         // Create response
         const response = NextResponse.json({
             success: true,
             message: `${dbRole.charAt(0).toUpperCase() + dbRole.slice(1)} login successful`,
             token,
+            refreshToken, // Send refresh token back to client
             user: userData
         })
 
@@ -131,13 +136,13 @@ export async function POST(request) {
             await query(
                 `INSERT INTO mobile_auth_users 
                  (${userIdCol}, user_type, refresh_token, refresh_token_expires, is_active, last_login, device_id)
-                 VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY), 1, NOW(), ?)
+                 VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 365 DAY), 1, NOW(), ?)
                  ON DUPLICATE KEY UPDATE 
                  refresh_token = VALUES(refresh_token),
                  refresh_token_expires = VALUES(refresh_token_expires),
                  is_active = 1,
                  last_login = NOW()`,
-                [user.id, dbType, token, finalDeviceId]
+                [user.id, dbType, refreshToken, finalDeviceId]
             );
             console.log(`✅ Mobile session persisted for ${dbType} ID: ${user.id}`);
         } catch (dbError) {

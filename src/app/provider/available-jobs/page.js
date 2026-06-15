@@ -140,38 +140,59 @@ export default function ProviderAvailableJobs() {
   const [stripeConnected, setStripeConnected] = useState(true)
   const [confirmModal, setConfirmModal] = useState({ open: false, jobId: null, amount: null, hasOvertime: false })
   const [stripeModal, setStripeModal] = useState(false)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [dbTotal, setDbTotal] = useState(0)
 
   const showToast = (type, text) => setToast({ type, text })
 
-  useEffect(() => { loadJobs() }, [])
+  useEffect(() => { loadJobs(false, '', false, 1) }, [])
 
-  const loadJobs = async (silent = false, city = '', all = false) => {
-    silent ? setRefreshing(true) : setLoading(true)
+  const loadJobs = async (silent = false, city = '', all = false, pageNum = 1) => {
+    if (pageNum === 1) {
+      silent ? setRefreshing(true) : setLoading(true)
+    } else {
+      setLoadingMore(true)
+    }
+    
     try {
-      let url = '/api/provider/available-jobs'
+      let url = `/api/provider/available-jobs?page=${pageNum}&limit=10`
       if (!all) {
         const filterCity = city || activeCity || providerCity
-        if (filterCity) url += `?city=${encodeURIComponent(filterCity)}`
+        if (filterCity) url += `&city=${encodeURIComponent(filterCity)}`
       }
 
       const [jobsRes, provRes] = await Promise.all([
         fetch(url),
-        fetch('/api/provider/me')
+        pageNum === 1 ? fetch('/api/provider/me') : Promise.resolve(null)
       ])
+      
       const data = await jobsRes.json()
-      const provData = await provRes.json()
-
-      if (provData.success) {
-        setStripeConnected(provData.provider?.stripe_onboarding_complete || false)
+      
+      if (provRes) {
+        const provData = await provRes.json()
+        if (provData.success) {
+          setStripeConnected(provData.provider?.stripe_onboarding_complete || false)
+        }
       }
+
       if (data.success) {
-        setJobs(data.data || [])
+        if (pageNum === 1) {
+          setJobs(data.data || [])
+        } else {
+          setJobs(prev => [...prev, ...(data.data || [])])
+        }
+        setHasMore(data.hasMore || false)
+        setPage(pageNum)
+        setDbTotal(data.total || 0)
         setShowAllAreas(all)
+        
         if (data.provider_city) {
           setProviderCity(data.provider_city)
           if (!city && !activeCity) setActiveCity(data.provider_city)
         }
-        if (!data.data?.length && !silent) {
+        if (!data.data?.length && !silent && pageNum === 1) {
           showToast('info', all ? 'No jobs available anywhere right now' : (city || activeCity) ? `No jobs found in ${city || activeCity}` : 'No jobs available in your area')
         }
       } else {
@@ -182,6 +203,7 @@ export default function ProviderAvailableJobs() {
     } finally {
       setLoading(false)
       setRefreshing(false)
+      setLoadingMore(false)
     }
   }
 
@@ -248,7 +270,7 @@ export default function ProviderAvailableJobs() {
   })
 
   const stats = {
-    total: jobs.length,
+    total: dbTotal || jobs.length,
     assigned: jobs.filter(j => j.is_admin_assigned).length,
     overtime: jobs.filter(j => j.pricing?.has_overtime).length,
     base: jobs.filter(j => !j.pricing?.has_overtime).length,
@@ -584,10 +606,29 @@ export default function ProviderAvailableJobs() {
                     )}
                   </button>
                 </div>
-
               </div>
             )
           })}
+          
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="pt-4 pb-8 flex justify-center">
+              <button 
+                onClick={() => loadJobs(false, searchCity || activeCity, showAllAreas, page + 1)}
+                disabled={loadingMore}
+                className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:border-green-600 hover:text-green-700 transition disabled:opacity-50 flex items-center gap-2 shadow-sm"
+              >
+                {loadingMore ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Load More Jobs'
+                )}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

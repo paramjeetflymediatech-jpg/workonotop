@@ -1,11 +1,3 @@
-
-
-
-
-
-
-
-
 // app/provider/available-jobs/[id]/page.jsx
 'use client'
 
@@ -14,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import React from 'react'
 import { ArrowLeft, Clock, Calendar, MapPin, X, CheckCircle } from 'lucide-react'
+import { CLUSTER_DISPLAY_NAMES } from '@/lib/location'
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function Toast({ toast, onDismiss }) {
@@ -358,11 +351,12 @@ export default function ProviderJobDetail({ params }) {
 
           <InfoCard title="Location" icon="📍">
             <div className="bg-gray-50 rounded-2xl p-4 mb-4 border border-gray-100">
-              <p className="text-sm font-bold text-gray-900 break-all break-words">{job.address_line1}</p>
-              {job.address_line2 && <p className="text-sm text-gray-500 mt-0.5 break-all break-words">{job.address_line2}</p>}
-              {(job.city || job.postal_code) && (
-                <p className="text-xs text-gray-400 mt-1 font-medium">{[job.city, job.postal_code].filter(Boolean).join(', ')}</p>
-              )}
+              <p className="text-sm font-bold text-gray-900">
+                {CLUSTER_DISPLAY_NAMES[job.cluster] || job.city || job.cluster || 'Location hidden'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1 italic">
+                Full street address is hidden for privacy. It will be revealed immediately after you accept the job.
+              </p>
             </div>
 
             <div className="grid grid-cols-3 gap-2">

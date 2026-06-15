@@ -36,6 +36,7 @@
     "preinstall": "^0.0.1-security",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-google-autocomplete": "^2.7.5",
     "react-hot-toast": "^2.6.0",
     "stripe": "^20.4.0",
     "sweetalert2": "^11.26.21",

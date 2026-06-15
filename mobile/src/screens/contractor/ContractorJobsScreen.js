@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Alert, StatusBar, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, StatusBar, Dimensions, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerActions } from '@react-navigation/native';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
 import Typography from '../../theme/Typography';
 
@@ -20,21 +20,36 @@ const ContractorJobsScreen = ({ navigation }) => {
     const [filter, setFilter] = useState('all');
     const [stripeConnected, setStripeConnected] = useState(true);
     const [providerCity, setProviderCity] = useState('');
+    
+    // Pagination states
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [dbTotal, setDbTotal] = useState(0);
 
-    const fetchJobs = useCallback(async (silent = false) => {
-        if (!silent) setLoading(true);
+    const fetchJobs = useCallback(async (silent = false, pageNum = 1) => {
+        if (!silent && pageNum === 1) setLoading(true);
+        if (pageNum > 1) setLoadingMore(true);
+
         try {
             const [jobsRes, provRes] = await Promise.all([
-                api.get('/api/provider/available-jobs'),
-                api.get('/api/provider/me')
+                api.get(`/api/provider/available-jobs?page=${pageNum}&limit=10`),
+                pageNum === 1 ? api.get('/api/provider/me') : Promise.resolve(null)
             ]);
 
-            if (provRes.success) {
+            if (provRes && provRes.success) {
                 setStripeConnected(provRes.provider?.stripe_onboarding_complete || false);
             }
 
             if (jobsRes.success) {
-                setJobs(jobsRes.data || []);
+                if (pageNum === 1) {
+                    setJobs(jobsRes.data || []);
+                } else {
+                    setJobs(prev => [...prev, ...(jobsRes.data || [])]);
+                }
+                setHasMore(jobsRes.hasMore || false);
+                setPage(pageNum);
+                setDbTotal(jobsRes.total || 0);
                 if (jobsRes.provider_city) setProviderCity(jobsRes.provider_city);
             }
         } catch (err) {
@@ -42,6 +57,7 @@ const ContractorJobsScreen = ({ navigation }) => {
         } finally {
             setLoading(false);
             setRefreshing(false);
+            setLoadingMore(false);
         }
     }, []);
 
@@ -70,7 +86,13 @@ const ContractorJobsScreen = ({ navigation }) => {
         }
     }, [loading, stripeConnected]);
 
-    const onRefresh = () => { setRefreshing(true); fetchJobs(true); };
+    const onRefresh = () => { setRefreshing(true); fetchJobs(true, 1); };
+
+    const handleLoadMore = () => {
+        if (!loadingMore && hasMore) {
+            fetchJobs(true, page + 1);
+        }
+    };
 
     const acceptJob = async (jobId, hasOvertime, displayAmount) => {
         if (!stripeConnected) {
@@ -93,7 +115,7 @@ const ContractorJobsScreen = ({ navigation }) => {
                             const res = await api.post('/api/provider/available-jobs', { booking_id: jobId });
                             if (res.success) {
                                 Alert.alert('Success', '🎉 Job accepted! Check your schedule.');
-                                fetchJobs(true);
+                                fetchJobs(true, 1);
                                 navigation.navigate('MyJobs');
                             } else {
                                 Alert.alert('Error', res.message || 'Failed to accept job.');
@@ -193,13 +215,13 @@ const ContractorJobsScreen = ({ navigation }) => {
     });
 
     const stats = {
-        total: jobs.length,
+        total: dbTotal || jobs.length,
         assigned: jobs.filter(j => j.is_admin_assigned).length,
         overtime: jobs.filter(j => j.pricing?.has_overtime).length,
         base: jobs.filter(j => !j.pricing?.has_overtime).length,
     };
 
-    const renderJobItem = (job) => {
+    const renderJobItem = ({ item: job }) => {
         const dur = job.pricing?.duration_minutes || 60;
         const commPct = job.pricing?.commission_percent || 0;
         const baseEarnings = job.pricing?.provider_base_earnings || 0;
@@ -307,7 +329,7 @@ const ContractorJobsScreen = ({ navigation }) => {
         );
     };
 
-    if (loading) {
+    if (loading && page === 1) {
         return (
             <View style={styles.loaderContainer}>
                 <ActivityIndicator size="large" color="#15843E" />
@@ -315,6 +337,66 @@ const ContractorJobsScreen = ({ navigation }) => {
             </View>
         );
     }
+
+    const ListHeader = () => (
+        <>
+            {/* Stats & Filters */}
+            {jobs.length > 0 && (
+                <View style={styles.topSection}>
+                    <View style={styles.statsRow}>
+                        <Text style={styles.statItem}>Total: <Text style={styles.statVal}>{stats.total}</Text></Text>
+                        {stats.assigned > 0 && <Text style={styles.statItem}>🎯 Assigned: <Text style={[styles.statVal, { color: '#2563eb' }]}>{stats.assigned}</Text></Text>}
+                        <Text style={styles.statItem}>+OT: <Text style={[styles.statVal, { color: '#15843E' }]}>{stats.overtime}</Text></Text>
+                        <Text style={styles.statItem}>Base: <Text style={styles.statVal}>{stats.base}</Text></Text>
+                    </View>
+
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={{ gap: 8 }}>
+                        {[
+                            { id: 'all', label: 'All' },
+                            { id: 'assigned', label: '🎯 Assigned' },
+                            { id: 'with_overtime', label: '+Overtime' },
+                            { id: 'base_only', label: 'Base Only' },
+                        ].map((f) => (
+                            (f.id !== 'assigned' || stats.assigned > 0) && (
+                                <TouchableOpacity
+                                    key={f.id}
+                                    onPress={() => setFilter(f.id)}
+                                    style={[styles.filterChip, filter === f.id && styles.filterChipActive]}
+                                >
+                                    <Text style={[styles.filterText, filter === f.id && styles.filterTextActive]}>{f.label}</Text>
+                                </TouchableOpacity>
+                            )
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+        </>
+    );
+
+    const ListEmpty = () => (
+        <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconCircle}>
+                <Ionicons name="search-outline" size={40} color="#94a3b8" />
+            </View>
+            <Text style={styles.emptyTitle}>No jobs available</Text>
+            <Text style={styles.emptyText}>
+                {filter === 'all' ? `No open jobs in ${providerCity || 'your area'} right now.` : `No ${filter.replace('_', ' ')} jobs found.`}
+            </Text>
+            <TouchableOpacity style={styles.checkAgainBtn} onPress={() => { setFilter('all'); fetchJobs(false, 1); }}>
+                <Text style={styles.checkAgainText}>Check Again</Text>
+            </TouchableOpacity>
+        </View>
+    );
+
+    const ListFooter = () => {
+        if (!loadingMore) return <View style={{ height: 20 }} />;
+        return (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color="#15843E" />
+                <Text style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>Loading more jobs...</Text>
+            </View>
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -342,59 +424,19 @@ const ContractorJobsScreen = ({ navigation }) => {
                 </View>
             )}
 
-            <ScrollView
+            <FlatList
+                data={filteredJobs}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderJobItem}
                 contentContainerStyle={styles.scroll}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} color="#15843E" />}
                 showsVerticalScrollIndicator={false}
-            >
-                {/* Stats & Filters */}
-                {jobs.length > 0 && (
-                    <View style={styles.topSection}>
-                        <View style={styles.statsRow}>
-                            <Text style={styles.statItem}>Total: <Text style={styles.statVal}>{stats.total}</Text></Text>
-                            {stats.assigned > 0 && <Text style={styles.statItem}>🎯 Assigned: <Text style={[styles.statVal, { color: '#2563eb' }]}>{stats.assigned}</Text></Text>}
-                            <Text style={styles.statItem}>+OT: <Text style={[styles.statVal, { color: '#15843E' }]}>{stats.overtime}</Text></Text>
-                            <Text style={styles.statItem}>Base: <Text style={styles.statVal}>{stats.base}</Text></Text>
-                        </View>
-
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={{ gap: 8 }}>
-                            {[
-                                { id: 'all', label: 'All' },
-                                { id: 'assigned', label: '🎯 Assigned' },
-                                { id: 'with_overtime', label: '+Overtime' },
-                                { id: 'base_only', label: 'Base Only' },
-                            ].map((f) => (
-                                (f.id !== 'assigned' || stats.assigned > 0) && (
-                                    <TouchableOpacity
-                                        key={f.id}
-                                        onPress={() => setFilter(f.id)}
-                                        style={[styles.filterChip, filter === f.id && styles.filterChipActive]}
-                                    >
-                                        <Text style={[styles.filterText, filter === f.id && styles.filterTextActive]}>{f.label}</Text>
-                                    </TouchableOpacity>
-                                )
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-
-                {filteredJobs.length === 0 ? (
-                    <View style={styles.emptyContainer}>
-                        <View style={styles.emptyIconCircle}>
-                            <Ionicons name="search-outline" size={40} color="#94a3b8" />
-                        </View>
-                        <Text style={styles.emptyTitle}>No jobs available</Text>
-                        <Text style={styles.emptyText}>
-                            {filter === 'all' ? `No open jobs in ${providerCity || 'your area'} right now.` : `No ${filter.replace('_', ' ')} jobs found.`}
-                        </Text>
-                        <TouchableOpacity style={styles.checkAgainBtn} onPress={() => { setFilter('all'); fetchJobs(); }}>
-                            <Text style={styles.checkAgainText}>Check Again</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    filteredJobs.map(renderJobItem)
-                )}
-            </ScrollView>
+                ListHeaderComponent={ListHeader}
+                ListEmptyComponent={ListEmpty}
+                ListFooterComponent={ListFooter}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+            />
         </View>
     );
 };

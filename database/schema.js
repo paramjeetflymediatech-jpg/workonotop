@@ -205,6 +205,9 @@ const tables = [
     address_line2 VARCHAR(255),
     city VARCHAR(100) DEFAULT 'Calgary',
     postal_code VARCHAR(20),
+    latitude DECIMAL(10,8),
+    longitude DECIMAL(11,8),
+    cluster VARCHAR(100),
     status ENUM('pending', 'matching', 'confirmed', 'in_progress', 'awaiting_approval', 'completed', 'cancelled', 'disputed') DEFAULT 'pending',
     commission_percent DECIMAL(5,2),
     provider_amount DECIMAL(10,2),
@@ -504,6 +507,9 @@ const alterations = [
   { table: 'bookings', column: 'after_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN after_photos_uploaded TINYINT(1) DEFAULT 0' },
   { table: 'bookings', column: 'work_summary', sql: 'ALTER TABLE bookings ADD COLUMN work_summary TEXT' },
   { table: 'bookings', column: 'recommendations', sql: 'ALTER TABLE bookings ADD COLUMN recommendations TEXT' },
+  { table: 'bookings', column: 'latitude', sql: 'ALTER TABLE bookings ADD COLUMN latitude DECIMAL(10,8)' },
+  { table: 'bookings', column: 'longitude', sql: 'ALTER TABLE bookings ADD COLUMN longitude DECIMAL(11,8)' },
+  { table: 'bookings', column: 'cluster', sql: 'ALTER TABLE bookings ADD COLUMN cluster VARCHAR(100)' },
   
   // users table additions
   { table: 'users', column: 'image_url', sql: 'ALTER TABLE users ADD COLUMN image_url VARCHAR(255) AFTER role' },

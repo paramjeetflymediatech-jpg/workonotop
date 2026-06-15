@@ -13,13 +13,7 @@
 
 import { useState } from 'react';
 
-const SERVICE_AREAS = [
-  'Toronto', 'North York', 'Scarborough', 'Etobicoke', 'East York', 'York',
-  'Mississauga', 'Brampton', 'Vaughan', 'Markham', 'Richmond Hill',
-  'Aurora', 'Newmarket', 'King', 'East Gwillimbury', 'Georgina',
-  'Whitchurch-Stouffville', 'Oakville', 'Burlington', 'Halton Hills',
-  'Milton', 'Caledon', 'Pickering', 'Ajax', 'Whitby', 'Oshawa'
-];
+import { CLUSTER_GROUPS, CLUSTER_DISPLAY_NAMES } from '@/lib/location';
 
 const SKILLS = [
   'Cleaning (regular, deep, move out)',
@@ -227,19 +221,27 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Service Areas <span className="text-red-500">*</span>
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {SERVICE_AREAS.map(area => (
-            <label key={area} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.service_areas.includes(area)}
-                onChange={() => handleArrayToggle('service_areas', area)}
-                className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-              />
-              <span className="text-sm text-gray-700 leading-tight">{area}</span>
-            </label>
-          ))}
-        </div>
+        <p className="text-sm text-gray-500 mb-4">Which areas are you willing to work in? Select all that apply.</p>
+        
+        {Object.entries(CLUSTER_GROUPS).map(([groupName, clusterKeys]) => (
+          <div key={groupName} className="mb-6">
+            <h3 className="font-semibold text-gray-800 mb-3 border-b pb-1">{groupName}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {clusterKeys.map(clusterKey => (
+                <label key={clusterKey} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.service_areas.includes(clusterKey)}
+                    onChange={() => handleArrayToggle('service_areas', clusterKey)}
+                    className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <span className="text-sm text-gray-700 leading-tight">{CLUSTER_DISPLAY_NAMES[clusterKey] || clusterKey}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+
         {errors.service_areas && (
           <p className="mt-1 text-sm text-red-500">{errors.service_areas}</p>
         )}

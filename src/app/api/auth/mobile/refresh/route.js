@@ -1,0 +1,110 @@
+import { NextResponse } from 'next/server'
+import { execute as query } from '@/lib/db'
+import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+
+export async function POST(request) {
+    try {
+        const body = await request.json().catch(() => ({}));
+        const { refreshToken } = body;
+
+        if (!refreshToken) {
+            return NextResponse.json(
+                { success: false, message: 'Refresh token is required' },
+                { status: 400 }
+            );
+        }
+
+        // Find the refresh token in the database
+        const sessions = await query(
+            `SELECT * FROM mobile_auth_users 
+             WHERE refresh_token = ? 
+             AND refresh_token_expires > NOW() 
+             AND is_active = 1`,
+            [refreshToken]
+        );
+
+        if (sessions.length === 0) {
+            return NextResponse.json(
+                { success: false, message: 'Invalid or expired refresh token' },
+                { status: 401 }
+            );
+        }
+
+        const session = sessions[0];
+
+        // Fetch user data based on user_type
+        let user = null;
+        let dbRole = session.user_type;
+
+        if (dbRole === 'provider') {
+            const providers = await query('SELECT * FROM service_providers WHERE id = ?', [session.provider_id]);
+            if (providers.length > 0) user = providers[0];
+        } else {
+            const users = await query('SELECT * FROM users WHERE id = ?', [session.user_id]);
+            if (users.length > 0) user = users[0];
+        }
+
+        if (!user) {
+            return NextResponse.json(
+                { success: false, message: 'User not found' },
+                { status: 404 }
+            );
+        }
+
+        // Validate provider verification status if applicable
+        if (dbRole === 'provider' && !user.email_verified && user.status !== 'active') {
+            return NextResponse.json(
+                { success: false, message: 'Please verify your email first' },
+                { status: 403 }
+            );
+        }
+
+        // Generate NEW JWT access token
+        const newAccessToken = jwt.sign(
+            {
+                id: user.id,
+                providerId: dbRole === 'provider' ? user.id : undefined,
+                email: user.email,
+                first_name: user.first_name || user.name,
+                last_name: user.last_name || '',
+                role: dbRole,
+                status: user.status || 'active',
+                type: dbRole
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' } // Access token valid for 7 days
+        );
+
+        // Generate NEW refresh token (Token Rotation)
+        const newRefreshToken = crypto.randomBytes(64).toString('hex');
+
+        // Update session in DB
+        await query(
+            `UPDATE mobile_auth_users 
+             SET refresh_token = ?, 
+                 refresh_token_expires = DATE_ADD(NOW(), INTERVAL 365 DAY),
+                 last_login = NOW()
+             WHERE id = ?`,
+            [newRefreshToken, session.id]
+        );
+
+        console.log(`✅ Session refreshed successfully for ${dbRole} ID: ${user.id}`);
+
+        // Return new tokens to client
+        return NextResponse.json({
+            success: true,
+            token: newAccessToken,
+            refreshToken: newRefreshToken
+        });
+
+    } catch (error) {
+        console.error('Refresh Token Error:', error);
+        return NextResponse.json(
+            { success: false, message: 'Server error during token refresh' },
+            { status: 500 }
+        );
+    }
+}

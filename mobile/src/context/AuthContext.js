@@ -193,12 +193,15 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
-    const login = useCallback(async (userData, userToken) => {
+    const login = useCallback(async (userData, userToken, refreshToken) => {
         try {
             setUser(userData);
             setToken(userToken);
             await AsyncStorage.setItem('user', JSON.stringify(userData));
             await AsyncStorage.setItem('token', userToken);
+            if (refreshToken) {
+                await AsyncStorage.setItem('refreshToken', refreshToken);
+            }
             registerPushToken(userData);
         } catch (error) {
             console.error('Failed to save auth data:', error);
@@ -207,10 +210,19 @@ export const AuthProvider = ({ children }) => {
 
     const logout = useCallback(async () => {
         try {
+            // Tell backend to invalidate refresh token
+            const rToken = await AsyncStorage.getItem('refreshToken');
+            if (rToken) {
+                try {
+                    await apiService.post('/api/auth/mobile/logout', { refreshToken: rToken });
+                } catch(e) { console.log('Backend logout silent fail', e.message); }
+            }
+
             setUser(null);
             setToken(null);
             await AsyncStorage.removeItem('user');
             await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('refreshToken');
         } catch (error) {
             console.error('Failed to clear auth data:', error);
         }
@@ -234,6 +246,18 @@ export const AuthProvider = ({ children }) => {
             console.error('[AuthContext] Manual refresh failed:', error);
         }
     }, [token]);
+
+    const refreshTokens = useCallback(async (newToken, newRefreshToken) => {
+        try {
+            setToken(newToken);
+            await AsyncStorage.setItem('token', newToken);
+            if (newRefreshToken) {
+                await AsyncStorage.setItem('refreshToken', newRefreshToken);
+            }
+        } catch (error) {
+            console.error('Failed to update tokens:', error);
+        }
+    }, []);
 
     const updateUser = useCallback(async (updatedData) => {
         try {
@@ -309,7 +333,7 @@ export const AuthProvider = ({ children }) => {
                 if (userData.role === 'pro') userData.role = 'provider';
 
                 console.log(`✅ [GoogleAuth] Success! Logged in as: ${userData.role}`);
-                await login(userData, userToken);
+                await login(userData, userToken, response.refreshToken);
                 return { success: true, user: userData };
             } else {
                 console.error('❌ [GoogleAuth] Backend rejected token:', response.message);
@@ -373,7 +397,7 @@ export const AuthProvider = ({ children }) => {
                 if (userData.role === 'pro') userData.role = 'provider';
 
                 console.log(`✅ [AppleAuth] Success! Logged in as: ${userData.role}`);
-                await login(userData, userToken);
+                await login(userData, userToken, response.refreshToken);
                 return { success: true, user: userData };
             } else {
                 console.error('❌ [AppleAuth] Backend rejected token:', response.message);
@@ -400,8 +424,9 @@ export const AuthProvider = ({ children }) => {
         updateUser,
         refreshUser,
         loginWithGoogle,
-        loginWithApple
-    }), [user, token, loading, login, logout, updateUser, refreshUser, loginWithGoogle, loginWithApple]);
+        loginWithApple,
+        refreshTokens
+    }), [user, token, loading, login, logout, updateUser, refreshUser, loginWithGoogle, loginWithApple, refreshTokens]);
 
     return (
         <AuthContext.Provider value={value}>

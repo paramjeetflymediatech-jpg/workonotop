@@ -24,6 +24,10 @@ export default function BookingConfirmPage() {
   const [password, setPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [lat, setLat] = useState(null);
+  const [lng, setLng] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -35,6 +39,11 @@ export default function BookingConfirmPage() {
       const details = JSON.parse(savedDetails);
       setDetailsData(details);
       if (details.address) setAddress(details.address);
+      
+      setCity(sessionStorage.getItem('userCity') || '');
+      setPostalCode(sessionStorage.getItem('userPostalCode') || '');
+      setLat(sessionStorage.getItem('userLat') ? parseFloat(sessionStorage.getItem('userLat')) : null);
+      setLng(sessionStorage.getItem('userLng') ? parseFloat(sessionStorage.getItem('userLng')) : null);
     } else {
       router.push('/services');
     }
@@ -80,8 +89,10 @@ export default function BookingConfirmPage() {
       has_pets: detailsData.has_pets || false,
       address_line1: address,
       address_line2: '',
-      city: '',
-      postal_code: '',
+      city: city,
+      postal_code: postalCode,
+      latitude: lat,
+      longitude: lng,
       photos: detailsData.photos || [],
       user_id: currentUser?.id,
     };

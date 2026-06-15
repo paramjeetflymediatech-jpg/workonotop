@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { execute as query } from '@/lib/db';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -142,6 +143,7 @@ export async function POST(request) {
     };
 
     const jwtToken = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
+    const refreshToken = crypto.randomBytes(64).toString('hex');
     
     // --- MOBILE SESSION PERSISTENCE ---
     const deviceId = body.device_id || request.headers.get('x-device-id');
@@ -151,13 +153,13 @@ export async function POST(request) {
             const userIdCol = (finalRole === 'provider') ? 'provider_id' : 'user_id';
             await query(
                 `INSERT INTO mobile_auth_users (${userIdCol}, user_type, last_login, device_id, refresh_token, refresh_token_expires)
-                 VALUES (?, ?, NOW(), ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
+                 VALUES (?, ?, NOW(), ?, ?, DATE_ADD(NOW(), INTERVAL 365 DAY))
                  ON DUPLICATE KEY UPDATE 
                     last_login = NOW(), 
                     device_id = VALUES(device_id),
                     refresh_token = VALUES(refresh_token),
                     refresh_token_expires = VALUES(refresh_token_expires)`,
-                [finalUser.id, finalRole, deviceId || 'mobile-app', jwtToken]
+                [finalUser.id, finalRole, deviceId || 'mobile-app', refreshToken]
             );
             console.log('📱 [GoogleAuth] Mobile session persisted to DB');
         } catch (e) {
@@ -170,6 +172,7 @@ export async function POST(request) {
       success: true,
       message: 'Login successful',
       token: jwtToken,
+      refreshToken,
       role: finalRole
     };
 

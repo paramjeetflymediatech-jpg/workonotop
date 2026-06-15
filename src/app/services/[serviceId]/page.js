@@ -1,5 +1,7 @@
 'use client';
 import Link from 'next/link';
+import AutocompleteComponent from 'react-google-autocomplete';
+const Autocomplete = AutocompleteComponent.default || AutocompleteComponent;
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
@@ -13,8 +15,6 @@ export default function ServiceDetailPage({ params }) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState('');
-  const [addressModalOpen, setAddressModalOpen] = useState(false);
-  const [tempAddress, setTempAddress] = useState('');
   const [service, setService] = useState(null);
   const [relatedServices, setRelatedServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,8 +28,19 @@ export default function ServiceDetailPage({ params }) {
     const savedAddress = sessionStorage.getItem('userAddress');
     if (savedAddress && savedAddress !== 'Please enter your service location') {
       setSelectedAddress(savedAddress);
-      setTempAddress(savedAddress);
     }
+
+    const handleScroll = () => {
+      // Force Google Places Autocomplete to reposition the dropdown when scrolling
+      if (document.activeElement?.classList?.contains('pac-target-input')) {
+        window.dispatchEvent(new Event('resize'));
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [serviceId]);
 
   const fetchServiceData = async () => {
@@ -65,11 +76,7 @@ export default function ServiceDetailPage({ params }) {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const handleAddressSave = () => {
-    setSelectedAddress(tempAddress);
-    sessionStorage.setItem('userAddress', tempAddress);
-    setAddressModalOpen(false);
-  };
+
 
   const useCases = service?.use_cases
     ? service.use_cases.split(',').map(item => item.trim()).filter(item => item)
@@ -297,19 +304,72 @@ export default function ServiceDetailPage({ params }) {
                       </label>
                       {addressError && <span className="text-red-500 text-xs font-bold animate-pulse">{addressError}</span>}
                     </div>
-                    <div
-                      className={`flex items-center p-3 border-2 rounded-xl transition cursor-pointer bg-white ${addressError ? 'border-red-400 animate-shake' : 'border-gray-200 hover:border-[#16A34A]'}`}
-                      onClick={() => {
-                        setAddressError('');
-                        setAddressModalOpen(true);
-                      }}
-                    >
-                      <span className={`text-sm flex-1 line-clamp-1 ${!selectedAddress ? 'text-gray-400' : ''}`}>
-                        {selectedAddress || "Please enter your service location"}
-                      </span>
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
+                    <div className="relative">
+                      {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+                        <Autocomplete
+                          className={`w-full p-3 border-2 rounded-xl transition bg-white text-sm ${addressError ? 'border-red-400 focus:border-red-500 animate-shake' : 'border-gray-200 focus:border-green-500 hover:border-green-500 focus:outline-none'}`}
+                          onPlaceSelected={(place) => {
+                            if (place && place.formatted_address) {
+                              setSelectedAddress(place.formatted_address);
+                              setAddressError('');
+
+                              // Extract City and Postal Code from address components
+                              let city = '';
+                              let postalCode = '';
+                              if (place.address_components) {
+                                for (const component of place.address_components) {
+                                  const types = component.types;
+                                  if (types.includes('locality')) {
+                                    city = component.long_name;
+                                  } else if (!city && types.includes('administrative_area_level_3')) {
+                                    city = component.long_name;
+                                  }
+                                  if (types.includes('postal_code')) {
+                                    postalCode = component.long_name;
+                                  }
+                                }
+                              }
+                              
+                              let lat = null;
+                              let lng = null;
+                              if (place.geometry && place.geometry.location) {
+                                lat = place.geometry.location.lat();
+                                lng = place.geometry.location.lng();
+                              }
+                              
+                              sessionStorage.setItem('userAddress', place.formatted_address);
+                              sessionStorage.setItem('userCity', city);
+                              sessionStorage.setItem('userPostalCode', postalCode);
+                              if (lat && lng) {
+                                sessionStorage.setItem('userLat', lat);
+                                sessionStorage.setItem('userLng', lng);
+                              }
+                            }
+                          }}
+                          options={{
+                            types: ['address'],
+                            componentRestrictions: { country: 'ca' }
+                          }}
+                          placeholder="Please enter your service location"
+                          defaultValue={selectedAddress}
+                          onChange={(e) => {
+                            setSelectedAddress(e.target.value);
+                            setAddressError('');
+                          }}
+                        />
+                      ) : (
+                        <div className="p-4 border-2 border-amber-300 bg-amber-50 rounded-xl text-amber-800 text-sm font-medium">
+                          Google Maps API Key is missing. Please add <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to your <code>.env</code> file and restart the server.
+                        </div>
+                      )}
+                      
+                      {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
+                        <div className="absolute right-3 top-3.5 pointer-events-none">
+                          {/* <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg> */}
+                        </div>
+                      )}
                     </div>
                     <p className="text-xs text-gray-500 mt-2">
                       ✓ Your address is kept private until you accept a pro
@@ -321,8 +381,8 @@ export default function ServiceDetailPage({ params }) {
                       if (!selectedAddress || selectedAddress.trim() === '') {
                         setAddressError('Required');
                         toast.error('Please enter your service location');
-                        setAddressModalOpen(true);
                       } else {
+                        // The details are already in sessionStorage from onPlaceSelected
                         router.push(`/booking/schedule?service=${service.id}`);
                       }
                     }}
@@ -344,40 +404,6 @@ export default function ServiceDetailPage({ params }) {
         </div>
       </div>
 
-      {addressModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fadeIn">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Enter your address</h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Street address</label>
-              <input
-                type="text"
-                className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
-                value={tempAddress}
-                onChange={(e) => setTempAddress(e.target.value)}
-                placeholder="Please enter your service location"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleAddressSave}
-                className="flex-1 bg-green-700 text-white py-3 rounded-xl font-semibold hover:bg-green-800 transition"
-              >
-                Save address
-              </button>
-              <button
-                onClick={() => {
-                  setAddressModalOpen(false);
-                  setTempAddress(selectedAddress);
-                }}
-                className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-semibold hover:bg-gray-300 transition"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {relatedServices.length > 0 && (
         <section className="bg-gray-50/80 py-12 md:py-16 mt-8 border-t border-gray-200">

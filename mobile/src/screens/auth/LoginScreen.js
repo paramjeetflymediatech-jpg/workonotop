@@ -63,7 +63,7 @@ const LoginScreen = ({ navigation }) => {
                 if (userData.role === 'user') userData.role = 'customer';
                 if (userData.role === 'pro') userData.role = 'provider';
 
-                login(userData, response.token);
+                login(userData, response.token, response.refreshToken);
 
                 // Handle Redirect if guest was trying to book
                 const { redirectTo, redirectParams } = route.params || {};

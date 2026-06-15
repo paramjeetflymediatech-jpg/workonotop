@@ -7,6 +7,7 @@ import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { apiService } from '../../services/api';
 import { API_BASE_URL } from '../../config';
+import { CLUSTER_GROUPS, CLUSTER_DISPLAY_NAMES } from '../../config/location';
 
 const ProviderUpdateProfileScreen = ({ navigation }) => {
     const { user, updateUser, token } = useAuth();
@@ -24,7 +25,8 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
         experience_years: '',
         bio: '',
         location: '',
-        city: ''
+        city: '',
+        service_areas: []
     });
 
     useEffect(() => {
@@ -46,7 +48,8 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                     experience_years: p.experience_years ? String(p.experience_years) : '',
                     bio: p.bio || '',
                     location: p.location || '',
-                    city: p.city || ''
+                    city: p.city || '',
+                    service_areas: p.service_areas || []
                 });
                 if (p.avatar_url) {
                     setProfileImage(p.avatar_url.startsWith('http') ? p.avatar_url : `${API_BASE_URL}${p.avatar_url}`);
@@ -133,6 +136,7 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                 bio: form.bio,
                 location: form.location,
                 city: form.city,
+                service_areas: form.service_areas,
                 avatar_url: uploadedImageUrl?.replace(API_BASE_URL, '') // send relative path
             };
 
@@ -281,6 +285,42 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                         />
                     </View>
 
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Service Areas</Text>
+                        <Text style={styles.subLabel}>Which areas are you willing to work in?</Text>
+                        
+                        {Object.entries(CLUSTER_GROUPS).map(([groupName, clusterKeys]) => (
+                            <View key={groupName} style={styles.clusterGroup}>
+                                <Text style={styles.clusterGroupTitle}>{groupName}</Text>
+                                <View style={styles.checkboxContainer}>
+                                    {clusterKeys.map(clusterKey => {
+                                        const isSelected = form.service_areas.includes(clusterKey);
+                                        return (
+                                            <TouchableOpacity 
+                                                key={clusterKey} 
+                                                style={[styles.checkboxItem, isSelected && styles.checkboxItemSelected]}
+                                                onPress={() => {
+                                                    setForm(prev => {
+                                                        const areas = prev.service_areas || [];
+                                                        const newAreas = areas.includes(clusterKey)
+                                                            ? areas.filter(a => a !== clusterKey)
+                                                            : [...areas, clusterKey];
+                                                        return { ...prev, service_areas: newAreas };
+                                                    });
+                                                }}
+                                            >
+                                                <View style={[styles.checkboxBox, isSelected && styles.checkboxBoxSelected]}>
+                                                    {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                                                </View>
+                                                <Text style={styles.checkboxLabel}>{CLUSTER_DISPLAY_NAMES[clusterKey] || clusterKey}</Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+
                     <TouchableOpacity
                         style={[styles.saveButton, saving && styles.saveButtonDisabled]}
                         onPress={handleSave}
@@ -342,6 +382,15 @@ const styles = StyleSheet.create({
     },
     saveButtonDisabled: { backgroundColor: '#94acab' },
     saveButtonText: { color: '#fff', fontSize: moderateScale(16), fontWeight: 'bold' },
+    subLabel: { fontSize: moderateScale(12), color: '#64748b', marginBottom: verticalScale(10) },
+    clusterGroup: { marginBottom: verticalScale(15) },
+    clusterGroupTitle: { fontSize: moderateScale(14), fontWeight: 'bold', color: '#334155', marginBottom: verticalScale(8), borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: verticalScale(4) },
+    checkboxContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: moderateScale(8) },
+    checkboxItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: moderateScale(8), paddingHorizontal: moderateScale(10), paddingVertical: verticalScale(8), marginBottom: verticalScale(8), marginRight: scale(8) },
+    checkboxItemSelected: { borderColor: '#115e59', backgroundColor: '#f0fdf4' },
+    checkboxBox: { width: moderateScale(20), height: moderateScale(20), borderRadius: moderateScale(4), borderWidth: 1, borderColor: '#cbd5e1', marginRight: scale(8), alignItems: 'center', justifyContent: 'center' },
+    checkboxBoxSelected: { backgroundColor: '#115e59', borderColor: '#115e59' },
+    checkboxLabel: { fontSize: moderateScale(13), color: '#475569' },
 });
 
 export default ProviderUpdateProfileScreen;
