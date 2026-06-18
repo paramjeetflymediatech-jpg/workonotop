@@ -72,7 +72,34 @@ export async function POST(request) {
       isComplete = account.details_submitted && account.charges_enabled;
     } catch (stripeError) {
       console.error('❌ Stripe retrieve error:', stripeError.message);
-      // Even if stripe fails, we'll try to use the accountId provided
+      
+      // Auto-recovery for orphaned test accounts when API keys are rotated
+      if (
+        stripeError.message.includes('does not have access to account') || 
+        stripeError.message.includes('No such account') ||
+        stripeError.code === 'resource_missing'
+      ) {
+        console.log(`🧹 Clearing invalid Stripe account ID ${accountId} from DB (stripe-complete)`);
+        try {
+          await execute(
+            `UPDATE service_providers SET stripe_account_id = NULL, stripe_onboarding_complete = 0 WHERE id = ?`,
+            [providerId]
+          );
+          await execute(
+            `DELETE FROM provider_bank_accounts WHERE provider_id = ?`,
+            [providerId]
+          );
+        } catch (dbError) {
+          console.error('Failed to clear invalid Stripe account:', dbError);
+        }
+        
+        return NextResponse.json(
+          { success: false, message: 'Your Stripe connection is no longer valid. Please click Connect again.', clearAccount: true },
+          { status: 400 }
+        );
+      }
+      
+      // Even if stripe fails for a different reason, we'll fall through
     }
 
     // 1. Update service_providers
