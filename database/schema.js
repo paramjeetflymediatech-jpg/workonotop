@@ -472,6 +472,7 @@ const tables = [
     cluster_group VARCHAR(100) NOT NULL,
     cluster_key VARCHAR(100) UNIQUE NOT NULL,
     is_active TINYINT(1) DEFAULT 1,
+    cities JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`
@@ -521,6 +522,9 @@ const alterations = [
   { table: 'bookings', column: 'latitude', sql: 'ALTER TABLE bookings ADD COLUMN latitude DECIMAL(10,8)' },
   { table: 'bookings', column: 'longitude', sql: 'ALTER TABLE bookings ADD COLUMN longitude DECIMAL(11,8)' },
   { table: 'bookings', column: 'cluster', sql: 'ALTER TABLE bookings ADD COLUMN cluster VARCHAR(100)' },
+  
+  // Service Areas
+  { table: 'service_areas', column: 'cities', sql: 'ALTER TABLE service_areas ADD COLUMN cities JSON AFTER is_active' },
   
   // users table additions
   { table: 'users', column: 'image_url', sql: 'ALTER TABLE users ADD COLUMN image_url VARCHAR(255) AFTER role' },
