@@ -237,12 +237,15 @@ export async function GET(request) {
       ) {
         console.log(`🧹 Clearing invalid Stripe account ID ${accountId} for provider ${providerId}`);
         try {
+          // Clear the account ID from the main provider record
           await execute(
             `UPDATE service_providers SET stripe_account_id = NULL, stripe_onboarding_complete = 0 WHERE id = ?`,
             [providerId]
           );
+          
+          // Delete the bank account record entirely since stripe_account_id cannot be null
           await execute(
-            `UPDATE provider_bank_accounts SET stripe_account_id = NULL, account_status = 'pending', onboarding_completed = 0 WHERE provider_id = ?`,
+            `DELETE FROM provider_bank_accounts WHERE provider_id = ?`,
             [providerId]
           );
         } catch (dbError) {
