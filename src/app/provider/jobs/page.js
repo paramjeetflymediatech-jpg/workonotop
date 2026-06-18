@@ -210,6 +210,14 @@ export default function ProviderJobs() {
                         <p className="text-xs text-gray-400">Customer</p>
                         <p className="text-sm font-medium">{job.customer_first_name} {job.customer_last_name}</p>
                       </div>
+                      {job.service_area_name && (
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-400">Service Area</p>
+                          <p className="text-sm font-medium text-indigo-700">
+                            🗺️ {job.service_area_group ? `${job.service_area_group} - ${job.service_area_name}` : job.service_area_name}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Time Tracking Section - For active jobs */}

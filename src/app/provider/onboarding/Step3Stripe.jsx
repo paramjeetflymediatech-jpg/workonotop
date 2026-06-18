@@ -206,6 +206,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function Step3Stripe({ initialData, onNext, onBack, providerId, providerEmail }) {
   const router = useRouter();
@@ -239,9 +240,11 @@ export default function Step3Stripe({ initialData, onNext, onBack, providerId, p
             }, 2000);
           } else {
             setError(data.message || 'Stripe verification failed');
+            toast.error(data.message || 'Stripe verification failed');
           }
         } catch (err) {
           setError('Failed to verify Stripe status');
+          toast.error('Failed to verify Stripe status');
         } finally {
           setLoading(false);
         }
@@ -271,10 +274,12 @@ export default function Step3Stripe({ initialData, onNext, onBack, providerId, p
         window.location.href = data.onboardingUrl;
       } else {
         setError(data.message || 'Failed to create Stripe account');
+        toast.error(data.message || 'Failed to create Stripe account');
       }
     } catch (err) {
       console.error('Stripe connection error:', err);
       setError('Connection failed. Please try again.');
+      toast.error('Connection failed. Please try again.');
     } finally {
       setLoading(false);
     }

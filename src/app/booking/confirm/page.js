@@ -61,7 +61,7 @@ export default function BookingConfirmPage() {
   }, [router, user]);
 
   // ✅ NO booking creation here — just save to session and redirect to payment
-  const handleProceedToPayment = (e) => {
+  const handleProceedToPayment = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) { 
       router.push('/login?redirect=/booking/confirm'); 
@@ -96,6 +96,25 @@ export default function BookingConfirmPage() {
       photos: detailsData.photos || [],
       user_id: currentUser?.id,
     };
+
+    try {
+      const res = await fetch('/api/payment/create-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: scheduleData.service_id,
+          service_price: scheduleData.service_price,
+          additional_price: scheduleData.additional_price || 0,
+          service_name: scheduleData.service_name,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.client_secret) {
+        sessionStorage.setItem('prefetchedClientSecret', data.client_secret);
+      }
+    } catch (err) {
+      console.error('Prefetch intent error:', err);
+    }
 
     sessionStorage.setItem('pendingBooking', JSON.stringify(pendingBookingData));
     sessionStorage.removeItem('bookingSchedule');

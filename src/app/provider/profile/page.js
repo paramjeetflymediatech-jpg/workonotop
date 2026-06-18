@@ -8,7 +8,7 @@ import {
   Shield, Award, TrendingUp
 } from 'lucide-react';
 
-import { CLUSTER_GROUPS, CLUSTER_DISPLAY_NAMES } from '@/lib/location';
+// removed static location imports
 
 const SKILLS = [
   'Cleaning (regular, deep, move out)',
@@ -73,9 +73,35 @@ export default function ProviderProfile() {
 
   const showToast = (message, type = 'success') => setToast({ message, type });
 
+  const [serviceAreaGroups, setServiceAreaGroups] = useState({});
+  const [serviceAreaNames, setServiceAreaNames] = useState({});
+  const [loadingAreas, setLoadingAreas] = useState(true);
+
   useEffect(() => {
     loadProfile();
+    fetchServiceAreas();
   }, []);
+
+  const fetchServiceAreas = async () => {
+    try {
+      const res = await fetch('/api/service-areas');
+      const data = await res.json();
+      if (data.success) {
+        setServiceAreaGroups(data.data);
+        const names = {};
+        Object.values(data.data).forEach(group => {
+          group.forEach(area => {
+            names[area.cluster_key] = area.name;
+          });
+        });
+        setServiceAreaNames(names);
+      }
+    } catch (err) {
+      console.error('Failed to fetch service areas', err);
+    } finally {
+      setLoadingAreas(false);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -516,28 +542,30 @@ export default function ProviderProfile() {
             </h3>
             {editing ? (
               <div className="space-y-6">
-                {Object.entries(CLUSTER_GROUPS).map(([groupName, clusterKeys]) => (
+                {loadingAreas ? (
+                  <p className="text-sm text-gray-500">Loading service areas...</p>
+                ) : Object.entries(serviceAreaGroups).map(([groupName, areas]) => (
                   <div key={groupName}>
                     <h4 className="font-semibold text-gray-800 mb-3 border-b pb-1 text-sm">{groupName}</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                      {clusterKeys.map(clusterKey => (
-                        <label key={clusterKey} className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
-                          formData.service_areas.includes(clusterKey)
+                      {areas.map(area => (
+                        <label key={area.cluster_key} className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                          formData.service_areas.includes(area.cluster_key)
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300 bg-white'
                         }`}>
-                          <input type="checkbox" checked={formData.service_areas.includes(clusterKey)}
-                            onChange={() => toggleArrayItem('service_areas', clusterKey)} className="sr-only" />
+                          <input type="checkbox" checked={formData.service_areas.includes(area.cluster_key)}
+                            onChange={() => toggleArrayItem('service_areas', area.cluster_key)} className="sr-only" />
                           <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${
-                            formData.service_areas.includes(clusterKey) ? 'bg-blue-600' : 'border-2 border-gray-300'
+                            formData.service_areas.includes(area.cluster_key) ? 'bg-blue-600' : 'border-2 border-gray-300'
                           }`}>
-                            {formData.service_areas.includes(clusterKey) && (
+                            {formData.service_areas.includes(area.cluster_key) && (
                               <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                               </svg>
                             )}
                           </div>
-                          <span className="text-sm text-gray-700 leading-tight">{CLUSTER_DISPLAY_NAMES[clusterKey] || clusterKey}</span>
+                          <span className="text-sm text-gray-700 leading-tight">{area.name}</span>
                         </label>
                       ))}
                     </div>
@@ -546,9 +574,11 @@ export default function ProviderProfile() {
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {(provider?.service_areas || []).length > 0
+                {loadingAreas ? (
+                  <p className="text-sm text-gray-500">Loading service areas...</p>
+                ) : (provider?.service_areas || []).length > 0
                   ? provider.service_areas.map(a => (
-                      <span key={a} className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 text-xs font-semibold rounded-full">{CLUSTER_DISPLAY_NAMES[a] || a}</span>
+                      <span key={a} className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 text-xs font-semibold rounded-full">{serviceAreaNames[a] || a}</span>
                     ))
                   : <p className="text-sm text-gray-400">No service areas added yet</p>
                 }

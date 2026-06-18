@@ -126,12 +126,24 @@ export default function PaymentPage() {
   const [fetchingIntent, setFetchingIntent] = useState(false);
   const [intentError, setIntentError] = useState(null);
 
+  const intentFetchedRef = useRef(false);
+
   useEffect(() => {
+    if (intentFetchedRef.current) return;
     const pending = sessionStorage.getItem('pendingBooking');
     if (pending) {
+      intentFetchedRef.current = true;
       const parsed = JSON.parse(pending);
       setPendingBookingData(parsed);
-      createPaymentIntent(parsed);
+      
+      const prefetchedSecret = sessionStorage.getItem('prefetchedClientSecret');
+      if (prefetchedSecret) {
+        setClientSecret(prefetchedSecret);
+        sessionStorage.removeItem('prefetchedClientSecret');
+        setLoading(false);
+      } else {
+        createPaymentIntent(parsed);
+      }
     } else {
       router.push('/services');
     }

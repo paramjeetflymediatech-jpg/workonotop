@@ -62,10 +62,12 @@ export async function GET(request) {
         s.name as service_full_name,
         s.duration_minutes,
         c.name as category_name,
+        sa.name as service_area_name, sa.cluster_group as service_area_group,
         (SELECT GROUP_CONCAT(photo_url) FROM booking_photos WHERE booking_id = b.id) as photos_csv
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
+      LEFT JOIN service_areas sa ON b.cluster = sa.cluster_key
       WHERE b.provider_id = ?
       ORDER BY 
         CASE b.status

@@ -136,7 +136,25 @@ export async function POST(request) {
     const maxOvertimeCost = overtimeRate * 2
     const totalAuthorizedAmount = basePrice + maxOvertimeCost
 
-    const jobCluster = getClusterFromCity(city);
+    let jobCluster = 'UNKNOWN_CLUSTER';
+    if (city) {
+      try {
+        const areas = await execute('SELECT cluster_key, cities FROM service_areas WHERE is_active = 1');
+        const searchCity = city.toLowerCase().trim();
+        for (const area of areas) {
+          const citiesArray = Array.isArray(area.cities) ? area.cities : [];
+          if (citiesArray.some(c => c.toLowerCase().trim() === searchCity)) {
+            jobCluster = area.cluster_key;
+            break;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching dynamic cluster mapping', err);
+        jobCluster = getClusterFromCity(city);
+      }
+    } else {
+      jobCluster = getClusterFromCity(city);
+    }
 
     connection = await getConnection()
     await connection.query('START TRANSACTION')

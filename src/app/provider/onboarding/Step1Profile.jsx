@@ -1,19 +1,7 @@
-
-
-
-
-
-
-
-
-
-
-
 'use client';
 
-import { useState } from 'react';
-
-import { CLUSTER_GROUPS, CLUSTER_DISPLAY_NAMES } from '@/lib/location';
+import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 const SKILLS = [
   'Cleaning (regular, deep, move out)',
@@ -43,6 +31,25 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [serviceAreaGroups, setServiceAreaGroups] = useState({});
+  const [loadingAreas, setLoadingAreas] = useState(true);
+
+  useEffect(() => {
+    const fetchServiceAreas = async () => {
+      try {
+        const res = await fetch('/api/service-areas');
+        const data = await res.json();
+        if (data.success) {
+          setServiceAreaGroups(data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch service areas', err);
+      } finally {
+        setLoadingAreas(false);
+      }
+    };
+    fetchServiceAreas();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -94,6 +101,7 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      toast.error('Please fill in all required fields correctly.');
       return;
     }
 
@@ -223,19 +231,21 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
         </label>
         <p className="text-sm text-gray-500 mb-4">Which areas are you willing to work in? Select all that apply.</p>
         
-        {Object.entries(CLUSTER_GROUPS).map(([groupName, clusterKeys]) => (
+        {loadingAreas ? (
+          <p className="text-sm text-gray-500">Loading service areas...</p>
+        ) : Object.entries(serviceAreaGroups).map(([groupName, areas]) => (
           <div key={groupName} className="mb-6">
             <h3 className="font-semibold text-gray-800 mb-3 border-b pb-1">{groupName}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {clusterKeys.map(clusterKey => (
-                <label key={clusterKey} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+              {areas.map(area => (
+                <label key={area.cluster_key} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={formData.service_areas.includes(clusterKey)}
-                    onChange={() => handleArrayToggle('service_areas', clusterKey)}
+                    checked={formData.service_areas.includes(area.cluster_key)}
+                    onChange={() => handleArrayToggle('service_areas', area.cluster_key)}
                     className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                   />
-                  <span className="text-sm text-gray-700 leading-tight">{CLUSTER_DISPLAY_NAMES[clusterKey] || clusterKey}</span>
+                  <span className="text-sm text-gray-700 leading-tight">{area.name}</span>
                 </label>
               ))}
             </div>

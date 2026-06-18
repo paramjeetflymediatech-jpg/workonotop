@@ -3,6 +3,8 @@ import { execute, query, getConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
 import { notifyUser } from '@/lib/push'
 
+export const dynamic = 'force-dynamic';
+
 // Helper to get system settings
 async function getSystemSetting(key, defaultValue = null) {
   try {
@@ -68,17 +70,43 @@ export async function GET(request) {
     }
     if (!Array.isArray(parsedAreas)) parsedAreas = [];
 
-    // Filter open jobs strictly by the provider's selected clusters
+    // Fetch human-readable names for the provider's service areas
+    let providerAreaNames = [];
+    if (parsedAreas.length > 0) {
+      try {
+        const placeholders = parsedAreas.map(() => '?').join(',');
+        const areasResult = await execute(`SELECT name FROM service_areas WHERE cluster_key IN (${placeholders})`, parsedAreas);
+        if (areasResult && areasResult.length > 0) {
+          providerAreaNames = areasResult.map(a => a.name);
+        }
+      } catch (e) {
+        console.error('Error fetching provider area names:', e);
+      }
+    }
+
+    const allParam = searchParams.get('all') === 'true'
+    
+    // Filter open jobs
     let locationCondition = ''
     const locationParams = []
     
-    if (parsedAreas.length > 0) {
-      const placeholders = parsedAreas.map(() => '?').join(',')
-      locationCondition = `AND b.cluster IN (${placeholders})`
-      locationParams.push(...parsedAreas)
+    if (allParam) {
+      // Do not restrict by cluster or city
+      locationCondition = ''
+    } else if (cityParam) {
+      // If city is specified, filter by city instead of cluster
+      locationCondition = 'AND b.city = ?'
+      locationParams.push(cityParam)
     } else {
-      // If provider has no service areas selected, they see no open jobs
-      locationCondition = `AND 1=0`
+      // Default: strictly provider's selected clusters
+      if (parsedAreas.length > 0) {
+        const placeholders = parsedAreas.map(() => '?').join(',')
+        locationCondition = `AND b.cluster IN (${placeholders})`
+        locationParams.push(...parsedAreas)
+      } else {
+        // If provider has no service areas selected, they see no open jobs
+        locationCondition = `AND 1=0`
+      }
     }
 
     // ✅ Optimized: If only count is needed, run a lighter query
@@ -124,7 +152,8 @@ export async function GET(request) {
         success: true,
         count: (countResult && countResult[0]) ? (countResult[0].count || 0) : 0,
         recentJobs,
-        provider_city: providerCity
+        provider_city: providerCity,
+        provider_area_names: providerAreaNames
       })
     }
 
@@ -139,11 +168,13 @@ export async function GET(request) {
         s.image_url as service_image,
         s.duration_minutes as service_duration,
         c.name as category_name, c.icon as category_icon,
+        sa.name as service_area_name, sa.cluster_group as service_area_group,
         (SELECT GROUP_CONCAT(photo_url) FROM booking_photos WHERE booking_id = b.id) as photos_csv,
         CASE WHEN b.provider_id = ? THEN 1 ELSE 0 END as admin_assigned
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
+      LEFT JOIN service_areas sa ON b.cluster = sa.cluster_key
       WHERE (
         -- ✅ Admin pre-assigned to THIS provider (always show these)
         (
@@ -239,6 +270,7 @@ export async function GET(request) {
       success: true, 
       data: processedJobs, 
       provider_city: providerCity, 
+      provider_area_names: providerAreaNames,
       total: totalJobs,
       hasMore: processedJobs.length === limit,
       page,

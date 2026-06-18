@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function Step4Review({ formData, onBack, providerId, onComplete }) {
   const router = useRouter();
@@ -69,10 +70,12 @@ export default function Step4Review({ formData, onBack, providerId, onComplete }
         window.location.href = data.onboardingUrl;
       } else {
         setError(data.message || 'Failed to connect Stripe. Please try again.');
+        toast.error(data.message || 'Failed to connect Stripe. Please try again.');
       }
     } catch (err) {
       console.error('Stripe reconnect error:', err);
       setError('Connection failed. Please try again.');
+      toast.error('Connection failed. Please try again.');
     } finally {
       setReconnecting(false);
     }
@@ -92,9 +95,11 @@ export default function Step4Review({ formData, onBack, providerId, onComplete }
         router.push('/provider/pending');
       } else {
         setError(data.message || 'Failed to complete onboarding');
+        toast.error(data.message || 'Failed to complete onboarding');
       }
     } catch (error) {
       setError('Something went wrong. Please try again.');
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

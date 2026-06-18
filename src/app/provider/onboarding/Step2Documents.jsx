@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 const DOC_TYPES = {
   profile_photo: {
@@ -169,14 +170,14 @@ export default function Step2Documents({ onNext, onBack }) {
     const missing = required.filter(type => !documents[type]);
 
     if (missing.length > 0) {
-      alert(`Please upload: ${missing.map(t => DOC_TYPES[t].label).join(', ')}`);
+      toast.error(`Please upload: ${missing.map(t => DOC_TYPES[t].label).join(', ')}`);
       return;
     }
 
     // Check if any are rejected
     const rejected = required.filter(type => documentStatus[type] === 'rejected');
     if (rejected.length > 0) {
-      alert('Please fix rejected documents before continuing');
+      toast.error('Please fix rejected documents before continuing');
       return;
     }
 

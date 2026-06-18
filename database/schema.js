@@ -463,6 +463,17 @@ const tables = [
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_email (email),
     INDEX idx_status (status)
+  )`,
+
+  // Table 20: service_areas
+  `CREATE TABLE IF NOT EXISTS service_areas (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    cluster_group VARCHAR(100) NOT NULL,
+    cluster_key VARCHAR(100) UNIQUE NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`
 ];
 
@@ -677,7 +688,41 @@ async function runMigration() {
       console.log(`   ⚠ Could not verify users table: ${err.message}`);
     }
 
-    // Step 7: Show all table structures
+    // Step 7: Seed service_areas if empty
+    console.log('\n🌱 Step 6.5: Seeding service_areas...');
+    try {
+      const [rows] = await conn.query('SELECT COUNT(*) as count FROM service_areas');
+      if (rows[0].count === 0) {
+        console.log('   ↳ Table is empty, seeding default service areas...');
+        
+        const defaultAreas = [
+          { key: 'VAN_CORE', name: 'Vancouver Core', group: 'Metro Vancouver' },
+          { key: 'VAN_NORTH', name: 'North Shore', group: 'Metro Vancouver' },
+          { key: 'VAN_SOUTH', name: 'Richmond/South', group: 'Metro Vancouver' },
+          { key: 'VAN_TRI', name: 'Tri-Cities', group: 'Metro Vancouver' },
+          { key: 'VAN_FRASER', name: 'Fraser', group: 'Metro Vancouver' },
+          { key: 'TORONTO_CORE', name: 'Toronto Core', group: 'Greater Toronto Area' },
+          { key: 'GTA_PEEL', name: 'Peel', group: 'Greater Toronto Area' },
+          { key: 'GTA_YORK', name: 'York', group: 'Greater Toronto Area' },
+          { key: 'GTA_DURHAM', name: 'Durham', group: 'Greater Toronto Area' },
+          { key: 'GTA_HALTON', name: 'Halton', group: 'Greater Toronto Area' }
+        ];
+
+        for (const area of defaultAreas) {
+          await conn.execute(
+            'INSERT IGNORE INTO service_areas (cluster_key, name, cluster_group, is_active) VALUES (?, ?, ?, 1)',
+            [area.key, area.name, area.group]
+          );
+        }
+        console.log('   ✓ Default service areas seeded successfully');
+      } else {
+        console.log('   ↳ Table already contains data, skipping seed.');
+      }
+    } catch (err) {
+      console.log(`   ⚠ Could not seed service_areas: ${err.message}`);
+    }
+
+    // Step 8: Show all table structures
     console.log('\n📋 Step 6: All table column counts:');
     const tableQueries = [
       'users', 'service_categories', 'service_providers', 'services',
@@ -685,7 +730,7 @@ async function runMigration() {
       'chat_messages', 'booking_photos', 'booking_status_history',
       'booking_time_logs', 'job_photos', 'provider_reviews', 'invoices',
       'provider_payouts', 'disputes', 'mobile_auth_users', 
-      'notifications', 'deletion_requests'
+      'notifications', 'deletion_requests', 'service_areas'
     ];
 
     let totalColumns = 0;

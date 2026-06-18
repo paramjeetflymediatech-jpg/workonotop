@@ -132,6 +132,7 @@ export default function ProviderAvailableJobs() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [providerCity, setProviderCity] = useState('')
+  const [providerAreaNames, setProviderAreaNames] = useState([])
   const [searchCity, setSearchCity] = useState('')
   const [activeCity, setActiveCity] = useState('')
   const [showAllAreas, setShowAllAreas] = useState(false)
@@ -158,8 +159,10 @@ export default function ProviderAvailableJobs() {
     
     try {
       let url = `/api/provider/available-jobs?page=${pageNum}&limit=10`
-      if (!all) {
-        const filterCity = city || activeCity || providerCity
+      if (all) {
+        url += `&all=true`
+      } else {
+        const filterCity = city || (activeCity && activeCity !== 'All Areas' ? activeCity : '')
         if (filterCity) url += `&city=${encodeURIComponent(filterCity)}`
       }
 
@@ -190,7 +193,9 @@ export default function ProviderAvailableJobs() {
         
         if (data.provider_city) {
           setProviderCity(data.provider_city)
-          if (!city && !activeCity) setActiveCity(data.provider_city)
+        }
+        if (data.provider_area_names) {
+          setProviderAreaNames(data.provider_area_names)
         }
         if (!data.data?.length && !silent && pageNum === 1) {
           showToast('info', all ? 'No jobs available anywhere right now' : (city || activeCity) ? `No jobs found in ${city || activeCity}` : 'No jobs available in your area')
@@ -226,8 +231,8 @@ export default function ProviderAvailableJobs() {
       setActiveCity('All Areas')
       loadJobs(false, '', true)
     } else {
-      setActiveCity(providerCity)
-      loadJobs(false, providerCity, false)
+      setActiveCity('')
+      loadJobs(false, '', false)
     }
   }
 
@@ -269,6 +274,16 @@ export default function ProviderAvailableJobs() {
     return true
   })
 
+  const getAreaDisplay = () => {
+    if (showAllAreas) return 'All Areas'
+    if (searchCity || activeCity) return searchCity || activeCity
+    if (providerAreaNames.length > 0) {
+      if (providerAreaNames.length <= 2) return providerAreaNames.join(', ')
+      return `${providerAreaNames.slice(0, 2).join(', ')} + ${providerAreaNames.length - 2} more`
+    }
+    return 'your service areas'
+  }
+
   const stats = {
     total: dbTotal || jobs.length,
     assigned: jobs.filter(j => j.is_admin_assigned).length,
@@ -294,17 +309,19 @@ export default function ProviderAvailableJobs() {
       <div className="flex items-center justify-between mb-5 flex-wrap gap-4">
         <div className="min-w-0">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Available Jobs</h1>
-          <p className="text-sm text-gray-400 mt-1 flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 text-green-500" />
-            {showAllAreas ? 'Showing jobs from ' : 'Jobs near '}
-            <strong className="text-gray-700">{showAllAreas ? 'All Areas' : (activeCity || providerCity || 'you')}</strong>
-            {!showAllAreas && (providerCity || activeCity) && (
-              <button onClick={toggleAllAreas} className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-md hover:bg-gray-200 transition ml-1 font-bold text-gray-500">
+          <p className="text-sm text-gray-400 mt-1 flex items-center gap-1.5 flex-wrap">
+            <MapPin className="h-3.5 w-3.5 text-green-500 shrink-0" />
+            <span className="shrink-0">{showAllAreas ? 'Showing jobs from ' : 'Jobs in '}</span>
+            <strong className="text-gray-700 truncate" title={providerAreaNames.join(', ')}>
+              {getAreaDisplay()}
+            </strong>
+            {!showAllAreas && (
+              <button onClick={toggleAllAreas} className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-md hover:bg-gray-200 transition ml-1 font-bold text-gray-500 shrink-0">
                 Show All
               </button>
             )}
             {showAllAreas && (
-              <button onClick={toggleAllAreas} className="text-[10px] bg-green-50 px-2 py-0.5 rounded-md hover:bg-green-100 transition ml-1 font-bold text-green-600 border border-green-100">
+              <button onClick={toggleAllAreas} className="text-[10px] bg-green-50 px-2 py-0.5 rounded-md hover:bg-green-100 transition ml-1 font-bold text-green-600 border border-green-100 shrink-0">
                 Back to Local
               </button>
             )}
@@ -392,12 +409,12 @@ export default function ProviderAvailableJobs() {
             <MapPin className="h-8 w-8 text-gray-300" />
           </div>
           <h3 className="text-lg font-bold text-gray-900 mb-2">
-            No jobs in {showAllAreas ? 'any area' : (activeCity || providerCity || 'your area')}
+            No jobs in {showAllAreas ? 'any area' : (activeCity || (providerAreaNames.length > 0 ? providerAreaNames.join(', ') : providerCity) || 'your area')}
           </h3>
           <p className="text-sm text-gray-400 mb-8 max-w-xs mx-auto">
             {showAllAreas
               ? "We don't have any open jobs at the moment. Please check back later!"
-              : `There are currently no open jobs in ${activeCity || providerCity}. Try searching another city or view all areas.`}
+              : `There are currently no open jobs in ${activeCity || (providerAreaNames.length > 0 ? providerAreaNames.join(', ') : providerCity)}. Try searching another city or view all areas.`}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {!showAllAreas && (
@@ -524,6 +541,11 @@ export default function ProviderAvailableJobs() {
                   <MetaBadge icon="📅" text={formatDate(job.job_date)} />
                   <MetaBadge icon="🕐" text={fmtSlots(job.job_time_slot)} />
                   <MetaBadge icon="📍" text={job.address_line1?.split(',')[0] || '—'} />
+                  {job.service_area_name && (
+                    <span className="inline-flex items-center gap-1 text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg">
+                      <span>🗺️</span> {job.service_area_group ? `${job.service_area_group} - ${job.service_area_name}` : job.service_area_name}
+                    </span>
+                  )}
                   {job.photos?.length > 0 && (
                     <span className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg font-bold">
                       <span>📷</span> {job.photos.length} Photo{job.photos.length > 1 ? 's' : ''}
