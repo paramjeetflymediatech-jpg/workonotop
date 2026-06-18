@@ -13,11 +13,26 @@ export async function GET(request) {
     const admin = await verifyAdmin(request);
     if (!admin) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
 
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const offset = (page - 1) * limit;
+
+    const countResult = await pool.query('SELECT COUNT(*) as count FROM service_areas');
+    const total = countResult[0].count;
+
     const rows = await pool.query(
-      'SELECT * FROM service_areas ORDER BY cluster_group, name'
+      'SELECT * FROM service_areas ORDER BY cluster_group, name LIMIT ? OFFSET ?',
+      [limit, offset]
     );
 
-    return NextResponse.json({ success: true, data: rows });
+    return NextResponse.json({ 
+      success: true, 
+      data: rows,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (error) {
     console.error('Error fetching service areas:', error);
     return NextResponse.json({ success: false, message: 'Failed to fetch service areas' }, { status: 500 });

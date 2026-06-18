@@ -8,6 +8,25 @@ async function verifyAdmin(request) {
   return !!verifyToken(token);
 }
 
+export async function GET(request, { params }) {
+  try {
+    const admin = await verifyAdmin(request);
+    if (!admin) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+
+    const { id } = await params;
+    const [rows] = await pool.execute('SELECT * FROM service_areas WHERE id = ?', [id]);
+    
+    if (rows.length === 0) {
+      return NextResponse.json({ success: false, message: 'Service area not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: rows[0] });
+  } catch (error) {
+    console.error('Error fetching service area:', error);
+    return NextResponse.json({ success: false, message: 'Failed to fetch service area' }, { status: 500 });
+  }
+}
+
 export async function PUT(request, { params }) {
   try {
     const admin = await verifyAdmin(request);
@@ -15,15 +34,17 @@ export async function PUT(request, { params }) {
 
     const { id } = await params;
     const body = await request.json();
-    const { name, cluster_group, is_active } = body;
+    const { name, cluster_group, is_active, cities } = body;
 
     if (!name || !cluster_group) {
       return NextResponse.json({ success: false, message: 'Name and Cluster Group are required' }, { status: 400 });
     }
 
+    const citiesJson = Array.isArray(cities) ? JSON.stringify(cities) : '[]';
+
     await pool.execute(
-      'UPDATE service_areas SET name = ?, cluster_group = ?, is_active = ? WHERE id = ?',
-      [name, cluster_group, is_active ? 1 : 0, id]
+      'UPDATE service_areas SET name = ?, cluster_group = ?, is_active = ?, cities = ? WHERE id = ?',
+      [name, cluster_group, is_active ? 1 : 0, citiesJson, id]
     );
 
     return NextResponse.json({ success: true, message: 'Service area updated successfully' });
