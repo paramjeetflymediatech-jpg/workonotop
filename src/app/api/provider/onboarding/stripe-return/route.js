@@ -226,6 +226,30 @@ export async function GET(request) {
       );
     } catch (stripeError) {
       console.error('❌ Stripe retrieve error:', stripeError.message);
+      
+      // If the account doesn't exist or the current API key doesn't have access to it, 
+      // it means the API keys were rotated or it's an orphaned test account.
+      // We clear it from the database so the provider can start fresh.
+      if (
+        stripeError.message.includes('does not have access to account') || 
+        stripeError.message.includes('No such account') ||
+        stripeError.code === 'resource_missing'
+      ) {
+        console.log(`🧹 Clearing invalid Stripe account ID ${accountId} for provider ${providerId}`);
+        try {
+          await execute(
+            `UPDATE service_providers SET stripe_account_id = NULL, stripe_onboarding_complete = 0 WHERE id = ?`,
+            [providerId]
+          );
+          await execute(
+            `UPDATE provider_bank_accounts SET stripe_account_id = NULL, account_status = 'pending', onboarding_completed = 0 WHERE provider_id = ?`,
+            [providerId]
+          );
+        } catch (dbError) {
+          console.error('Failed to clear invalid Stripe account:', dbError);
+        }
+      }
+
       return NextResponse.redirect(
         new URL('/provider/onboarding?step=3&error=stripe_error', process.env.NEXT_PUBLIC_APP_URL)
       );

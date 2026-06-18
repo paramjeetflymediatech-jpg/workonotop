@@ -130,11 +130,16 @@ export async function POST(request) {
       [account.id, providerId]
     );
 
-    // Insert into provider_bank_accounts
+    // Insert or update into provider_bank_accounts
     await execute(
       `INSERT INTO provider_bank_accounts 
        (provider_id, stripe_account_id, account_status, onboarding_completed, created_at, updated_at)
-       VALUES (?, ?, 'pending', 0, NOW(), NOW())`,
+       VALUES (?, ?, 'pending', 0, NOW(), NOW())
+       ON DUPLICATE KEY UPDATE
+       stripe_account_id = VALUES(stripe_account_id),
+       account_status = VALUES(account_status),
+       onboarding_completed = VALUES(onboarding_completed),
+       updated_at = NOW()`,
       [providerId, account.id]
     );
 
