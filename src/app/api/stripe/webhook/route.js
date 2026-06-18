@@ -273,7 +273,8 @@ export async function POST(request) {
   console.log('='.repeat(100));
 
   try {
-    const body = await request.text();
+    const rawBody = await request.arrayBuffer();
+    const body = Buffer.from(rawBody);
     const signature = request.headers.get('stripe-signature');
 
     if (!signature) {
@@ -284,6 +285,14 @@ export async function POST(request) {
     }
 
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    // Debugging helper to ensure the server loaded the correct secret
+    if (webhookSecret) {
+      const maskedSecret = `${webhookSecret.substring(0, 8)}...${webhookSecret.substring(webhookSecret.length - 4)}`;
+      console.log(`🔑 Using Webhook Secret: ${maskedSecret}`);
+    } else {
+      console.log('❌ STRIPE_WEBHOOK_SECRET is NOT SET in environment variables!');
+    }
     let event;
 
     try {
