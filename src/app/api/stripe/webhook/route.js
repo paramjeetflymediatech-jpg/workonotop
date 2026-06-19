@@ -275,6 +275,7 @@ export async function POST(request) {
   try {
     const rawBody = await request.arrayBuffer();
     const body = Buffer.from(rawBody);
+    console.log(request.headers,"==========headers=========")
     const signature = request.headers.get('stripe-signature');
 
     if (!signature) {
