@@ -475,6 +475,48 @@ const tables = [
     cities JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`,
+
+  // Table 21: states
+  `CREATE TABLE IF NOT EXISTS states (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`,
+
+  // Table 22: districts
+  `CREATE TABLE IF NOT EXISTS districts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    state_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (state_id) REFERENCES states(id) ON DELETE CASCADE,
+    INDEX idx_state (state_id)
+  )`,
+
+  // Table 23: cities
+  `CREATE TABLE IF NOT EXISTS cities (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    district_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (district_id) REFERENCES districts(id) ON DELETE CASCADE,
+    INDEX idx_district (district_id)
+  )`,
+
+  // Table 24: skills
+  `CREATE TABLE IF NOT EXISTS skills (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(200) UNIQUE NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`
 ];
 
@@ -502,7 +544,8 @@ const alterations = [
   { table: 'service_providers', column: 'stripe_onboarding_complete', sql: 'ALTER TABLE service_providers ADD COLUMN stripe_onboarding_complete TINYINT(1) DEFAULT 0 AFTER stripe_account_id' },
   { table: 'service_providers', column: 'rejection_reason', sql: 'ALTER TABLE service_providers ADD COLUMN rejection_reason TEXT AFTER approved_at' },
   { table: 'service_providers', column: 'service_areas', sql: 'ALTER TABLE service_providers ADD COLUMN service_areas JSON AFTER rejection_reason' },
-  { table: 'service_providers', column: 'skills', sql: 'ALTER TABLE service_providers ADD COLUMN skills JSON AFTER service_areas' },
+  { table: 'service_providers', column: 'service_cities', sql: 'ALTER TABLE service_providers ADD COLUMN service_cities JSON AFTER service_areas' },
+  { table: 'service_providers', column: 'skills', sql: 'ALTER TABLE service_providers ADD COLUMN skills JSON AFTER service_cities' },
   { table: 'service_providers', column: 'is_available', sql: 'ALTER TABLE service_providers ADD COLUMN is_available TINYINT(1) DEFAULT 1' },
   { table: 'service_providers', column: 'reset_token', sql: 'ALTER TABLE service_providers ADD COLUMN reset_token VARCHAR(255) AFTER updated_at' },
   { table: 'service_providers', column: 'reset_token_expiry', sql: 'ALTER TABLE service_providers ADD COLUMN reset_token_expiry DATETIME AFTER reset_token' },
@@ -726,6 +769,38 @@ async function runMigration() {
       console.log(`   ⚠ Could not seed service_areas: ${err.message}`);
     }
 
+    // Step 7.5: Seed default skills if empty
+    console.log('\n🌱 Step 6.6: Seeding skills...');
+    try {
+      const [rows] = await conn.query('SELECT COUNT(*) as count FROM skills');
+      if (rows[0].count === 0) {
+        console.log('   ↳ Table is empty, seeding default skills...');
+        
+        const defaultSkills = [
+          'Cleaning (regular, deep, move out)',
+          'Exterior cleaning (pressure washing, gutters, windows)',
+          'Handyman',
+          'Furniture assembly',
+          'Movers',
+          'Junk removal',
+          'Yard work',
+          'Carpet wash'
+        ];
+
+        for (const skill of defaultSkills) {
+          await conn.execute(
+            'INSERT IGNORE INTO skills (name, is_active) VALUES (?, 1)',
+            [skill]
+          );
+        }
+        console.log('   ✓ Default skills seeded successfully');
+      } else {
+        console.log('   ↳ Table already contains data, skipping seed.');
+      }
+    } catch (err) {
+      console.log(`   ⚠ Could not seed skills: ${err.message}`);
+    }
+
     // Step 8: Show all table structures
     console.log('\n📋 Step 6: All table column counts:');
     const tableQueries = [
@@ -734,7 +809,8 @@ async function runMigration() {
       'chat_messages', 'booking_photos', 'booking_status_history',
       'booking_time_logs', 'job_photos', 'provider_reviews', 'invoices',
       'provider_payouts', 'disputes', 'mobile_auth_users', 
-      'notifications', 'deletion_requests', 'service_areas'
+      'notifications', 'deletion_requests', 'service_areas',
+      'states', 'districts', 'cities', 'skills'
     ];
 
     let totalColumns = 0;
@@ -770,7 +846,7 @@ async function runMigration() {
     console.log('✅ Migration completed successfully!');
     console.log('='.repeat(60));
     console.log(`   Database: ${DB_NAME}`);
-    console.log(`   Tables:   ${tableQueries.length}/19`);
+    console.log(`   Tables:   ${tableQueries.length}/23`);
     console.log(`   Total Columns: ${totalColumns}`);
     console.log('   ✓ UNIQUE constraint added to users.phone column');
     console.log('='.repeat(60) + '\n');

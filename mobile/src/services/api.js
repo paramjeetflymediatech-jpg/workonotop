@@ -334,6 +334,9 @@ export const apiService = {
 
         // Public platform statistics
         getStats: () => request('/api/stats', { method: 'GET' }),
+
+        // Fetch available skills for providers
+        getSkills: () => request('/api/skills', { method: 'GET' }),
     },
 
     /**

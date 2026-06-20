@@ -58,9 +58,9 @@ export async function GET(request) {
     countOnly = searchParams.get('count') === 'true'
     const previewLimit = parseInt(searchParams.get('preview') || '3')
 
-    const providers = await execute('SELECT city, service_areas FROM service_providers WHERE id = ?', [providerId])
+    const providers = await execute('SELECT city, service_cities FROM service_providers WHERE id = ?', [providerId])
     const providerCity = providers && providers.length > 0 ? (providers[0].city || '') : ''
-    const providerServiceAreas = providers && providers.length > 0 ? (providers[0].service_areas || '[]') : '[]'
+    const providerServiceAreas = providers && providers.length > 0 ? (providers[0].service_cities || '[]') : '[]'
 
     let parsedAreas = [];
     try { 
@@ -75,7 +75,7 @@ export async function GET(request) {
     if (parsedAreas.length > 0) {
       try {
         const placeholders = parsedAreas.map(() => '?').join(',');
-        const areasResult = await execute(`SELECT name FROM service_areas WHERE cluster_key IN (${placeholders})`, parsedAreas);
+        const areasResult = await execute(`SELECT name FROM cities WHERE id IN (${placeholders})`, parsedAreas);
         if (areasResult && areasResult.length > 0) {
           providerAreaNames = areasResult.map(a => a.name);
         }
@@ -95,17 +95,39 @@ export async function GET(request) {
       locationCondition = ''
     } else if (cityParam) {
       // If city is specified, filter by city instead of cluster
-      locationCondition = 'AND b.city = ?'
-      locationParams.push(cityParam)
+      locationCondition = 'AND LOWER(b.city) = ?'
+      locationParams.push(cityParam.toLowerCase().trim())
     } else {
-      // Default: strictly provider's selected clusters
-      if (parsedAreas.length > 0) {
-        const placeholders = parsedAreas.map(() => '?').join(',')
-        locationCondition = `AND b.cluster IN (${placeholders})`
-        locationParams.push(...parsedAreas)
+      // Build combined list of allowed city names
+      const allowedCityNames = [];
+      if (providerCity) allowedCityNames.push(providerCity.toLowerCase().trim());
+      providerAreaNames.forEach(name => {
+        const lower = name.toLowerCase().trim();
+        if (!allowedCityNames.includes(lower)) allowedCityNames.push(lower);
+      });
+
+      const hasClusters = parsedAreas.length > 0;
+      const hasNames = allowedCityNames.length > 0;
+
+      if (hasClusters || hasNames) {
+        const conditions = [];
+        
+        if (hasClusters) {
+          const clusterPlaceholders = parsedAreas.map(() => '?').join(',');
+          conditions.push(`b.cluster IN (${clusterPlaceholders})`);
+          locationParams.push(...parsedAreas);
+        }
+        
+        if (hasNames) {
+          const namePlaceholders = allowedCityNames.map(() => '?').join(',');
+          conditions.push(`LOWER(b.city) IN (${namePlaceholders})`);
+          locationParams.push(...allowedCityNames);
+        }
+        
+        locationCondition = `AND (${conditions.join(' OR ')})`;
       } else {
-        // If provider has no service areas selected, they see no open jobs
-        locationCondition = `AND 1=0`
+        // No areas and no base city
+        locationCondition = `AND 1=0`;
       }
     }
 

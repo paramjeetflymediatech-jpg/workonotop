@@ -181,11 +181,7 @@ export default function ProviderAvailableJobs() {
       }
 
       if (data.success) {
-        if (pageNum === 1) {
-          setJobs(data.data || [])
-        } else {
-          setJobs(prev => [...prev, ...(data.data || [])])
-        }
+        setJobs(data.data || [])
         setHasMore(data.hasMore || false)
         setPage(pageNum)
         setDbTotal(data.total || 0)
@@ -409,12 +405,12 @@ export default function ProviderAvailableJobs() {
             <MapPin className="h-8 w-8 text-gray-300" />
           </div>
           <h3 className="text-lg font-bold text-gray-900 mb-2">
-            No jobs in {showAllAreas ? 'any area' : (activeCity || (providerAreaNames.length > 0 ? providerAreaNames.join(', ') : providerCity) || 'your area')}
+            No jobs in {showAllAreas ? 'any area' : getAreaDisplay()}
           </h3>
           <p className="text-sm text-gray-400 mb-8 max-w-xs mx-auto">
             {showAllAreas
               ? "We don't have any open jobs at the moment. Please check back later!"
-              : `There are currently no open jobs in ${activeCity || (providerAreaNames.length > 0 ? providerAreaNames.join(', ') : providerCity)}. Try searching another city or view all areas.`}
+              : `There are currently no open jobs in ${getAreaDisplay()}. Try searching another city or view all areas.`}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {!showAllAreas && (
@@ -632,23 +628,28 @@ export default function ProviderAvailableJobs() {
             )
           })}
           
-          {/* Load More Button */}
-          {hasMore && (
-            <div className="pt-4 pb-8 flex justify-center">
-              <button 
-                onClick={() => loadJobs(false, searchCity || activeCity, showAllAreas, page + 1)}
-                disabled={loadingMore}
-                className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:border-green-600 hover:text-green-700 transition disabled:opacity-50 flex items-center gap-2 shadow-sm"
-              >
-                {loadingMore ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  'Load More Jobs'
-                )}
-              </button>
+          {/* Pagination Controls */}
+          {dbTotal > 10 && (
+            <div className="pt-4 pb-8 flex items-center justify-between border-t border-gray-100 mt-6">
+              <span className="text-sm text-gray-500">
+                Showing <strong className="text-gray-900">{(page - 1) * 10 + 1}</strong> to <strong className="text-gray-900">{Math.min(page * 10, dbTotal)}</strong> of <strong className="text-gray-900">{dbTotal}</strong> jobs
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { window.scrollTo(0, 0); loadJobs(false, searchCity || activeCity, showAllAreas, page - 1); }}
+                  disabled={page === 1 || loadingMore}
+                  className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => { window.scrollTo(0, 0); loadJobs(false, searchCity || activeCity, showAllAreas, page + 1); }}
+                  disabled={!hasMore || loadingMore}
+                  className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

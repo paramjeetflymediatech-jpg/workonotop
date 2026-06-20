@@ -4,16 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
-export default function CityForm({ isEdit = false, initialData = null }) {
+export default function DistrictForm({ isEdit = false, initialData = null }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [states, setStates] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [selectedState, setSelectedState] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
-    district_id: '',
+    state_id: '',
     is_active: true
   });
 
@@ -28,49 +26,32 @@ export default function CityForm({ isEdit = false, initialData = null }) {
   }, []);
 
   useEffect(() => {
-    if (selectedState) {
-      fetch(`/api/admin/districts?state_id=${selectedState}&limit=1000`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setDistricts(data.data);
-          }
-        });
-    } else {
-      setDistricts([]);
-    }
-  }, [selectedState]);
-
-  useEffect(() => {
     if (initialData) {
       setFormData({
         name: initialData.name || '',
-        district_id: initialData.district_id || '',
+        state_id: initialData.state_id || '',
         is_active: initialData.is_active !== 0
       });
-      if (initialData.state_id) {
-        setSelectedState(initialData.state_id);
-      }
     }
   }, [initialData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.district_id) {
-      toast.error('Name and District are required');
+    if (!formData.name || !formData.state_id) {
+      toast.error('Name and State are required');
       return;
     }
 
     setSubmitting(true);
     try {
       const url = isEdit && initialData 
-        ? `/api/admin/cities/${initialData.id}`
-        : '/api/admin/cities';
+        ? `/api/admin/districts/${initialData.id}`
+        : '/api/admin/districts';
       const method = isEdit ? 'PUT' : 'POST';
 
       const payload = {
         name: formData.name,
-        district_id: formData.district_id,
+        state_id: formData.state_id,
         is_active: formData.is_active
       };
 
@@ -83,12 +64,12 @@ export default function CityForm({ isEdit = false, initialData = null }) {
       const data = await res.json();
       if (data.success) {
         toast.success(data.message);
-        router.push('/admin/cities');
+        router.push('/admin/districts');
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(isEdit ? 'Failed to update city' : 'Failed to save city');
+      toast.error(isEdit ? 'Failed to update district' : 'Failed to save district');
     } finally {
       setSubmitting(false);
     }
@@ -99,53 +80,33 @@ export default function CityForm({ isEdit = false, initialData = null }) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-            City Name <span className="text-red-500">*</span>
+            District Name <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             required
-            placeholder="e.g., Beverly Hills"
+            placeholder="e.g., Los Angeles County"
             className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-white"
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-              State <span className="text-red-500">*</span>
-            </label>
-            <select
-              required
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-white"
-              value={selectedState}
-              onChange={(e) => setSelectedState(e.target.value)}
-            >
-              <option value="">Select a state</option>
-              {states.map(state => (
-                <option key={state.id} value={state.id}>{state.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-              District <span className="text-red-500">*</span>
-            </label>
-            <select
-              required
-              disabled={!selectedState}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-white disabled:bg-gray-100 disabled:dark:bg-slate-600"
-              value={formData.district_id}
-              onChange={(e) => setFormData({...formData, district_id: e.target.value})}
-            >
-              <option value="">Select a district</option>
-              {districts.map(district => (
-                <option key={district.id} value={district.id}>{district.name}</option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+            State <span className="text-red-500">*</span>
+          </label>
+          <select
+            required
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-white"
+            value={formData.state_id}
+            onChange={(e) => setFormData({...formData, state_id: e.target.value})}
+          >
+            <option value="">Select a state</option>
+            {states.map(state => (
+              <option key={state.id} value={state.id}>{state.name}</option>
+            ))}
+          </select>
         </div>
         
         <div className="flex items-center">
@@ -164,7 +125,7 @@ export default function CityForm({ isEdit = false, initialData = null }) {
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-700">
           <button
             type="button"
-            onClick={() => router.push('/admin/cities')}
+            onClick={() => router.push('/admin/districts')}
             className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 rounded-lg transition"
             disabled={submitting}
           >
@@ -175,7 +136,7 @@ export default function CityForm({ isEdit = false, initialData = null }) {
             disabled={submitting}
             className="px-4 py-2 bg-teal-600 text-white hover:bg-teal-700 rounded-lg transition disabled:opacity-50"
           >
-            {submitting ? 'Saving...' : (isEdit ? 'Update City' : 'Add City')}
+            {submitting ? 'Saving...' : (isEdit ? 'Update District' : 'Add District')}
           </button>
         </div>
       </form>

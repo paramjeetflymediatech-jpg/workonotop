@@ -7,24 +7,7 @@ import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import PremiumAlert from '../../components/PremiumAlert';
 
-const SERVICE_AREAS = [
-    'Toronto', 'North York', 'Scarborough', 'Etobicoke', 'East York', 'York',
-    'Mississauga', 'Brampton', 'Vaughan', 'Markham', 'Richmond Hill',
-    'Aurora', 'Newmarket', 'King', 'East Gwillimbury', 'Georgina',
-    'Whitchurch-Stouffville', 'Oakville', 'Burlington', 'Halton Hills',
-    'Milton', 'Caledon', 'Pickering', 'Ajax', 'Whitby', 'Oshawa'
-];
 
-const SKILLS = [
-    'Cleaning (regular, deep, move out)',
-    'Exterior cleaning (pressure washing, gutters, windows)',
-    'Handyman',
-    'Furniture assembly',
-    'Movers',
-    'Junk removal',
-    'Yard work',
-    'Carpet wash'
-];
 
 const ProfileSetupScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
@@ -34,29 +17,105 @@ const ProfileSetupScreen = ({ navigation }) => {
         yearsExperience: '',
         businessAddress: '',
         city: '',
-        serviceAreas: [],
+        serviceCities: [],
+        serviceCitiesNames: [],
         skills: []
     });
     const [loading, setLoading] = useState(false);
     const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'error' });
     const { token, updateUser, logout } = useAuth();
 
+    const [states, setStates] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [cities, setCities] = useState([]);
+    const [selectedState, setSelectedState] = useState(null);
+    const [selectedDistrict, setSelectedDistrict] = useState(null);
+    const [availableSkills, setAvailableSkills] = useState([]);
+
+    React.useEffect(() => {
+        const fetchStates = async () => {
+            try {
+                const res = await apiService.get('/api/locations', { type: 'states' }, token);
+                if (res.success) setStates(res.data);
+            } catch (err) {}
+        };
+        const fetchSkills = async () => {
+            try {
+                const res = await apiService.general.getSkills();
+                if (res.success) setAvailableSkills(res.data.map(s => s.name));
+            } catch (err) {}
+        };
+        fetchStates();
+        fetchSkills();
+    }, []);
+
+    React.useEffect(() => {
+        if (!selectedState) {
+            setDistricts([]);
+            setSelectedDistrict(null);
+            return;
+        }
+        const fetchDistricts = async () => {
+            try {
+                const res = await apiService.get('/api/locations', { type: 'districts', parentId: selectedState }, token);
+                if (res.success) setDistricts(res.data);
+            } catch (err) {}
+        };
+        fetchDistricts();
+    }, [selectedState]);
+
+    React.useEffect(() => {
+        if (!selectedDistrict) {
+            setCities([]);
+            return;
+        }
+        const fetchCities = async () => {
+            try {
+                const res = await apiService.get('/api/locations', { type: 'cities', parentId: selectedDistrict }, token);
+                if (res.success) setCities(res.data);
+            } catch (err) {}
+        };
+        fetchCities();
+    }, [selectedDistrict]);
+
     const showPremiumAlert = (message, title = '', type = 'error') => {
         setAlert({ visible: true, title, message, type });
     };
 
-    const toggleSelection = (key, value) => {
+    const toggleSelection = (key, value, name = null) => {
         setProfile(prev => {
-            const current = prev[key];
-            const updated = current.includes(value)
-                ? current.filter(item => item !== value)
-                : [...current, value];
-            return { ...prev, [key]: updated };
+            if (key === 'serviceCities') {
+                const current = prev.serviceCities;
+                const currentNames = prev.serviceCitiesNames || [];
+                const isSelected = current.includes(value);
+
+                return {
+                    ...prev,
+                    serviceCities: isSelected ? current.filter(id => id !== value) : [...current, value],
+                    serviceCitiesNames: isSelected ? currentNames.filter(n => n !== name) : [...currentNames, name]
+                };
+            } else {
+                const current = prev[key];
+                const updated = current.includes(value)
+                    ? current.filter(item => item !== value)
+                    : [...current, value];
+                return { ...prev, [key]: updated };
+            }
+        });
+    };
+
+    const removeCityByIndex = (idx) => {
+        setProfile(prev => {
+            const arr = [...(prev.serviceCities || [])];
+            const names = [...(prev.serviceCitiesNames || [])];
+            arr.splice(idx, 1);
+            names.splice(idx, 1);
+            return { ...prev, serviceCities: arr, serviceCitiesNames: names };
         });
     };
 
     const handleNext = async () => {
-        const { bio, primarySpecialty, yearsExperience, businessAddress, city, serviceAreas, skills } = profile;
+        const { bio, primarySpecialty, yearsExperience, businessAddress, city, serviceCities, skills } = profile;
 
         // 1. Basic empty check
         if (!bio || !primarySpecialty || !yearsExperience || !businessAddress || !city) {
@@ -79,8 +138,8 @@ const ProfileSetupScreen = ({ navigation }) => {
         }
 
         // 4. Service Areas (at least one)
-        if (serviceAreas.length === 0) {
-            showPremiumAlert('Please select at least one service area.', 'Service Areas');
+        if (serviceCities.length === 0) {
+            showPremiumAlert('Please select at least one service city.', 'Service Areas');
             return;
         }
 
@@ -98,7 +157,7 @@ const ProfileSetupScreen = ({ navigation }) => {
                 experience_years: exp,
                 location: businessAddress,
                 city: city,
-                service_areas: serviceAreas,
+                service_cities: serviceCities,
                 skills: skills
             };
 
@@ -231,67 +290,145 @@ const ProfileSetupScreen = ({ navigation }) => {
                         <Text style={styles.inputHint}>Enter the city where your business is located - this helps customers find you in local searches</Text>
                     </View>
 
-                    {/* Service Areas */}
                     <View style={styles.selectionSection}>
                         <Text style={styles.label}>Service Areas <Text style={styles.req}>*</Text></Text>
-                        <View style={styles.checkboxGrid}>
-                            {SERVICE_AREAS.map(area => {
-                                const isSelected = profile.serviceAreas.includes(area);
-                                return (
-                                    <TouchableOpacity
-                                        key={area}
-                                        style={[
-                                            styles.checkboxItem,
-                                            isSelected && styles.checkboxItemActive
-                                        ]}
-                                        onPress={() => toggleSelection('serviceAreas', area)}
-                                    >
-                                        <View style={styles.checkboxRow}>
-                                            <Ionicons
-                                                name={isSelected ? "checkbox" : "square-outline"}
-                                                size={moderateScale(22)}
-                                                color={isSelected ? "#0d9488" : "#94a3b8"}
-                                            />
-                                            <Text style={[
-                                                styles.checkboxLabel,
-                                                isSelected && styles.checkboxLabelActive
-                                            ]}>{area}</Text>
+
+                        {/* Currently Saved Cities Display */}
+                        {profile.serviceCitiesNames?.length > 0 && (
+                            <View style={{ marginBottom: verticalScale(15), backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
+                                <Text style={[styles.label, { color: '#0f172a', marginBottom: 8 }]}>Your Saved Service Areas:</Text>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                                    {profile.serviceCitiesNames.map((cityName, idx) => (
+                                        <View key={idx} style={[styles.chipItem, { flexDirection: 'row', alignItems: 'center', marginRight: 0, backgroundColor: '#f0fdfa', borderColor: '#ccfbf1', paddingVertical: 6, paddingHorizontal: 12 }]}>
+                                            <Text style={[styles.chipText, { color: '#0f766e', fontSize: 12, marginRight: 4 }]}>{cityName}</Text>
+                                            <TouchableOpacity onPress={() => removeCityByIndex(idx)}>
+                                                <Ionicons name="close-circle" size={16} color="#0f766e" />
+                                            </TouchableOpacity>
                                         </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        <Text style={[styles.inputHint, { marginBottom: verticalScale(10) }]}>Select a state and district to view cities.</Text>
+                        
+                        {/* State Selection */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                            {states.map(s => (
+                                <TouchableOpacity
+                                    key={s.id}
+                                    style={[styles.chipItem, selectedState === s.id && styles.chipItemActive]}
+                                    onPress={() => setSelectedState(s.id)}
+                                >
+                                    <Text style={[styles.chipText, selectedState === s.id && styles.chipTextActive]}>{s.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {/* District Selection */}
+                        {selectedState && (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.chipScroll, { marginTop: verticalScale(10) }]}>
+                                {districts.length === 0 && <Text style={styles.inputHint}>No districts found.</Text>}
+                                {districts.map(d => (
+                                    <TouchableOpacity
+                                        key={d.id}
+                                        style={[styles.chipItem, selectedDistrict === d.id && styles.chipItemActive]}
+                                        onPress={() => setSelectedDistrict(d.id)}
+                                    >
+                                        <Text style={[styles.chipText, selectedDistrict === d.id && styles.chipTextActive]}>{d.name}</Text>
                                     </TouchableOpacity>
-                                );
-                            })}
-                        </View>
+                                ))}
+                            </ScrollView>
+                        )}
+
+                        {/* City Checkboxes */}
+                        {selectedDistrict && (
+                            <View style={[styles.checkboxGrid, { marginTop: verticalScale(15) }]}>
+                                {cities.length === 0 && <Text style={styles.inputHint}>No active cities found in this district.</Text>}
+                                {cities.map(area => {
+                                    const isSelected = profile.serviceCities.includes(area.id);
+                                    return (
+                                        <TouchableOpacity
+                                            key={area.id}
+                                            style={[
+                                                styles.checkboxItem,
+                                                isSelected && styles.checkboxItemActive
+                                            ]}
+                                            onPress={() => toggleSelection('serviceCities', area.id, area.name)}
+                                        >
+                                            <View style={styles.checkboxRow}>
+                                                <Ionicons
+                                                    name={isSelected ? "checkbox" : "square-outline"}
+                                                    size={moderateScale(22)}
+                                                    color={isSelected ? "#0d9488" : "#94a3b8"}
+                                                />
+                                                <Text style={[
+                                                    styles.checkboxLabel,
+                                                    isSelected && styles.checkboxLabelActive
+                                                ]}>{area.name}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        )}
+                        {profile.serviceCities.length > 0 && (
+                            <Text style={[styles.inputHint, { marginTop: verticalScale(5), fontWeight: 'bold', color: '#0d9488' }]}>
+                                {profile.serviceCities.length} cities selected
+                            </Text>
+                        )}
                     </View>
 
-                    {/* Skills */}
                     <View style={styles.selectionSection}>
                         <Text style={styles.label}>Skills <Text style={styles.req}>*</Text></Text>
-                        <View style={styles.checkboxGrid}>
-                            {SKILLS.map(skill => {
-                                const isSelected = profile.skills.includes(skill);
-                                return (
-                                    <TouchableOpacity
-                                        key={skill}
-                                        style={[
-                                            styles.checkboxItem,
-                                            isSelected && styles.checkboxItemActive
-                                        ]}
-                                        onPress={() => toggleSelection('skills', skill)}
-                                    >
-                                        <View style={styles.checkboxRow}>
-                                            <Ionicons
-                                                name={isSelected ? "checkbox" : "square-outline"}
-                                                size={moderateScale(22)}
-                                                color={isSelected ? "#0d9488" : "#94a3b8"}
-                                            />
-                                            <Text style={[
-                                                styles.checkboxLabel,
-                                                isSelected && styles.checkboxLabelActive
-                                            ]}>{skill}</Text>
+
+                        {/* Currently Saved Skills Display */}
+                        {profile.skills?.length > 0 && (
+                            <View style={{ marginBottom: verticalScale(15), backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
+                                <Text style={[styles.label, { color: '#0f172a', marginBottom: 8 }]}>Your Saved Skills:</Text>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                                    {profile.skills.map((skill, idx) => (
+                                        <View key={idx} style={[styles.chipItem, { flexDirection: 'row', alignItems: 'center', marginRight: 0, backgroundColor: '#f0fdfa', borderColor: '#ccfbf1', paddingVertical: 6, paddingHorizontal: 12 }]}>
+                                            <Text style={[styles.chipText, { color: '#0f766e', fontSize: 12, marginRight: 4 }]}>{skill}</Text>
+                                            <TouchableOpacity onPress={() => toggleSelection('skills', skill)}>
+                                                <Ionicons name="close-circle" size={16} color="#0f766e" />
+                                            </TouchableOpacity>
                                         </View>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        <View style={styles.scrollableContainer}>
+                            <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={true} contentContainerStyle={styles.scrollableContent}>
+                                <View style={styles.checkboxGrid}>
+                                    {availableSkills.map(skill => {
+                                        const isSelected = profile.skills.includes(skill);
+                                        return (
+                                            <TouchableOpacity
+                                                key={skill}
+                                                style={[
+                                                    styles.checkboxItem,
+                                                    isSelected && styles.checkboxItemActive
+                                                ]}
+                                                onPress={() => toggleSelection('skills', skill)}
+                                            >
+                                                <View style={styles.checkboxRow}>
+                                                    <Ionicons
+                                                        name={isSelected ? "checkbox" : "square-outline"}
+                                                        size={moderateScale(22)}
+                                                        color={isSelected ? "#0d9488" : "#94a3b8"}
+                                                    />
+                                                    <Text style={[
+                                                        styles.checkboxLabel,
+                                                        isSelected && styles.checkboxLabelActive
+                                                    ]}>{skill}</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </ScrollView>
                         </View>
                     </View>
 
@@ -422,6 +559,17 @@ const styles = StyleSheet.create({
         lineHeight: moderateScale(16),
     },
     selectionSection: { marginBottom: verticalScale(20) },
+    scrollableContainer: {
+        maxHeight: verticalScale(240),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: moderateScale(10),
+        backgroundColor: '#f8fafc',
+        overflow: 'hidden'
+    },
+    scrollableContent: {
+        padding: moderateScale(10),
+    },
     checkboxGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -474,6 +622,30 @@ const styles = StyleSheet.create({
         backgroundColor: '#fef2f2',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    chipScroll: {
+        flexDirection: 'row',
+    },
+    chipItem: {
+        paddingHorizontal: moderateScale(15),
+        paddingVertical: verticalScale(8),
+        borderRadius: moderateScale(20),
+        backgroundColor: '#f1f5f9',
+        marginRight: scale(10),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    chipItemActive: {
+        backgroundColor: '#0d9488',
+        borderColor: '#0d9488',
+    },
+    chipText: {
+        fontSize: moderateScale(13),
+        color: '#475569',
+        fontWeight: '600',
+    },
+    chipTextActive: {
+        color: '#fff',
     },
 });
 

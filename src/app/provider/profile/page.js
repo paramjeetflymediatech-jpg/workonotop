@@ -10,17 +10,6 @@ import {
 
 // removed static location imports
 
-const SKILLS = [
-  'Cleaning (regular, deep, move out)',
-  'Exterior cleaning (pressure washing, gutters, windows)',
-  'Handyman',
-  'Furniture assembly',
-  'Movers',
-  'Junk removal',
-  'Yard work',
-  'Carpet wash'
-];
-
 function Toast({ toast, onDismiss }) {
   useEffect(() => {
     if (!toast) return;
@@ -67,40 +56,93 @@ export default function ProviderProfile() {
     bio: '',
     location: '',
     city: '',
-    service_areas: [],
+    service_cities: [],
+    service_cities_names: [],
     skills: [],
   });
 
   const showToast = (message, type = 'success') => setToast({ message, type });
 
-  const [serviceAreaGroups, setServiceAreaGroups] = useState({});
-  const [serviceAreaNames, setServiceAreaNames] = useState({});
-  const [loadingAreas, setLoadingAreas] = useState(true);
+  const [states, setStates] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedState, setSelectedState] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedCitiesNames, setSelectedCitiesNames] = useState({});
+  const [loadingLocations, setLoadingLocations] = useState(true);
+  const [availableSkills, setAvailableSkills] = useState([]);
 
   useEffect(() => {
     loadProfile();
-    fetchServiceAreas();
+    fetchStates();
+    fetchSkills();
   }, []);
 
-  const fetchServiceAreas = async () => {
+  const fetchSkills = async () => {
     try {
-      const res = await fetch('/api/service-areas');
+      const res = await fetch('/api/skills');
       const data = await res.json();
       if (data.success) {
-        setServiceAreaGroups(data.data);
-        const names = {};
-        Object.values(data.data).forEach(group => {
-          group.forEach(area => {
-            names[area.cluster_key] = area.name;
-          });
-        });
-        setServiceAreaNames(names);
+        setAvailableSkills(data.data.map(s => s.name));
       }
     } catch (err) {
-      console.error('Failed to fetch service areas', err);
-    } finally {
-      setLoadingAreas(false);
+      console.error('Failed to fetch skills', err);
     }
+  };
+
+  const fetchStates = async () => {
+    try {
+      const res = await fetch('/api/locations?type=states');
+      const data = await res.json();
+      if (data.success) {
+        setStates(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch states', err);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedState) {
+      setDistricts([]);
+      setSelectedDistrict('');
+      return;
+    }
+    const fetchDistricts = async () => {
+      try {
+        const res = await fetch(`/api/locations?type=districts&parentId=${selectedState}`);
+        const data = await res.json();
+        if (data.success) setDistricts(data.data);
+      } catch (err) {}
+    };
+    fetchDistricts();
+  }, [selectedState]);
+
+  useEffect(() => {
+    if (!selectedDistrict) {
+      setCities([]);
+      return;
+    }
+    const fetchCities = async () => {
+      try {
+        const res = await fetch(`/api/locations?type=cities&parentId=${selectedDistrict}`);
+        const data = await res.json();
+        if (data.success) setCities(data.data);
+      } catch (err) {}
+    };
+    fetchCities();
+  }, [selectedDistrict]);
+
+  const loadCityNames = async (cityIds) => {
+    if (!cityIds || cityIds.length === 0) return;
+    try {
+      // In a real scenario we'd have a bulk endpoint, but for simplicity:
+      // Assuming we have states -> districts -> cities, we might just show "X Cities Selected" 
+      // or we can fetch their names individually or via a special endpoint.
+      // Since we don't have a bulk endpoint, let's just show counts or maybe the API should return names.
+    } catch (e) {}
   };
 
   const loadProfile = async () => {
@@ -118,7 +160,8 @@ export default function ProviderProfile() {
           bio: data.data.bio || '',
           location: data.data.location || '',
           city: data.data.city || '',
-          service_areas: data.data.service_areas || [],
+          service_cities: data.data.service_cities || [],
+          service_cities_names: data.data.service_cities_names || [],
           skills: data.data.skills || [],
         });
       } else {
@@ -145,6 +188,30 @@ export default function ProviderProfile() {
         ...prev,
         [field]: arr.includes(value) ? arr.filter(i => i !== value) : [...arr, value]
       };
+    });
+  };
+
+  const toggleCity = (cityId, cityName) => {
+    setFormData(prev => {
+      const arr = prev.service_cities || [];
+      const names = prev.service_cities_names || [];
+      const isSelected = arr.includes(cityId);
+
+      return {
+        ...prev,
+        service_cities: isSelected ? arr.filter(id => id !== cityId) : [...arr, cityId],
+        service_cities_names: isSelected ? names.filter(n => n !== cityName) : [...names, cityName]
+      };
+    });
+  };
+
+  const removeCityByIndex = (idx) => {
+    setFormData(prev => {
+      const arr = [...(prev.service_cities || [])];
+      const names = [...(prev.service_cities_names || [])];
+      arr.splice(idx, 1);
+      names.splice(idx, 1);
+      return { ...prev, service_cities: arr, service_cities_names: names };
     });
   };
 
@@ -195,7 +262,8 @@ export default function ProviderProfile() {
       bio: provider.bio || '',
       location: provider.location || '',
       city: provider.city || '',
-      service_areas: provider.service_areas || [],
+      service_cities: provider.service_cities || [],
+      service_cities_names: provider.service_cities_names || [],
       skills: provider.skills || [],
     });
   };
@@ -245,7 +313,7 @@ export default function ProviderProfile() {
     </div>
   );
 
-  const initials = provider?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'P';
+  const initials = (provider?.name || '').split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'P';
 
   const inputClass = (field) =>
     `w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
@@ -501,27 +569,48 @@ export default function ProviderProfile() {
               <Briefcase className="h-4 w-4" /> Skills
             </h3>
             {editing ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {SKILLS.map(skill => (
-                  <label key={skill} className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
-                    formData.skills.includes(skill)
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}>
-                    <input type="checkbox" checked={formData.skills.includes(skill)}
-                      onChange={() => toggleArrayItem('skills', skill)} className="sr-only" />
-                    <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${
-                      formData.skills.includes(skill) ? 'bg-green-600' : 'border-2 border-gray-300'
-                    }`}>
-                      {formData.skills.includes(skill) && (
-                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
+              <div className="space-y-4">
+                {formData.skills?.length > 0 && (
+                  <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                    <p className="text-sm font-bold text-gray-800 mb-2">Your Saved Skills:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.skills.map(skill => (
+                        <span key={skill} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 text-xs font-semibold rounded-md">
+                          {skill}
+                          <button 
+                            type="button" 
+                            onClick={() => toggleArrayItem('skills', skill)}
+                            className="hover:bg-green-200 rounded-full p-0.5 transition"
+                          >
+                            &times;
+                          </button>
+                        </span>
+                      ))}
                     </div>
-                    <span className="text-sm text-gray-700">{skill}</span>
-                  </label>
-                ))}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto pr-2">
+                  {availableSkills.map(skill => (
+                    <label key={skill} className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                      formData.skills.includes(skill)
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}>
+                      <input type="checkbox" checked={formData.skills.includes(skill)}
+                        onChange={() => toggleArrayItem('skills', skill)} className="sr-only" />
+                      <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${
+                        formData.skills.includes(skill) ? 'bg-green-600' : 'border-2 border-gray-300'
+                      }`}>
+                        {formData.skills.includes(skill) && (
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-700">{skill}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -538,47 +627,81 @@ export default function ProviderProfile() {
           {/* Service Areas */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <MapPin className="h-4 w-4" /> Service Areas
+              <MapPin className="h-4 w-4" /> Service Cities
             </h3>
             {editing ? (
               <div className="space-y-6">
-                {loadingAreas ? (
-                  <p className="text-sm text-gray-500">Loading service areas...</p>
-                ) : Object.entries(serviceAreaGroups).map(([groupName, areas]) => (
-                  <div key={groupName}>
-                    <h4 className="font-semibold text-gray-800 mb-3 border-b pb-1 text-sm">{groupName}</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                      {areas.map(area => (
-                        <label key={area.cluster_key} className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
-                          formData.service_areas.includes(area.cluster_key)
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}>
-                          <input type="checkbox" checked={formData.service_areas.includes(area.cluster_key)}
-                            onChange={() => toggleArrayItem('service_areas', area.cluster_key)} className="sr-only" />
-                          <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${
-                            formData.service_areas.includes(area.cluster_key) ? 'bg-blue-600' : 'border-2 border-gray-300'
-                          }`}>
-                            {formData.service_areas.includes(area.cluster_key) && (
-                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </div>
-                          <span className="text-sm text-gray-700 leading-tight">{area.name}</span>
+                {formData.service_cities_names?.length > 0 && (
+                  <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                    <p className="text-sm font-bold text-gray-800 mb-2">Your Saved Service Areas:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.service_cities_names.map((city, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 text-xs font-semibold rounded-md">
+                          {city}
+                          <button 
+                            type="button" 
+                            onClick={() => removeCityByIndex(idx)}
+                            className="hover:bg-green-200 rounded-full p-0.5 transition"
+                          >
+                            &times;
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <select
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      value={selectedState}
+                      onChange={(e) => setSelectedState(e.target.value)}
+                    >
+                      <option value="">-- Select State --</option>
+                      {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <select
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100"
+                      value={selectedDistrict}
+                      onChange={(e) => setSelectedDistrict(e.target.value)}
+                      disabled={!selectedState}
+                    >
+                      <option value="">-- Select District --</option>
+                      {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {selectedDistrict && cities.length > 0 && (
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-60 overflow-y-auto">
+                    <h3 className="font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Cities in Selected District</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {cities.map(city => (
+                        <label key={city.id} className="flex items-center space-x-2 p-2 border border-gray-200 bg-white rounded hover:bg-gray-50 cursor-pointer transition">
+                          <input
+                            type="checkbox"
+                            checked={formData.service_cities.includes(city.id)}
+                            onChange={() => toggleCity(city.id, city.name)}
+                            className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                          />
+                          <span className="text-sm text-gray-700 leading-tight">{city.name}</span>
                         </label>
                       ))}
                     </div>
                   </div>
-                ))}
+                )}
+                {selectedDistrict && cities.length === 0 && (
+                  <p className="text-sm text-gray-500 italic">No active cities found in this district.</p>
+                )}
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {loadingAreas ? (
-                  <p className="text-sm text-gray-500">Loading service areas...</p>
-                ) : (provider?.service_areas || []).length > 0
-                  ? provider.service_areas.map(a => (
-                      <span key={a} className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 text-xs font-semibold rounded-full">{serviceAreaNames[a] || a}</span>
+                {(provider?.service_cities_names || []).length > 0
+                  ? provider.service_cities_names.map((city, idx) => (
+                      <span key={idx} className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-100 text-xs font-semibold rounded-full">{city}</span>
                     ))
                   : <p className="text-sm text-gray-400">No service areas added yet</p>
                 }

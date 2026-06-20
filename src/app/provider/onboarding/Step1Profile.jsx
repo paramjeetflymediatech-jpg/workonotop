@@ -3,16 +3,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
-const SKILLS = [
-  'Cleaning (regular, deep, move out)',
-  'Exterior cleaning (pressure washing, gutters, windows)',
-  'Handyman',
-  'Furniture assembly',
-  'Movers',
-  'Junk removal',
-  'Yard work',
-  'Carpet wash'
-];
 
 export default function Step1Profile({ initialData, onNext, providerId }) {
   const [formData, setFormData] = useState({
@@ -21,7 +11,8 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
     experience_years: initialData.experience_years || '',
     city: initialData.city || '', // Empty by default, user types their city
     location: initialData.location || '',
-    service_areas: initialData.service_areas || [],
+    service_cities: initialData.service_cities || [],
+    service_cities_names: initialData.service_cities_names || [],
     skills: initialData.skills || []
   });
   // bio length constraints
@@ -31,25 +22,75 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [serviceAreaGroups, setServiceAreaGroups] = useState({});
-  const [loadingAreas, setLoadingAreas] = useState(true);
+  const [states, setStates] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedState, setSelectedState] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [loadingLocations, setLoadingLocations] = useState(true);
+  const [availableSkills, setAvailableSkills] = useState([]);
 
   useEffect(() => {
-    const fetchServiceAreas = async () => {
+    const fetchStates = async () => {
       try {
-        const res = await fetch('/api/service-areas');
+        const res = await fetch('/api/locations?type=states');
         const data = await res.json();
         if (data.success) {
-          setServiceAreaGroups(data.data);
+          setStates(data.data);
         }
       } catch (err) {
-        console.error('Failed to fetch service areas', err);
+        console.error('Failed to fetch states', err);
       } finally {
-        setLoadingAreas(false);
+        setLoadingLocations(false);
       }
     };
-    fetchServiceAreas();
+    
+    const fetchSkills = async () => {
+      try {
+        const res = await fetch('/api/skills');
+        const data = await res.json();
+        if (data.success) {
+          setAvailableSkills(data.data.map(s => s.name));
+        }
+      } catch (err) {
+        console.error('Failed to fetch skills', err);
+      }
+    };
+
+    fetchStates();
+    fetchSkills();
   }, []);
+
+  useEffect(() => {
+    if (!selectedState) {
+      setDistricts([]);
+      setSelectedDistrict('');
+      return;
+    }
+    const fetchDistricts = async () => {
+      try {
+        const res = await fetch(`/api/locations?type=districts&parentId=${selectedState}`);
+        const data = await res.json();
+        if (data.success) setDistricts(data.data);
+      } catch (err) {}
+    };
+    fetchDistricts();
+  }, [selectedState]);
+
+  useEffect(() => {
+    if (!selectedDistrict) {
+      setCities([]);
+      return;
+    }
+    const fetchCities = async () => {
+      try {
+        const res = await fetch(`/api/locations?type=cities&parentId=${selectedDistrict}`);
+        const data = await res.json();
+        if (data.success) setCities(data.data);
+      } catch (err) {}
+    };
+    fetchCities();
+  }, [selectedDistrict]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -74,6 +115,30 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
     });
   };
 
+  const toggleCity = (cityId, cityName) => {
+    setFormData(prev => {
+      const arr = prev.service_cities || [];
+      const names = prev.service_cities_names || [];
+      const isSelected = arr.includes(cityId);
+
+      return {
+        ...prev,
+        service_cities: isSelected ? arr.filter(id => id !== cityId) : [...arr, cityId],
+        service_cities_names: isSelected ? names.filter(n => n !== cityName) : [...names, cityName]
+      };
+    });
+  };
+
+  const removeCityByIndex = (idx) => {
+    setFormData(prev => {
+      const arr = [...(prev.service_cities || [])];
+      const names = [...(prev.service_cities_names || [])];
+      arr.splice(idx, 1);
+      names.splice(idx, 1);
+      return { ...prev, service_cities: arr, service_cities_names: names };
+    });
+  };
+
   const validate = () => {
     const newErrors = {};
     const bioTrim = formData.bio.trim();
@@ -87,8 +152,8 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
     }
     if (!formData.city.trim()) newErrors.city = 'City is required';
     if (!formData.location.trim()) newErrors.location = 'Address is required';
-    if (formData.service_areas.length === 0) {
-      newErrors.service_areas = 'Select at least one service area';
+    if (formData.service_cities.length === 0) {
+      newErrors.service_cities = 'Select at least one service city';
     }
     if (formData.skills.length === 0) {
       newErrors.skills = 'Select at least one skill';
@@ -224,36 +289,89 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
         </p>
       </div>
 
-      {/* Service Areas */}
+      {/* Service Areas (States -> Districts -> Cities) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Service Areas <span className="text-red-500">*</span>
         </label>
-        <p className="text-sm text-gray-500 mb-4">Which areas are you willing to work in? Select all that apply.</p>
         
-        {loadingAreas ? (
-          <p className="text-sm text-gray-500">Loading service areas...</p>
-        ) : Object.entries(serviceAreaGroups).map(([groupName, areas]) => (
-          <div key={groupName} className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-3 border-b pb-1">{groupName}</h3>
+        {formData.service_cities_names?.length > 0 && (
+          <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-4">
+            <p className="text-sm font-bold text-gray-800 mb-2">Your Saved Service Areas:</p>
+            <div className="flex flex-wrap gap-2">
+              {formData.service_cities_names.map((city, idx) => (
+                <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-100 text-teal-800 border border-teal-200 text-xs font-semibold rounded-md">
+                  {city}
+                  <button 
+                    type="button" 
+                    onClick={() => removeCityByIndex(idx)}
+                    className="hover:bg-teal-200 rounded-full p-0.5 transition"
+                  >
+                    &times;
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <p className="text-sm text-gray-500 mb-4">Which areas are you willing to work in? Select a state and district to view and select cities.</p>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <select
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+              value={selectedState}
+              onChange={(e) => setSelectedState(e.target.value)}
+            >
+              <option value="">-- Select State --</option>
+              {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <select
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100"
+              value={selectedDistrict}
+              onChange={(e) => setSelectedDistrict(e.target.value)}
+              disabled={!selectedState}
+            >
+              <option value="">-- Select District --</option>
+              {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {selectedDistrict && cities.length > 0 && (
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-60 overflow-y-auto">
+            <h3 className="font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Cities in Selected District</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {areas.map(area => (
-                <label key={area.cluster_key} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+              {cities.map(city => (
+                <label key={city.id} className="flex items-center space-x-2 p-2 border border-gray-200 bg-white rounded hover:bg-gray-50 cursor-pointer transition">
                   <input
                     type="checkbox"
-                    checked={formData.service_areas.includes(area.cluster_key)}
-                    onChange={() => handleArrayToggle('service_areas', area.cluster_key)}
+                    checked={formData.service_cities.includes(city.id)}
+                    onChange={() => toggleCity(city.id, city.name)}
                     className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                   />
-                  <span className="text-sm text-gray-700 leading-tight">{area.name}</span>
+                  <span className="text-sm text-gray-700 leading-tight">{city.name}</span>
                 </label>
               ))}
             </div>
           </div>
-        ))}
+        )}
 
-        {errors.service_areas && (
-          <p className="mt-1 text-sm text-red-500">{errors.service_areas}</p>
+        {selectedDistrict && cities.length === 0 && (
+          <p className="text-sm text-gray-500 italic">No active cities found in this district.</p>
+        )}
+
+        {formData.service_cities.length > 0 && (
+          <div className="mt-3">
+            <p className="text-sm font-medium text-gray-700">Selected Cities ({formData.service_cities.length})</p>
+          </div>
+        )}
+
+        {errors.service_cities && (
+          <p className="mt-1 text-sm text-red-500">{errors.service_cities}</p>
         )}
       </div>
 
@@ -262,18 +380,41 @@ export default function Step1Profile({ initialData, onNext, providerId }) {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Skills <span className="text-red-500">*</span>
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {SKILLS.map(skill => (
-            <label key={skill} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.skills.includes(skill)}
-                onChange={() => handleArrayToggle('skills', skill)}
-                className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-              />
-              <span className="text-sm text-gray-700 leading-tight">{skill}</span>
-            </label>
-          ))}
+        
+        {formData.skills?.length > 0 && (
+          <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-4">
+            <p className="text-sm font-bold text-gray-800 mb-2">Your Saved Skills:</p>
+            <div className="flex flex-wrap gap-2">
+              {formData.skills.map((skill, idx) => (
+                <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-100 text-teal-800 border border-teal-200 text-xs font-semibold rounded-md">
+                  {skill}
+                  <button 
+                    type="button" 
+                    onClick={() => handleArrayToggle('skills', skill)}
+                    className="hover:bg-teal-200 rounded-full p-0.5 transition"
+                  >
+                    &times;
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-60 overflow-y-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {availableSkills.map(skill => (
+              <label key={skill} className="flex items-center space-x-2 p-2 border border-gray-200 bg-white rounded hover:bg-gray-50 cursor-pointer transition">
+                <input
+                  type="checkbox"
+                  checked={formData.skills.includes(skill)}
+                  onChange={() => handleArrayToggle('skills', skill)}
+                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <span className="text-sm text-gray-700 leading-tight">{skill}</span>
+              </label>
+            ))}
+          </div>
         </div>
         {errors.skills && (
           <p className="mt-1 text-sm text-red-500">{errors.skills}</p>

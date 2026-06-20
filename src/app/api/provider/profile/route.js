@@ -166,7 +166,7 @@ export async function GET(request) {
         sp.rating, sp.avg_rating, sp.total_jobs, sp.total_reviews,
         sp.bio, sp.location, sp.city,
         sp.avatar_url,
-        sp.status, sp.service_areas, sp.skills,
+        sp.status, sp.service_cities, sp.skills,
         sp.stripe_onboarding_complete,
         sp.onboarding_completed, sp.onboarding_step,
         sp.documents_verified, sp.documents_uploaded,
@@ -218,12 +218,12 @@ export async function GET(request) {
     }
 
     // Safely parse JSON fields
-    provider.service_areas = (() => {
-      if (!provider.service_areas) return []
+    provider.service_cities = (() => {
+      if (!provider.service_cities) return []
       try {
-        return typeof provider.service_areas === 'string'
-          ? JSON.parse(provider.service_areas)
-          : (provider.service_areas || [])
+        return typeof provider.service_cities === 'string'
+          ? JSON.parse(provider.service_cities)
+          : (provider.service_cities || [])
       } catch {
         return []
       }
@@ -239,6 +239,19 @@ export async function GET(request) {
         return []
       }
     })()
+
+    // Fetch names for the saved service_cities IDs
+    let service_cities_names = [];
+    if (provider.service_cities && provider.service_cities.length > 0) {
+      try {
+        const placeholders = provider.service_cities.map(() => '?').join(',');
+        const citiesResult = await execute(`SELECT name FROM cities WHERE id IN (${placeholders})`, provider.service_cities);
+        service_cities_names = citiesResult.map(c => c.name);
+      } catch (e) {
+        console.error('Failed to fetch service_cities_names:', e);
+      }
+    }
+    provider.service_cities_names = service_cities_names;
 
     return NextResponse.json({ success: true, data: provider })
 
@@ -264,7 +277,7 @@ export async function PUT(request) {
     const providerId = decoded.providerId
 
     const body = await request.json()
-    const { name, email, phone, specialty, experience_years, bio, location, city, service_areas, skills } = body
+    const { name, email, phone, specialty, experience_years, bio, location, city, service_cities, skills } = body
 
     if (!name?.trim()) return NextResponse.json({ success: false, message: 'Name is required' }, { status: 400 })
     if (!email?.trim()) return NextResponse.json({ success: false, message: 'Email is required' }, { status: 400 })
@@ -281,7 +294,7 @@ export async function PUT(request) {
     await execute(
       `UPDATE service_providers SET
         name=?, email=?, phone=?, specialty=?, experience_years=?,
-        bio=?, location=?, city=?, service_areas=?, skills=?, updated_at=NOW()
+        bio=?, location=?, city=?, service_cities=?, skills=?, updated_at=NOW()
        WHERE id=?`,
       [
         name.trim(),
@@ -292,7 +305,7 @@ export async function PUT(request) {
         bio?.trim() || null,
         location?.trim() || null,
         city?.trim() || null,
-        Array.isArray(service_areas) ? JSON.stringify(service_areas) : null,
+        Array.isArray(service_cities) ? JSON.stringify(service_cities) : null,
         Array.isArray(skills) ? JSON.stringify(skills) : null,
         providerId
       ]
@@ -302,7 +315,7 @@ export async function PUT(request) {
     const updated = await execute(
       `SELECT id, name, email, phone, specialty, experience_years,
               rating, avg_rating, total_jobs, total_reviews,
-              bio, avatar_url, location, city, status, service_areas, skills,
+              bio, avatar_url, location, city, status, service_cities, skills,
               documents_verified, documents_uploaded,
               DATE_FORMAT(created_at, '%Y-%m-%d') as join_date
        FROM service_providers WHERE id = ?`,
@@ -330,11 +343,11 @@ export async function PUT(request) {
     }
 
     // Parse JSON fields
-    provider.service_areas = (() => {
+    provider.service_cities = (() => {
       try {
-        return typeof provider.service_areas === 'string'
-          ? JSON.parse(provider.service_areas)
-          : (provider.service_areas || [])
+        return typeof provider.service_cities === 'string'
+          ? JSON.parse(provider.service_cities)
+          : (provider.service_cities || [])
       } catch {
         return []
       }

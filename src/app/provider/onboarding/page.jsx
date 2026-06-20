@@ -21,7 +21,8 @@ function OnboardingContent() {
     experience_years: '',
     city: '',
     location: '',
-    service_areas: [],
+    service_cities: [],
+    service_cities_names: [],
     skills: [],
     documents: {
       profile_photo: null,
@@ -62,7 +63,8 @@ function OnboardingContent() {
             experience_years: prov.experience_years || '',
             city: prov.city || '',
             location: prov.location || '',
-            service_areas: Array.isArray(prov.service_areas) ? prov.service_areas : [],
+            service_cities: Array.isArray(prov.service_cities) ? prov.service_cities : [],
+            service_cities_names: Array.isArray(prov.service_cities_names) ? prov.service_cities_names : [],
             skills: Array.isArray(prov.skills) ? prov.skills : []
           }));
         }

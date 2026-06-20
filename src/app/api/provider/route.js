@@ -126,7 +126,7 @@ export async function PUT(request) {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
 
-    const { name, email, phone, specialty, experience_years, bio, location, city, avatar_url } = body
+    const { name, email, phone, specialty, experience_years, bio, location, city, service_cities, avatar_url } = body
 
     if (!name || !email || !phone) {
       return NextResponse.json({ success: false, message: 'Name, email and phone are required' }, { status: 400 })
@@ -145,19 +145,20 @@ export async function PUT(request) {
     await execute(
       `UPDATE service_providers SET
         name = ?, email = ?, phone = ?, specialty = ?,
-        experience_years = ?, bio = ?, location = ?, city = ?,
+        experience_years = ?, bio = ?, location = ?, city = ?, service_cities = ?,
         avatar_url = COALESCE(?, avatar_url), updated_at = NOW()
        WHERE id = ?`,
       [name, email, phone, specialty || null,
         experience_years ? parseInt(experience_years) : null,
-        bio || null, location || null, city || null,
+        bio || null, location || null, city || null, 
+        Array.isArray(service_cities) ? JSON.stringify(service_cities) : null,
         avatar_url || null, decoded.id]
     )
 
     // ✅ Using execute()
     const updated = await execute(
       `SELECT id, name, email, phone, specialty, experience_years,
-              rating, total_jobs, bio, avatar_url, location, city, status
+              rating, total_jobs, bio, avatar_url, location, city, status, service_cities
        FROM service_providers WHERE id = ?`,
       [decoded.id]
     )

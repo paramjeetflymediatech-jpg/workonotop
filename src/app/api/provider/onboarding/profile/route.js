@@ -28,7 +28,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { bio, specialty, experience_years, city, location, service_areas, skills } = body;
+    const { bio, specialty, experience_years, city, location, service_cities, skills } = body;
 
     // server-side validation
     if (!bio || typeof bio !== 'string' || !bio.trim()) {
@@ -45,7 +45,7 @@ export async function POST(request) {
     await execute(
       `UPDATE service_providers 
        SET bio = ?, specialty = ?, experience_years = ?,
-           city = ?, location = ?, service_areas = ?,
+           city = ?, location = ?, service_cities = ?,
            skills = ?, onboarding_step = 2
        WHERE id = ?`,
       [
@@ -54,7 +54,7 @@ export async function POST(request) {
         experience_years,
         city,
         location,
-        JSON.stringify(service_areas || []),
+        JSON.stringify(service_cities || []),
         JSON.stringify(skills || []),
         decoded.providerId
       ]

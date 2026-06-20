@@ -7,7 +7,6 @@ import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { apiService } from '../../services/api';
 import { API_BASE_URL } from '../../config';
-import { CLUSTER_GROUPS, CLUSTER_DISPLAY_NAMES } from '../../config/location';
 
 const ProviderUpdateProfileScreen = ({ navigation }) => {
     const { user, updateUser, token } = useAuth();
@@ -26,8 +25,17 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
         bio: '',
         location: '',
         city: '',
-        service_areas: []
+        service_cities: [],
+        service_cities_names: [],
+        skills: []
     });
+
+    const [states, setStates] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [cities, setCities] = useState([]);
+    const [selectedState, setSelectedState] = useState(null);
+    const [selectedDistrict, setSelectedDistrict] = useState(null);
+    const [availableSkills, setAvailableSkills] = useState([]);
 
     useEffect(() => {
         loadProfile();
@@ -49,7 +57,23 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                     bio: p.bio || '',
                     location: p.location || '',
                     city: p.city || '',
-                    service_areas: p.service_areas || []
+                    service_cities: (() => {
+                        if (!p.service_cities) return [];
+                        try {
+                            return typeof p.service_cities === 'string' ? JSON.parse(p.service_cities) : p.service_cities;
+                        } catch (e) {
+                            return [];
+                        }
+                    })(),
+                    service_cities_names: p.service_cities_names || [],
+                    skills: (() => {
+                        if (!p.skills) return [];
+                        try {
+                            return typeof p.skills === 'string' ? JSON.parse(p.skills) : p.skills;
+                        } catch (e) {
+                            return [];
+                        }
+                    })()
                 });
                 if (p.avatar_url) {
                     setProfileImage(p.avatar_url.startsWith('http') ? p.avatar_url : `${API_BASE_URL}${p.avatar_url}`);
@@ -66,9 +90,65 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
         }
     };
 
+    useEffect(() => {
+        const fetchStates = async () => {
+            try {
+                const res = await apiService.get('/api/locations', { type: 'states' }, token);
+                if (res.success) setStates(res.data);
+            } catch (err) {}
+        };
+        const fetchSkills = async () => {
+            try {
+                const res = await apiService.general.getSkills();
+                if (res.success) setAvailableSkills(res.data.map(s => s.name));
+            } catch (err) {}
+        };
+        fetchStates();
+        fetchSkills();
+    }, []);
+
+    useEffect(() => {
+        if (!selectedState) {
+            setDistricts([]);
+            setSelectedDistrict(null);
+            return;
+        }
+        const fetchDistricts = async () => {
+            try {
+                const res = await apiService.get('/api/locations', { type: 'districts', parentId: selectedState }, token);
+                if (res.success) setDistricts(res.data);
+            } catch (err) {}
+        };
+        fetchDistricts();
+    }, [selectedState]);
+
+    useEffect(() => {
+        if (!selectedDistrict) {
+            setCities([]);
+            return;
+        }
+        const fetchCities = async () => {
+            try {
+                const res = await apiService.get('/api/locations', { type: 'cities', parentId: selectedDistrict }, token);
+                if (res.success) setCities(res.data);
+            } catch (err) {}
+        };
+        fetchCities();
+    }, [selectedDistrict]);
+
     const onRefresh = () => {
         setRefreshing(true);
         loadProfile();
+    };
+
+    const removeCityByIndex = (idx) => {
+        setForm(prev => {
+            const arr = [...(prev.service_cities || [])];
+            const names = [...(prev.service_cities_names || [])];
+            arr.splice(idx, 1);
+            names.splice(idx, 1);
+            return { ...prev, service_cities: arr, service_cities_names: names };
+        });
     };
 
     const pickImage = async () => {
@@ -136,7 +216,8 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                 bio: form.bio,
                 location: form.location,
                 city: form.city,
-                service_areas: form.service_areas,
+                service_cities: form.service_cities,
+                skills: form.skills,
                 avatar_url: uploadedImageUrl?.replace(API_BASE_URL, '') // send relative path
             };
 
@@ -286,39 +367,154 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Service Areas</Text>
+                        <Text style={styles.label}>Service Cities</Text>
                         <Text style={styles.subLabel}>Which areas are you willing to work in?</Text>
+
+                        {/* Currently Saved Cities Display */}
+                        {form.service_cities_names?.length > 0 && (
+                            <View style={{ marginBottom: verticalScale(15), backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
+                                <Text style={[styles.subLabel, { color: '#0f172a', fontWeight: 'bold', marginBottom: 8 }]}>Your Saved Service Areas:</Text>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                                    {form.service_cities_names.map((cityName, idx) => (
+                                        <View key={idx} style={[styles.chipItem, { flexDirection: 'row', alignItems: 'center', marginRight: 0, backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', paddingVertical: 6, paddingHorizontal: 12 }]}>
+                                            <Text style={[styles.chipText, { color: '#166534', fontSize: 12, marginRight: 4 }]}>{cityName}</Text>
+                                            <TouchableOpacity onPress={() => removeCityByIndex(idx)}>
+                                                <Ionicons name="close-circle" size={16} color="#166534" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
                         
-                        {Object.entries(CLUSTER_GROUPS).map(([groupName, clusterKeys]) => (
-                            <View key={groupName} style={styles.clusterGroup}>
-                                <Text style={styles.clusterGroupTitle}>{groupName}</Text>
+                        {/* State Selection */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                            {states.map(s => (
+                                <TouchableOpacity
+                                    key={s.id}
+                                    style={[styles.chipItem, selectedState === s.id && styles.chipItemActive]}
+                                    onPress={() => setSelectedState(s.id)}
+                                >
+                                    <Text style={[styles.chipText, selectedState === s.id && styles.chipTextActive]}>{s.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {/* District Selection */}
+                        {selectedState && (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.chipScroll, { marginTop: verticalScale(10) }]}>
+                                {districts.length === 0 && <Text style={styles.subLabel}>No districts found.</Text>}
+                                {districts.map(d => (
+                                    <TouchableOpacity
+                                        key={d.id}
+                                        style={[styles.chipItem, selectedDistrict === d.id && styles.chipItemActive]}
+                                        onPress={() => setSelectedDistrict(d.id)}
+                                    >
+                                        <Text style={[styles.chipText, selectedDistrict === d.id && styles.chipTextActive]}>{d.name}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        )}
+
+                        {/* City Checkboxes */}
+                        {selectedDistrict && (
+                            <View style={[styles.checkboxContainer, { marginTop: verticalScale(15) }]}>
+                                {cities.length === 0 && <Text style={styles.subLabel}>No active cities found in this district.</Text>}
+                                {cities.map(clusterKey => {
+                                    const isSelected = form.service_cities.includes(clusterKey.id);
+                                    return (
+                                        <TouchableOpacity 
+                                            key={clusterKey.id} 
+                                            style={[styles.checkboxItem, isSelected && styles.checkboxItemSelected]}
+                                            onPress={() => {
+                                                setForm(prev => {
+                                                    const areas = prev.service_cities || [];
+                                                    const names = prev.service_cities_names || [];
+                                                    const isSelected = areas.includes(clusterKey.id);
+                                                    
+                                                    const newAreas = isSelected
+                                                        ? areas.filter(a => a !== clusterKey.id)
+                                                        : [...areas, clusterKey.id];
+                                                        
+                                                    const newNames = isSelected
+                                                        ? names.filter(n => n !== clusterKey.name)
+                                                        : [...names, clusterKey.name];
+                                                        
+                                                    return { ...prev, service_cities: newAreas, service_cities_names: newNames };
+                                                });
+                                            }}
+                                        >
+                                            <View style={[styles.checkboxBox, isSelected && styles.checkboxBoxSelected]}>
+                                                {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                                            </View>
+                                            <Text style={styles.checkboxLabel}>{clusterKey.name}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        )}
+                        {form.service_cities.length > 0 && (
+                            <Text style={[styles.subLabel, { marginTop: verticalScale(5), fontWeight: 'bold', color: '#115e59' }]}>
+                                {form.service_cities.length} cities selected
+                            </Text>
+                        )}
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Skills</Text>
+                        <Text style={styles.subLabel}>What are your professional skills?</Text>
+
+                        {/* Currently Saved Skills Display */}
+                        {form.skills?.length > 0 && (
+                            <View style={{ marginBottom: verticalScale(15), backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
+                                <Text style={[styles.subLabel, { color: '#0f172a', fontWeight: 'bold', marginBottom: 8 }]}>Your Saved Skills:</Text>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                                    {form.skills.map((skill, idx) => (
+                                        <View key={idx} style={[styles.chipItem, { flexDirection: 'row', alignItems: 'center', marginRight: 0, backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', paddingVertical: 6, paddingHorizontal: 12 }]}>
+                                            <Text style={[styles.chipText, { color: '#166534', fontSize: 12, marginRight: 4 }]}>{skill}</Text>
+                                            <TouchableOpacity onPress={() => {
+                                                setForm(prev => {
+                                                    const skillsArr = prev.skills || [];
+                                                    return { ...prev, skills: skillsArr.filter(s => s !== skill) };
+                                                });
+                                            }}>
+                                                <Ionicons name="close-circle" size={16} color="#166534" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        <View style={styles.skillsScrollContainer}>
+                            <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={true} style={styles.skillsScrollView}>
                                 <View style={styles.checkboxContainer}>
-                                    {clusterKeys.map(clusterKey => {
-                                        const isSelected = form.service_areas.includes(clusterKey);
+                                    {availableSkills.map(skill => {
+                                        const isSelected = form.skills.includes(skill);
                                         return (
                                             <TouchableOpacity 
-                                                key={clusterKey} 
+                                                key={skill} 
                                                 style={[styles.checkboxItem, isSelected && styles.checkboxItemSelected]}
                                                 onPress={() => {
                                                     setForm(prev => {
-                                                        const areas = prev.service_areas || [];
-                                                        const newAreas = areas.includes(clusterKey)
-                                                            ? areas.filter(a => a !== clusterKey)
-                                                            : [...areas, clusterKey];
-                                                        return { ...prev, service_areas: newAreas };
+                                                        const skillsArr = prev.skills || [];
+                                                        const newSkills = skillsArr.includes(skill)
+                                                            ? skillsArr.filter(s => s !== skill)
+                                                            : [...skillsArr, skill];
+                                                        return { ...prev, skills: newSkills };
                                                     });
                                                 }}
                                             >
                                                 <View style={[styles.checkboxBox, isSelected && styles.checkboxBoxSelected]}>
                                                     {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
                                                 </View>
-                                                <Text style={styles.checkboxLabel}>{CLUSTER_DISPLAY_NAMES[clusterKey] || clusterKey}</Text>
+                                                <Text style={styles.checkboxLabel}>{skill}</Text>
                                             </TouchableOpacity>
                                         );
                                     })}
                                 </View>
-                            </View>
-                        ))}
+                            </ScrollView>
+                        </View>
                     </View>
 
                     <TouchableOpacity
@@ -385,12 +581,47 @@ const styles = StyleSheet.create({
     subLabel: { fontSize: moderateScale(12), color: '#64748b', marginBottom: verticalScale(10) },
     clusterGroup: { marginBottom: verticalScale(15) },
     clusterGroupTitle: { fontSize: moderateScale(14), fontWeight: 'bold', color: '#334155', marginBottom: verticalScale(8), borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: verticalScale(4) },
+    skillsScrollContainer: {
+        maxHeight: verticalScale(200),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: moderateScale(12),
+        backgroundColor: '#f8fafc',
+        overflow: 'hidden'
+    },
+    skillsScrollView: {
+        padding: moderateScale(10),
+    },
     checkboxContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: moderateScale(8) },
     checkboxItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: moderateScale(8), paddingHorizontal: moderateScale(10), paddingVertical: verticalScale(8), marginBottom: verticalScale(8), marginRight: scale(8) },
     checkboxItemSelected: { borderColor: '#115e59', backgroundColor: '#f0fdf4' },
     checkboxBox: { width: moderateScale(20), height: moderateScale(20), borderRadius: moderateScale(4), borderWidth: 1, borderColor: '#cbd5e1', marginRight: scale(8), alignItems: 'center', justifyContent: 'center' },
     checkboxBoxSelected: { backgroundColor: '#115e59', borderColor: '#115e59' },
     checkboxLabel: { fontSize: moderateScale(13), color: '#475569' },
+    chipScroll: {
+        flexDirection: 'row',
+    },
+    chipItem: {
+        paddingHorizontal: moderateScale(15),
+        paddingVertical: verticalScale(8),
+        borderRadius: moderateScale(20),
+        backgroundColor: '#f1f5f9',
+        marginRight: scale(10),
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    chipItemActive: {
+        backgroundColor: '#115e59',
+        borderColor: '#115e59',
+    },
+    chipText: {
+        fontSize: moderateScale(13),
+        color: '#475569',
+        fontWeight: '600',
+    },
+    chipTextActive: {
+        color: '#fff',
+    },
 });
 
 export default ProviderUpdateProfileScreen;

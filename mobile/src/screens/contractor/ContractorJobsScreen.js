@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, StatusBar, Dimensions, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, StatusBar, Dimensions, FlatList, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerActions } from '@react-navigation/native';
 import { api } from '../../utils/api';
@@ -20,6 +20,7 @@ const ContractorJobsScreen = ({ navigation }) => {
     const [filter, setFilter] = useState('all');
     const [stripeConnected, setStripeConnected] = useState(true);
     const [providerCity, setProviderCity] = useState('');
+    const [providerAreaNames, setProviderAreaNames] = useState([]);
     
     // Pagination states
     const [page, setPage] = useState(1);
@@ -51,6 +52,7 @@ const ContractorJobsScreen = ({ navigation }) => {
                 setPage(pageNum);
                 setDbTotal(jobsRes.total || 0);
                 if (jobsRes.provider_city) setProviderCity(jobsRes.provider_city);
+                if (jobsRes.provider_area_names) setProviderAreaNames(jobsRes.provider_area_names);
             }
         } catch (err) {
             console.error('Error fetching jobs:', err);
@@ -373,6 +375,15 @@ const ContractorJobsScreen = ({ navigation }) => {
         </>
     );
 
+    const getAreaDisplay = () => {
+        if (filter !== 'all') return filter.replace('_', ' ');
+        if (providerAreaNames && providerAreaNames.length > 0) {
+            if (providerAreaNames.length <= 2) return providerAreaNames.join(', ');
+            return `${providerAreaNames.slice(0, 2).join(', ')} + ${providerAreaNames.length - 2} more`;
+        }
+        return providerCity || 'your area';
+    };
+
     const ListEmpty = () => (
         <View style={styles.emptyContainer}>
             <View style={styles.emptyIconCircle}>
@@ -380,7 +391,7 @@ const ContractorJobsScreen = ({ navigation }) => {
             </View>
             <Text style={styles.emptyTitle}>No jobs available</Text>
             <Text style={styles.emptyText}>
-                {filter === 'all' ? `No open jobs in ${providerCity || 'your area'} right now.` : `No ${filter.replace('_', ' ')} jobs found.`}
+                {filter === 'all' ? `No open jobs in ${getAreaDisplay()} right now.` : `No ${filter.replace('_', ' ')} jobs found.`}
             </Text>
             <TouchableOpacity style={styles.checkAgainBtn} onPress={() => { setFilter('all'); fetchJobs(false, 1); }}>
                 <Text style={styles.checkAgainText}>Check Again</Text>
