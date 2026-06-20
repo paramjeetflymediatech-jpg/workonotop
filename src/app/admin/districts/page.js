@@ -100,47 +100,6 @@ export default function DistrictsPage() {
     }
   }
 
-  const handleToggleStatus = async (district) => {
-    const newStatus = district.is_active === 1 ? 0 : 1;
-    const actionText = newStatus === 1 ? 'activate' : 'deactivate';
-
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: `Do you want to ${actionText} the district "${district.name}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: newStatus === 1 ? '#10b981' : '#ef4444',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: `Yes, ${actionText} it!`
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const res = await fetch(`/api/admin/districts/${district.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: district.name,
-            state_id: district.state_id,
-            is_active: newStatus
-          })
-        });
-        
-        const data = await res.json();
-        if (data.success) {
-          toast.success(`District ${actionText}d successfully`);
-          fetchDistricts(page, filterState, debouncedSearch);
-        } else {
-          toast.error(data.message || `Failed to ${actionText} district`);
-        }
-      } catch (error) {
-        toast.error(`Failed to ${actionText} district`);
-      }
-    }
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -227,11 +186,10 @@ export default function DistrictsPage() {
                       <button
                         onClick={() => handleToggleStatus(district)}
                         title="Click to change status"
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium hover:opacity-80 transition cursor-pointer ${
-                          district.is_active === 1 
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium hover:opacity-80 transition cursor-pointer ${district.is_active === 1
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                             : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                        }`}
+                          }`}
                       >
                         {district.is_active === 1 ? 'Active' : 'Inactive'}
                       </button>
@@ -260,7 +218,7 @@ export default function DistrictsPage() {
             </tbody>
           </table>
         </div>
-        
+
         {!loading && totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between">
             <div className="text-sm text-gray-500 dark:text-gray-400">

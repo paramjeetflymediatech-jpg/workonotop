@@ -156,7 +156,7 @@ export default function ProviderAvailableJobs() {
     } else {
       setLoadingMore(true)
     }
-    
+
     try {
       let url = `/api/provider/available-jobs?page=${pageNum}&limit=10`
       if (all) {
@@ -170,9 +170,9 @@ export default function ProviderAvailableJobs() {
         fetch(url),
         pageNum === 1 ? fetch('/api/provider/me') : Promise.resolve(null)
       ])
-      
+
       const data = await jobsRes.json()
-      
+
       if (provRes) {
         const provData = await provRes.json()
         if (provData.success) {
@@ -186,7 +186,7 @@ export default function ProviderAvailableJobs() {
         setPage(pageNum)
         setDbTotal(data.total || 0)
         setShowAllAreas(all)
-        
+
         if (data.provider_city) {
           setProviderCity(data.provider_city)
         }
@@ -405,12 +405,12 @@ export default function ProviderAvailableJobs() {
             <MapPin className="h-8 w-8 text-gray-300" />
           </div>
           <h3 className="text-lg font-bold text-gray-900 mb-2">
-            No jobs in {showAllAreas ? 'any area' : getAreaDisplay()}
+            No jobs in {showAllAreas ? 'any area' : (activeCity || (providerAreaNames.length > 0 ? providerAreaNames.join(', ') : providerCity) || 'your area')}
           </h3>
           <p className="text-sm text-gray-400 mb-8 max-w-xs mx-auto">
             {showAllAreas
               ? "We don't have any open jobs at the moment. Please check back later!"
-              : `There are currently no open jobs in ${getAreaDisplay()}. Try searching another city or view all areas.`}
+              : `There are currently no open jobs in ${activeCity || (providerAreaNames.length > 0 ? providerAreaNames.join(', ') : providerCity)}. Try searching another city or view all areas.`}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {!showAllAreas && (
@@ -627,7 +627,7 @@ export default function ProviderAvailableJobs() {
               </div>
             )
           })}
-          
+
           {/* Pagination Controls */}
           {dbTotal > 10 && (
             <div className="pt-4 pb-8 flex items-center justify-between border-t border-gray-100 mt-6">

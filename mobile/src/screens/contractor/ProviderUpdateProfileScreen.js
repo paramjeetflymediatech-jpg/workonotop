@@ -34,7 +34,8 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
     const [districts, setDistricts] = useState([]);
     const [cities, setCities] = useState([]);
     const [selectedState, setSelectedState] = useState(null);
-    const [selectedDistrict, setSelectedDistrict] = useState(null);
+    const [expandedDistrict, setExpandedDistrict] = useState(null);
+    const [districtCities, setDistrictCities] = useState({});
     const [availableSkills, setAvailableSkills] = useState([]);
 
     useEffect(() => {
@@ -110,7 +111,7 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
     useEffect(() => {
         if (!selectedState) {
             setDistricts([]);
-            setSelectedDistrict(null);
+            setExpandedDistrict(null);
             return;
         }
         const fetchDistricts = async () => {
@@ -122,19 +123,21 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
         fetchDistricts();
     }, [selectedState]);
 
-    useEffect(() => {
-        if (!selectedDistrict) {
-            setCities([]);
+    const toggleDistrict = async (districtId) => {
+        if (expandedDistrict === districtId) {
+            setExpandedDistrict(null);
             return;
         }
-        const fetchCities = async () => {
+        setExpandedDistrict(districtId);
+        if (!districtCities[districtId]) {
             try {
-                const res = await apiService.get('/api/locations', { type: 'cities', parentId: selectedDistrict }, token);
-                if (res.success) setCities(res.data);
+                const res = await apiService.get('/api/locations', { type: 'cities', parentId: districtId }, token);
+                if (res.success) {
+                    setDistrictCities(prev => ({ ...prev, [districtId]: res.data }));
+                }
             } catch (err) {}
-        };
-        fetchCities();
-    }, [selectedDistrict]);
+        }
+    };
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -400,59 +403,78 @@ const ProviderUpdateProfileScreen = ({ navigation }) => {
                             ))}
                         </ScrollView>
 
-                        {/* District Selection */}
-                        {selectedState && (
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.chipScroll, { marginTop: verticalScale(10) }]}>
-                                {districts.length === 0 && <Text style={styles.subLabel}>No districts found.</Text>}
-                                {districts.map(d => (
-                                    <TouchableOpacity
-                                        key={d.id}
-                                        style={[styles.chipItem, selectedDistrict === d.id && styles.chipItemActive]}
-                                        onPress={() => setSelectedDistrict(d.id)}
-                                    >
-                                        <Text style={[styles.chipText, selectedDistrict === d.id && styles.chipTextActive]}>{d.name}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        )}
+                        {/* District Accordions */}
+                        {selectedState && districts.length > 0 && (
+                            <View style={{ marginTop: verticalScale(10) }}>
+                                {districts.map(district => {
+                                    const isExpanded = expandedDistrict === district.id;
+                                    const citiesForDistrict = districtCities[district.id] || [];
+                                    const isLoadingCities = isExpanded && !districtCities[district.id];
 
-                        {/* City Checkboxes */}
-                        {selectedDistrict && (
-                            <View style={[styles.checkboxContainer, { marginTop: verticalScale(15) }]}>
-                                {cities.length === 0 && <Text style={styles.subLabel}>No active cities found in this district.</Text>}
-                                {cities.map(clusterKey => {
-                                    const isSelected = form.service_cities.includes(clusterKey.id);
                                     return (
-                                        <TouchableOpacity 
-                                            key={clusterKey.id} 
-                                            style={[styles.checkboxItem, isSelected && styles.checkboxItemSelected]}
-                                            onPress={() => {
-                                                setForm(prev => {
-                                                    const areas = prev.service_cities || [];
-                                                    const names = prev.service_cities_names || [];
-                                                    const isSelected = areas.includes(clusterKey.id);
-                                                    
-                                                    const newAreas = isSelected
-                                                        ? areas.filter(a => a !== clusterKey.id)
-                                                        : [...areas, clusterKey.id];
-                                                        
-                                                    const newNames = isSelected
-                                                        ? names.filter(n => n !== clusterKey.name)
-                                                        : [...names, clusterKey.name];
-                                                        
-                                                    return { ...prev, service_cities: newAreas, service_cities_names: newNames };
-                                                });
-                                            }}
-                                        >
-                                            <View style={[styles.checkboxBox, isSelected && styles.checkboxBoxSelected]}>
-                                                {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
-                                            </View>
-                                            <Text style={styles.checkboxLabel}>{clusterKey.name}</Text>
-                                        </TouchableOpacity>
+                                        <View key={district.id} style={{ marginBottom: 10, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', overflow: 'hidden' }}>
+                                            <TouchableOpacity 
+                                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 15, backgroundColor: '#f8fafc' }}
+                                                onPress={() => toggleDistrict(district.id)}
+                                            >
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: isExpanded ? '#166534' : '#94a3b8', backgroundColor: isExpanded ? '#166534' : '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                                                        {isExpanded && <Ionicons name="checkmark" size={14} color="#fff" />}
+                                                    </View>
+                                                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#1e293b' }}>{district.name}</Text>
+                                                </View>
+                                                <Ionicons name={isExpanded ? "remove" : "add"} size={20} color="#64748b" />
+                                            </TouchableOpacity>
+
+                                            {isExpanded && (
+                                                <View style={{ padding: 15, borderTopWidth: 1, borderTopColor: '#e2e8f0', backgroundColor: '#fff' }}>
+                                                    {isLoadingCities ? (
+                                                        <Text style={styles.subLabel}>Loading cities...</Text>
+                                                    ) : citiesForDistrict.length > 0 ? (
+                                                        <View style={styles.checkboxContainer}>
+                                                            {citiesForDistrict.map(clusterKey => {
+                                                                const isSelected = form.service_cities.includes(clusterKey.id);
+                                                                return (
+                                                                    <TouchableOpacity 
+                                                                        key={clusterKey.id} 
+                                                                        style={[styles.checkboxItem, isSelected && styles.checkboxItemSelected]}
+                                                                        onPress={() => {
+                                                                            setForm(prev => {
+                                                                                const areas = prev.service_cities || [];
+                                                                                const names = prev.service_cities_names || [];
+                                                                                const isSelected = areas.includes(clusterKey.id);
+                                                                                
+                                                                                const newAreas = isSelected
+                                                                                    ? areas.filter(a => a !== clusterKey.id)
+                                                                                    : [...areas, clusterKey.id];
+                                                                                    
+                                                                                const newNames = isSelected
+                                                                                    ? names.filter(n => n !== clusterKey.name)
+                                                                                    : [...names, clusterKey.name];
+                                                                                    
+                                                                                return { ...prev, service_cities: newAreas, service_cities_names: newNames };
+                                                                            });
+                                                                        }}
+                                                                    >
+                                                                        <View style={[styles.checkboxBox, isSelected && styles.checkboxBoxSelected]}>
+                                                                            {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                                                                        </View>
+                                                                        <Text style={styles.checkboxLabel}>{clusterKey.name}</Text>
+                                                                    </TouchableOpacity>
+                                                                );
+                                                            })}
+                                                        </View>
+                                                    ) : (
+                                                        <Text style={styles.subLabel}>No active cities found in this district.</Text>
+                                                    )}
+                                                </View>
+                                            )}
+                                        </View>
                                     );
                                 })}
                             </View>
                         )}
+                        {selectedState && districts.length === 0 && <Text style={styles.subLabel}>No districts found.</Text>}
                         {form.service_cities.length > 0 && (
                             <Text style={[styles.subLabel, { marginTop: verticalScale(5), fontWeight: 'bold', color: '#115e59' }]}>
                                 {form.service_cities.length} cities selected

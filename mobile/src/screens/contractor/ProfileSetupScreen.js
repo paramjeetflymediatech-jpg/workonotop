@@ -29,7 +29,8 @@ const ProfileSetupScreen = ({ navigation }) => {
     const [districts, setDistricts] = useState([]);
     const [cities, setCities] = useState([]);
     const [selectedState, setSelectedState] = useState(null);
-    const [selectedDistrict, setSelectedDistrict] = useState(null);
+    const [expandedDistrict, setExpandedDistrict] = useState(null);
+    const [districtCities, setDistrictCities] = useState({});
     const [availableSkills, setAvailableSkills] = useState([]);
 
     React.useEffect(() => {
@@ -52,7 +53,7 @@ const ProfileSetupScreen = ({ navigation }) => {
     React.useEffect(() => {
         if (!selectedState) {
             setDistricts([]);
-            setSelectedDistrict(null);
+            setExpandedDistrict(null);
             return;
         }
         const fetchDistricts = async () => {
@@ -64,19 +65,21 @@ const ProfileSetupScreen = ({ navigation }) => {
         fetchDistricts();
     }, [selectedState]);
 
-    React.useEffect(() => {
-        if (!selectedDistrict) {
-            setCities([]);
+    const toggleDistrict = async (districtId) => {
+        if (expandedDistrict === districtId) {
+            setExpandedDistrict(null);
             return;
         }
-        const fetchCities = async () => {
+        setExpandedDistrict(districtId);
+        if (!districtCities[districtId]) {
             try {
-                const res = await apiService.get('/api/locations', { type: 'cities', parentId: selectedDistrict }, token);
-                if (res.success) setCities(res.data);
+                const res = await apiService.get('/api/locations', { type: 'cities', parentId: districtId }, token);
+                if (res.success) {
+                    setDistrictCities(prev => ({ ...prev, [districtId]: res.data }));
+                }
             } catch (err) {}
-        };
-        fetchCities();
-    }, [selectedDistrict]);
+        }
+    };
 
     const showPremiumAlert = (message, title = '', type = 'error') => {
         setAlert({ visible: true, title, message, type });
@@ -325,53 +328,62 @@ const ProfileSetupScreen = ({ navigation }) => {
                             ))}
                         </ScrollView>
 
-                        {/* District Selection */}
-                        {selectedState && (
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.chipScroll, { marginTop: verticalScale(10) }]}>
-                                {districts.length === 0 && <Text style={styles.inputHint}>No districts found.</Text>}
-                                {districts.map(d => (
-                                    <TouchableOpacity
-                                        key={d.id}
-                                        style={[styles.chipItem, selectedDistrict === d.id && styles.chipItemActive]}
-                                        onPress={() => setSelectedDistrict(d.id)}
-                                    >
-                                        <Text style={[styles.chipText, selectedDistrict === d.id && styles.chipTextActive]}>{d.name}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        )}
+                        {/* District Accordions */}
+                        {selectedState && districts.length > 0 && (
+                            <View style={{ marginTop: verticalScale(10) }}>
+                                {districts.map(district => {
+                                    const isExpanded = expandedDistrict === district.id;
+                                    const citiesForDistrict = districtCities[district.id] || [];
+                                    const isLoadingCities = isExpanded && !districtCities[district.id];
 
-                        {/* City Checkboxes */}
-                        {selectedDistrict && (
-                            <View style={[styles.checkboxGrid, { marginTop: verticalScale(15) }]}>
-                                {cities.length === 0 && <Text style={styles.inputHint}>No active cities found in this district.</Text>}
-                                {cities.map(area => {
-                                    const isSelected = profile.serviceCities.includes(area.id);
                                     return (
-                                        <TouchableOpacity
-                                            key={area.id}
-                                            style={[
-                                                styles.checkboxItem,
-                                                isSelected && styles.checkboxItemActive
-                                            ]}
-                                            onPress={() => toggleSelection('serviceCities', area.id, area.name)}
-                                        >
-                                            <View style={styles.checkboxRow}>
-                                                <Ionicons
-                                                    name={isSelected ? "checkbox" : "square-outline"}
-                                                    size={moderateScale(22)}
-                                                    color={isSelected ? "#0d9488" : "#94a3b8"}
-                                                />
-                                                <Text style={[
-                                                    styles.checkboxLabel,
-                                                    isSelected && styles.checkboxLabelActive
-                                                ]}>{area.name}</Text>
-                                            </View>
-                                        </TouchableOpacity>
+                                        <View key={district.id} style={{ marginBottom: 10, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', overflow: 'hidden' }}>
+                                            <TouchableOpacity 
+                                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 15, backgroundColor: '#f8fafc' }}
+                                                onPress={() => toggleDistrict(district.id)}
+                                            >
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: isExpanded ? '#0d9488' : '#94a3b8', backgroundColor: isExpanded ? '#0d9488' : '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                                                        {isExpanded && <Ionicons name="checkmark" size={14} color="#fff" />}
+                                                    </View>
+                                                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#1e293b' }}>{district.name}</Text>
+                                                </View>
+                                                <Ionicons name={isExpanded ? "remove" : "add"} size={20} color="#64748b" />
+                                            </TouchableOpacity>
+
+                                            {isExpanded && (
+                                                <View style={{ padding: 15, borderTopWidth: 1, borderTopColor: '#e2e8f0', backgroundColor: '#fff' }}>
+                                                    {isLoadingCities ? (
+                                                        <Text style={styles.inputHint}>Loading cities...</Text>
+                                                    ) : citiesForDistrict.length > 0 ? (
+                                                        <View style={styles.checkboxGrid}>
+                                                            {citiesForDistrict.map(area => {
+                                                                const isSelected = profile.serviceCities.includes(area.id);
+                                                                return (
+                                                                    <TouchableOpacity
+                                                                        key={area.id}
+                                                                        style={[styles.checkboxItem, isSelected && styles.checkboxItemActive]}
+                                                                        onPress={() => toggleSelection('serviceCities', area.id, area.name)}
+                                                                    >
+                                                                        <View style={styles.checkboxRow}>
+                                                                            <Ionicons name={isSelected ? "checkbox" : "square-outline"} size={moderateScale(22)} color={isSelected ? "#0d9488" : "#94a3b8"} />
+                                                                            <Text style={[styles.checkboxLabel, isSelected && styles.checkboxLabelActive]}>{area.name}</Text>
+                                                                        </View>
+                                                                    </TouchableOpacity>
+                                                                );
+                                                            })}
+                                                        </View>
+                                                    ) : (
+                                                        <Text style={styles.inputHint}>No active cities found in this district.</Text>
+                                                    )}
+                                                </View>
+                                            )}
+                                        </View>
                                     );
                                 })}
                             </View>
                         )}
+                        {selectedState && districts.length === 0 && <Text style={styles.inputHint}>No districts found.</Text>}
                         {profile.serviceCities.length > 0 && (
                             <Text style={[styles.inputHint, { marginTop: verticalScale(5), fontWeight: 'bold', color: '#0d9488' }]}>
                                 {profile.serviceCities.length} cities selected

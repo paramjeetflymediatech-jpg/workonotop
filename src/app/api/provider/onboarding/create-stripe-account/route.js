@@ -1,14 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { execute } from '@/lib/db';

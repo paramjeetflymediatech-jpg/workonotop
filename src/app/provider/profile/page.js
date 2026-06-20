@@ -67,7 +67,8 @@ export default function ProviderProfile() {
   const [districts, setDistricts] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedState, setSelectedState] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [expandedDistrict, setExpandedDistrict] = useState(null);
+  const [districtCities, setDistrictCities] = useState({});
   const [selectedCitiesNames, setSelectedCitiesNames] = useState({});
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [availableSkills, setAvailableSkills] = useState([]);
@@ -107,7 +108,7 @@ export default function ProviderProfile() {
   useEffect(() => {
     if (!selectedState) {
       setDistricts([]);
-      setSelectedDistrict('');
+      setExpandedDistrict(null);
       return;
     }
     const fetchDistricts = async () => {
@@ -120,20 +121,22 @@ export default function ProviderProfile() {
     fetchDistricts();
   }, [selectedState]);
 
-  useEffect(() => {
-    if (!selectedDistrict) {
-      setCities([]);
+  const toggleDistrict = async (districtId) => {
+    if (expandedDistrict === districtId) {
+      setExpandedDistrict(null);
       return;
     }
-    const fetchCities = async () => {
+    setExpandedDistrict(districtId);
+    if (!districtCities[districtId]) {
       try {
-        const res = await fetch(`/api/locations?type=cities&parentId=${selectedDistrict}`);
+        const res = await fetch(`/api/locations?type=cities&parentId=${districtId}`);
         const data = await res.json();
-        if (data.success) setCities(data.data);
+        if (data.success) {
+          setDistrictCities(prev => ({ ...prev, [districtId]: data.data }));
+        }
       } catch (err) {}
-    };
-    fetchCities();
-  }, [selectedDistrict]);
+    }
+  };
 
   const loadCityNames = async (cityIds) => {
     if (!cityIds || cityIds.length === 0) return;
@@ -651,7 +654,7 @@ export default function ProviderProfile() {
                   </div>
                 )}
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 mb-4">
                   <div>
                     <select
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
@@ -662,39 +665,57 @@ export default function ProviderProfile() {
                       {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   </div>
-                  <div>
-                    <select
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100"
-                      value={selectedDistrict}
-                      onChange={(e) => setSelectedDistrict(e.target.value)}
-                      disabled={!selectedState}
-                    >
-                      <option value="">-- Select District --</option>
-                      {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
-                  </div>
                 </div>
 
-                {selectedDistrict && cities.length > 0 && (
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-60 overflow-y-auto">
-                    <h3 className="font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Cities in Selected District</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {cities.map(city => (
-                        <label key={city.id} className="flex items-center space-x-2 p-2 border border-gray-200 bg-white rounded hover:bg-gray-50 cursor-pointer transition">
-                          <input
-                            type="checkbox"
-                            checked={formData.service_cities.includes(city.id)}
-                            onChange={() => toggleCity(city.id, city.name)}
-                            className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                          />
-                          <span className="text-sm text-gray-700 leading-tight">{city.name}</span>
-                        </label>
-                      ))}
-                    </div>
+                {districts.length > 0 && (
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2 mb-4">
+                    {districts.map(district => {
+                      const isExpanded = expandedDistrict === district.id;
+                      const citiesForDistrict = districtCities[district.id] || [];
+                      const isLoadingCities = isExpanded && !districtCities[district.id];
+
+                      return (
+                        <div key={district.id} className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                          <div 
+                            className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+                            onClick={() => toggleDistrict(district.id)}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-5 h-5 rounded border flex items-center justify-center ${isExpanded ? 'bg-teal-600 border-teal-600' : 'border-gray-400 bg-white'}`}>
+                                {isExpanded && <span className="text-white text-xs">✓</span>}
+                              </div>
+                              <span className="font-semibold text-gray-800">{district.name}</span>
+                            </div>
+                            <span className="text-gray-400 font-bold">{isExpanded ? '−' : '+'}</span>
+                          </div>
+                          
+                          {isExpanded && (
+                            <div className="p-4 border-t border-gray-200 bg-white">
+                              {isLoadingCities ? (
+                                <p className="text-sm text-gray-500">Loading cities...</p>
+                              ) : citiesForDistrict.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                  {citiesForDistrict.map(city => (
+                                    <label key={city.id} className="flex items-center space-x-2 p-2 border border-gray-100 bg-gray-50 rounded hover:bg-teal-50 cursor-pointer transition">
+                                      <input
+                                        type="checkbox"
+                                        checked={formData.service_cities.includes(city.id)}
+                                        onChange={() => toggleCity(city.id, city.name)}
+                                        className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                      />
+                                      <span className="text-sm text-gray-700 leading-tight">{city.name}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-500 italic">No active cities found in this district.</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-                {selectedDistrict && cities.length === 0 && (
-                  <p className="text-sm text-gray-500 italic">No active cities found in this district.</p>
                 )}
               </div>
             ) : (
