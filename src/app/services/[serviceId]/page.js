@@ -134,7 +134,7 @@ export default function ServiceDetailPage({ params }) {
                   <img
                     src={service.image_url}
                     alt={service.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <span className="text-8xl sm:text-9xl md:text-[10rem] drop-shadow-xl">
@@ -420,7 +420,7 @@ export default function ServiceDetailPage({ params }) {
                 >
                   <div className="h-32 bg-gradient-to-br from-[#16A34A]/5 to-[#16A34A]/10 flex items-center justify-center">
                     {item.image_url ? (
-                      <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                      <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" />
                     ) : (
                       <span className="text-5xl group-hover:scale-110 transition-transform">
                         {item.category_icon || '🔧'}
