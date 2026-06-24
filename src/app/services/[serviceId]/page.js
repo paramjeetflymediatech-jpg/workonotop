@@ -129,17 +129,19 @@ export default function ServiceDetailPage({ params }) {
 
           <div className="lg:col-span-2">
             <div className="mb-6 md:mb-8 rounded-2xl overflow-hidden shadow-lg border border-slate-100">
-              <div className="h-56 sm:h-64 md:h-72 flex items-center justify-center relative bg-gradient-to-br from-[#16A34A]/5 to-[#16A34A]/10">
+              <div className="relative">
                 {service.image_url ? (
                   <img
                     src={service.image_url}
                     alt={service.name}
-                    className="w-full h-full object-contain"
+                    className="w-full h-auto object-cover"
                   />
                 ) : (
-                  <span className="text-8xl sm:text-9xl md:text-[10rem] drop-shadow-xl">
-                    {service.category_icon ? <Icon name={service.category_icon}></Icon> : <Icon name="wrench"></Icon>}
-                  </span>
+                  <div className="h-56 sm:h-64 md:h-72 flex items-center justify-center bg-gradient-to-br from-[#16A34A]/5 to-[#16A34A]/10">
+                    <span className="text-8xl sm:text-9xl md:text-[10rem] drop-shadow-xl">
+                      {service.category_icon ? <Icon name={service.category_icon}></Icon> : <Icon name="wrench"></Icon>}
+                    </span>
+                  </div>
                 )}
                 <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium text-gray-700 shadow-md border border-gray-200">
                   <span className="text-[#16A34A] font-bold">{service.category_name || 'General'}</span>

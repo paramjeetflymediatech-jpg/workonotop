@@ -230,48 +230,44 @@ export default function HomePage() {
           </div>
 
           {homepageServices.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               
-              {homepageServices.slice(0, 3).map((service, i) => (
+              {homepageServices.slice(0, 3).map((service) => (
                 <Link
                   key={service.id}
                   href={`/services/${service.slug}`}
-                  className={`group relative overflow-hidden rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-700 ${i === 0 ? 'md:col-span-3 lg:col-span-7 h-[500px]' :
-                    i === 1 ? 'md:col-span-3 lg:col-span-5 h-[500px]' :
-                      'md:col-span-6 lg:col-span-12 h-[400px]'
-                    }`}
+                  className="group flex flex-col overflow-hidden  shadow-xl hover:shadow-2xl transition-all duration-300 aspect-square bg-white border border-slate-100"
                 >
-                  <div className="absolute inset-0">
+                  <div className="flex-1 w-full relative bg-slate-50 p-6 flex items-center justify-center">
                     {service.image_url ? (
                       <img
                         src={service.image_url}
                         alt={service.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center rounded-2xl group-hover:scale-105 transition-transform duration-500">
                         <span className="text-6xl font-bold text-white"><Icon name={service.category_icon} /></span>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
                   </div>
 
-                  <div className="absolute inset-0 p-10 flex flex-col justify-end">
-                    <div className="flex items-center gap-3 mb-4">
+                  <div className="p-6 md:p-8 flex flex-col justify-end bg-white shrink-0">
+                    <div className="flex items-center flex-wrap gap-2 mb-3">
                       {service.is_popular === 1 && (
                         <span className="px-3 py-1 bg-amber-400 text-slate-900 text-xs font-bold rounded-full uppercase tracking-tighter">Popular</span>
                       )}
-                      <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-medium rounded-full uppercase">Home Care</span>
+                      <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full uppercase border border-emerald-100">Home Care</span>
                     </div>
-                    <h3 className="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight group-hover:text-emerald-400 transition-colors">{service.name}</h3>
-                    <p className="text-slate-300 mb-6 max-w-lg line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">{service.short_description}</p>
-                    <div className="flex items-center justify-between">
-                      <div className="text-white">
-                        <span className="text-slate-400 text-sm block mb-1">Starting from</span>
-                        <span className="text-2xl font-bold">${parseFloat(service.base_price).toFixed(0)}</span>
+                    <h3 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors duration-300 mb-2 leading-tight line-clamp-1">{service.name}</h3>
+                    <p className="text-slate-600 mb-4 line-clamp-2 text-sm">{service.short_description}</p>
+                    <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                      <div>
+                        <span className="text-slate-500 text-xs block mb-0.5">Starting from</span>
+                        <span className="text-xl font-bold text-slate-900">${parseFloat(service.base_price).toFixed(0)}</span>
                       </div>
-                      <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-slate-900 group-hover:bg-white transition-colors duration-500">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                      <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                       </div>
                     </div>
                   </div>
