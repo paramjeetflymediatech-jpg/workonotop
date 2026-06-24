@@ -266,7 +266,7 @@ export default function Services() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   {service.image_url ? (
-                    <img src={service.image_url} alt={service.name} className="w-12 h-12 rounded-lg object-cover" />
+                    <img src={service.image_url} alt={service.name} className="w-12 h-12 rounded-lg object-contain" />
                   ) : (
                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl ${isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}`}>
                       {service.category_icon ? <Icon name={service.category_icon} /> : '🔧'}
@@ -438,7 +438,7 @@ export default function Services() {
                 </div>
                 <div>
                   <label className={labelClass}>Service Image</label>
-                  {imagePreview && <img src={imagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-lg border border-gray-300 mb-3" />}
+                  {imagePreview && <img src={imagePreview} alt="Preview" className="w-32 h-32 object-contain rounded-lg border border-gray-300 mb-3" />}
                   <div className="flex items-center gap-3 mb-2">
                     <label className={`cursor-pointer px-4 py-2 rounded-lg font-medium transition-colors inline-block ${uploading ? 'opacity-50 cursor-not-allowed bg-gray-400' : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                       <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, false)} disabled={uploading} className="hidden" />
@@ -531,7 +531,7 @@ export default function Services() {
                 <div>
                   <label className={labelClass}>Service Image</label>
                   {(imagePreview || selectedService?.image_url) && (
-                    <img src={imagePreview || selectedService?.image_url} alt="Preview" className="w-32 h-32 object-cover rounded-lg border border-gray-300 mb-3" />
+                    <img src={imagePreview || selectedService?.image_url} alt="Preview" className="w-32 h-32 object-contain rounded-lg border border-gray-300 mb-3" />
                   )}
                   <div className="flex items-center gap-3 mb-2">
                     <label className={`cursor-pointer px-4 py-2 rounded-lg font-medium transition-colors inline-block ${uploading ? 'opacity-50 cursor-not-allowed bg-gray-400' : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>

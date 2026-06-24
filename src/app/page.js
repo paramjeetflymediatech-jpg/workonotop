@@ -236,14 +236,14 @@ export default function HomePage() {
                 <Link
                   key={service.id}
                   href={`/services/${service.slug}`}
-                  className="group flex flex-col overflow-hidden  shadow-xl hover:shadow-2xl transition-all duration-300 aspect-square bg-white border border-slate-100"
+                  className="group flex flex-col overflow-hidden rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 h-full bg-white border border-slate-100"
                 >
-                  <div className="flex-1 w-full relative bg-slate-50 p-6 flex items-center justify-center">
+                  <div className="w-full h-56 md:h-64 relative bg-slate-50  flex items-center justify-center shrink-0">
                     {service.image_url ? (
                       <img
                         src={service.image_url}
                         alt={service.name}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-contain  transition-transform duration-500"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center rounded-2xl group-hover:scale-105 transition-transform duration-500">
@@ -252,16 +252,18 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  <div className="p-6 md:p-8 flex flex-col justify-end bg-white shrink-0">
-                    <div className="flex items-center flex-wrap gap-2 mb-3">
-                      {service.is_popular === 1 && (
-                        <span className="px-3 py-1 bg-amber-400 text-slate-900 text-xs font-bold rounded-full uppercase tracking-tighter">Popular</span>
-                      )}
-                      <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full uppercase border border-emerald-100">Home Care</span>
+                  <div className="p-6 md:p-8 flex flex-col flex-1 justify-between bg-white">
+                    <div>
+                      <div className="flex items-center flex-wrap gap-2 mb-3">
+                        {service.is_popular === 1 && (
+                          <span className="px-3 py-1 bg-amber-400 text-slate-900 text-xs font-bold rounded-full uppercase tracking-tighter">Popular</span>
+                        )}
+                        <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full uppercase border border-emerald-100">Home Care</span>
+                      </div>
+                      <h3 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors duration-300 mb-2 leading-tight line-clamp-1">{service.name}</h3>
+                      <p className="text-slate-600 mb-4 line-clamp-2 text-sm">{service.short_description}</p>
                     </div>
-                    <h3 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors duration-300 mb-2 leading-tight line-clamp-1">{service.name}</h3>
-                    <p className="text-slate-600 mb-4 line-clamp-2 text-sm">{service.short_description}</p>
-                    <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                    <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-auto">
                       <div>
                         <span className="text-slate-500 text-xs block mb-0.5">Starting from</span>
                         <span className="text-xl font-bold text-slate-900">${parseFloat(service.base_price).toFixed(0)}</span>

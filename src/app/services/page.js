@@ -337,14 +337,14 @@ export default function ServicesPage() {
                     <Link
                       key={service.id}
                       href={`/services/${service.slug}`}
-                      className="group flex flex-col bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-[#16A34A]/5 transition-all duration-500 hover:-translate-y-2 h-full"
+                      className="group flex flex-col bg-white  overflow-hidden border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-[#16A34A]/5 transition-all duration-500 h-full"
                     >
                       <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
                         {service.image_url ? (
                           <img
                             src={service.image_url}
                             alt={service.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            className="w-full h-full object-cover  transition-transform duration-700"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#16A34A]/10 to-[#16A34A]/20">
