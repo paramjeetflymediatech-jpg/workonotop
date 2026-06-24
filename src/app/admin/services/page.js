@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminTheme } from '../layout'
 import Icon from '@/components/Icon';
+import dynamic from 'next/dynamic';
+
+const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { ssr: false });
+
 export default function Services() {
   const router = useRouter()
   const { isDarkMode } = useAdminTheme()
@@ -418,9 +422,15 @@ export default function Services() {
                   <label className={labelClass}>Short Description</label>
                   <input type="text" value={newService.short_description} onChange={(e) => setNewService({ ...newService, short_description: e.target.value })} className={inputClass} placeholder="Brief description" maxLength="500" />
                 </div>
-                <div>
+                <div className="col-span-full">
                   <label className={labelClass}>Full Description</label>
-                  <textarea rows="4" value={newService.description} onChange={(e) => setNewService({ ...newService, description: e.target.value })} className={inputClass} placeholder="Detailed description..." />
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={newService.description || ''}
+                      onChange={(data) => setNewService({ ...newService, description: data })}
+                      placeholder="Detailed description..."
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -510,9 +520,14 @@ export default function Services() {
                   <label className={labelClass}>Short Description</label>
                   <input type="text" value={selectedService.short_description || ''} onChange={(e) => setSelectedService({ ...selectedService, short_description: e.target.value })} className={inputClass} maxLength="500" />
                 </div>
-                <div>
+                <div className="col-span-full">
                   <label className={labelClass}>Full Description</label>
-                  <textarea rows="4" value={selectedService.description || ''} onChange={(e) => setSelectedService({ ...selectedService, description: e.target.value })} className={inputClass} />
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={selectedService.description || ''}
+                      onChange={(data) => setSelectedService({ ...selectedService, description: data })}
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

@@ -160,11 +160,10 @@ export default function ServiceDetailPage({ params }) {
 
             {service.description && (
               <div className="bg-[#16A34A]/5 rounded-2xl p-6 md:p-8 mb-8 border border-[#16A34A]/10">
-                <p className="text-gray-800 text-lg leading-relaxed break-words">
-                  {service.description.split('\n').map((line, index) => (
-                    <span key={index}>{line}<br></br></span>
-                  ))}
-                </p>
+                <div 
+                  className="text-gray-800 text-lg leading-relaxed break-words"
+                  dangerouslySetInnerHTML={{ __html: service.description }}
+                />
               </div>
             )}
 
