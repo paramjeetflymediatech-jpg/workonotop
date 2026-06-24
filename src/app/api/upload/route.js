@@ -64,3 +64,49 @@ export async function POST(request) {
     );
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const fileUrl = searchParams.get('url');
+
+    if (!fileUrl) {
+      return NextResponse.json(
+        { success: false, message: 'File URL is required' },
+        { status: 400 }
+      );
+    }
+
+    // Extract filename from URL (assuming URL format is /uploads/filename)
+    const filename = fileUrl.split('/').pop();
+    if (!filename) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid file URL' },
+        { status: 400 }
+      );
+    }
+
+    const filepath = path.join(process.cwd(), 'public/uploads', filename);
+
+    const { unlink } = require('fs/promises');
+    try {
+      await unlink(filepath);
+    } catch (fsError) {
+      // If file doesn't exist, we can still consider the deletion "successful"
+      if (fsError.code !== 'ENOENT') {
+        throw fsError;
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'File deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete upload error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to delete file' },
+      { status: 500 }
+    );
+  }
+}

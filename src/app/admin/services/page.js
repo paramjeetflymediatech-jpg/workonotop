@@ -90,6 +90,20 @@ export default function Services() {
       setUploading(false)
     }
   }
+
+  const handleImageRemove = async (isEdit = false) => {
+    const currentUrl = isEdit ? selectedService?.image_url : newService.image_url
+    if (currentUrl && currentUrl.startsWith('/uploads/')) {
+      try {
+        await fetch(`/api/upload?url=${encodeURIComponent(currentUrl)}`, { method: 'DELETE' })
+      } catch (error) {
+        console.error('Error deleting image:', error)
+      }
+    }
+    setImagePreview('')
+    if (!isEdit) setNewService(prev => ({ ...prev, image_url: '' }))
+    else setSelectedService(prev => ({ ...prev, image_url: '' }))
+  }
   const addService = async (e) => {
     e.preventDefault()
     try {
@@ -425,11 +439,18 @@ export default function Services() {
                 <div>
                   <label className={labelClass}>Service Image</label>
                   {imagePreview && <img src={imagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-lg border border-gray-300 mb-3" />}
-                  <label className={`cursor-pointer px-4 py-2 rounded-lg font-medium transition-colors inline-block ${uploading ? 'opacity-50 cursor-not-allowed bg-gray-400' : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, false)} disabled={uploading} className="hidden" />
-                    {uploading ? 'Uploading...' : 'Choose Image'}
-                  </label>
-                  {newService.image_url && !imagePreview && <span className="ml-3 text-sm text-green-600">✓ Image uploaded</span>}
+                  <div className="flex items-center gap-3 mb-2">
+                    <label className={`cursor-pointer px-4 py-2 rounded-lg font-medium transition-colors inline-block ${uploading ? 'opacity-50 cursor-not-allowed bg-gray-400' : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, false)} disabled={uploading} className="hidden" />
+                      {uploading ? 'Uploading...' : 'Choose Image'}
+                    </label>
+                    {(imagePreview || newService.image_url) && (
+                      <button type="button" onClick={() => handleImageRemove(false)} disabled={uploading} className="px-4 py-2 rounded-lg font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                        Remove Image
+                      </button>
+                    )}
+                    {newService.image_url && !imagePreview && <span className="text-sm text-green-600">✓ Image uploaded</span>}
+                  </div>
                   <p className="text-xs text-gray-500 mt-2">Max 10MB. JPG, PNG, GIF, WebP</p>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
@@ -512,11 +533,18 @@ export default function Services() {
                   {(imagePreview || selectedService?.image_url) && (
                     <img src={imagePreview || selectedService?.image_url} alt="Preview" className="w-32 h-32 object-cover rounded-lg border border-gray-300 mb-3" />
                   )}
-                  <label className={`cursor-pointer px-4 py-2 rounded-lg font-medium transition-colors inline-block ${uploading ? 'opacity-50 cursor-not-allowed bg-gray-400' : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, true)} disabled={uploading} className="hidden" />
-                    {uploading ? 'Uploading...' : 'Change Image'}
-                  </label>
-                  {selectedService?.image_url && !imagePreview && <span className="ml-3 text-sm text-green-600">✓ Image uploaded</span>}
+                  <div className="flex items-center gap-3 mb-2">
+                    <label className={`cursor-pointer px-4 py-2 rounded-lg font-medium transition-colors inline-block ${uploading ? 'opacity-50 cursor-not-allowed bg-gray-400' : isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, true)} disabled={uploading} className="hidden" />
+                      {uploading ? 'Uploading...' : 'Change Image'}
+                    </label>
+                    {(imagePreview || selectedService?.image_url) && (
+                      <button type="button" onClick={() => handleImageRemove(true)} disabled={uploading} className="px-4 py-2 rounded-lg font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                        Remove Image
+                      </button>
+                    )}
+                    {selectedService?.image_url && !imagePreview && <span className="text-sm text-green-600">✓ Image uploaded</span>}
+                  </div>
                   <p className="text-xs text-gray-500 mt-2">Max 10MB. JPG, PNG, GIF, WebP</p>
                 </div>
                 <div className="grid grid-cols-3 gap-4">

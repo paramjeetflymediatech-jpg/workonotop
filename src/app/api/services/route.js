@@ -221,6 +221,27 @@ export async function DELETE(request) {
       )
     }
 
+    // Fetch the service first to get the image URL
+    const services = await query('SELECT image_url FROM services WHERE id = ?', [id])
+    if (services && services.length > 0 && services[0].image_url) {
+      const fileUrl = services[0].image_url;
+      if (fileUrl.startsWith('/uploads/')) {
+        const filename = fileUrl.split('/').pop();
+        if (filename) {
+          const path = require('path');
+          const { unlink } = require('fs/promises');
+          const filepath = path.join(process.cwd(), 'public/uploads', filename);
+          try {
+            await unlink(filepath);
+          } catch (fsError) {
+            if (fsError.code !== 'ENOENT') {
+              console.error('Failed to delete image file:', fsError);
+            }
+          }
+        }
+      }
+    }
+
     await execute('DELETE FROM services WHERE id = ?', [id])
     return NextResponse.json({ success: true, message: 'Service deleted' })
   } catch (error) {
