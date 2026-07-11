@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -44,6 +44,8 @@ const CreateBookingScreen = ({ navigation, route }) => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [addressError, setAddressError] = useState('');
 
+    const googlePlacesRef = useRef(null);
+
     // Form State (Intelligent name parsing for Google users)
     const initialFirstName = user?.first_name || (user?.name ? user.name.split(' ')[0] : '');
     const initialLastName = user?.last_name || (user?.name ? user.name.split(' ').slice(1).join(' ') : '');
@@ -73,6 +75,12 @@ const CreateBookingScreen = ({ navigation, route }) => {
         phone: user?.phone || '',
         photos: [],
     });
+
+    useEffect(() => {
+        if (bookingData.address_line1 && googlePlacesRef.current) {
+            googlePlacesRef.current.setAddressText(bookingData.address_line1);
+        }
+    }, []);
 
     const [selectedTimes, setSelectedTimes] = useState({}); // Maps dateStr -> [slots]
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -369,6 +377,7 @@ const CreateBookingScreen = ({ navigation, route }) => {
             </View>
             <View style={{ flex: 1, zIndex: 999 }}>
                 <GooglePlacesAutocomplete
+                    ref={googlePlacesRef}
                     placeholder="Where do you need service?"
                     fetchDetails={true}
                     onPress={(data, details = null) => {
@@ -391,12 +400,13 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
                         setBookingData({ 
                             ...bookingData, 
-                            address_line1: data.description,
+                            address_line1: data.description || '',
                             city,
                             postal_code: postalCode,
                             latitude: lat,
                             longitude: lng
                         });
+                        setAddressError('');
                     }}
                     query={{
                         key: GOOGLE_MAPS_API_KEY,
@@ -448,6 +458,13 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     }}
                     textInputProps={{
                         placeholderTextColor: '#94a3b8',
+                        onChangeText: (text) => {
+                            setBookingData(prev => ({
+                                ...prev,
+                                address_line1: text
+                            }));
+                            if (addressError) setAddressError('');
+                        }
                     }}
                     enablePoweredByContainer={false}
                 />
