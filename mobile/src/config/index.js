@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
 // Production
-export const API_BASE_URL = "https://workontap.com";
+export const API_BASE_URL = "https://dummy.socialflymediatech.com";
 export const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 // Development (Uncomment to use local backend)
