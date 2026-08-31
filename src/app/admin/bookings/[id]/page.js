@@ -137,8 +137,11 @@ export default function BookingDetailsPage({ params }) {
   const getPhotoSrc = (url) => url?.startsWith('http') ? url : `${process.env.NEXT_PUBLIC_API_URL || ''}${url}`
 
   const formatDateTime = (d) => {
+    if (!d) return '—'
     try {
-      return new Date(d).toLocaleString('en-US', {
+      const date = new Date(d)
+      if (isNaN(date.getTime())) return '—'
+      return date.toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -357,7 +360,7 @@ export default function BookingDetailsPage({ params }) {
             <div className={`mt-4 pt-4 border-t ${divCls} grid grid-cols-2 sm:grid-cols-3 gap-3`}>
               <SmallField label="Accepted At" value={formatDateTime(booking.accepted_at)} lbl={lbl} val={val} />
               <SmallField label="Start Time" value={formatDateTime(booking.start_time)} lbl={lbl} val={val} />
-              <SmallField label="End Time" value={formatDateTime(booking.end_time)} lbl={lbl} val={val} />
+              <SmallField label="End Time" value={booking.end_time ? formatDateTime(booking.end_time) : (['running', 'paused'].includes(booking.job_timer_status) ? 'In Progress' : '—')} lbl={lbl} val={val} />
               <SmallField label="Timer Status" value={getStatusLabel(booking.job_timer_status)} lbl={lbl} val={val} />
               <SmallField
                 label="Actual Duration"
