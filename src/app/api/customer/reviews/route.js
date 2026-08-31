@@ -1,6 +1,7 @@
 // app/api/customer/reviews/route.js
 import { NextResponse } from 'next/server'
 import { getConnection } from '@/lib/db'
+import { logActivity } from '@/lib/logger'
 
 // POST - Submit a review
 export async function POST(request) {
@@ -83,6 +84,17 @@ export async function POST(request) {
       )
 
       await connection.query('COMMIT')
+
+      // Log Activity
+      logActivity({
+        actor_id: customer_id,
+        actor_type: 'customer',
+        actor_name: `Customer #${customer_id}`, // customer name is not explicitly passed, fallback to ID
+        action: 'REVIEW_SUBMITTED',
+        entity_type: 'provider',
+        entity_id: provider_id,
+        details: { booking_id, rating }
+      })
 
       return NextResponse.json({
         success: true,

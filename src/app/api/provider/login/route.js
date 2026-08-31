@@ -140,6 +140,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { execute } from '@/lib/db';
 import { generateToken } from '@/lib/jwt';
+import { logActivity } from '@/lib/logger';
 
 export async function POST(request) {
   console.log('🚀 PROVIDER LOGIN API CALLED at:', new Date().toISOString());
@@ -217,6 +218,17 @@ export async function POST(request) {
       name: provider.name,
       type: 'provider',
       status: provider.status
+    });
+
+    // Log Activity
+    logActivity({
+      actor_id: provider.id,
+      actor_type: 'provider',
+      actor_name: provider.name,
+      action: 'PROVIDER_LOGGED_IN',
+      entity_type: 'provider',
+      entity_id: provider.id,
+      details: { email: provider.email, status: provider.status }
     });
 
     const response = NextResponse.json({

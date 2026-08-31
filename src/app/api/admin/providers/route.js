@@ -159,6 +159,7 @@
 import { NextResponse } from 'next/server';
 import { execute } from '@/lib/db';
 import { sendEmail, getApprovalEmailHtml, getRejectionEmailHtml } from '@/lib/email';
+import { logActivity } from '@/lib/logger';
 
 export async function GET(request) {
   try {
@@ -284,6 +285,17 @@ export async function PUT(request) {
         `SELECT name, email FROM service_providers WHERE id = ?`,
         [providerId]
       );
+
+      // Log Activity
+      logActivity({
+        actor_id: 1, // System/Admin ID (hardcoded 1 for admin or you can decode token to get admin ID)
+        actor_type: 'admin',
+        actor_name: 'Admin',
+        action: action === 'approve' ? 'PROVIDER_APPROVED' : 'PROVIDER_REJECTED',
+        entity_type: 'provider',
+        entity_id: providerId,
+        details: { provider_email: provider.length > 0 ? provider[0].email : 'unknown' }
+      });
 
       if (provider.length > 0) {
         if (action === 'approve') {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { execute as query } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { logActivity } from '@/lib/logger'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -62,6 +63,17 @@ export async function POST(request) {
       JWT_SECRET,
       { expiresIn: '7d' }
     )
+
+    // Log Activity
+    logActivity({
+      actor_id: user.id,
+      actor_type: 'customer',
+      actor_name: `${user.first_name} ${user.last_name}`.trim(),
+      action: 'CUSTOMER_LOGGED_IN',
+      entity_type: 'user',
+      entity_id: user.id,
+      details: { email: user.email }
+    })
 
     const { password_hash, ...userData } = user
 

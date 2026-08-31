@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { logActivity } from '@/lib/logger'
 
 export async function POST(request) {
     try {
@@ -49,6 +50,16 @@ export async function POST(request) {
             `UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?`,
             [hashedPassword, user.id]
         )
+
+        // Log Activity
+        logActivity({
+            actor_id: user.id,
+            actor_type: 'customer',
+            actor_name: `Customer #${user.id}`,
+            action: 'CUSTOMER_PASSWORD_RESET',
+            entity_type: 'auth',
+            entity_id: user.id
+        })
 
         return NextResponse.json({ success: true, message: 'Password reset successfully' })
 

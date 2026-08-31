@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { logActivity } from '@/lib/logger'
 
 export async function POST(request) {
   let connection
@@ -134,6 +135,16 @@ export async function POST(request) {
 
       await connection.query('COMMIT')
       console.log('💾 Password updated successfully')
+
+      // Log Activity
+      logActivity({
+        actor_id: provider.id,
+        actor_type: 'provider',
+        actor_name: `Provider #${provider.id}`, // fallback to ID
+        action: 'PROVIDER_PASSWORD_RESET',
+        entity_type: 'auth',
+        entity_id: provider.id
+      })
 
       return NextResponse.json({
         success: true,

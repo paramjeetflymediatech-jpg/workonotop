@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { withConnection, execute, getConnection } from '@/lib/db'
 import { notifyUser } from '@/lib/push'
 import { getClusterFromCity } from '@/lib/location'
+import { logActivity } from '@/lib/logger'
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-05-27.dahlia' }) : null
 
@@ -227,6 +228,17 @@ export async function POST(request) {
       )
 
       await connection.query('COMMIT')
+      
+      // Log Activity
+      logActivity({
+        actor_id: authenticatedUserId || null,
+        actor_type: authenticatedUserId ? 'customer' : 'system',
+        actor_name: `${first_name} ${last_name}`.trim() || 'Guest',
+        action: 'BOOKING_CREATED',
+        entity_type: 'booking',
+        entity_id: bookingId,
+        details: { service_name, amount: totalAuthorizedAmount }
+      })
 
       if (authenticatedUserId) {
         notifyUser(authenticatedUserId, 'Booking Confirmed!', `Your booking #${bookingNumber} for ${service_name} has been created.`, { bookingId, bookingNumber, type: 'booking_created' }, execute, 'customer')
@@ -336,6 +348,20 @@ export async function PUT(request) {
 
     const { status, provider_id, notes, job_time_slot, commission_percent, payment_status } = body;
 
+    let authenticatedUserId = null;
+    let actorType = 'system';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        if (decoded && decoded.id) {
+          authenticatedUserId = Number(decoded.id);
+          actorType = decoded.role === 'admin' ? 'admin' : (decoded.providerId ? 'provider' : 'customer');
+        }
+      } catch (err) {}
+    }
+
     if (!id) return NextResponse.json({ success: false, message: 'Booking ID required' }, { status: 400 });
 
     connection = await getConnection();
@@ -440,9 +466,36 @@ export async function PUT(request) {
           [id, finalStatusForHistory,
             `Commission set to ${commission_percent}% (Admin: $${commissionAmount.toFixed(2)}, Provider: $${providerAmt.toFixed(2)})`]
         );
+        logActivity({
+          actor_id: authenticatedUserId, actor_type: actorType, actor_name: 'Admin',
+          action: 'COMMISSION_UPDATED', entity_type: 'booking', entity_id: id,
+          details: { commission_percent, providerAmt, commissionAmount }
+        });
       }
 
       await connection.query('COMMIT');
+
+      // Log assignment or status changes
+      if (status) {
+        logActivity({
+          actor_id: authenticatedUserId, actor_type: actorType, actor_name: actorType.toUpperCase(),
+          action: 'BOOKING_STATUS_CHANGED', entity_type: 'booking', entity_id: id,
+          details: { status }
+        });
+      }
+      if ('provider_id' in body && body.provider_id !== null) {
+        logActivity({
+          actor_id: authenticatedUserId, actor_type: actorType, actor_name: actorType.toUpperCase(),
+          action: 'PROVIDER_ASSIGNED', entity_type: 'booking', entity_id: id,
+          details: { provider_id: body.provider_id }
+        });
+      } else if ('provider_id' in body && body.provider_id === null) {
+        logActivity({
+          actor_id: authenticatedUserId, actor_type: actorType, actor_name: actorType.toUpperCase(),
+          action: 'PROVIDER_REMOVED', entity_type: 'booking', entity_id: id,
+          details: { previous_provider_id: current.current_provider }
+        });
+      }
 
       // Notifications (non-blocking)
       try {

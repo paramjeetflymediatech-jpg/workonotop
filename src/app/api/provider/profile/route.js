@@ -142,6 +142,7 @@
 import { NextResponse } from 'next/server'
 import { execute } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
+import { logActivity } from '@/lib/logger'
 
 // GET - Fetch full profile
 export async function GET(request) {
@@ -310,6 +311,17 @@ export async function PUT(request) {
         providerId
       ]
     )
+
+    // Log Activity
+    logActivity({
+      actor_id: providerId,
+      actor_type: 'provider',
+      actor_name: name.trim(),
+      action: 'PROVIDER_PROFILE_UPDATED',
+      entity_type: 'provider',
+      entity_id: providerId,
+      details: { email: email.trim(), phone: phone.trim() }
+    })
 
     // Return updated data
     const updated = await execute(

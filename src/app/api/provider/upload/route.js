@@ -109,6 +109,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { execute } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
+import { logActivity } from '@/lib/logger'
 
 export async function POST(request) {
   try {
@@ -185,6 +186,17 @@ export async function POST(request) {
        ) WHERE id = ?`,
       [providerId, providerId]
     )
+
+    // Log Activity
+    logActivity({
+      actor_id: providerId,
+      actor_type: 'provider',
+      actor_name: decoded.name || 'Provider',
+      action: 'PROVIDER_DOCUMENT_UPLOADED',
+      entity_type: 'document',
+      entity_id: providerId, // or the document id if we had it easily, using providerId for now
+      details: { document_type: documentType, url: publicUrl }
+    })
 
     return NextResponse.json({ 
       success: true, 

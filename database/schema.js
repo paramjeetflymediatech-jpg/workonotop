@@ -598,6 +598,23 @@ const tables = [
     display_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`,
+
+  // Table 30: activity_logs
+  `CREATE TABLE IF NOT EXISTS activity_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    actor_id INT,
+    actor_type ENUM('customer', 'provider', 'admin', 'system') NOT NULL,
+    actor_name VARCHAR(255),
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(50),
+    entity_id INT,
+    details JSON,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_actor (actor_type, actor_id),
+    INDEX idx_entity (entity_type, entity_id),
+    INDEX idx_created (created_at)
   )`
 ];
 

@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server'
 import { execute } from '@/lib/db'  // ✅ CHANGE: query → execute
+import { logActivity } from '@/lib/logger'
 
 // GET all service categories
 export async function GET() {
@@ -42,6 +43,17 @@ export async function POST(request) {
       [name, slug, icon || null, description || null, display_order || 0, image_url || null]
     )
 
+    // Log Activity
+    logActivity({
+      actor_id: 1, // Admin (hardcoded for now, token extraction can be added later)
+      actor_type: 'admin',
+      actor_name: 'Admin',
+      action: 'CATEGORY_CREATED',
+      entity_type: 'category',
+      entity_id: result.insertId,
+      details: { name, slug }
+    })
+
     return NextResponse.json({ 
       success: true, 
       message: 'Category created',
@@ -74,6 +86,17 @@ export async function PUT(request) {
       [name, slug, icon, description, is_active, display_order, image_url, id]
     )
 
+    // Log Activity
+    logActivity({
+      actor_id: 1,
+      actor_type: 'admin',
+      actor_name: 'Admin',
+      action: 'CATEGORY_UPDATED',
+      entity_type: 'category',
+      entity_id: id,
+      details: { name, slug, is_active }
+    })
+
     return NextResponse.json({ success: true, message: 'Category updated' })
   } catch (error) {
     console.error('Error updating category:', error)
@@ -99,6 +122,17 @@ export async function DELETE(request) {
 
     // ✅ execute() use karo
     await execute('DELETE FROM service_categories WHERE id = ?', [id])
+    
+    // Log Activity
+    logActivity({
+      actor_id: 1,
+      actor_type: 'admin',
+      actor_name: 'Admin',
+      action: 'CATEGORY_DELETED',
+      entity_type: 'category',
+      entity_id: id
+    })
+
     return NextResponse.json({ success: true, message: 'Category deleted' })
   } catch (error) {
     console.error('Error deleting category:', error)

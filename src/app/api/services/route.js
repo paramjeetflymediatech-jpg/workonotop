@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server'
 import { execute, query } from '@/lib/db'
+import { logActivity } from '@/lib/logger'
 
 // GET all services
 export async function GET(request) { 
@@ -183,6 +184,17 @@ export async function POST(request) {
       ]
     )
 
+    // Log Activity
+    logActivity({
+      actor_id: 1, // Admin (hardcoded for now)
+      actor_type: 'admin',
+      actor_name: 'Admin',
+      action: 'SERVICE_CREATED',
+      entity_type: 'service',
+      entity_id: result.insertId,
+      details: { name, slug, base_price }
+    })
+
     return NextResponse.json({
       success: true,
       message: 'Service created',
@@ -254,6 +266,17 @@ export async function PUT(request) {
       ]
     )
 
+    // Log Activity
+    logActivity({
+      actor_id: 1,
+      actor_type: 'admin',
+      actor_name: 'Admin',
+      action: 'SERVICE_UPDATED',
+      entity_type: 'service',
+      entity_id: id,
+      details: { name, slug, is_active }
+    })
+
     return NextResponse.json({ success: true, message: 'Service updated' })
   } catch (error) {
     console.error('Error updating service:', error)
@@ -299,6 +322,17 @@ export async function DELETE(request) {
     }
 
     await execute('DELETE FROM services WHERE id = ?', [id])
+
+    // Log Activity
+    logActivity({
+      actor_id: 1,
+      actor_type: 'admin',
+      actor_name: 'Admin',
+      action: 'SERVICE_DELETED',
+      entity_type: 'service',
+      entity_id: id
+    })
+
     return NextResponse.json({ success: true, message: 'Service deleted' })
   } catch (error) {
     console.error('Error deleting service:', error)

@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
+import { logActivity } from '@/lib/logger'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -161,6 +162,17 @@ export async function POST(request, { params }) {
       )
 
       await connection.query('COMMIT')
+
+      // Log Activity
+      logActivity({
+        actor_id: decoded.providerId,
+        actor_type: 'provider',
+        actor_name: decoded.name || 'Provider',
+        action: 'JOB_ACCEPTED',
+        entity_type: 'booking',
+        entity_id: id,
+        details: { service_name: job.service_name }
+      })
 
       const otRate = parseFloat(job.overtime_rate || 0)
       const netOT = otRate * (1 - commPct / 100)

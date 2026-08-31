@@ -10,6 +10,7 @@ import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
 import { sendEmail } from '@/lib/email'
+import { logActivity } from '@/lib/logger'
 
 export async function POST(request) {
   let connection
@@ -397,6 +398,17 @@ export async function POST(request) {
       }
 
       await connection.query('COMMIT')
+
+      // Log Activity
+      logActivity({
+        actor_id: decoded.providerId,
+        actor_type: 'provider',
+        actor_name: decoded.name || 'Provider',
+        action: 'JOB_STATUS_UPDATED',
+        entity_type: 'booking',
+        entity_id: booking_id,
+        details: { status_action: action, service_name: booking.service_name }
+      })
 
       const [[updated]] = await connection.execute(
         `SELECT status, job_timer_status, start_time FROM bookings WHERE id = ?`,

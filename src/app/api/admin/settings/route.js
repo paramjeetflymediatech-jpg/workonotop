@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { execute } from '@/lib/db'
 import jwt from 'jsonwebtoken'
+import { logActivity } from '@/lib/logger'
 
 const JWT_SECRET = process.env.JWT_SECRET
 
@@ -77,6 +78,17 @@ export async function POST(request) {
             'INSERT INTO system_settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?',
             [key, value, value]
         )
+
+        // Log Activity
+        logActivity({
+            actor_id: admin.id,
+            actor_type: 'admin',
+            actor_name: 'Admin', // Would need an extra query to get first/last name, fallback to Admin
+            action: 'SYSTEM_SETTINGS_UPDATED',
+            entity_type: 'system',
+            entity_id: 1,
+            details: { key, value }
+        })
 
         return NextResponse.json({ success: true, message: 'Setting updated' })
     } catch (error) {

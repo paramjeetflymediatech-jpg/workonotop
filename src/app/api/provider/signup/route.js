@@ -161,6 +161,7 @@ import bcrypt from 'bcryptjs';
 import { execute, getConnection } from '@/lib/db';
 import { generateEmailVerificationToken } from '@/lib/jwt';
 import { sendEmail, getVerificationEmailHtml, getOtpVerificationEmailHtml, getAdminNewProviderSignupEmailHtml } from '@/lib/email';
+import { logActivity } from '@/lib/logger';
 
 export async function POST(request) {
   console.log('🚀 PROVIDER SIGNUP API CALLED at:', new Date().toISOString());
@@ -280,6 +281,17 @@ export async function POST(request) {
     }
 
     await connection.commit();
+    
+    // Log Activity
+    logActivity({
+      actor_id: providerId,
+      actor_type: 'provider',
+      actor_name: fullName,
+      action: 'PROVIDER_REGISTERED',
+      entity_type: 'provider',
+      entity_id: providerId,
+      details: { email, source: source || 'web' }
+    });
 
     try {
       let emailOptions;

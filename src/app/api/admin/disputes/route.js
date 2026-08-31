@@ -155,6 +155,7 @@
 import { NextResponse } from 'next/server'
 import { getConnection } from '@/lib/db'
 import { sendEmail } from '@/lib/email'
+import { logActivity } from '@/lib/logger'
 
 // ── GET: All disputes ─────────────────────────────────────────────────────────
 export async function GET() {
@@ -310,6 +311,17 @@ export async function PATCH(request) {
         [dispute.booking_id, `Dispute processed. Captured: $${capAmt}, Provider paid: $${provAmt}. Admin notes: ${admin_notes || ''}`]
       )
       
+      // Log Activity
+      logActivity({
+        actor_id: 1, // Admin actor (assuming ID 1 for now, or extract from token if available in this route later)
+        actor_type: 'admin',
+        actor_name: 'Admin',
+        action: 'DISPUTE_RESOLVED',
+        entity_type: 'dispute',
+        entity_id: dispute_id,
+        details: { status: 'resolved', capture_amount: capAmt, provider_amount: provAmt }
+      })
+
       await connection.query('COMMIT')
       connection.release()
       return NextResponse.json({ success: true, message: 'Dispute processed successfully' })
@@ -331,6 +343,17 @@ export async function PATCH(request) {
       `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'disputed', ?)`,
       [dispute.booking_id, `Admin updated dispute to: ${status}. ${admin_notes || ''}`]
     )
+
+    // Log Activity
+    logActivity({
+      actor_id: 1,
+      actor_type: 'admin',
+      actor_name: 'Admin',
+      action: 'DISPUTE_UPDATED',
+      entity_type: 'dispute',
+      entity_id: dispute_id,
+      details: { status }
+    })
 
     await connection.query('COMMIT')
     connection.release()

@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 import { withConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
 import { sendEmail } from '@/lib/email'
+import { logActivity } from '@/lib/logger'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', { apiVersion: '2026-05-27.dahlia' })
 
@@ -426,6 +427,17 @@ export async function POST(request, { params }) {
           }
 
           await connection.query('COMMIT')
+
+          // Log Activity
+          logActivity({
+            actor_id: decoded.id,
+            actor_type: 'customer',
+            actor_name: customerName,
+            action: 'BOOKING_APPROVED',
+            entity_type: 'booking',
+            entity_id: id,
+            details: { final_amount: finalAmount, provider_amount: providerAmount }
+          })
 
           // ── Send receipt emails ──────────────────────────────────────────
           const emailData = {

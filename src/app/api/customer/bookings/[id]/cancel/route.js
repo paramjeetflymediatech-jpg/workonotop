@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { execute } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
+import { logActivity } from '@/lib/logger';
 
 export async function POST(request, { params }) {
     try {
@@ -55,6 +56,17 @@ export async function POST(request, { params }) {
              VALUES (?, 'cancelled', 'Cancelled by customer', NOW())`,
             [id]
         ).catch(() => { /* status history table may not exist - safe to ignore */ });
+
+        // Log Activity
+        logActivity({
+            actor_id: customerId,
+            actor_type: 'customer',
+            actor_name: `Customer #${customerId}`,
+            action: 'BOOKING_CANCELLED',
+            entity_type: 'booking',
+            entity_id: id,
+            details: { previous_status: booking.status }
+        });
 
         return NextResponse.json({ success: true, message: 'Booking cancelled successfully' });
 

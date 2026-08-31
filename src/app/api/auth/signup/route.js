@@ -137,6 +137,7 @@ import { NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { logActivity } from '@/lib/logger'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -213,6 +214,17 @@ export async function POST(request) {
       'SELECT id, email, first_name, last_name, phone, role, image_url, created_at FROM users WHERE id = ?',
       [result.insertId]
     )
+    
+    // Log Activity
+    logActivity({
+      actor_id: newUser[0].id,
+      actor_type: 'customer',
+      actor_name: `${first_name} ${last_name}`.trim(),
+      action: 'CUSTOMER_REGISTERED',
+      entity_type: 'user',
+      entity_id: newUser[0].id,
+      details: { email: newUser[0].email }
+    })
 
     const token = jwt.sign(
       {

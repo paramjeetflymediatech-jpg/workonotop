@@ -196,6 +196,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { execute } from "@/lib/db";
+import { logActivity } from "@/lib/logger";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -242,6 +243,17 @@ export async function POST(request) {
     const response = NextResponse.json({
       success: true,
       message: "Login successful",
+    });
+
+    // Log Activity
+    logActivity({
+      actor_id: adminUser.id,
+      actor_type: 'admin',
+      actor_name: `${adminUser.first_name || ''} ${adminUser.last_name || ''}`.trim() || 'Admin',
+      action: 'ADMIN_LOGGED_IN',
+      entity_type: 'admin',
+      entity_id: adminUser.id,
+      details: { email: adminUser.email }
     });
 
     response.cookies.set("adminAuth", token, {
