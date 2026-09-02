@@ -17,6 +17,9 @@ export default function BookingDetailsPage({ params }) {
   const [isEditingCommission, setIsEditingCommission] = useState(false)
   const [savingCommission, setSavingCommission] = useState(false)
   const [lightbox, setLightbox] = useState(null)
+  const [showOverrideModal, setShowOverrideModal] = useState(false)
+  const [overrideData, setOverrideData] = useState({ worker_count: 1, actual_duration_minutes: 0, reason: '' })
+  const [overriding, setOverriding] = useState(false)
 
   const unwrappedParams = React.use(params)
   const bookingId = unwrappedParams.id
@@ -104,6 +107,33 @@ export default function BookingDetailsPage({ params }) {
     } finally {
       setSavingCommission(false)
       setIsEditingCommission(false)
+    }
+  }
+
+  const handleOverrideSubmit = async () => {
+    if (!overrideData.reason) {
+      notify('error', 'A reason is required to update final details')
+      return
+    }
+    setOverriding(true)
+    try {
+      const res = await fetch(`/api/admin/bookings/${bookingId}/override`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(overrideData)
+      })
+      const data = await res.json()
+      if (data.success) {
+        notify('success', 'Job details updated successfully')
+        setShowOverrideModal(false)
+        fetchBooking()
+      } else {
+        notify('error', data.message || 'Failed to update details')
+      }
+    } catch {
+      notify('error', 'Request failed')
+    } finally {
+      setOverriding(false)
     }
   }
 
@@ -215,6 +245,33 @@ export default function BookingDetailsPage({ params }) {
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
           <button className="absolute top-4 right-6 text-white text-4xl font-light" onClick={() => setLightbox(null)}>×</button>
           <img src={lightbox} alt="Full size" className="max-w-full max-h-full object-contain rounded-xl" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+
+      {/* Override Modal */}
+      {showOverrideModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className={`w-full max-w-md rounded-2xl p-6 ${card}`}>
+            <h3 className={`text-lg font-bold mb-4 ${val}`}>Edit Final Job Details</h3>
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm mb-1 ${lbl}`}>Cleaners Count</label>
+                <input type="number" min="1" value={overrideData.worker_count} onChange={e => setOverrideData({...overrideData, worker_count: parseInt(e.target.value) || 1})} className={`w-full p-2.5 rounded-lg border ${inputCls}`} />
+              </div>
+              <div>
+                <label className={`block text-sm mb-1 ${lbl}`}>Actual Duration (Minutes)</label>
+                <input type="number" min="0" value={overrideData.actual_duration_minutes} onChange={e => setOverrideData({...overrideData, actual_duration_minutes: parseInt(e.target.value) || 0})} className={`w-full p-2.5 rounded-lg border ${inputCls}`} />
+              </div>
+              <div>
+                <label className={`block text-sm mb-1 ${lbl}`}>Reason for change (Required for Audit Log)</label>
+                <textarea rows="3" value={overrideData.reason} onChange={e => setOverrideData({...overrideData, reason: e.target.value})} className={`w-full p-2.5 rounded-lg border ${inputCls}`} placeholder="E.g. Correcting forgot to stop timer..."></textarea>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowOverrideModal(false)} className={`px-4 py-2 rounded-lg font-medium text-sm border ${divCls} ${lbl} hover:bg-gray-100`}>Cancel</button>
+              <button onClick={handleOverrideSubmit} disabled={overriding || !overrideData.reason} className="px-4 py-2 rounded-lg bg-teal-600 text-white font-medium text-sm hover:bg-teal-700 disabled:opacity-50">{overriding ? 'Saving...' : 'Save Changes'}</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -613,8 +670,19 @@ export default function BookingDetailsPage({ params }) {
               <Field label="Service ID" value={`#${booking.service_id}`} lbl={lbl} val={val} />
               <Field label="Created" value={formatDateTime(booking.created_at)} lbl={lbl} val={val} />
               <Field label="Last Updated" value={formatDateTime(booking.updated_at)} lbl={lbl} val={val} />
+              </div>
+              {booking.status === 'completed' && (
+              <button 
+                onClick={() => {
+                  setOverrideData({ worker_count: booking.worker_count || 1, actual_duration_minutes: booking.actual_duration_minutes || 0, reason: '' });
+                  setShowOverrideModal(true);
+                }}
+                className="w-full mt-4 py-2.5 rounded-xl border border-teal-500 text-teal-600 text-sm font-semibold hover:bg-teal-50 transition"
+              >
+                ✏️ Edit Final Job Details
+              </button>
+              )}
             </div>
-          </div>
 
         </div>
       </div>

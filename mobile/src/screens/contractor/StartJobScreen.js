@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../utils/api';
@@ -8,7 +8,18 @@ import { moderateScale, verticalScale } from '../../utils/responsive';
 const StartJobScreen = ({ navigation, route }) => {
     const { job } = route.params || {};
     const [beforePhotos, setBeforePhotos] = useState([]);
+    const [workerCount, setWorkerCount] = useState(1);
+    const [estimatedHours, setEstimatedHours] = useState('1');
     const [loading, setLoading] = useState(false);
+
+    const baseRate = parseFloat(job?.service_price || 0);
+    const overtimeRate = parseFloat(job?.additional_price || 0);
+    const estHours = parseFloat(estimatedHours) || 1;
+    let overtimeAmount = 0;
+    if (estHours > 1) {
+       overtimeAmount = (estHours - 1) * overtimeRate;
+    }
+    const totalEstimate = (baseRate + overtimeAmount) * workerCount;
 
 
     const addBeforePhoto = async () => {
@@ -44,7 +55,12 @@ const StartJobScreen = ({ navigation, route }) => {
         }
         setLoading(true);
         try {
-            await api.post('/api/provider/jobs/time-tracking', { booking_id: job?.id, action: 'start' });
+            await api.post('/api/provider/jobs/time-tracking', { 
+                booking_id: job?.id, 
+                action: 'start',
+                worker_count: workerCount,
+                estimated_hours: estHours
+            });
             Alert.alert('Job Started!', 'The customer has been notified that you started the job.', [
                 { text: 'OK', onPress: () => navigation.goBack() }
             ]);
@@ -87,6 +103,42 @@ const StartJobScreen = ({ navigation, route }) => {
                                 <Text style={styles.addPhotoText}>Add Photo</Text>
                             </TouchableOpacity>
                         )}
+                    </View>
+                </View>
+
+                {/* Worker Count & Estimate */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>2️⃣ Job Details & Estimate</Text>
+                    
+                    <Text style={styles.label}>How many people are on site?</Text>
+                    <View style={styles.workerRow}>
+                        {[1, 2, 3, 4].map(num => (
+                            <TouchableOpacity 
+                                key={num} 
+                                style={[styles.workerBtn, workerCount === num && styles.workerBtnActive]}
+                                onPress={() => setWorkerCount(num)}
+                            >
+                                <Text style={[styles.workerBtnText, workerCount === num && styles.workerBtnTextActive]}>{num}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <Text style={styles.label}>How long do you think this will take? (hours)</Text>
+                    <TextInput 
+                        style={styles.input}
+                        keyboardType="numeric"
+                        value={estimatedHours}
+                        onChangeText={setEstimatedHours}
+                        placeholder="e.g. 2.5"
+                    />
+
+                    <View style={styles.summaryBox}>
+                        <Text style={styles.summaryText}>
+                            {workerCount} cleaners × (base ${baseRate} + overtime ${overtimeAmount.toFixed(2)})
+                        </Text>
+                        <Text style={styles.summaryTotal}>
+                            Roughly ${totalEstimate.toFixed(2)}
+                        </Text>
                     </View>
                 </View>
 
@@ -133,6 +185,27 @@ const styles = StyleSheet.create({
     },
     addPhotoIcon: { fontSize: moderateScale(28), color: '#94a3b8' },
     addPhotoText: { fontSize: moderateScale(11), color: '#94a3b8' },
+    label: { fontSize: moderateScale(14), color: '#475569', marginBottom: verticalScale(8), fontWeight: '500' },
+    workerRow: { flexDirection: 'row', gap: 10, marginBottom: verticalScale(20) },
+    workerBtn: { 
+        flex: 1, padding: moderateScale(12), borderRadius: moderateScale(8), 
+        backgroundColor: '#e2e8f0', alignItems: 'center' 
+    },
+    workerBtnActive: { backgroundColor: '#10b981' },
+    workerBtnText: { color: '#475569', fontWeight: 'bold', fontSize: moderateScale(16) },
+    workerBtnTextActive: { color: '#fff' },
+    input: {
+        backgroundColor: '#fff', borderWidth: 1, borderColor: '#cbd5e1', 
+        borderRadius: moderateScale(8), padding: moderateScale(14),
+        fontSize: moderateScale(16), marginBottom: verticalScale(20)
+    },
+    summaryBox: {
+        backgroundColor: '#f0fdf4', padding: moderateScale(16), 
+        borderRadius: moderateScale(12), borderWidth: 1, borderColor: '#bbf7d0',
+        alignItems: 'center'
+    },
+    summaryText: { fontSize: moderateScale(13), color: '#166534', marginBottom: 4 },
+    summaryTotal: { fontSize: moderateScale(18), fontWeight: 'bold', color: '#14532d' },
     startBtn: {
         backgroundColor: '#10b981', padding: moderateScale(18),
         borderRadius: moderateScale(16), alignItems: 'center', marginTop: verticalScale(8),

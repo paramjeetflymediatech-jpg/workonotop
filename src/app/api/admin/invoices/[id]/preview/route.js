@@ -728,7 +728,7 @@ export async function GET(request, { params }) {
             <div class="date-cell">
               <label>Job Date</label>
               <span>${invoice.job_date 
-                      ? (invoice.job_date.includes(',') 
+                      ? (String(invoice.job_date).includes(',') 
                           ? invoice.job_date.split(',').map(d => new Date(d.trim()).toLocaleDateString('en-GB')).join(', ')
                           : new Date(invoice.job_date).toLocaleDateString('en-GB'))
                       : '—'}</span>
@@ -841,8 +841,9 @@ export async function GET(request, { params }) {
 
             <!-- Calculation note -->
             <div class="calc-note">
-              <strong>Calculation:</strong>&nbsp; $${Number(booking.service_price).toFixed(2)}/hr ÷ 60 = $${ratePerMinute.toFixed(4)}/min &times; ${invoice.actual_duration} min = <strong>$${Number(invoice.base_amount).toFixed(2)}</strong>
-            </div>
+                <strong>Calculation:</strong>&nbsp; ${booking.worker_count || 1} cleaner(s) &times; (base rate ${Number(booking.service_price).toFixed(2)} + overtime ${Number(invoice.overtime_amount || 0).toFixed(2)}) = 
+<strong>${Number(invoice.total_amount).toFixed(2)}</strong>
+              </div>
 
             <!-- Line items -->
             <table class="line-items">

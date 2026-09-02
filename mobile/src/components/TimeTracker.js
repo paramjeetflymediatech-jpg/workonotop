@@ -19,6 +19,11 @@ const TimeTracker = ({
     const [loading, setLoading] = useState(false);
     const [showCompleteModal, setShowCompleteModal] = useState(false);
 
+    // Start Form states
+    const [showStartModal, setShowStartModal] = useState(false);
+    const [workerCount, setWorkerCount] = useState(1);
+    const [estimatedHours, setEstimatedHours] = useState('1');
+
     // Completion Form states
     const [workSummary, setWorkSummary] = useState('');
     const [recommendations, setRecommendations] = useState('');
@@ -86,6 +91,11 @@ const TimeTracker = ({
             return;
         }
 
+        if (action === 'start') {
+            setShowStartModal(true);
+            return;
+        }
+
         setLoading(true);
         try {
             const res = await api.post('/api/provider/jobs/time-tracking', {
@@ -106,6 +116,30 @@ const TimeTracker = ({
                     const adjustedStart = new Date(Date.now() - elapsedTime * 1000).toISOString();
                     setStartTime(adjustedStart);
                 }
+            }
+        } catch (err) {
+            Alert.alert('Error', 'Action failed. Please check your connection.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleConfirmStart = async () => {
+        setLoading(true);
+        try {
+            const res = await api.post('/api/provider/jobs/time-tracking', {
+                booking_id: bookingId,
+                action: 'start',
+                worker_count: workerCount,
+                estimated_hours: parseFloat(estimatedHours) || 1
+            });
+
+            if (res.success) {
+                setTimerStatus('running');
+                setShowStartModal(false);
+                setStartTime(new Date().toISOString());
+                setElapsedTime(0);
+                if (onStart) onStart();
             }
         } catch (err) {
             Alert.alert('Error', 'Action failed. Please check your connection.');
@@ -232,6 +266,56 @@ const TimeTracker = ({
                     </View>
                 )}
             </View>
+
+            {/* Start Form Modal */}
+            <Modal visible={showStartModal} animationType="slide" transparent>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                            <Text style={styles.modalTitle}>Start Job</Text>
+                            
+                            <Text style={styles.modalLabel}>How many people are on site?</Text>
+                            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+                                {[1, 2, 3, 4].map(num => (
+                                    <TouchableOpacity 
+                                        key={num} 
+                                        style={[{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#e2e8f0', alignItems: 'center' }, workerCount === num && { backgroundColor: '#10b981' }]}
+                                        onPress={() => setWorkerCount(num)}
+                                    >
+                                        <Text style={[{ color: '#475569', fontWeight: 'bold' }, workerCount === num && { color: '#fff' }]}>{num}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={styles.modalLabel}>Estimated hours</Text>
+                            <TextInput
+                                style={styles.textArea}
+                                keyboardType="numeric"
+                                placeholder="e.g. 2.5"
+                                value={estimatedHours}
+                                onChangeText={setEstimatedHours}
+                            />
+
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity 
+                                    style={[styles.btn, styles.cancelBtn]} 
+                                    onPress={() => setShowStartModal(false)}
+                                    disabled={loading}
+                                >
+                                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[styles.btn, styles.submitBtn]} 
+                                    onPress={handleConfirmStart}
+                                    disabled={loading}
+                                >
+                                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Start Job</Text>}
+                                </TouchableOpacity>
+                            </View>
+                        </ScrollView>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
 
             {/* Completion Form Modal */}
             <Modal visible={showCompleteModal} animationType="slide" transparent>

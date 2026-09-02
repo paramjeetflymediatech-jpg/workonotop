@@ -206,8 +206,8 @@ export async function POST(request) {
       const overtimeRatePerMinute = overtimeRatePerHour / 60
       overtimeAmount = Math.round((overtimeRatePerMinute * overtimeMinutes) * 100) / 100
     }
-
-    const totalAmount = baseAmount + overtimeAmount
+    const wCount = parseInt(booking.worker_count || 1)
+    const totalAmount = (baseAmount + overtimeAmount) * wCount
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(booking_id).padStart(5, '0')}`
 
     // Check if already exists

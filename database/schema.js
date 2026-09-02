@@ -197,6 +197,8 @@ const tables = [
     customer_phone VARCHAR(50) NOT NULL,
     job_date DATE NOT NULL,
     job_time_slot VARCHAR(255) NOT NULL,
+    worker_count INT DEFAULT 1,
+    estimated_hours DECIMAL(5,2),
     timing_constraints TEXT,
     job_description TEXT NOT NULL,
     instructions TEXT,
@@ -615,6 +617,36 @@ const tables = [
     INDEX idx_actor (actor_type, actor_id),
     INDEX idx_entity (entity_type, entity_id),
     INDEX idx_created (created_at)
+  )`,
+
+  // Table 31: job_sessions
+  `CREATE TABLE IF NOT EXISTS job_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    booking_id INT NOT NULL,
+    provider_id INT NOT NULL,
+    clock_in DATETIME NOT NULL,
+    clock_out DATETIME,
+    session_duration_minutes INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    FOREIGN KEY (provider_id) REFERENCES service_providers(id) ON DELETE CASCADE,
+    INDEX idx_booking (booking_id),
+    INDEX idx_provider (provider_id)
+  )`,
+
+  // Table 32: booking_admin_edits
+  `CREATE TABLE IF NOT EXISTS booking_admin_edits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    booking_id INT NOT NULL,
+    admin_id INT,
+    field_changed VARCHAR(100) NOT NULL,
+    old_value VARCHAR(255),
+    new_value VARCHAR(255),
+    reason TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    INDEX idx_booking (booking_id)
   )`
 ];
 
@@ -657,6 +689,8 @@ const alterations = [
   { table: 'bookings', column: 'idx_previous_provider', sql: 'CREATE INDEX idx_previous_provider ON bookings(previous_provider_id)' },
 
   // Additional missing columns for bookings table
+  { table: 'bookings', column: 'worker_count', sql: "ALTER TABLE bookings ADD COLUMN worker_count INT DEFAULT 1 AFTER job_time_slot" },
+  { table: 'bookings', column: 'estimated_hours', sql: "ALTER TABLE bookings ADD COLUMN estimated_hours DECIMAL(5,2) AFTER worker_count" },
   { table: 'bookings', column: 'job_timer_status', sql: "ALTER TABLE bookings ADD COLUMN job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started'" },
   { table: 'bookings', column: 'before_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN before_photos_uploaded TINYINT(1) DEFAULT 0' },
   { table: 'bookings', column: 'after_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN after_photos_uploaded TINYINT(1) DEFAULT 0' },

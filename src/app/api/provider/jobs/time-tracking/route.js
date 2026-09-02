@@ -11,6 +11,7 @@ import { execute, getConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
 import { sendEmail } from '@/lib/email'
 import { logActivity } from '@/lib/logger'
+import { sendSMS } from '@/lib/sms'
 
 export async function POST(request) {
   let connection
@@ -20,7 +21,7 @@ export async function POST(request) {
     const decoded = verifyToken(token)
     if (!decoded || decoded.type !== 'provider') return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
 
-    const { booking_id, action, notes, work_summary, recommendations } = await request.json()
+    const { booking_id, action, notes, work_summary, recommendations, worker_count, estimated_hours } = await request.json()
     if (!booking_id || !action) return NextResponse.json({ success: false, message: 'booking_id and action required' }, { status: 400 })
 
     connection = await getConnection()
@@ -28,9 +29,9 @@ export async function POST(request) {
 
     try {
       const [[booking]] = await connection.execute(
-        `SELECT b.*, s.duration_minutes as standard_duration,
-                u.email as customer_email, u.first_name as customer_first_name,
-                TIMESTAMPDIFF(MINUTE, b.start_time, NOW()) as current_duration
+        `SELECT b.*, s.duration_minutes as standard_duration, s.name as service_name,
+                  u.email as customer_email, u.first_name as customer_first_name, u.phone as customer_phone,
+                  TIMESTAMPDIFF(MINUTE, b.start_time, NOW()) as current_duration
          FROM bookings b
          LEFT JOIN services s ON b.service_id = s.id
          LEFT JOIN users u ON b.user_id = u.id
@@ -55,17 +56,53 @@ export async function POST(request) {
             return NextResponse.json({ success: false, message: 'Job must be confirmed to start' }, { status: 400 })
           }
           await connection.execute(
-            `UPDATE bookings SET status = 'in_progress', start_time = ?, job_timer_status = 'running', updated_at = NOW() WHERE id = ?`,
-            [now, booking_id]
+            `UPDATE bookings SET status = 'in_progress', start_time = ?, job_timer_status = 'running', worker_count = ?, estimated_hours = ?, updated_at = NOW() WHERE id = ?`,
+            [now, worker_count || 1, estimated_hours || null, booking_id]
+          )
+          // Create the first job session
+          await connection.execute(
+            `INSERT INTO job_sessions (booking_id, provider_id, clock_in) VALUES (?, ?, ?)`,
+            [booking_id, decoded.providerId, now]
           )
           await connection.execute(
             `INSERT INTO booking_time_logs (booking_id, action, timestamp, notes) VALUES (?, 'start', ?, ?)`,
-            [booking_id, now, notes || 'Job started']
+            [booking_id, now, notes || 'Job started (First Session)']
           )
           await connection.execute(
             `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'in_progress', 'Provider started the job')`,
             [booking_id]
           )
+          
+          // Send SMS to customer
+          const customerPhone = booking.customer_phone;
+          if (customerPhone) {
+            const bRate = parseFloat(booking.service_price || 0);
+            const oRate = parseFloat(booking.additional_price || 0);
+            const wCount = parseInt(worker_count || 1, 10);
+            const eHours = parseFloat(estimated_hours || 1);
+            
+            let oAmount = 0;
+            if (eHours > 1) {
+               oAmount = (eHours - 1) * oRate;
+            }
+            const tEst = (bRate + oAmount) * wCount;
+            
+            const sName = booking.service_name || 'Service';
+              const msg = `*WorkOnTap*
+Service: ${sName}
+
+Your professional has started the job!
+- Cleaners: ${wCount}
+- Est. Time: ${eHours} hrs
+- Base Rate: ${bRate}
+- Extra Rate: ${oRate}/hr
+
+Est. Total: Est ${tEst}
+(Final price based on actual time)`;
+            
+            // Fire and forget
+            sendSMS(customerPhone, msg).catch(console.error);
+          }
           break
 
         case 'pause':
@@ -77,9 +114,14 @@ export async function POST(request) {
             `UPDATE bookings SET job_timer_status = 'paused', updated_at = NOW() WHERE id = ?`,
             [booking_id]
           )
+          // Close the active job session
+          await connection.execute(
+            `UPDATE job_sessions SET clock_out = ?, session_duration_minutes = TIMESTAMPDIFF(MINUTE, clock_in, ?) WHERE booking_id = ? AND provider_id = ? AND clock_out IS NULL`,
+            [now, now, booking_id, decoded.providerId]
+          )
           await connection.execute(
             `INSERT INTO booking_time_logs (booking_id, action, timestamp, notes) VALUES (?, 'pause', ?, ?)`,
-            [booking_id, now, notes || 'Job paused']
+            [booking_id, now, notes || 'Job paused / End of Day']
           )
           break
 
@@ -92,9 +134,14 @@ export async function POST(request) {
             `UPDATE bookings SET job_timer_status = 'running', updated_at = NOW() WHERE id = ?`,
             [booking_id]
           )
+          // Create a new job session
+          await connection.execute(
+            `INSERT INTO job_sessions (booking_id, provider_id, clock_in) VALUES (?, ?, ?)`,
+            [booking_id, decoded.providerId, now]
+          )
           await connection.execute(
             `INSERT INTO booking_time_logs (booking_id, action, timestamp, notes) VALUES (?, 'resume', ?, ?)`,
-            [booking_id, now, notes || 'Job resumed']
+            [booking_id, now, notes || 'Job resumed (New Session)']
           )
           break
 
@@ -104,31 +151,52 @@ export async function POST(request) {
             return NextResponse.json({ success: false, message: 'Job must be in progress to complete' }, { status: 400 })
           }
 
-          // Calculate total duration from logs
-          const [logs] = await connection.execute(
-            `SELECT * FROM booking_time_logs WHERE booking_id = ? AND action IN ('start', 'pause', 'resume', 'stop') ORDER BY timestamp ASC`,
+          // Close any open job session
+          await connection.execute(
+            `UPDATE job_sessions SET clock_out = ?, session_duration_minutes = TIMESTAMPDIFF(MINUTE, clock_in, ?) WHERE booking_id = ? AND provider_id = ? AND clock_out IS NULL`,
+            [now, now, booking_id, decoded.providerId]
+          )
+
+          // Calculate total duration from all job sessions
+          const [sessions] = await connection.execute(
+            `SELECT SUM(session_duration_minutes) as total_mins FROM job_sessions WHERE booking_id = ?`,
             [booking_id]
           )
 
           let totalMinutes = 0
-          let lastStart = null
-          logs.forEach(log => {
-            const logTime = new Date(log.timestamp)
-            if (log.action === 'start' || log.action === 'resume') {
-              lastStart = logTime
-            } else if ((log.action === 'pause' || log.action === 'stop') && lastStart) {
-              totalMinutes += Math.round((logTime - lastStart) / 60000)
-              lastStart = null
+          if (sessions[0].total_mins) {
+            totalMinutes = parseInt(sessions[0].total_mins, 10)
+          } else {
+            // Fallback to time logs if no sessions exist (for backward compatibility with old active jobs)
+            const [logs] = await connection.execute(
+              `SELECT * FROM booking_time_logs WHERE booking_id = ? AND action IN ('start', 'pause', 'resume', 'stop') ORDER BY timestamp ASC`,
+              [booking_id]
+            )
+            let lastStart = null
+            logs.forEach(log => {
+              const logTime = new Date(log.timestamp)
+              if (log.action === 'start' || log.action === 'resume') {
+                lastStart = logTime
+              } else if ((log.action === 'pause' || log.action === 'stop') && lastStart) {
+                totalMinutes += Math.round((logTime - lastStart) / 60000)
+                lastStart = null
+              }
+            })
+            if (lastStart) {
+              totalMinutes += Math.round((now - lastStart) / 60000)
             }
-          })
-          if (lastStart) {
-            totalMinutes += Math.round((now - lastStart) / 60000)
           }
 
           const overtimeMinutes = Math.max(0, totalMinutes - standardDuration)
           const commPct = parseFloat(booking.commission_percent || 20)
+          
+          // Calculate earnings based on worker_count
+          const wCount = booking.worker_count || 1
           const overtimeEarnings = (overtimeMinutes / 60) * overtimeRate * (1 - commPct / 100)
-          const finalAmount = parseFloat(booking.provider_amount || 0) + overtimeEarnings
+          const baseProviderAmount = parseFloat(booking.provider_amount || 0)
+          
+          // Total is (Base + Overtime) * workers
+          const finalAmount = (baseProviderAmount + overtimeEarnings) * wCount
 
           await connection.execute(
             `UPDATE bookings SET 

@@ -17,6 +17,9 @@ export default function TimeTracker({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
+  const [showStartConfirm, setShowStartConfirm] = useState(false)
+  const [workerCount, setWorkerCount] = useState(1)
+  const [estimatedHours, setEstimatedHours] = useState('1')
 
   // Photo upload states
   const [beforeUploaded, setBeforeUploaded] = useState(hasBeforePhotos)
@@ -122,6 +125,11 @@ export default function TimeTracker({
         setError('Please upload before photos first');
         return;
       }
+      
+      if (!showStartConfirm) {
+        setShowStartConfirm(true);
+        return;
+      }
     }
 
     if (action === 'stop') {
@@ -152,16 +160,23 @@ export default function TimeTracker({
     setError('')
 
     try {
+      const payload = { booking_id: bookingId, action }
+      if (action === 'start') {
+        payload.worker_count = workerCount
+        payload.estimated_hours = parseFloat(estimatedHours) || 1
+      }
+
       const res = await fetch('/api/provider/jobs/time-tracking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ booking_id: bookingId, action })
+        body: JSON.stringify(payload)
       })
       const data = await res.json()
 
       if (data.success) {
         if (action === 'start') {
           setTimerStatus('running')
+          setShowStartConfirm(false)
           setStartTime(new Date().toISOString())
           setElapsedTime(0)
           onStart?.()
@@ -215,6 +230,64 @@ export default function TimeTracker({
     } finally {
       setLoading(false)
     }
+  }
+
+  // ── Start Form ───────────────────────────────────────────────────────────────
+  if (showStartConfirm) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-1">
+            How many people are on site?
+          </label>
+          <div className="flex gap-2 mb-4">
+            {[1, 2, 3, 4].map(num => (
+              <button
+                key={num}
+                onClick={() => setWorkerCount(num)}
+                className={`flex-1 py-2 rounded-xl text-sm font-bold border ${workerCount === num ? 'bg-green-600 text-white border-green-600' : 'bg-gray-50 text-gray-600 border-gray-200'}`}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
+
+          <label className="block text-sm font-semibold text-gray-800 mb-1">
+            Estimated hours
+          </label>
+          <input
+            type="number"
+            value={estimatedHours}
+            onChange={(e) => setEstimatedHours(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="e.g. 2.5"
+          />
+        </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 text-sm rounded-xl px-3 py-2">
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => { setShowStartConfirm(false); setError('') }}
+            disabled={loading}
+            className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => handleAction('start')}
+            disabled={loading}
+            className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition flex justify-center items-center gap-2"
+          >
+            {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '▶ Start Job'}
+          </button>
+        </div>
+      </div>
+    )
   }
 
   // ── Completion Form ──────────────────────────────────────────────────────────
