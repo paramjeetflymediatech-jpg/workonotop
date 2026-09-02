@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 // app/api/provider/jobs/time-tracking/route.js
 import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
@@ -21,7 +14,7 @@ export async function POST(request) {
     const decoded = verifyToken(token)
     if (!decoded || decoded.type !== 'provider') return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
 
-    const { booking_id, action, notes, work_summary, recommendations, worker_count, estimated_hours } = await request.json()
+    const { booking_id, action, notes, work_summary, recommendations, worker_count, estimated_hours, submitted_duration_minutes, submitted_headcount, adjustment_reason } = await request.json()
     if (!booking_id || !action) return NextResponse.json({ success: false, message: 'booking_id and action required' }, { status: 400 })
 
     connection = await getConnection()
@@ -187,29 +180,40 @@ Est. Total: Est ${tEst}
             }
           }
 
-          const overtimeMinutes = Math.max(0, totalMinutes - standardDuration)
+          const finalDurationMins = (submitted_duration_minutes !== undefined && submitted_duration_minutes !== null) ? submitted_duration_minutes : totalMinutes
+          const overtimeMinutes = Math.max(0, finalDurationMins - standardDuration)
           const commPct = parseFloat(booking.commission_percent || 20)
           
           // Calculate earnings based on worker_count
           const wCount = booking.worker_count || 1
+          const finalHeadcount = (submitted_headcount !== undefined && submitted_headcount !== null) ? submitted_headcount : wCount
+          
           const overtimeEarnings = (overtimeMinutes / 60) * overtimeRate * (1 - commPct / 100)
-          const baseProviderAmount = parseFloat(booking.provider_amount || 0)
+          
+          let baseProviderAmount = parseFloat(booking.provider_amount || 0)
+          if (baseProviderAmount === 0) {
+            const baseServicePrice = parseFloat(booking.service_price || 0)
+            baseProviderAmount = baseServicePrice * (1 - commPct / 100)
+          }
           
           // Total is (Base + Overtime) * workers
-          const finalAmount = (baseProviderAmount + overtimeEarnings) * wCount
+          const finalAmount = (baseProviderAmount + overtimeEarnings) * finalHeadcount
 
           await connection.execute(
             `UPDATE bookings SET 
               status = 'awaiting_approval',
               end_time = ?,
               actual_duration_minutes = ?,
+              submitted_duration_minutes = ?,
+              submitted_headcount = ?,
+              adjustment_reason = ?,
               overtime_minutes = ?,
               overtime_earnings = ?,
               final_provider_amount = ?,
               job_timer_status = 'completed',
               updated_at = NOW()
              WHERE id = ?`,
-            [now, totalMinutes, overtimeMinutes, overtimeEarnings, finalAmount, booking_id]
+            [now, totalMinutes, finalDurationMins, finalHeadcount, adjustment_reason || null, overtimeMinutes, overtimeEarnings, finalAmount, booking_id]
           )
 
           await connection.execute(
@@ -242,6 +246,10 @@ Est. Total: Est ${tEst}
 
             const providerName = provider?.name || 'Your Provider'
             const customerName = booking.customer_first_name || 'Customer'
+            
+            const customerBasePrice = parseFloat(booking.service_price || 0)
+            const customerOvertimeRate = parseFloat(booking.additional_price || 0)
+            const customerFinalAmount = customerBasePrice + (overtimeMinutes > 0 ? (customerOvertimeRate * overtimeMinutes / 60) : 0)
 
             const formatDuration = (mins) => {
               if (!mins) return 'N/A'
@@ -363,6 +371,32 @@ Est. Total: Est ${tEst}
                 </td></tr>
               </table>
 
+              <!-- Invoice Summary -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:24px;">
+                <tr><td style="padding:20px 24px;">
+                  <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Invoice Summary</p>
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:5px 0;font-size:14px;color:#64748b;">Base Price</td>
+                      <td style="padding:5px 0;font-size:14px;font-weight:600;color:#0f172a;text-align:right;">$${customerBasePrice.toFixed(2)}</td>
+                    </tr>
+                    ${overtimeMinutes > 0 ? `
+                    <tr>
+                      <td style="padding:5px 0;font-size:14px;color:#64748b;">Overtime (${formatDuration(overtimeMinutes)} @ $${customerOvertimeRate.toFixed(2)}/hr)</td>
+                      <td style="padding:5px 0;font-size:14px;font-weight:600;color:#0f172a;text-align:right;">+$${(customerOvertimeRate * overtimeMinutes / 60).toFixed(2)}</td>
+                    </tr>
+                    ` : ''}
+                    <tr>
+                      <td colspan="2" style="padding:10px 0;"><hr style="border:none;border-top:1px solid #e2e8f0;" /></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:5px 0;font-size:16px;font-weight:700;color:#0f172a;">Total Amount Due</td>
+                      <td style="padding:5px 0;font-size:18px;font-weight:800;color:#16a34a;text-align:right;">$${customerFinalAmount.toFixed(2)}</td>
+                    </tr>
+                  </table>
+                </td></tr>
+              </table>
+
               <!-- Work Summary -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1px solid #86efac;border-left:4px solid #16a34a;border-radius:8px;margin-bottom:24px;">
                 <tr><td style="padding:18px 20px;">
@@ -435,21 +469,24 @@ Est. Total: Est ${tEst}
 </body>
 </html>`
 
-            await sendEmail({
+            sendEmail({
               to: booking.customer_email,
               subject: `✅ Job Completed - ${booking.service_name} | Booking #${booking.booking_number}`,
               html: emailHtml,
               text: `Hi ${customerName}, your ${booking.service_name} job has been completed by ${providerName}. Work Summary: ${work_summary || 'Job done'}.${recommendations ? ` Recommendations: ${recommendations}` : ''}`
+            }).catch(emailErr => {
+              console.error('Email background send failed:', emailErr)
             })
-          } catch (emailErr) {
-            console.error('Email send failed:', emailErr)
+          } catch (err) {
+            console.error('Failed to prepare job completion email:', err)
           }
 
           return NextResponse.json({
             success: true,
             message: 'Job submitted for customer approval',
             data: {
-              total_minutes: totalMinutes,
+              total_minutes: finalDurationMins,
+              system_minutes: totalMinutes,
               standard_minutes: standardDuration,
               overtime_minutes: overtimeMinutes,
               overtime_rate: overtimeRate,
@@ -516,7 +553,7 @@ export async function GET(request) {
     const bookings = await execute(
       `SELECT 
         b.id, b.status, b.job_timer_status, b.start_time, b.end_time,
-        b.actual_duration_minutes, b.overtime_minutes, b.overtime_earnings,
+        b.worker_count, b.actual_duration_minutes, b.overtime_minutes, b.overtime_earnings,
         b.provider_amount, b.final_provider_amount, b.service_price,
         b.additional_price as overtime_rate,
         s.duration_minutes as standard_duration,

@@ -220,17 +220,7 @@ export default function ProviderJobs() {
                       )}
                     </div>
 
-                    {/* Time Tracking Section - For active jobs */}
-                    {(job.status === 'confirmed' || job.status === 'in_progress') && (
-                      <div className="mb-4">
-                        <TimeTracker 
-                          bookingId={job.id} 
-                          onComplete={handleJobComplete}
-                          standardDuration={duration}
-                          overtimeRate={overtimeRate}
-                        />
-                      </div>
-                    )}
+                    {/* Time Tracking Section - Removed from list view, provider must go to detail page */}
 
                     {/* Completed Job */}
                     {job.status === 'completed' && (
@@ -265,15 +255,15 @@ export default function ProviderJobs() {
                       </div>
                     )}
 
-                    {/* View Details Link */}
-                    <div className="text-right">
+                    {/* View Details Link (Primary Action) */}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
                       <Link 
                         href={`/provider/jobs/${job.id}`}
-                        className="text-sm text-green-600 hover:text-green-700 font-medium inline-flex items-center gap-1"
+                        className="w-full py-3 bg-green-50 border border-green-200 text-green-700 hover:bg-green-600 hover:text-white rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 group"
                       >
-                        View Details
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        {job.status === 'in_progress' ? '▶ Continue Job' : job.status === 'confirmed' ? '▶ Start Job' : 'View Details'}
+                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                         </svg>
                       </Link>
                     </div>

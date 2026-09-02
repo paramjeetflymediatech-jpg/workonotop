@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../utils/api';
 import { moderateScale, verticalScale } from '../../utils/responsive';
@@ -25,24 +25,38 @@ const JobReportScreen = ({ navigation, route }) => {
     }, [bookingId]);
 
     const handleApprove = async () => {
-        Alert.alert('Approve & Pay?', 'This will release the payment to the provider.', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Approve & Pay', onPress: async () => {
-                    setActionLoading('approve');
-                    try {
-                        await api.post(`/api/customer/bookings/${bookingId}/approve`, { action: 'approve' });
-                        Alert.alert('Payment Released!', 'Great! The job is now completed and payment sent.', [
-                            { text: 'OK', onPress: () => navigation.goBack() }
-                        ]);
-                    } catch (err) {
-                        Alert.alert('Error', 'Failed to approve. Please try again.');
-                    } finally {
-                        setActionLoading(null);
+        const standardMins = parseInt(booking?.duration_minutes || booking?.standard_mins || 60);
+        const actualMins = parseInt(booking?.submitted_duration_minutes || booking?.actual_duration_minutes || 0);
+        const isOvertime = actualMins > standardMins;
+
+        Alert.alert(
+            isOvertime ? 'Pay Overtime Balance?' : 'Approve & Pay?',
+            isOvertime ? 'This will redirect you to securely pay the remaining overtime balance.' : 'This will release the payment to the provider.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: isOvertime ? 'Pay Overtime' : 'Approve & Pay', onPress: async () => {
+                        setActionLoading('approve');
+                        try {
+                            const res = await api.post(`/api/customer/bookings/${bookingId}/approve`, { action: 'approve' });
+
+                            if (res?.data?.checkout_url) {
+                                Linking.openURL(res.data.checkout_url);
+                                setTimeout(() => navigation.goBack(), 1500);
+                            } else {
+                                Alert.alert('Payment Released!', 'Great! The job is now completed and payment sent.', [
+                                    { text: 'OK', onPress: () => navigation.goBack() }
+                                ]);
+                            }
+                        } catch (err) {
+                            Alert.alert('Error', 'Failed to approve. Please try again.');
+                        } finally {
+                            setActionLoading(null);
+                        }
                     }
                 }
-            }
-        ]);
+            ]
+        );
     };
 
     const handleDispute = async () => {
@@ -144,7 +158,7 @@ const JobReportScreen = ({ navigation, route }) => {
                             onPress={handleApprove}
                             disabled={!!actionLoading}
                         >
-                            {actionLoading === 'approve' ? <ActivityIndicator color="#fff" /> : <Text style={styles.approveBtnText}>✓ Approve & Release Payment</Text>}
+                            {actionLoading === 'approve' ? <ActivityIndicator color="#fff" /> : <Text style={styles.approveBtnText}>{(parseInt(booking?.submitted_duration_minutes || booking?.actual_duration_minutes || 0) > parseInt(booking?.duration_minutes || booking?.standard_mins || 60)) ? 'Pay Remaining Overtime' : '✓ Approve & Release Payment'}</Text>}
                         </TouchableOpacity>
 
                         <TouchableOpacity

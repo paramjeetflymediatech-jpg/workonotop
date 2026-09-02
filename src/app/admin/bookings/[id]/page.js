@@ -433,6 +433,34 @@ export default function BookingDetailsPage({ params }) {
             </div>
           </Card>
 
+          {/* Time Tracking Audit */}
+          {booking.status !== 'pending' && booking.status !== 'matching' && booking.status !== 'confirmed' && (
+            <Card card={card} icon="⏱️" title="Time Tracking & Headcount Audit" val={val}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className={`p-4 rounded-xl border ${divCls} ${muted}`}>
+                  <h3 className={`text-sm font-semibold mb-3 ${val}`}>System Recorded (Immutable)</h3>
+                  <div className="space-y-2">
+                    <Row label="Worker Count" value={booking.worker_count || 1} lbl={lbl} valCls={val} />
+                    <Row label="Timer Duration" value={booking.actual_duration_minutes ? `${booking.actual_duration_minutes} min` : '—'} lbl={lbl} valCls={val} />
+                  </div>
+                </div>
+                <div className={`p-4 rounded-xl border ${divCls} ${muted}`}>
+                  <h3 className={`text-sm font-semibold mb-3 ${val}`}>Provider Submitted</h3>
+                  <div className="space-y-2">
+                    <Row label="Worker Count" value={booking.submitted_headcount || booking.worker_count || 1} lbl={lbl} valCls={val} />
+                    <Row label="Timer Duration" value={booking.submitted_duration_minutes ? `${booking.submitted_duration_minutes} min` : (booking.actual_duration_minutes ? `${booking.actual_duration_minutes} min` : '—')} lbl={lbl} valCls={val} />
+                  </div>
+                </div>
+              </div>
+              {booking.adjustment_reason && (
+                <div className="mt-4 p-3 rounded-xl border border-amber-200 bg-amber-50">
+                  <p className="text-xs font-semibold text-amber-800 mb-1">Reason for adjustment:</p>
+                  <p className="text-sm text-amber-900">{booking.adjustment_reason}</p>
+                </div>
+              )}
+            </Card>
+          )}
+
           {/* Location */}
           <Card card={card} icon="📍" title="Location & Access" val={val}>
             <div className={`p-3 rounded-xl border ${divCls} bg-teal-50 mb-4`}>
@@ -745,7 +773,7 @@ function PhotoSection({ label, count, color, photos, getPhotoSrc, setLightbox, i
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {photos.map((p, i) => (
             <PhotoThumb key={i} src={getPhotoSrc(p.url || p)} alt={`${label} ${i + 1}`}
-              uploadedAt={p.uploaded_at} onClick={() => setLightbox(getPhotoSrc(p.url || p))} isDarkMode={isDarkMode} />
+              uploadedAt={p.uploaded_at} capturedAt={p.captured_at} onClick={() => setLightbox(getPhotoSrc(p.url || p))} isDarkMode={isDarkMode} />
           ))}
         </div>
       ) : (
@@ -757,7 +785,7 @@ function PhotoSection({ label, count, color, photos, getPhotoSrc, setLightbox, i
   )
 }
 
-function PhotoThumb({ src, alt, onClick, uploadedAt, isDarkMode }) {
+function PhotoThumb({ src, alt, onClick, uploadedAt, capturedAt, isDarkMode }) {
   const [error, setError] = useState(false)
   return (
     <div onClick={onClick}
@@ -769,9 +797,10 @@ function PhotoThumb({ src, alt, onClick, uploadedAt, isDarkMode }) {
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
         <span className="opacity-0 group-hover:opacity-100 text-white text-xl">🔍</span>
       </div>
-      {uploadedAt && (
-        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[9px] px-1.5 py-1 truncate">
-          {new Date(uploadedAt).toLocaleDateString()}
+      {(uploadedAt || capturedAt) && (
+        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[9px] px-1.5 py-1 flex flex-col gap-0.5">
+          {capturedAt && <span className="truncate">Captured: {new Date(capturedAt).toLocaleString()}</span>}
+          {uploadedAt && <span className="truncate">Uploaded: {new Date(uploadedAt).toLocaleString()}</span>}
         </div>
       )}
     </div>

@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 // Separate component that uses useSearchParams
 function ScheduleContent() {
@@ -156,12 +156,22 @@ function ScheduleContent() {
 
   const handleContinue = () => {
     if (selectedDates.length === 0) {
-      toast.error('Please select 1 to 3 dates to continue', { position: 'top-right' });
+      Swal.fire({
+        icon: 'warning',
+        title: 'Selection Required',
+        text: 'Please select 1 to 3 dates to continue',
+        confirmButtonColor: '#16a34a'
+      });
       return;
     }
 
     if (selectedDates.some(d => !selectedTimes[d] || selectedTimes[d].length === 0)) {
-      toast.error('Please select at least one time slot for each date', { position: 'top-right' });
+      Swal.fire({
+        icon: 'warning',
+        title: 'Time Slot Required',
+        text: 'Please select at least one time slot for each date',
+        confirmButtonColor: '#16a34a'
+      });
       return;
     }
 
@@ -325,18 +335,24 @@ function ScheduleContent() {
 
                   {/* Calendar Grid */}
                   <div className="grid grid-cols-7 gap-1 md:gap-2">
-                    {calendarDays.map((day, index) => (
+                    {calendarDays.map((day, index) => {
+                      const dateStr = day.day ? `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day.day).padStart(2, '0')}` : null;
+                      const isSelected = dateStr && selectedDates.includes(dateStr);
+                      const isMaxReached = selectedDates.length >= 3 && !isSelected;
+                      const isClickable = day.available && !isMaxReached;
+
+                      return (
                       <div key={index} className="aspect-square">
                         {day.day ? (
                           <button
-                            onClick={() => day.available && handleDateClick(day.day)}
-                            disabled={!day.available}
+                            onClick={() => isClickable && handleDateClick(day.day)}
+                            disabled={!isClickable}
                             className={`
                               w-full h-full rounded-xl flex items-center justify-center text-sm md:text-base font-medium
                               transition-all duration-200
-                              ${selectedDates.includes(`${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`)
+                              ${isSelected
                                 ? 'bg-gradient-to-br from-green-700 to-green-600 text-white shadow-md scale-105'
-                                : day.available
+                                : isClickable
                                   ? 'hover:bg-gray-100 text-gray-800 border border-gray-200 hover:border-green-400'
                                   : 'text-gray-300 bg-gray-50 cursor-not-allowed border border-gray-100'
                               }
@@ -348,7 +364,7 @@ function ScheduleContent() {
                           <div className="w-full h-full"></div>
                         )}
                       </div>
-                    ))}
+                    )})}
                   </div>
 
                   {/* Time Slots (Per Date) */}

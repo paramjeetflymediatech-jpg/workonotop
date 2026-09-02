@@ -88,10 +88,7 @@ export default function BookingSuccessPage({ params }) {
   // ── Price calculations ───────────────────────────────────────────────────────
   const basePrice   = parseFloat(booking.service_price   || 0);
   const hourlyRate  = parseFloat(booking.additional_price || 0);
-  // Max 2 hours hold (matches payment page logic: base + 2×hourly)
-  const overtimeHoldHours  = 2;
-  const overtimeHoldAmount = hourlyRate * overtimeHoldHours;
-  const totalAuthorized    = basePrice + overtimeHoldAmount;
+  const totalPaid   = basePrice;
 
   return (
     <div className="min-h-screen bg-[#f5f4f0] font-sans antialiased">
@@ -187,44 +184,13 @@ export default function BookingSuccessPage({ params }) {
                   <span className="text-sm font-bold text-gray-900">${basePrice.toFixed(2)}</span>
                 </div>
 
-                {/* Overtime hold row */}
-                {hourlyRate > 0 && (
-                  <div className="flex justify-between items-center py-2.5 border-b border-gray-200">
-                    <div className="flex-1 pr-4">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <svg className="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                        </svg>
-                        <p className="text-sm font-medium text-gray-700">Overtime Hold</p>
-                      </div>
-                      <p className="text-xs text-gray-400">
-                        ${hourlyRate.toFixed(2)}/hr × {overtimeHoldHours} hrs (max hold)
-                      </p>
-                    </div>
-                    <span className="text-sm font-bold text-amber-600">+${overtimeHoldAmount.toFixed(2)}</span>
-                  </div>
-                )}
-
-                {/* Authorized total */}
+                {/* Paid total */}
                 <div className="flex justify-between items-center pt-3 pb-1">
                   <div>
-                    <p className="text-sm font-semibold text-gray-800">Total Authorized</p>
-                    <p className="text-xs text-gray-400">Card hold — not charged yet</p>
+                    <p className="text-sm font-semibold text-gray-800">Total Paid</p>
+                    <p className="text-xs text-gray-400">Card charged successfully</p>
                   </div>
-                  <span className="text-xl font-extrabold text-green-700">${totalAuthorized.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* Important notice */}
-              <div className="bg-amber-50 border-t border-amber-100 px-4 py-3 flex gap-3 items-start">
-                <div className="text-lg leading-none mt-0.5">💳</div>
-                <div>
-                  <p className="text-xs font-semibold text-amber-800">No money charged yet!</p>
-                  <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
-                    Your card is authorized for <span className="font-bold">${totalAuthorized.toFixed(2)}</span>. 
-                    You only pay <span className="font-bold">${basePrice.toFixed(2)}</span> (base) + actual overtime used.
-                    Final charge happens after job completion.
-                  </p>
+                  <span className="text-xl font-extrabold text-green-700">${totalPaid.toFixed(2)}</span>
                 </div>
               </div>
             </div>

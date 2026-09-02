@@ -73,7 +73,7 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, amount, hasO
                 <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-xs font-semibold text-amber-800">⚠️ Overtime Available</p>
-                  <p className="text-xs text-amber-700 mt-0.5">Maximum 2 hours overtime allowed per job. You&apos;ll be paid at overtime rate for any extra time.</p>
+                  <p className="text-xs text-amber-700 mt-0.5">Overtime is dynamically tracked. You&apos;ll be paid at your overtime rate for any extra time worked.</p>
                 </div>
               </div>
             </div>
@@ -547,9 +547,9 @@ export default function ProviderAvailableJobs() {
 
                 {hasOvertime && (
                   <div className="mx-5 mb-3 bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-100 rounded-xl p-3">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                      <p className="text-xs font-semibold text-amber-700">Max 2 hours overtime allowed</p>
+                    <div className="flex items-center gap-1.5 mt-2 bg-amber-50 px-2 py-1 rounded-lg w-fit">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      <p className="text-xs font-semibold text-amber-700">Overtime Available</p>
                     </div>
                     <p className="text-xs font-semibold text-gray-700 mb-1.5">Overtime earnings potential:</p>
                     <div className="flex gap-2">
@@ -614,7 +614,7 @@ export default function ProviderAvailableJobs() {
                     }`}>
                     {!stripeConnected ? '🔒 Connect Stripe' : `Accept — ${job.display_amount}`}
                     {stripeConnected && hasOvertime && !job.is_admin_assigned && (
-                      <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">max 2hr</span>
+                      <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">unlimited</span>
                     )}
                   </button> */}
 
@@ -650,7 +650,7 @@ export default function ProviderAvailableJobs() {
       bg-white/20 px-1.5 sm:px-2 py-0.5 
       rounded-full whitespace-nowrap"
                       >
-                        max 2hr
+                        unlimited
                       </span>
                     )}
                   </button>

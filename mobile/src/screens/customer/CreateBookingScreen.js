@@ -828,11 +828,11 @@ const CreateBookingScreen = ({ navigation, route }) => {
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text style={{ fontWeight: '700', fontSize: 16, color: '#0f172a' }}>Total Amount</Text>
                         <Text style={{ fontWeight: '800', fontSize: 20, color: PRIMARY }}>
-                            ${(parseFloat(service.base_price || service.price || 0) + (parseFloat(service.additional_price || 0) * 2)).toFixed(2)}
+                            ${parseFloat(service.base_price || service.price || 0).toFixed(2)}
                         </Text>
                     </View>
                     <Text style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
-                        Includes base price + 2hr overtime authorization hold.
+                        Your booking is confirmed only after successful payment authorization.
                     </Text>
                 </View>
 

@@ -7,8 +7,7 @@ import Link from 'next/link'
 import Header from '@/components/Header'
 import {
   Calendar, MapPin, User, ArrowLeft, CreditCard,
-  AlertCircle, Clock, CheckCircle, Image as ImageIcon, Star, X,
-  PartyPopper, AlertTriangle, Check
+  AlertCircle, Clock, CheckCircle, Image as ImageIcon, Star, X
 } from 'lucide-react'
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -140,7 +139,7 @@ function ReviewModal({ isOpen, onClose, booking, customerId, onSubmit }) {
 function calcFinalAmount(basePrice, standardMins, actualMins, overtimeRate = 0) {
   if (actualMins <= 0) return basePrice
   if (actualMins > standardMins && overtimeRate > 0) {
-    const overtimeMins = actualMins - standardMins
+    const overtimeMins = Math.min(actualMins - standardMins, 120)
     return Math.round((basePrice + (overtimeRate * overtimeMins / 60)) * 100) / 100
   }
   return basePrice
@@ -166,8 +165,6 @@ export default function CustomerBookingDetails() {
   const [hasReviewed, setHasReviewed] = useState(false)
   const [disputeReason, setDisputeReason] = useState('')
   const [toast, setToast] = useState({ message: '', type: '' })
-
-  const isPaymentProcessing = (searchParams.get('payment') === 'success' || searchParams.get('overtime_payment') === 'success') && booking?.status === 'awaiting_approval'
 
   useEffect(() => {
     if (authLoading) return // Wait for authentication check to finish
@@ -229,17 +226,8 @@ export default function CustomerBookingDetails() {
         body: JSON.stringify({ action: 'approve' })
       })
       const data = await res.json()
-      if (data.success) { 
-        const url = data.checkout_url || data.data?.checkout_url
-        if (url) {
-          window.location.href = url
-        } else {
-          notify(data.message)
-          setTimeout(() => router.push('/my-bookings'), 2000) 
-        }
-      } else { 
-        notify(data.message || 'Action failed', 'error') 
-      }
+      if (data.success) { notify(data.message); setTimeout(() => router.push('/my-bookings'), 2000) }
+      else notify(data.message || 'Failed', 'error')
     } catch { notify('Something went wrong', 'error') }
     finally { setActionLoading(false); setShowConfirmModal(false) }
   }
@@ -286,17 +274,16 @@ export default function CustomerBookingDetails() {
   if (error || !booking) return (<><Header /><div className="min-h-screen bg-gray-50 py-8"><div className="max-w-7xl mx-auto px-4 lg:px-8"><div className="bg-white rounded-2xl p-8 text-center border"><AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" /><h2 className="text-2xl font-bold mb-2">Booking Not Found</h2><p className="text-gray-500 mb-6">{error}</p><Link href="/my-bookings" className="inline-flex items-center gap-2 bg-teal-600 text-white px-6 py-3 rounded-xl"><ArrowLeft className="w-4 h-4" /> Back</Link></div></div></div></>)
 
   // ── Calculations ─────────────────────────────────────────────────────────────
-  const wCount = parseInt(booking.submitted_headcount || booking.worker_count || 1)
-  const basePrice = parseFloat(booking.service_price || 0) * wCount
-  const overtimeRate = parseFloat(booking.additional_price || 0) * wCount
-  const actualMinutes = parseInt(booking.submitted_duration_minutes || booking.actual_duration_minutes || 0)
-  const standardMinutes = parseInt(booking.standard_duration_minutes || booking.duration_minutes || 60)
+  const basePrice = parseFloat(booking.service_price || 0)
+  const overtimeRate = parseFloat(booking.additional_price || 0)
+  const actualMinutes = parseInt(booking.actual_duration_minutes || 0)
+  const standardMinutes = parseInt(booking.standard_duration_minutes || 60)
   const customerTotal = calcFinalAmount(basePrice, standardMinutes, actualMinutes, overtimeRate)
   const isOvertime = actualMinutes > standardMinutes && overtimeRate > 0
-  const overtimeMins = isOvertime ? actualMinutes - standardMinutes : 0
+  const overtimeMins = isOvertime ? Math.min(actualMinutes - standardMinutes, 120) : 0
   const overtimeCost = isOvertime ? Math.round((overtimeRate * overtimeMins / 60) * 100) / 100 : 0
-  const originalBasePrice = parseFloat(booking.service_price || 0) // What they actually paid upfront
-  const totalAuthorized = parseFloat(booking.authorized_amount || originalBasePrice)
+  const overtimeHoldAmount = overtimeRate * 2
+  const totalAuthorized = parseFloat(booking.authorized_amount || (basePrice + overtimeHoldAmount))
   const allPhotos = [...(booking.before_photos || []), ...(booking.after_photos || []), ...(booking.photos || []).map(url => ({ url }))]
 
   return (
@@ -306,14 +293,7 @@ export default function CustomerBookingDetails() {
       <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
 
       <div className="min-h-screen bg-gray-50 py-6 md:py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          
-          {isPaymentProcessing && (
-            <div className="mb-6 bg-teal-50 border border-teal-200 text-teal-800 px-6 py-4 rounded-2xl flex items-center gap-3 animate-pulse">
-              <div className="w-5 h-5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-              <p className="font-medium text-sm">Payment successful! Processing your transaction... (This may take a moment)</p>
-            </div>
-          )}
+        <div className="max-w-3xl mx-auto px-4">
 
           {/* Top nav */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -329,9 +309,6 @@ export default function CustomerBookingDetails() {
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">{booking.service_name}</h1>
             <p className="text-sm text-gray-500">Booking #{booking.booking_number}</p>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-            <div className="lg:col-span-7 xl:col-span-8 space-y-6">
 
           {/* Rating section */}
           {booking.status === 'completed' && (
@@ -354,11 +331,9 @@ export default function CustomerBookingDetails() {
 
           {/* Awaiting approval banner */}
           {booking.status === 'awaiting_approval' && (
-            <div className="bg-white rounded-2xl border-2 border-teal-500 shadow-lg p-6 mb-6">
+            <div className="bg-white rounded-2xl border-2 border-amber-300 shadow-lg p-6 mb-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center">
-                  <PartyPopper className="w-6 h-6 text-teal-600" />
-                </div>
+                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-2xl">🎉</div>
                 <div><h2 className="text-lg font-bold">Job Completed!</h2><p className="text-sm text-gray-500">Review the work and approve payment or raise a dispute.</p></div>
               </div>
               {booking.end_time && (
@@ -367,59 +342,35 @@ export default function CustomerBookingDetails() {
                   <div className="flex justify-between"><span className="text-gray-500">Completed:</span><span className="font-medium">{formatDate(booking.end_time)}</span></div>
                   <div className="flex justify-between pt-2 border-t">
                     <span className="text-gray-500">Duration:</span>
-                    <span className="font-bold text-gray-900">
+                    <span className={`font-bold ${isOvertime ? 'text-purple-600' : 'text-green-700'}`}>
                       {formatDuration(actualMinutes)}<span className="text-xs text-gray-400 ml-2">(standard: {formatDuration(standardMinutes)})</span>
                     </span>
                   </div>
                 </div>
               )}
-              <div className="rounded-xl p-4 mb-5 bg-gray-50 border border-gray-200">
+              <div className={`rounded-xl p-4 mb-5 border ${isOvertime ? 'bg-purple-50 border-purple-200' : 'bg-green-50 border-green-200'}`}>
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-medium text-gray-700">{isOvertime ? 'Job Total (Base + Overtime):' : 'Final amount:'}</span>
-                  <span className="text-xl font-bold text-gray-900">{fmt(customerTotal)}</span>
+                  <span className="text-sm font-medium text-gray-700">{isOvertime ? 'Final amount (with overtime):' : 'Final amount:'}</span>
+                  <span className={`text-xl font-bold ${isOvertime ? 'text-purple-700' : 'text-green-700'}`}>{fmt(customerTotal)}</span>
                 </div>
                 <div className="text-xs border-t pt-2 space-y-1">
                   <div className="flex justify-between text-gray-600"><span>Base price ({standardMinutes}min):</span><span>{fmt(basePrice)}</span></div>
-                  {isOvertime && (
-                    <>
-                      <div className="flex justify-between text-gray-600"><span>Overtime ({overtimeMins}min at {fmt(overtimeRate)}/hr):</span><span>+{fmt(overtimeCost)}</span></div>
-                      <div className="flex justify-between font-bold pt-1 border-t text-green-700"><span>Already Paid (Base Price):</span><span>-{fmt(originalBasePrice)}</span></div>
-                      <div className="flex justify-between font-bold pt-1 border-t text-purple-700"><span>Remaining Balance (You Pay Now):</span><span>{fmt(customerTotal - originalBasePrice)}</span></div>
-                    </>
-                  )}
-                  {!isOvertime && (
-                    <div className="flex justify-between font-bold pt-1 border-t"><span>You pay:</span><span className="text-gray-900">{fmt(customerTotal)}</span></div>
-                  )}
+                  {isOvertime && <div className="flex justify-between text-purple-600"><span>Overtime ({overtimeMins}min at {fmt(overtimeRate)}/hr):</span><span>+{fmt(overtimeCost)}</span></div>}
+                  <div className="flex justify-between font-bold pt-1 border-t"><span>You pay:</span><span className={isOvertime ? 'text-purple-700' : 'text-green-700'}>{fmt(customerTotal)}</span></div>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button 
-                  onClick={() => setShowConfirmModal(true)} 
-                  disabled={actionLoading || isPaymentProcessing} 
-                  className="w-full sm:flex-[2] flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-4 rounded-xl font-bold disabled:opacity-50"
-                >
-                  {actionLoading || isPaymentProcessing ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Processing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-5 h-5 flex-shrink-0" />
-                      <span className="truncate">{isOvertime ? 'Pay Remaining Overtime' : 'Approve & Release Payment'}</span>
-                    </>
-                  )}
+              <div className="flex gap-3">
+                <button onClick={() => setShowConfirmModal(true)} disabled={actionLoading} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold disabled:opacity-50">
+                  {actionLoading ? 'Processing...' : `✅ Approve & Pay ${fmt(customerTotal)}`}
                 </button>
-                <button onClick={() => setShowDisputeModal(true)} disabled={actionLoading} className="w-full sm:flex-1 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-200 py-4 rounded-xl font-bold disabled:opacity-50">
-                  <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                  <span>Dispute</span>
-                </button>
+                <button onClick={() => setShowDisputeModal(true)} disabled={actionLoading} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border-2 border-red-200 py-4 rounded-xl font-bold disabled:opacity-50">⚠️ Dispute</button>
               </div>
               <p className="text-xs text-center text-gray-400 mt-3">Auto-approval in 12 hours if no action taken</p>
             </div>
           )}
 
           {/* Details Section */}
+          <div className="space-y-6">
 
             {/* 1. Planned Schedule */}
             <div className="bg-white rounded-2xl p-6 border shadow-sm">
@@ -546,96 +497,6 @@ export default function CustomerBookingDetails() {
               </div>
             )}
 
-            </div>
-            
-            {/* Right Sidebar Column */}
-            <div className="lg:col-span-5 xl:col-span-4">
-              <div className="sticky top-6 space-y-6">
-            {/* 3. Provider Details (if assigned) */}
-            {booking.provider_name && (
-              <div className="bg-white rounded-2xl p-6 border shadow-sm">
-                <h2 className="text-base font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5 text-teal-600" /> Your Professional</h2>
-                <div className="flex items-center gap-5">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-teal-200/50 overflow-hidden">
-                      {booking.provider_avatar ? (
-                        <img src={booking.provider_avatar} alt={booking.provider_name} className="w-full h-full object-cover" />
-                      ) : booking.provider_name[0]?.toUpperCase()}
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white shadow-sm" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl text-gray-900">{booking.provider_name}</h3>
-                    {booking.provider_rating > 0 ? (
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <div className="flex bg-yellow-50 px-2 py-0.5 rounded-lg border border-yellow-100">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1.5" />
-                          <span className="text-sm font-bold text-yellow-700">{parseFloat(booking.provider_rating).toFixed(1)}</span>
-                        </div>
-                        <span className="text-sm text-gray-500 font-medium">({booking.provider_reviews || 0} reviews)</span>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500 mt-1">New Professional</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 5. Payment Breakdown */}
-            <div className="bg-white rounded-2xl p-6 border shadow-sm">
-              <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-teal-600" /> Payment Summary
-              </h2>
-
-              <div className="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="bg-white/50 backdrop-blur-sm px-5 py-3.5 flex items-center justify-between border-b border-gray-200">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Billing Details</span>
-                  <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${
-                    booking.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
-                    booking.payment_status === 'authorized' ? 'bg-blue-100 text-blue-700' :
-                    'bg-yellow-100 text-yellow-700'}`}>
-                    {(booking.payment_status || 'PENDING').toUpperCase()}
-                  </span>
-                </div>
-
-                <div className="p-5 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-bold text-gray-800">Base Service {wCount > 1 ? `(x${wCount} workers)` : ''}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Fixed rate for first {standardMinutes} minutes</p>
-                    </div>
-                    <span className="text-base font-bold text-gray-900">{fmt(basePrice)}</span>
-                  </div>
-
-                  {isOvertime && (
-                    <div className="flex justify-between items-start bg-gray-50 -mx-5 px-5 py-4 border-y border-gray-100">
-                      <div className="flex-1 pr-4">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <Clock className="w-4 h-4 text-gray-600" />
-                          <p className="text-sm font-bold text-gray-800">Actual Overtime {wCount > 1 ? `(x${wCount} workers)` : ''}</p>
-                        </div>
-                        <p className="text-xs text-gray-600 mt-0.5">{overtimeMins} mins extra at {fmt(overtimeRate)}/hr</p>
-                      </div>
-                      <span className="text-base font-bold text-gray-900">+{fmt(overtimeCost)}</span>
-                    </div>
-                  )}
-
-                  <div className="pt-2">
-                    <div className="flex justify-between items-center gap-3 bg-teal-600 p-5 rounded-2xl shadow-lg shadow-teal-100">
-                      <div className="min-w-0">
-                        <p className="text-teal-100 text-xs font-bold uppercase tracking-wider truncate">Final Amount</p>
-                        <p className="text-white text-[10px] mt-0.5 font-medium opacity-80 leading-tight">
-                          {booking.status === 'completed' ? 'Paid in full' : 'Base amount charged'}
-                        </p>
-                      </div>
-                      <span className="text-2xl sm:text-3xl font-black text-white shrink-0">{fmt(customerTotal)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* 7. Timeline */}
             {booking.status_history?.length > 0 && (
               <div className="bg-white rounded-2xl p-6 border shadow-sm">
@@ -665,8 +526,6 @@ export default function CustomerBookingDetails() {
                 </div>
               </div>
             )}
-              </div>
-            </div>
           </div>
 
         </div>
@@ -677,17 +536,17 @@ export default function CustomerBookingDetails() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm p-6">
             <h3 className="text-lg font-bold mb-4">Confirm Payment</h3>
-            <div className="rounded-xl p-4 mb-4 bg-gray-50 border border-gray-200">
-              <div className="flex justify-between text-sm mb-2"><span>Job Total:</span><span className="font-medium">{fmt(customerTotal)}</span></div>
-              <div className="flex justify-between text-sm mb-2 text-green-700"><span>Already Paid (Base):</span><span>-{fmt(originalBasePrice)}</span></div>
+            <div className={`rounded-xl p-4 mb-4 border ${isOvertime ? 'bg-purple-50 border-purple-200' : 'bg-green-50 border-green-200'}`}>
+              <div className="flex justify-between text-sm mb-2"><span>Base price:</span><span className="font-medium">{fmt(basePrice)}</span></div>
+              {isOvertime && <div className="flex justify-between text-sm mb-2 text-purple-600"><span>Overtime ({overtimeMins}min):</span><span>+{fmt(overtimeCost)}</span></div>}
               <div className="border-t pt-2 mt-2 flex justify-between">
-                <span className="font-bold text-teal-700">Balance to Pay Now:</span>
-                <span className="font-bold text-teal-700">{fmt(customerTotal - originalBasePrice)}</span>
+                <span className="font-bold">Total:</span>
+                <span className={`text-xl font-bold ${isOvertime ? 'text-purple-700' : 'text-green-700'}`}>{fmt(customerTotal)}</span>
               </div>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowConfirmModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium">Cancel</button>
-              <button onClick={handleApprove} disabled={actionLoading} className="flex-1 py-2.5 bg-teal-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">
+              <button onClick={handleApprove} disabled={actionLoading} className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">
                 {actionLoading ? 'Processing...' : 'Confirm'}
               </button>
             </div>

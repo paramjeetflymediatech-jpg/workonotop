@@ -64,9 +64,6 @@ export async function POST(request) {
       case 'transfer.failed':
         await handleTransferFailed(event.data.object);
         break;
-      case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object);
-        break;
         
       case 'payment_intent.succeeded':
         console.log('✅ Payment intent succeeded:', event.data.object.id);
@@ -285,100 +282,6 @@ async function handleAccountUpdated(account) {
     console.error('❌ handleAccountUpdated error:', error);
   } finally {
     connection.release();
-  }
-}
-
-async function handleCheckoutCompleted(session) {
-  if (session.metadata?.type === 'overtime_payment') {
-    const bookingId = session.metadata.booking_id;
-    const providerAmount = parseFloat(session.metadata.provider_amount);
-    const providerCents = parseInt(session.metadata.provider_cents);
-    
-    console.log(`✅ Overtime payment received for booking ${bookingId}`);
-
-    const connection = await getConnection();
-    try {
-      await connection.beginTransaction();
-
-      // Get booking to check provider
-      const [bookings] = await connection.execute('SELECT * FROM bookings WHERE id = ?', [bookingId]);
-      if (!bookings.length) {
-        throw new Error('Booking not found');
-      }
-      const booking = bookings[0];
-
-      // Update booking to completed
-      await connection.execute(
-        `UPDATE bookings 
-         SET status = 'completed',
-             payment_status = 'paid',
-             final_provider_amount = ?,
-             updated_at = NOW()
-         WHERE id = ?`,
-        [providerAmount, bookingId]
-      );
-
-      // Update invoice
-      await connection.execute(
-        `UPDATE invoices SET status = 'paid' WHERE booking_id = ?`,
-        [bookingId]
-      );
-
-      await connection.execute(
-        `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'completed', ?)`,
-        [bookingId, `✅ Overtime paid. Booking complete.`]
-      );
-
-      // Trigger transfer to provider
-      let transferId = null;
-      const hasStripe = booking.stripe_account_id && booking.stripe_onboarding_complete === 1;
-
-      if (hasStripe && providerCents > 0) {
-        try {
-          const transfer = await stripe.transfers.create({
-            amount: providerCents,
-            currency: process.env.STRIPE_CURRENCY || 'cad',
-            destination: booking.stripe_account_id,
-            metadata: {
-              booking_id: String(bookingId),
-              booking_number: booking.booking_number,
-              provider_id: String(booking.provider_id)
-            },
-            description: `Payment for booking #${booking.booking_number}`
-          });
-          transferId = transfer.id;
-          console.log(`✅ Transfer ${transfer.id} → ${booking.provider_name}`);
-        } catch (transferErr) {
-          console.error('Transfer failed (non-fatal):', transferErr.message);
-          await connection.execute(
-            `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'payment_pending', ?)`,
-            [bookingId, `⚠️ Manual payout needed: $${providerAmount.toFixed(2)} → ${booking.provider_name}`]
-          );
-        }
-      } else {
-        await connection.execute(
-          `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'payment_pending', ?)`,
-          [bookingId, `💰 Pay ${booking.provider_name} $${providerAmount.toFixed(2)} manually`]
-        );
-      }
-
-      // Record payout
-      if (booking.provider_id && providerAmount > 0) {
-        await connection.execute(
-          `INSERT INTO provider_payouts 
-           (provider_id, amount, status, stripe_transfer_id, booking_id, notes, created_at)
-           VALUES (?, ?, 'pending', ?, ?, ?, NOW())`,
-          [booking.provider_id, providerAmount, transferId, bookingId, `Final payout for booking #${booking.booking_number}`]
-        );
-      }
-
-      await connection.commit();
-    } catch (err) {
-      await connection.rollback();
-      throw err;
-    } finally {
-      connection.release();
-    }
   }
 }
 

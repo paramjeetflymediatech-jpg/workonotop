@@ -19,8 +19,8 @@ export async function POST(request) {
 
     const basePrice = parseFloat(service_price);
     const hourlyRate = parseFloat(additional_price || 0);
-    const maxOvertimeCost = hourlyRate * 2; // max 2 hours
-    const totalAmount = basePrice + maxOvertimeCost;
+    const maxOvertimeCost = 0; // Removed the 2hr hold as per new split payment logic
+    const totalAmount = basePrice;
     const amountInCents = Math.round(totalAmount * 100);
 
     // Get service duration from DB (metadata ke liye)
@@ -30,11 +30,10 @@ export async function POST(request) {
       standardDuration = serviceInfo?.[0]?.duration_minutes || 60;
     }
 
-    // ✅ capture_method: 'manual' — sirf hold karo, charge nahi
+    // ✅ capture_method: automatic — charge immediately
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: process.env.STRIPE_CURRENCY || 'cad', 
-      capture_method: 'manual',
       description: `Authorization for: ${service_name || 'Service Booking'}`,
       automatic_payment_methods: { 
         enabled: true,

@@ -28,6 +28,10 @@ const TimeTracker = ({
     const [workSummary, setWorkSummary] = useState('');
     const [recommendations, setRecommendations] = useState('');
     const [jobData, setJobData] = useState(null);
+    
+    const [submittedHours, setSubmittedHours] = useState('');
+    const [submittedHeadcount, setSubmittedHeadcount] = useState(1);
+    const [adjustmentReason, setAdjustmentReason] = useState('');
 
     const loadTimerStatus = useCallback(async () => {
         try {
@@ -77,16 +81,14 @@ const TimeTracker = ({
     };
 
     const handleAction = async (action) => {
-        if (action === 'start' && !hasBeforePhotos) {
-            Alert.alert('Required', 'Please upload before-work photos before starting the job.');
-            return;
-        }
 
         if (action === 'stop') {
             if (!hasAfterPhotos) {
                 Alert.alert('Required', 'Please upload after-work photos before completing the job.');
                 return;
             }
+            setSubmittedHours((elapsedTime / 3600).toFixed(2));
+            setSubmittedHeadcount(jobData?.worker_count || (workerCount === '5+' ? 5 : workerCount));
             setShowCompleteModal(true);
             return;
         }
@@ -130,7 +132,7 @@ const TimeTracker = ({
             const res = await api.post('/api/provider/jobs/time-tracking', {
                 booking_id: bookingId,
                 action: 'start',
-                worker_count: workerCount,
+                worker_count: workerCount === '5+' ? 5 : workerCount,
                 estimated_hours: parseFloat(estimatedHours) || 1
             });
 
@@ -154,13 +156,25 @@ const TimeTracker = ({
             return;
         }
 
+        const originalHours = (elapsedTime / 3600).toFixed(2);
+        const originalHeadcount = jobData?.worker_count || (workerCount === '5+' ? 5 : workerCount);
+        const isEdited = parseFloat(submittedHours) !== parseFloat(originalHours) || parseInt(submittedHeadcount) !== parseInt(originalHeadcount);
+        
+        if (isEdited && !adjustmentReason.trim()) {
+            Alert.alert('Required', 'Reason for adjustment is required since you changed hours or headcount.');
+            return;
+        }
+
         setLoading(true);
         try {
             const res = await api.post('/api/provider/jobs/time-tracking', {
                 booking_id: bookingId,
                 action: 'stop',
                 work_summary: workSummary.trim(),
-                recommendations: recommendations.trim()
+                recommendations: recommendations.trim(),
+                submitted_duration_minutes: Math.round(parseFloat(submittedHours) * 60),
+                submitted_headcount: parseInt(submittedHeadcount),
+                adjustment_reason: isEdited ? adjustmentReason.trim() : null
             });
 
             if (res.success) {
@@ -230,11 +244,16 @@ const TimeTracker = ({
             </View>
 
             <View style={styles.actions}>
+                {timerStatus === 'not_started' && !hasBeforePhotos && (
+                    <View style={{ backgroundColor: '#fffbeb', borderColor: '#fcd34d', borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 15 }}>
+                        <Text style={{ color: '#d97706', textAlign: 'center', fontSize: 12, fontWeight: '600' }}>⚠️ Before photos not uploaded</Text>
+                    </View>
+                )}
                 {timerStatus === 'not_started' && (
                     <TouchableOpacity
-                        style={[styles.btn, styles.startBtn, !hasBeforePhotos && styles.disabledBtn]}
+                        style={[styles.btn, styles.startBtn]}
                         onPress={() => handleAction('start')}
-                        disabled={loading || !hasBeforePhotos}
+                        disabled={loading}
                     >
                         {loading ? <ActivityIndicator color="#fff" /> : <><Ionicons name="play" size={20} color="#fff" /><Text style={styles.btnText}>Start Job</Text></>}
                     </TouchableOpacity>
@@ -276,7 +295,7 @@ const TimeTracker = ({
                             
                             <Text style={styles.modalLabel}>How many people are on site?</Text>
                             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-                                {[1, 2, 3, 4].map(num => (
+                                {[1, 2, 3, 4, '5+'].map(num => (
                                     <TouchableOpacity 
                                         key={num} 
                                         style={[{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#e2e8f0', alignItems: 'center' }, workerCount === num && { backgroundColor: '#10b981' }]}
@@ -323,6 +342,43 @@ const TimeTracker = ({
                     <View style={styles.modalContent}>
                         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                             <Text style={styles.modalTitle}>Complete Job</Text>
+                            
+                            <View style={{ backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: '#e2e8f0' }}>
+                                <Text style={[styles.modalLabel, { marginTop: 0 }]}>Hours worked</Text>
+                                <TextInput
+                                    style={[styles.textArea, { height: 45, paddingVertical: 10, marginBottom: 10 }]}
+                                    keyboardType="numeric"
+                                    value={String(submittedHours)}
+                                    onChangeText={setSubmittedHours}
+                                />
+                                
+                                <Text style={styles.modalLabel}>People on job</Text>
+                                <TextInput
+                                    style={[styles.textArea, { height: 45, paddingVertical: 10, marginBottom: 10 }]}
+                                    keyboardType="numeric"
+                                    value={String(submittedHeadcount)}
+                                    onChangeText={setSubmittedHeadcount}
+                                />
+                                
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderColor: '#e2e8f0' }}>
+                                    <Text style={{ fontWeight: '600', color: '#475569' }}>Total billable:</Text>
+                                    <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#10b981' }}>{((parseFloat(submittedHours) || 0) * (parseInt(submittedHeadcount) || 1)).toFixed(2)} hrs</Text>
+                                </View>
+                            </View>
+
+                            {(parseFloat(submittedHours) !== parseFloat((elapsedTime / 3600).toFixed(2)) || parseInt(submittedHeadcount) !== parseInt(jobData?.worker_count || (workerCount === '5+' ? 5 : workerCount))) && (
+                                <View style={{ marginBottom: 15 }}>
+                                    <Text style={styles.modalLabel}>Why the change? <Text style={{ color: '#ef4444' }}>*</Text></Text>
+                                    <TextInput
+                                        style={[styles.textArea, { height: 80, borderColor: '#fca5a5' }]}
+                                        multiline
+                                        placeholder="Required since you changed the hours or headcount..."
+                                        value={adjustmentReason}
+                                        onChangeText={setAdjustmentReason}
+                                    />
+                                </View>
+                            )}
+
                             <Text style={styles.modalLabel}>Work Summary *</Text>
                             <TextInput
                                 style={styles.textArea}

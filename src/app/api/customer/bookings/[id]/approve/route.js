@@ -12,7 +12,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', { api
 function calcFinalAmount(basePrice, standardMins, actualMins, overtimeRate = 0) {
   if (actualMins <= 0) return basePrice
   if (actualMins > standardMins && overtimeRate > 0) {
-    const overtimeMins = Math.min(actualMins - standardMins, 120)
+    const overtimeMins = actualMins - standardMins
     return basePrice + (overtimeRate * overtimeMins / 60)
   }
   return basePrice
@@ -20,12 +20,12 @@ function calcFinalAmount(basePrice, standardMins, actualMins, overtimeRate = 0) 
 
 // ── Receipt email ─────────────────────────────────────────────────────────────
 function receiptHtml({ bookingNumber, serviceName, customerName, providerName, amount, isCustomer, jobDate }) {
-  const label  = isCustomer ? 'Total Paid' : 'Your Earnings'
-  const color  = isCustomer ? '#16a34a' : '#2563eb'
+  const label = isCustomer ? 'Total Paid' : 'Your Earnings'
+  const color = isCustomer ? '#16a34a' : '#2563eb'
   const banner = isCustomer ? 'linear-gradient(135deg,#0f766e,#0891b2)' : 'linear-gradient(135deg,#7e22ce,#9333ea)'
-  const icon   = isCustomer ? '🧾' : '💰'
-  const title  = isCustomer ? 'Payment Receipt' : 'Payment Received'
-  const intro  = isCustomer
+  const icon = isCustomer ? '🧾' : '💰'
+  const title = isCustomer ? 'Payment Receipt' : 'Payment Received'
+  const intro = isCustomer
     ? `Thank you for your payment. Your booking with <strong>${providerName}</strong> has been completed.`
     : `Payment processed for <strong>${serviceName}</strong> provided to ${customerName}.`
 
@@ -151,7 +151,7 @@ function disputeProviderHtml({ bookingNumber, serviceName, customerName, provide
 // ── POST handler ──────────────────────────────────────────────────────────────
 export async function POST(request, { params }) {
   let token = request.cookies.get('customer_token')?.value || request.cookies.get('user_token')?.value
-  
+
   // Support Bearer token for mobile
   if (!token) {
     const authHeader = request.headers.get('authorization')
@@ -210,7 +210,7 @@ export async function POST(request, { params }) {
           `SELECT email, first_name, last_name FROM users WHERE id = ?`,
           [booking.user_id]
         )
-        const customerName  = customer ? `${customer.first_name} ${customer.last_name}`.trim() : 'Customer'
+        const customerName = customer ? `${customer.first_name} ${customer.last_name}`.trim() : 'Customer'
         const customerEmail = customer?.email
 
         // ════════════════════════════════════════════════════════════════════
@@ -246,11 +246,11 @@ export async function POST(request, { params }) {
 
           const emailPayload = {
             bookingNumber: booking.booking_number,
-            serviceName:   booking.service_name,
+            serviceName: booking.service_name,
             customerName,
-            providerName:  booking.provider_name || 'Provider',
-            reason:        dispute_reason,
-            bookingId:     id
+            providerName: booking.provider_name || 'Provider',
+            reason: dispute_reason,
+            bookingId: id
           }
 
           // 4. Send admin alert email
@@ -259,10 +259,10 @@ export async function POST(request, { params }) {
           if (adminEmail) {
             try {
               await sendEmail({
-                to:      adminEmail,
+                to: adminEmail,
                 subject: `⚠️ Dispute Raised — Booking #${booking.booking_number}`,
-                html:    disputeAdminHtml(emailPayload),
-                text:    `Dispute raised for booking #${booking.booking_number}. Reason: ${dispute_reason}`
+                html: disputeAdminHtml(emailPayload),
+                text: `Dispute raised for booking #${booking.booking_number}. Reason: ${dispute_reason}`
               })
               console.log('✅ Admin dispute email sent to:', adminEmail)
             } catch (e) {
@@ -276,10 +276,10 @@ export async function POST(request, { params }) {
           if (booking.provider_email) {
             try {
               await sendEmail({
-                to:      booking.provider_email,
+                to: booking.provider_email,
                 subject: `🚨 Dispute Opened — Booking #${booking.booking_number}`,
-                html:    disputeProviderHtml(emailPayload),
-                text:    `A dispute has been raised on booking #${booking.booking_number}. Reason: ${dispute_reason}. Your payment is held until resolved.`
+                html: disputeProviderHtml(emailPayload),
+                text: `A dispute has been raised on booking #${booking.booking_number}. Reason: ${dispute_reason}. Your payment is held until resolved.`
               })
               console.log('✅ Provider dispute email sent to:', booking.provider_email)
             } catch (e) {
@@ -302,38 +302,74 @@ export async function POST(request, { params }) {
             return NextResponse.json({ success: false, message: 'No payment intent found' }, { status: 400 })
           }
 
-          const basePrice      = parseFloat(booking.service_price)
-          const overtimeRate   = parseFloat(booking.additional_price || 0)
-          const actualMins     = parseInt(booking.actual_duration_minutes || 0)
-          const standardMins   = parseInt(booking.standard_mins || 60)
-          const commissionPct  = parseFloat(booking.commission_percent || 0)
+          const wCount = parseInt(booking.submitted_headcount || booking.worker_count || 1)
+          const basePrice      = parseFloat(booking.service_price) * wCount
+          const overtimeRate   = parseFloat(booking.additional_price || 0) * wCount
+          // Use submitted duration if provider manually edited hours, fallback to raw tracked time
+          const actualMins     = parseInt(booking.submitted_duration_minutes || booking.actual_duration_minutes || 0)
+          const standardMins   = parseInt(booking.standard_duration_minutes || booking.duration_minutes || 60)
+          const commissionPct = parseFloat(booking.commission_percent || 0)
 
-          const finalAmount    = calcFinalAmount(basePrice, standardMins, actualMins, overtimeRate)
+          const finalAmount = calcFinalAmount(basePrice, standardMins, actualMins, overtimeRate)
           const providerAmount = parseFloat((finalAmount * (1 - commissionPct / 100)).toFixed(2))
           const platformAmount = parseFloat((finalAmount - providerAmount).toFixed(2))
-          const totalCents     = Math.round(finalAmount * 100)
-          const providerCents  = Math.round(providerAmount * 100)
 
           // ── Stripe capture ───────────────────────────────────────────────
-          let latestCharge = null
           try {
             const pi = await stripe.paymentIntents.retrieve(booking.payment_intent_id)
+            const originalBasePrice = parseFloat(booking.service_price || 0)
+            const basePriceCents = Math.round(originalBasePrice * 100)
+            const latestCharge = pi.latest_charge
+
+            if (!latestCharge) {
+              await connection.query('ROLLBACK')
+              return NextResponse.json({ success: false, message: 'No charge available to capture.' }, { status: 400 })
+            }
 
             if (pi.status === 'requires_capture') {
-              const captured = await stripe.paymentIntents.capture(booking.payment_intent_id, {
-                amount_to_capture: totalCents
-              })
-              latestCharge = captured.latest_charge
-              console.log(`✅ Captured $${finalAmount} for booking #${id}`)
-            } else if (pi.status === 'succeeded') {
-              latestCharge = pi.latest_charge
-              console.log(`ℹ️ Payment already captured for booking #${id}`)
-            } else {
+              await stripe.paymentIntents.capture(booking.payment_intent_id, { amount_to_capture: basePriceCents })
+              console.log(`✅ Captured base price $${originalBasePrice} for booking #${id}`)
+            } else if (pi.status !== 'succeeded') {
               await connection.query('ROLLBACK')
-              return NextResponse.json({
-                success: false,
-                message: `Cannot capture payment — status: ${pi.status}`
-              }, { status: 400 })
+              return NextResponse.json({ success: false, message: `Cannot capture — status: ${pi.status}` }, { status: 400 })
+            }
+
+            const remainingToPay = parseFloat((finalAmount - originalBasePrice).toFixed(2))
+
+            if (remainingToPay > 0) {
+              const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+              const session = await stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                line_items: [{
+                  price_data: {
+                    currency: process.env.STRIPE_CURRENCY || 'cad',
+                    product_data: { name: `Remaining balance for Booking #${booking.booking_number}` },
+                    unit_amount: Math.round(remainingToPay * 100),
+                  },
+                  quantity: 1,
+                }],
+                mode: 'payment',
+                success_url: `${baseUrl}/my-bookings/${id}?payment=success`,
+                cancel_url: `${baseUrl}/my-bookings/${id}`,
+                metadata: { 
+                  booking_id: String(id), 
+                  type: 'balance_payment', 
+                  provider_amount: providerAmount.toString(),
+                  provider_cents: Math.round(providerAmount * 100).toString(),
+                  original_charge: latestCharge 
+                }
+              })
+
+              await connection.execute(
+                `UPDATE bookings SET status = 'awaiting_approval', updated_at = NOW() WHERE id = ?`,
+                [id]
+              )
+              await connection.execute(
+                `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'awaiting_approval', ?)`,
+                [id, `⏳ Captured base price. Waiting for remaining balance payment of $${remainingToPay.toFixed(2)}`]
+              )
+              await connection.query('COMMIT')
+              return NextResponse.json({ success: true, checkout_url: session.url })
             }
           } catch (stripeErr) {
             if (stripeErr.message?.includes('already been captured')) {
@@ -347,7 +383,7 @@ export async function POST(request, { params }) {
             }
           }
 
-          // ── Update booking ───────────────────────────────────────────────
+          // ── Update booking (if NO overtime) ───────────────────────────────────────────────
           await connection.execute(
             `UPDATE bookings 
              SET status = 'completed',
@@ -376,14 +412,14 @@ export async function POST(request, { params }) {
           if (hasStripe && providerCents > 0 && latestCharge) {
             try {
               const transfer = await stripe.transfers.create({
-                amount:             providerCents,
-                currency:           process.env.STRIPE_CURRENCY || 'cad',
-                destination:        booking.stripe_account_id,
+                amount: providerCents,
+                currency: process.env.STRIPE_CURRENCY || 'cad',
+                destination: booking.stripe_account_id,
                 source_transaction: latestCharge,
                 metadata: {
-                  booking_id:     String(id),
+                  booking_id: String(id),
                   booking_number: booking.booking_number,
-                  provider_id:    String(booking.provider_id)
+                  provider_id: String(booking.provider_id)
                 },
                 description: `Payment for booking #${booking.booking_number}`
               })
@@ -411,7 +447,7 @@ export async function POST(request, { params }) {
                  (provider_id, amount, status, stripe_transfer_id, booking_id, notes, created_at)
                  VALUES (?, ?, 'pending', ?, ?, ?, NOW())`,
                 [booking.provider_id, providerAmount, transferId, id,
-                  `Payment for booking #${booking.booking_number}`]
+                `Payment for booking #${booking.booking_number}`]
               )
               await connection.execute(
                 `UPDATE service_providers 
@@ -442,27 +478,27 @@ export async function POST(request, { params }) {
           // ── Send receipt emails ──────────────────────────────────────────
           const emailData = {
             bookingNumber: booking.booking_number,
-            serviceName:   booking.service_name,
+            serviceName: booking.service_name,
             customerName,
-            providerName:  booking.provider_name || 'Provider',
-            jobDate:       booking.job_date
+            providerName: booking.provider_name || 'Provider',
+            jobDate: booking.job_date
           }
 
           if (customerEmail) {
             sendEmail({
-              to:      customerEmail,
+              to: customerEmail,
               subject: `🧾 Your WorkOnTap Receipt — Booking #${booking.booking_number}`,
-              html:    receiptHtml({ ...emailData, amount: finalAmount, isCustomer: true }),
-              text:    `Payment of $${finalAmount.toFixed(2)} received. Booking #${booking.booking_number}`
+              html: receiptHtml({ ...emailData, amount: finalAmount, isCustomer: true }),
+              text: `Payment of $${finalAmount.toFixed(2)} received. Booking #${booking.booking_number}`
             }).catch(e => console.error('Customer email error:', e))
           }
 
           if (booking.provider_email) {
             sendEmail({
-              to:      booking.provider_email,
+              to: booking.provider_email,
               subject: `💰 Payment Received — Booking #${booking.booking_number}`,
-              html:    receiptHtml({ ...emailData, amount: providerAmount, isCustomer: false }),
-              text:    `Payment of $${providerAmount.toFixed(2)} processed. Booking #${booking.booking_number}`
+              html: receiptHtml({ ...emailData, amount: providerAmount, isCustomer: false }),
+              text: `Payment of $${providerAmount.toFixed(2)} processed. Booking #${booking.booking_number}`
             }).catch(e => console.error('Provider email error:', e))
           }
 
@@ -470,9 +506,9 @@ export async function POST(request, { params }) {
             success: true,
             message: `✅ Payment released! You were charged $${finalAmount.toFixed(2)}. Receipt sent to your email.`,
             data: {
-              total_charged:     finalAmount,
+              total_charged: finalAmount,
               provider_received: providerAmount,
-              admin_commission:  platformAmount,
+              admin_commission: platformAmount,
             }
           })
         }

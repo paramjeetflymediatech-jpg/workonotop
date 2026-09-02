@@ -207,8 +207,7 @@ export default function PaymentPage() {
 
   const basePrice = parseFloat(pendingBookingData.service_price);
   const hourlyRate = parseFloat(pendingBookingData.additional_price || 0);
-  const maxOvertimeCost = hourlyRate * 2;
-  const totalAuthorized = basePrice + maxOvertimeCost;
+  const totalAuthorized = basePrice;
 
   return (
     <div className="min-h-screen bg-gray-50/50 font-sans antialiased">
@@ -277,26 +276,14 @@ export default function PaymentPage() {
                     {hourlyRate > 0 && (
                       <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <p className="text-xs sm:text-sm font-medium text-blue-800">
-                          ⏱️ Overtime: ${hourlyRate.toFixed(2)}/hr (max 2hr = ${maxOvertimeCost.toFixed(2)})
+                          ⏱️ Overtime: ${hourlyRate.toFixed(2)}/hr (Billed separately if used)
                         </p>
                       </div>
                     )}
 
                     <div className="flex justify-between pt-2 sm:pt-3 mt-2 border-t border-gray-300">
-                      <span className="font-bold text-gray-900 text-xs sm:text-sm">Amount authorized:</span>
+                      <span className="font-bold text-gray-900 text-xs sm:text-sm">Total Pay Now:</span>
                       <span className="font-bold text-green-700 text-base sm:text-lg md:text-xl">${totalAuthorized.toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <div className="flex items-start gap-1.5 sm:gap-2">
-                      <span className="text-amber-600 text-base sm:text-lg">💰</span>
-                      <div>
-                        <p className="text-[10px] sm:text-xs font-medium text-amber-800">⚡ No money charged now!</p>
-                        <p className="text-[8px] sm:text-[10px] text-amber-700 mt-0.5 sm:mt-1">
-                          Card authorized for <span className="font-bold">${totalAuthorized.toFixed(2)}</span>. Charged only after job completion.
-                        </p>
-                      </div>
                     </div>
                   </div>
                 </div>

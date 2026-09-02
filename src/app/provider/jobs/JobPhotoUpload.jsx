@@ -302,26 +302,27 @@ export default function JobPhotoUpload({ bookingId, photoType, onUploadComplete,
       )}
 
       <div className="mb-3">
-        <label className="block">
-          <span className="sr-only">Choose photos</span>
+        <label className={`flex flex-col items-center justify-center w-full min-h-[120px] border-2 border-dashed rounded-xl cursor-pointer transition 
+          ${uploading ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-50' : 'border-green-300 bg-green-50/30 hover:bg-green-50 hover:border-green-400'}`}>
+          <div className="flex flex-col items-center justify-center py-5 text-center px-4">
+            <div className="w-10 h-10 mb-3 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+              </svg>
+            </div>
+            <p className="mb-1 text-sm font-bold text-green-700">Click to upload {photoType} photos</p>
+            <p className="text-xs text-gray-500 font-medium">Up to {MAX_PHOTOS} photos total ({Math.max(0, MAX_PHOTOS - existingCount)} remaining)</p>
+            <p className="text-[10px] text-gray-400 mt-1">max 10MB each</p>
+          </div>
           <input
             type="file"
             accept="image/*"
             multiple
             onChange={handleFileSelect}
             disabled={uploading}
-            className="block w-full text-sm text-gray-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-lg file:border-0
-              file:text-sm file:font-semibold
-              file:bg-green-50 file:text-green-700
-              hover:file:bg-green-100
-              disabled:opacity-50"
+            className="hidden"
           />
         </label>
-        <p className="text-xs text-gray-400 mt-1">
-          Up to {MAX_PHOTOS} photos total ({Math.max(0, MAX_PHOTOS - existingCount)} remaining) · max 10MB each
-        </p>
       </div>
 
       {error && (

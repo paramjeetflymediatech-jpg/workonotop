@@ -1,7 +1,10 @@
 // app/api/provider/jobs/photos/route.js - FIXED with cookie auth
 import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
-import { verifyToken } from '@/lib/jwt'  // Import from jwt utility
+import { verifyToken } from '@/lib/jwt'
+import exifr from 'exifr'
+import path from 'path'
+import { readFile } from 'fs/promises'
 
 // POST: Upload photo record
 export async function POST(request) {
@@ -59,11 +62,27 @@ export async function POST(request) {
         }, { status: 404 })
       }
 
+      // Extract EXIF data
+      let capturedAt = null;
+      try {
+        if (photo_url.startsWith('/uploads/')) {
+          const filename = photo_url.split('/').pop();
+          const filepath = path.join(process.cwd(), 'public/uploads', filename);
+          const buffer = await readFile(filepath);
+          const exifData = await exifr.parse(buffer, ['DateTimeOriginal']);
+          if (exifData && exifData.DateTimeOriginal) {
+            capturedAt = exifData.DateTimeOriginal;
+          }
+        }
+      } catch (exifErr) {
+        console.error('EXIF extraction failed:', exifErr);
+      }
+
       // Insert photo
       await connection.execute(
-        `INSERT INTO job_photos (booking_id, photo_url, photo_type, uploaded_by)
-         VALUES (?, ?, ?, ?)`,
-        [booking_id, photo_url, photo_type, decoded.providerId]  // using providerId
+        `INSERT INTO job_photos (booking_id, photo_url, photo_type, uploaded_by, captured_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        [booking_id, photo_url, photo_type, decoded.providerId, capturedAt]
       )
 
       // Update booking photo status

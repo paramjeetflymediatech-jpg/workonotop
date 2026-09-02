@@ -107,7 +107,7 @@ const ContractorJobsScreen = ({ navigation }) => {
 
         Alert.alert(
             'Accept this Job?',
-            `This job will be assigned to you immediately.\n\nYou earn: ${displayAmount}${hasOvertime ? '\n(Max 2hrs OT available)' : ''}`,
+            `This job will be assigned to you immediately.\n\nYou earn: ${displayAmount}${hasOvertime ? '\n(Overtime allowed)' : ''}`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {

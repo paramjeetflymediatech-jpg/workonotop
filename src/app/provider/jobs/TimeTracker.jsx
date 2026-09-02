@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Swal from 'sweetalert2'
 
 export default function TimeTracker({
   bookingId,
@@ -15,11 +16,15 @@ export default function TimeTracker({
   const [elapsedTime, setElapsedTime] = useState(0)
   const [startTime, setStartTime] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
   const [showStartConfirm, setShowStartConfirm] = useState(false)
   const [workerCount, setWorkerCount] = useState(1)
   const [estimatedHours, setEstimatedHours] = useState('1')
+  
+  // Editable finish values
+  const [submittedHours, setSubmittedHours] = useState('')
+  const [submittedHeadcount, setSubmittedHeadcount] = useState(1)
+  const [adjustmentReason, setAdjustmentReason] = useState('')
 
   // Photo upload states
   const [beforeUploaded, setBeforeUploaded] = useState(hasBeforePhotos)
@@ -28,7 +33,6 @@ export default function TimeTracker({
   // Completion form
   const [workSummary, setWorkSummary] = useState('')
   const [recommendations, setRecommendations] = useState('')
-  const [formError, setFormError] = useState('')
 
   useEffect(() => {
     loadTimerStatus()
@@ -53,13 +57,7 @@ export default function TimeTracker({
     return () => clearInterval(interval)
   }, [timerStatus, startTime])
 
-  useEffect(() => {
-    if (afterUploaded && error.includes('after')) setError('')
-  }, [afterUploaded])
-
-  useEffect(() => {
-    if (beforeUploaded && error.includes('before')) setError('')
-  }, [beforeUploaded])
+  // Removed error clear effects since we use Swal now
 
   const loadTimerStatus = async () => {
     try {
@@ -70,6 +68,10 @@ export default function TimeTracker({
         setTimerStatus(status)
         setBeforeUploaded(Boolean(data.data.has_before_photos || hasBeforePhotos))
         setAfterUploaded(Boolean(data.data.has_after_photos || hasAfterPhotos))
+
+        if (data.data.worker_count) {
+          setWorkerCount(data.data.worker_count)
+        }
 
         if (data.data.start_time && status === 'running') {
           setStartTime(data.data.start_time)
@@ -106,26 +108,6 @@ export default function TimeTracker({
 
   const handleAction = async (action) => {
     if (action === 'start') {
-      let isBeforeUploaded = beforeUploaded;
-      if (!isBeforeUploaded) {
-        try {
-          const res = await fetch(`/api/provider/jobs/time-tracking?booking_id=${bookingId}&_t=${Date.now()}`);
-          const data = await res.json();
-          if (data.success && data.data.has_before_photos) {
-            isBeforeUploaded = true;
-            setBeforeUploaded(true);
-            if (error.includes('before')) setError('');
-          }
-        } catch (e) {
-          console.error('Check photos error:', e);
-        }
-      }
-
-      if (!isBeforeUploaded) {
-        setError('Please upload before photos first');
-        return;
-      }
-      
       if (!showStartConfirm) {
         setShowStartConfirm(true);
         return;
@@ -141,7 +123,6 @@ export default function TimeTracker({
           if (data.success && data.data.has_after_photos) {
             isAfterUploaded = true;
             setAfterUploaded(true);
-            if (error.includes('after')) setError('');
           }
         } catch (e) {
           console.error('Check photos error:', e);
@@ -149,20 +130,26 @@ export default function TimeTracker({
       }
 
       if (!isAfterUploaded) {
-        setError('Please upload after photos before completing the job');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Action Required',
+          text: 'Please upload after photos before completing the job.',
+          confirmButtonColor: '#16a34a'
+        })
         return;
       }
+      setSubmittedHours((elapsedTime / 3600).toFixed(2));
+      setSubmittedHeadcount(workerCount === '5+' ? 5 : workerCount);
       setShowConfirm(true);
       return;
     }
 
     setLoading(true)
-    setError('')
 
-    try {
+      try {
       const payload = { booking_id: bookingId, action }
       if (action === 'start') {
-        payload.worker_count = workerCount
+        payload.worker_count = workerCount === '5+' ? 5 : parseInt(workerCount)
         payload.estimated_hours = parseFloat(estimatedHours) || 1
       }
 
@@ -188,10 +175,20 @@ export default function TimeTracker({
           setStartTime(adjustedStart)
         }
       } else {
-        setError(data.message || 'Action failed')
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: data.message || 'Action failed',
+          confirmButtonColor: '#16a34a'
+        })
       }
     } catch {
-      setError('Network error. Please try again.')
+      Swal.fire({
+        icon: 'error',
+        title: 'Network Error',
+        text: 'Please try again.',
+        confirmButtonColor: '#16a34a'
+      })
     } finally {
       setLoading(false)
     }
@@ -199,10 +196,29 @@ export default function TimeTracker({
 
   const handleCompleteSubmit = async () => {
     if (!workSummary.trim()) {
-      setFormError('Work Summary is required')
+      Swal.fire({
+        icon: 'warning',
+        title: 'Required Field',
+        text: 'Work Summary is required',
+        confirmButtonColor: '#16a34a'
+      })
       return
     }
-    setFormError('')
+    
+    const originalHours = (elapsedTime / 3600).toFixed(2);
+    const originalHeadcount = workerCount === '5+' ? 5 : workerCount;
+    const isEdited = parseFloat(submittedHours) !== parseFloat(originalHours) || parseInt(submittedHeadcount) !== parseInt(originalHeadcount);
+    
+    if (isEdited && !adjustmentReason.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Required Field',
+        text: 'Reason for adjustment is required',
+        confirmButtonColor: '#16a34a'
+      })
+      return
+    }
+    
     setLoading(true)
 
     try {
@@ -213,7 +229,10 @@ export default function TimeTracker({
           booking_id: bookingId,
           action: 'stop',
           work_summary: workSummary.trim(),
-          recommendations: recommendations.trim()
+          recommendations: recommendations.trim(),
+          submitted_duration_minutes: Math.round(parseFloat(submittedHours) * 60),
+          submitted_headcount: parseInt(submittedHeadcount),
+          adjustment_reason: isEdited ? adjustmentReason.trim() : null
         })
       })
       const data = await res.json()
@@ -223,10 +242,20 @@ export default function TimeTracker({
         setShowConfirm(false)
         onComplete?.(data.data)
       } else {
-        setFormError(data.message || 'Failed to complete job')
+        Swal.fire({
+          icon: 'error',
+          title: 'Submission Failed',
+          text: data.message || 'Failed to complete job',
+          confirmButtonColor: '#16a34a'
+        })
       }
     } catch {
-      setFormError('Network error. Please try again.')
+      Swal.fire({
+        icon: 'error',
+        title: 'Network Error',
+        text: 'Please try again.',
+        confirmButtonColor: '#16a34a'
+      })
     } finally {
       setLoading(false)
     }
@@ -238,10 +267,10 @@ export default function TimeTracker({
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-1">
-            How many people are on site?
+            How many people are on this job?
           </label>
           <div className="flex gap-2 mb-4">
-            {[1, 2, 3, 4].map(num => (
+            {[1, 2, 3, 4, '5+'].map(num => (
               <button
                 key={num}
                 onClick={() => setWorkerCount(num)}
@@ -264,15 +293,9 @@ export default function TimeTracker({
           />
         </div>
 
-        {error && (
-          <div className="bg-red-50 text-red-600 text-sm rounded-xl px-3 py-2">
-            {error}
-          </div>
-        )}
-
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-6">
           <button
-            onClick={() => { setShowStartConfirm(false); setError('') }}
+            onClick={() => setShowStartConfirm(false)}
             disabled={loading}
             className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-50"
           >
@@ -312,6 +335,59 @@ export default function TimeTracker({
           )}
         </div>
 
+        {/* Editable Totals Section */}
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
+          <h3 className="font-semibold text-gray-800 border-b pb-2">Final Totals</h3>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">
+                Hours worked
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={submittedHours}
+                onChange={(e) => setSubmittedHours(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">
+                People on job
+              </label>
+              <input
+                type="number"
+                value={submittedHeadcount}
+                onChange={(e) => setSubmittedHeadcount(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 p-3 rounded-lg flex justify-between items-center border border-gray-200">
+            <span className="text-sm font-semibold text-gray-600">Total billable:</span>
+            <span className="text-lg font-bold text-green-600">
+              {((parseFloat(submittedHours) || 0) * (parseInt(submittedHeadcount) || 1)).toFixed(2)} hrs
+            </span>
+          </div>
+
+          {(parseFloat(submittedHours) !== parseFloat((elapsedTime / 3600).toFixed(2)) || parseInt(submittedHeadcount) !== parseInt(workerCount === '5+' ? 5 : workerCount)) && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1">
+                Why the change? <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={adjustmentReason}
+                onChange={(e) => setAdjustmentReason(e.target.value)}
+                placeholder="Required since you changed the hours or headcount..."
+                rows={2}
+                className="w-full border border-red-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+          )}
+        </div>
+
         {/* Work Summary */}
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-1">
@@ -320,7 +396,7 @@ export default function TimeTracker({
           <p className="text-xs text-gray-400 mb-2">Describe exactly what was done</p>
           <textarea
             value={workSummary}
-            onChange={(e) => { setWorkSummary(e.target.value); setFormError('') }}
+            onChange={(e) => setWorkSummary(e.target.value)}
             placeholder="e.g. Replaced the kitchen faucet and fixed a small leak under the sink..."
             rows={4}
             maxLength={1000}
@@ -351,15 +427,9 @@ export default function TimeTracker({
           </div>
         </div>
 
-        {formError && (
-          <div className="bg-red-50 text-red-600 text-sm rounded-xl px-3 py-2">
-            {formError}
-          </div>
-        )}
-
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-4">
           <button
-            onClick={() => { setShowConfirm(false); setFormError('') }}
+            onClick={() => setShowConfirm(false)}
             disabled={loading}
             className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-50"
           >
@@ -408,17 +478,13 @@ export default function TimeTracker({
         </div>
       )}
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-sm text-red-600">
-          {error}
-        </div>
-      )}
+      {/* Error displays removed; using SweetAlert2 */}
 
       <div className="flex gap-2">
         {timerStatus === 'not_started' && (
           <button
             onClick={() => handleAction('start')}
-            disabled={loading || !beforeUploaded}
+            disabled={loading}
             className="flex-1 py-3 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading
@@ -474,8 +540,8 @@ export default function TimeTracker({
       </div>
 
       {timerStatus === 'not_started' && !beforeUploaded && (
-        <p className="text-xs text-center text-amber-600 bg-amber-50 py-2 px-3 rounded-lg">
-          ⚠ Upload before photos above to enable Start - Click on view details
+        <p className="text-xs text-center text-amber-600 bg-amber-50 py-2 px-3 rounded-lg font-medium border border-amber-200">
+          ⚠️ Before photos not uploaded
         </p>
       )}
       {(timerStatus === 'running' || timerStatus === 'paused') && !afterUploaded && (

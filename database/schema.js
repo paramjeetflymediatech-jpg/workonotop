@@ -222,6 +222,9 @@ const tables = [
     overtime_minutes INT DEFAULT 0,
     overtime_earnings DECIMAL(10,2) DEFAULT 0.00,
     final_provider_amount DECIMAL(10,2),
+    submitted_duration_minutes INT,
+    submitted_headcount INT,
+    adjustment_reason TEXT,
     job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started',
     before_photos_uploaded TINYINT(1) DEFAULT 0,
     after_photos_uploaded TINYINT(1) DEFAULT 0,
@@ -308,6 +311,7 @@ const tables = [
     photo_url VARCHAR(500) NOT NULL,
     photo_type ENUM('before', 'after') NOT NULL,
     uploaded_by INT NOT NULL,
+    captured_at TIMESTAMP NULL,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
     FOREIGN KEY (uploaded_by) REFERENCES service_providers(id) ON DELETE CASCADE,
@@ -691,6 +695,9 @@ const alterations = [
   // Additional missing columns for bookings table
   { table: 'bookings', column: 'worker_count', sql: "ALTER TABLE bookings ADD COLUMN worker_count INT DEFAULT 1 AFTER job_time_slot" },
   { table: 'bookings', column: 'estimated_hours', sql: "ALTER TABLE bookings ADD COLUMN estimated_hours DECIMAL(5,2) AFTER worker_count" },
+  { table: 'bookings', column: 'submitted_duration_minutes', sql: "ALTER TABLE bookings ADD COLUMN submitted_duration_minutes INT" },
+  { table: 'bookings', column: 'submitted_headcount', sql: "ALTER TABLE bookings ADD COLUMN submitted_headcount INT" },
+  { table: 'bookings', column: 'adjustment_reason', sql: "ALTER TABLE bookings ADD COLUMN adjustment_reason TEXT" },
   { table: 'bookings', column: 'job_timer_status', sql: "ALTER TABLE bookings ADD COLUMN job_timer_status ENUM('not_started', 'running', 'paused', 'completed') DEFAULT 'not_started'" },
   { table: 'bookings', column: 'before_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN before_photos_uploaded TINYINT(1) DEFAULT 0' },
   { table: 'bookings', column: 'after_photos_uploaded', sql: 'ALTER TABLE bookings ADD COLUMN after_photos_uploaded TINYINT(1) DEFAULT 0' },
@@ -726,7 +733,8 @@ const alterations = [
   { table: 'disputes', column: 'captured_amount', sql: 'ALTER TABLE disputes ADD COLUMN captured_amount DECIMAL(10,2) DEFAULT NULL' },
   { table: 'disputes', column: 'provider_amount', sql: 'ALTER TABLE disputes ADD COLUMN provider_amount DECIMAL(10,2) DEFAULT NULL' },
   { table: 'disputes', column: 'stripe_capture_id', sql: 'ALTER TABLE disputes ADD COLUMN stripe_capture_id VARCHAR(255) DEFAULT NULL' },
-  { table: 'disputes', column: 'stripe_transfer_id', sql: 'ALTER TABLE disputes ADD COLUMN stripe_transfer_id VARCHAR(255) DEFAULT NULL' }
+  { table: 'disputes', column: 'stripe_transfer_id', sql: 'ALTER TABLE disputes ADD COLUMN stripe_transfer_id VARCHAR(255) DEFAULT NULL' },
+  { table: 'job_photos', column: 'captured_at', sql: 'ALTER TABLE job_photos ADD COLUMN captured_at TIMESTAMP NULL AFTER uploaded_by' }
 ];
 
 // =====================================================

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions, Alert, TextInput, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, StatusBar, Modal, Dimensions, Alert, TextInput, RefreshControl, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { apiService } from '../../services/api';
@@ -179,28 +179,44 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
     };
 
     const handleApprove = async () => {
-        Alert.alert('Approve & Complete?', 'This will finalize the job and release payment to the professional.', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Approve & Pay', onPress: async () => {
-                    setActionLoading('approve');
-                    try {
-                        await apiService.post(`/api/customer/bookings/${bookingId}/approve`, { action: 'approve' }, user?.token);
-                        // Wait 1s for DB to update status to 'completed' before allowing review
-                        await new Promise(r => setTimeout(r, 1000));
-                        await fetchDetails();
-                        Alert.alert('Success!', 'The job is now completed successfully.', [
-                            { text: 'Rate Service', onPress: () => setRatingVisible(true) },
-                            { text: 'Skip', style: 'cancel' }
-                        ]);
-                    } catch (err) {
-                        Alert.alert('Error', 'Failed to approve. Please try again.');
-                    } finally {
-                        setActionLoading(null);
+        const standardMins = parseInt(booking?.duration_minutes || booking?.standard_mins || 60);
+        const actualMins = parseInt(booking?.submitted_duration_minutes || booking?.actual_duration_minutes || 0);
+        const isOvertime = actualMins > standardMins;
+
+        Alert.alert(
+            isOvertime ? 'Pay Overtime Balance?' : 'Approve & Complete?',
+            isOvertime ? 'This will redirect you to securely pay the remaining overtime balance.' : 'This will finalize the job and release payment to the professional.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: isOvertime ? 'Pay Overtime' : 'Approve & Pay', onPress: async () => {
+                        setActionLoading('approve');
+                        try {
+                            const res = await apiService.post(`/api/customer/bookings/${bookingId}/approve`, { action: 'approve' }, user?.token);
+
+                            if (res?.data?.checkout_url) {
+                                Linking.openURL(res.data.checkout_url);
+                                // Wait 2s before refreshing to give user time to switch apps
+                                await new Promise(r => setTimeout(r, 2000));
+                                await fetchDetails();
+                            } else {
+                                // Wait 1s for DB to update status to 'completed' before allowing review
+                                await new Promise(r => setTimeout(r, 1000));
+                                await fetchDetails();
+                                Alert.alert('Success!', 'The job is now completed successfully.', [
+                                    { text: 'Rate Service', onPress: () => setRatingVisible(true) },
+                                    { text: 'Skip', style: 'cancel' }
+                                ]);
+                            }
+                        } catch (err) {
+                            Alert.alert('Error', 'Failed to approve. Please try again.');
+                        } finally {
+                            setActionLoading(null);
+                        }
                     }
                 }
-            }
-        ]);
+            ]
+        );
     };
 
     const handleDispute = () => {
@@ -404,16 +420,17 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
         ? (booking.service_image.startsWith('http') ? booking.service_image : `${API_BASE_URL}${booking.service_image}`)
         : null;
 
-    const basePrice = parseFloat(booking.service_price || 0);
-    const overtimeRate = parseFloat(booking.additional_price || 0);
-    const actualMinutes = parseInt(booking.actual_duration_minutes || 0);
-    const standardMinutes = parseInt(booking.standard_duration_minutes || 60);
+    const wCount = parseInt(booking.submitted_headcount || booking.worker_count || 1);
+    const basePrice = parseFloat(booking.service_price || 0) * wCount;
+    const overtimeRate = parseFloat(booking.additional_price || 0) * wCount;
+    const actualMinutes = parseInt(booking.submitted_duration_minutes || booking.actual_duration_minutes || 0);
+    const standardMinutes = parseInt(booking.standard_duration_minutes || booking.duration_minutes || 60);
 
-    const overtimeHoldAmount = overtimeRate * 2;
-    const authAmount = booking.authorized_amount ? parseFloat(booking.authorized_amount) : (basePrice + overtimeHoldAmount);
     const isOvertime = actualMinutes > standardMinutes && overtimeRate > 0;
-    const overtimeMinutes = isOvertime ? Math.min(actualMinutes - standardMinutes, 120) : 0;
+    const overtimeMinutes = isOvertime ? actualMinutes - standardMinutes : 0;
     const overtimeCost = isOvertime ? Math.round((overtimeRate * overtimeMinutes / 60) * 100) / 100 : 0;
+    const originalBasePrice = parseFloat(booking.service_price || 0);
+    const authAmount = booking.authorized_amount ? parseFloat(booking.authorized_amount) : originalBasePrice;
     const totalAmount = basePrice + overtimeCost;
 
     const statusConfig = {
@@ -482,7 +499,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>📅 Schedule</Text>
-                    
+
                     {(() => {
                         let dates = [];
                         let slots = [];
@@ -502,7 +519,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                         if (dates.length === 0 || !dates[0]) {
                             return (
                                 <View style={styles.card}>
-                                    <Text style={{color: '#64748b'}}>No schedule selected</Text>
+                                    <Text style={{ color: '#64748b' }}>No schedule selected</Text>
                                 </View>
                             );
                         }
@@ -511,7 +528,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                             <View style={{ gap: 12 }}>
                                 {dates.map((rawDate, idx) => {
                                     const rawSlot = slots[idx] || 'Flexible';
-                                    
+
                                     // Format Date nicely
                                     let displayDate = rawDate;
                                     if (typeof rawDate === 'string' && rawDate.includes('-')) {
@@ -531,14 +548,14 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                                         const splitSlot = displaySlot.split(': ');
                                         displaySlot = splitSlot.slice(1).join(': ');
                                     }
-                                    
+
                                     // Split slots if multiple joined by '&'
                                     const individualSlots = displaySlot.split(' & ');
                                     const isExpanded = expandedDate === rawDate;
 
                                     return (
                                         <View key={idx} style={[styles.card, { padding: 0, overflow: 'hidden' }]}>
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', padding: 14, borderBottomWidth: isExpanded ? 1 : 0, borderBottomColor: '#f1f5f9' }}
                                                 onPress={() => setExpandedDate(isExpanded ? null : rawDate)}
                                                 activeOpacity={0.7}
@@ -777,33 +794,20 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
 
                         <View style={styles.invoiceItem}>
                             <View>
-                                <Text style={styles.invoiceItemLabel}>Base Service Price</Text>
-                                <Text style={styles.invoiceItemSub}>Flat rate ({standardMinutes}min)</Text>
+                                <Text style={styles.invoiceItemLabel}>Base Service ({wCount > 1 ? `x${wCount} workers` : ''})</Text>
+                                <Text style={styles.invoiceItemSub}>Flat rate for first {standardMinutes} minutes</Text>
                             </View>
                             <Text style={styles.invoiceItemValue}>{formatCurrency(basePrice)}</Text>
                         </View>
-
-                        {overtimeRate > 0 && (
-                            <View style={styles.invoiceItem}>
-                                <View>
-                                    <View style={styles.row}>
-                                        <Ionicons name="time" size={14} color="#f59e0b" style={{ marginRight: 4 }} />
-                                        <Text style={styles.invoiceItemLabel}>Overtime Hold</Text>
-                                    </View>
-                                    <Text style={styles.invoiceItemSub}>{formatCurrency(overtimeRate)}/hr × 2 hrs (max hold)</Text>
-                                </View>
-                                <Text style={[styles.invoiceItemValue, { color: '#000000ff' }]}>+{formatCurrency(overtimeHoldAmount)}</Text>
-                            </View>
-                        )}
 
                         {isOvertime && (
                             <View style={[styles.invoiceItem, { backgroundColor: '#f5f3ff', marginHorizontal: -16, paddingHorizontal: 16 }]}>
                                 <View>
                                     <View style={styles.row}>
                                         <Ionicons name="time-outline" size={14} color="#8b5cf6" style={{ marginRight: 4 }} />
-                                        <Text style={[styles.invoiceItemLabel, { color: '#15843E' }]}>Actual Overtime Used</Text>
+                                        <Text style={[styles.invoiceItemLabel, { color: '#8b5cf6' }]}>Actual Overtime</Text>
                                     </View>
-                                    <Text style={styles.invoiceItemSub}>{overtimeMinutes}min at {formatCurrency(overtimeRate)}/hr</Text>
+                                    <Text style={styles.invoiceItemSub}>{overtimeMinutes} mins extra at {formatCurrency(overtimeRate)}/hr</Text>
                                 </View>
                                 <Text style={[styles.invoiceItemValue, { color: '#000000ff' }]}>+{formatCurrency(overtimeCost)}</Text>
                             </View>
@@ -811,21 +815,21 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
 
                         <View style={styles.invoiceItem}>
                             <View>
-                                <Text style={styles.invoiceItemLabel}>Total Authorized Hold</Text>
-                                <Text style={styles.invoiceItemSub}>Card hold — not charged yet</Text>
+                                <Text style={styles.invoiceItemLabel}>Already Paid (Base)</Text>
+                                <Text style={styles.invoiceItemSub}>Charged upfront at checkout</Text>
                             </View>
-                            <Text style={[styles.invoiceItemValue, { color: '#000000ff' }]}>{formatCurrency(authAmount)}</Text>
+                            <Text style={[styles.invoiceItemValue, { color: '#16a34a' }]}>-{formatCurrency(originalBasePrice)}</Text>
                         </View>
 
                         <View style={styles.invoiceTotal}>
                             <View>
                                 <Text style={styles.invoiceTotalLabel}>
-                                    {booking.status === 'completed' ? 'Amount Charged' : 'Final Amount'}
+                                    {booking.status === 'completed' ? 'Final Amount Paid' : 'Remaining Balance (Pay Now)'}
                                 </Text>
-                                <Text style={styles.invoiceTotalSub}>Based on actual work time</Text>
+                                <Text style={styles.invoiceTotalSub}>Job Total: {formatCurrency(totalAmount)}</Text>
                             </View>
-                            <Text style={[styles.invoiceTotalValue, { color: isOvertime ? '#000000ff' : PRIMARY }]}>
-                                {formatCurrency(totalAmount)}
+                            <Text style={[styles.invoiceTotalValue, { color: PRIMARY }]}>
+                                {formatCurrency(totalAmount - originalBasePrice)}
                             </Text>
                         </View>
 
@@ -882,11 +886,20 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     )}
                     {booking.status === 'awaiting_approval' && (
                         <>
-                            <TouchableOpacity style={styles.approveBtn} onPress={handleApprove} disabled={actionLoading === 'approve'}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.approveBtn,
+                                    (parseInt(booking?.actual_duration_minutes || 0) > parseInt(booking?.duration_minutes || booking?.standard_mins || 60)) ? { backgroundColor: '#7e22ce' } : {}
+                                ]}
+                                onPress={handleApprove}
+                                disabled={actionLoading === 'approve'}
+                            >
                                 {actionLoading === 'approve' ? <ActivityIndicator color="#fff" /> : (
                                     <>
                                         <Ionicons name="checkmark-circle-outline" size={moderateScale(18)} color="#fff" />
-                                        <Text style={styles.approveBtnText}>Approve & Complete</Text>
+                                        <Text style={styles.approveBtnText}>
+                                            {(parseInt(booking?.submitted_duration_minutes || booking?.actual_duration_minutes || 0) > parseInt(booking?.duration_minutes || booking?.standard_mins || 60)) ? 'Pay Remaining Overtime' : 'Approve & Complete'}
+                                        </Text>
                                     </>
                                 )}
                             </TouchableOpacity>
