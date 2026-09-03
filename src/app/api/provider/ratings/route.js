@@ -152,8 +152,8 @@ export async function GET(request) {
         b.service_name,
         DATE_FORMAT(pr.created_at, '%Y-%m-%d') as review_date
        FROM provider_reviews pr
-       JOIN users u ON pr.customer_id = u.id
-       JOIN bookings b ON pr.booking_id = b.id
+       LEFT JOIN users u ON pr.customer_id = u.id
+       LEFT JOIN bookings b ON pr.booking_id = b.id
        WHERE pr.provider_id = ?
        ORDER BY pr.created_at DESC`,
       [providerId]
@@ -182,8 +182,8 @@ export async function GET(request) {
           id: r.id,
           rating: r.rating,
           review: r.review,
-          customer_name: r.is_anonymous ? 'Anonymous' : `${r.first_name} ${r.last_name}`,
-          service: r.service_name,
+          customer_name: r.is_anonymous ? 'Anonymous' : (r.first_name ? `${r.first_name} ${r.last_name}` : 'Unknown Customer'),
+          service: r.service_name || 'General Service',
           date: r.review_date,
           is_anonymous: r.is_anonymous,
         })),

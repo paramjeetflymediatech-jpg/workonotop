@@ -81,7 +81,8 @@ const formatSlot = (slot) => {
 };
 
 const CustomerBookingDetailsScreen = ({ route, navigation }) => {
-    const { bookingId } = route.params;
+    const { bookingId, payment } = route.params || {};
+    const isPaymentProcessing = payment === 'success';
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
     const [booking, setBooking] = useState(null);
@@ -192,10 +193,15 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     text: isOvertime ? 'Pay Overtime' : 'Approve & Pay', onPress: async () => {
                         setActionLoading('approve');
                         try {
-                            const res = await apiService.post(`/api/customer/bookings/${bookingId}/approve`, { action: 'approve' }, user?.token);
+                            const res = await apiService.post(`/api/customer/bookings/${bookingId}/approve`, { 
+                                action: 'approve', 
+                                source: 'mobile',
+                                success_url: `workontap://my-bookings/${bookingId}?payment=success`,
+                                cancel_url: `workontap://my-bookings/${bookingId}`
+                            }, user?.token);
 
-                            if (res?.data?.checkout_url) {
-                                Linking.openURL(res.data.checkout_url);
+                            if (res?.checkout_url) {
+                                Linking.openURL(res.checkout_url);
                                 // Wait 2s before refreshing to give user time to switch apps
                                 await new Promise(r => setTimeout(r, 2000));
                                 await fetchDetails();
@@ -472,7 +478,19 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                     <Text style={styles.serviceName}>{booking.service_name}</Text>
                 </View>
 
-                {booking.status === 'awaiting_approval' && (
+                {isPaymentProcessing && booking.status === 'awaiting_approval' && (
+                    <View style={[styles.approvalBanner, { backgroundColor: '#f0fdf4', borderColor: '#86efac' }]}>
+                        <View style={styles.approvalIcon}>
+                            <Ionicons name="checkmark-circle" size={32} color="#16a34a" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.approvalTitle, { color: '#166534' }]}>Payment Successful!</Text>
+                            <Text style={styles.approvalSubtitle}>Processing your transaction. This may take a moment...</Text>
+                        </View>
+                    </View>
+                )}
+
+                {booking.status === 'awaiting_approval' && !isPaymentProcessing && (
                     <View style={styles.approvalBanner}>
                         <View style={styles.approvalIcon}>
                             <Text style={{ fontSize: 24 }}>🎉</Text>
@@ -824,20 +842,25 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                         <View style={styles.invoiceTotal}>
                             <View>
                                 <Text style={styles.invoiceTotalLabel}>
-                                    {booking.status === 'completed' ? 'Final Amount Paid' : 'Remaining Balance (Pay Now)'}
+                                    {booking.status === 'completed' ? 'Total Job Cost' : 'Current Job Total'}
                                 </Text>
-                                <Text style={styles.invoiceTotalSub}>Job Total: {formatCurrency(totalAmount)}</Text>
+                                {booking.status !== 'completed' && (
+                                    <Text style={styles.invoiceTotalSub}>May increase if overtime is used</Text>
+                                )}
                             </View>
                             <Text style={[styles.invoiceTotalValue, { color: PRIMARY }]}>
-                                {formatCurrency(totalAmount - originalBasePrice)}
+                                {formatCurrency(totalAmount)}
                             </Text>
                         </View>
 
-                        {booking.status !== 'completed' && (
-                            <View style={styles.authorizedNote}>
-                                <Ionicons name="card" size={16} color="#b45309" />
-                                <Text style={styles.authorizedNoteText}>
-                                    Your card is authorized for <Text style={{ fontWeight: 'bold' }}>{formatCurrency(authAmount)}</Text>. You will only be charged the final amount after completion.
+                        {(totalAmount - originalBasePrice) > 0 && (
+                            <View style={[styles.invoiceTotal, { marginTop: 10, borderTopWidth: 0, paddingTop: 0 }]}>
+                                <View>
+                                    <Text style={[styles.invoiceTotalLabel, { color: '#dc2626' }]}>Outstanding Balance</Text>
+                                    <Text style={styles.invoiceTotalSub}>For additional overtime</Text>
+                                </View>
+                                <Text style={[styles.invoiceTotalValue, { color: '#dc2626' }]}>
+                                    {formatCurrency(totalAmount - originalBasePrice)}
                                 </Text>
                             </View>
                         )}
@@ -884,7 +907,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                             <Text style={styles.chatBtnText}>Chat with Provider</Text>
                         </TouchableOpacity>
                     )}
-                    {booking.status === 'awaiting_approval' && (
+                    {booking.status === 'awaiting_approval' && !isPaymentProcessing && (
                         <>
                             <TouchableOpacity
                                 style={[

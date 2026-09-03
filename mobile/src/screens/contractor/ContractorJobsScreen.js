@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, StatusBar, Dimensions, FlatList, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, StatusBar, Dimensions, FlatList, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerActions } from '@react-navigation/native';
 import { api } from '../../utils/api';
@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from '../../utils/responsive';
 import Typography from '../../theme/Typography';
+import { API_BASE_URL } from '../../config';
 
 const TEAL_DARK = '#15843E';
 const { width } = Dimensions.get('window');
@@ -226,109 +227,135 @@ const ContractorJobsScreen = ({ navigation }) => {
     const renderJobItem = ({ item: job }) => {
         const dur = job.pricing?.duration_minutes || 60;
         const commPct = job.pricing?.commission_percent || 0;
+        const baseEarnings = parseFloat(job.final_provider_amount) > 0 ? parseFloat(job.final_provider_amount) : (parseFloat(job.provider_amount || 0) + parseFloat(job.overtime_earnings || 0)) || (parseFloat(job.service_price || 0) * (1 - (parseFloat(job.commission_percent || 20) / 100)));
         const otRate = job.pricing?.overtime_rate || 0;
         const netOT = job.pricing?.net_overtime_rate || (otRate * (1 - commPct / 100));
         const hasOvertime = Boolean(job.pricing?.has_overtime);
         const isAdminAssigned = Boolean(job.is_admin_assigned);
         const photosCount = Array.isArray(job.photos) ? job.photos.length : 0;
         const hasAccessInfo = Boolean(job.parking_access || job.elevator_access || job.has_pets);
+        
+        const firstPhoto = job.photos?.[0] ? (job.photos[0].startsWith('http') ? job.photos[0] : `${API_BASE_URL}${job.photos[0]}`) : null;
 
-        const cardBorderColor = isAdminAssigned ? '#bfdbfe' : (hasOvertime ? '#ddd6fe' : '#f1f5f9');
+        const cardBorderColor = isAdminAssigned ? '#bfdbfe' : (hasOvertime ? '#e9d5ff' : '#f1f5f9');
         const accentColor = isAdminAssigned ? '#2563eb' : '#15843E';
 
         return (
-            <View key={job.id} style={[styles.jobCard, { borderColor: cardBorderColor }]}>
-                {isAdminAssigned ? (
+            <View key={job.id} style={[styles.jobCard, { borderColor: cardBorderColor, borderWidth: hasOvertime ? 1.5 : 1 }]}>
+                {isAdminAssigned && (
                     <View style={styles.assignedBanner}>
-                        <Ionicons name="sparkles" size={12} color="#1e40af" />
+                        <Ionicons name="sparkles" size={14} color="#1d4ed8" />
                         <Text style={styles.assignedBannerText}>Assigned to you by admin — waiting for acceptance</Text>
                     </View>
-                ) : null}
-                {hasOvertime && !isAdminAssigned ? (
+                )}
+
+                {hasOvertime && !isAdminAssigned && (
                     <View style={styles.otHeaderBanner}>
-                        <Ionicons name="time-outline" size={14} color="#fff" style={{ fontSize: Typography.getCustom(14) }} />
-                        <Text style={styles.otHeaderBannerText}>Overtime pay: +${netOT.toFixed(2)}/hr (after 1st hour)</Text>
+                        <Ionicons name="alert-circle" size={14} color="#fff" />
+                        <Text style={styles.otHeaderBannerText}>⏰ Overtime eligible — max 2 hours at ${netOT.toFixed(2)}/hr</Text>
                     </View>
-                ) : null}
+                )}
 
                 <View style={styles.cardHeader}>
                     <View style={styles.serviceIconContainer}>
-                        <View style={[styles.iconCircle, { backgroundColor: accentColor + '15' }]}>
-                            {job.category_icon ? (
-                                <Ionicons name={job.category_icon} size={24} color={accentColor} />
-                            ) : (
-                                <Text style={styles.categoryEmoji}>🛠️</Text>
-                            )}
-                        </View>
+                        {firstPhoto ? (
+                            <View style={styles.thumbnailContainer}>
+                                <Image source={{ uri: firstPhoto }} style={styles.thumbnailImage} />
+                                {photosCount > 1 && (
+                                    <View style={styles.thumbnailOverlay}>
+                                        <Text style={styles.thumbnailOverlayText}>+{photosCount - 1}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        ) : (
+                            <View style={[styles.iconBox, { backgroundColor: isAdminAssigned ? '#eff6ff' : (hasOvertime ? '#faf5ff' : '#f0fdf4'), borderColor: isAdminAssigned ? '#dbeafe' : (hasOvertime ? '#f3e8ff' : '#dcfce7') }]}>
+                                {job.category_icon ? (
+                                    <Ionicons name={job.category_icon} size={20} color={isAdminAssigned ? '#2563eb' : (hasOvertime ? '#9333ea' : '#16a34a')} />
+                                ) : (
+                                    <Text style={styles.categoryEmoji}>🔧</Text>
+                                )}
+                            </View>
+                        )}
                         <View style={styles.serviceTextContainer}>
-                            <Text style={styles.serviceName}>{job.service_name}</Text>
+                            <Text style={styles.serviceName} numberOfLines={1}>{job.service_name}</Text>
                             <Text style={styles.categoryName}>{job.category_name}</Text>
                         </View>
                     </View>
                     <View style={styles.earningsBadge}>
-                        <Text style={styles.earnLabel}>You earn</Text>
-                        <Text style={[styles.earnValue, { color: accentColor }]}>{job.display_amount}</Text>
+                        <Text style={styles.earnLabel}>YOU EARN</Text>
+                        <Text style={styles.earnValue}>${baseEarnings.toFixed(2)}</Text>
                     </View>
                 </View>
 
                 <View style={styles.cardMeta}>
                     <View style={styles.badgeRow}>
-                        <View style={styles.metaBadge}>
-                            <Ionicons name="time-outline" size={16} color="#000000ff" />
-                            <Text style={styles.metaBadgeText}>{formatDuration(dur)}</Text>
+                        <View style={styles.metaBadgeBlue}>
+                            <Ionicons name="time" size={12} color="#1d4ed8" />
+                            <Text style={styles.metaBadgeBlueText}>{formatDuration(dur)}</Text>
                         </View>
-                        {hasOvertime ? (
-                            <View style={[styles.metaBadge, styles.otBadge]}>
-                                <Text style={styles.otBadgeText}>+${netOT.toFixed(2)}/hr OT</Text>
+                        {hasOvertime && (
+                            <View style={styles.metaBadgePurple}>
+                                <Text style={styles.metaBadgePurpleText}>⏰ +${netOT.toFixed(2)}/hr OT</Text>
                             </View>
-                        ) : null}
+                        )}
                     </View>
+
+                    {hasOvertime && (
+                        <View style={styles.otPotentialBlock}>
+                            <View style={styles.otAvailableTag}>
+                                <Ionicons name="time" size={12} color="#b45309" />
+                                <Text style={styles.otAvailableTagText}>Overtime Available</Text>
+                            </View>
+                            <Text style={styles.otPotentialTitle}>Overtime earnings potential:</Text>
+                            <View style={styles.otPotentialBox}>
+                                <Text style={styles.otPotentialBoxText}>1hr OT: ${(baseEarnings + netOT).toFixed(2)}</Text>
+                            </View>
+                            <Text style={styles.otNetRateText}>Net rate ${netOT.toFixed(2)}/hr</Text>
+                        </View>
+                    )}
 
                     <View style={styles.infoGrid}>
                         <View style={styles.infoItem}>
-                            <Ionicons name="calendar-outline" size={14} color="#000000ff" />
+                            <Text style={styles.infoIcon}>📅</Text>
                             <Text style={styles.infoItemText}>{formatDate(job.job_date)}</Text>
                         </View>
                         <View style={styles.infoItem}>
-                            <Ionicons name="time-outline" size={14} color="#000000ff" />
+                            <Text style={styles.infoIcon}>🕐</Text>
                             <Text style={styles.infoItemText} numberOfLines={1}>{formatSlotPreview(job.job_time_slot)}</Text>
                         </View>
                         <View style={styles.infoItem}>
-                            <Ionicons name="location-outline" size={14} color="#000000ff" />
+                            <Text style={styles.infoIcon}>📍</Text>
                             <Text style={styles.infoItemText} numberOfLines={1}>{job.address_line1?.split(',')[0]}</Text>
                         </View>
-                        {photosCount > 0 ? (
-                            <View style={styles.infoItem}>
-                                <Ionicons name="images-outline" size={14} color="#2563eb" />
-                                <Text style={[styles.infoItemText, { color: '#2563eb', fontWeight: 'bold' }]}>{photosCount} Photo{photosCount > 1 ? 's' : ''}</Text>
+                        {job.service_area_name && (
+                            <View style={styles.infoBadgeIndigo}>
+                                <Text style={styles.infoIcon}>🗺️</Text>
+                                <Text style={styles.infoBadgeIndigoText}>{job.service_area_group ? `${job.service_area_group} - ${job.service_area_name}` : job.service_area_name}</Text>
                             </View>
-                        ) : null}
+                        )}
+                        {photosCount > 0 && (
+                            <View style={styles.infoBadgeBlue}>
+                                <Text style={styles.infoIcon}>📷</Text>
+                                <Text style={styles.infoBadgeBlueText}>{photosCount} Photo{photosCount > 1 ? 's' : ''}</Text>
+                            </View>
+                        )}
                     </View>
 
-                    {hasAccessInfo ? (
+                    {hasAccessInfo && (
                         <View style={styles.accessRow}>
-                            {Boolean(job.parking_access) ? <Text style={styles.accessTag}>Parking</Text> : null}
-                            {Boolean(job.elevator_access) ? <Text style={styles.accessTag}>Elevator</Text> : null}
-                            {Boolean(job.has_pets) ? <Text style={styles.accessTag}>Pets</Text> : null}
+                            {Boolean(job.parking_access) && <Text style={styles.accessTagGreen}>🅿️ Parking</Text>}
+                            {Boolean(job.elevator_access) && <Text style={styles.accessTagGreen}>🛗 Elevator</Text>}
+                            {Boolean(job.has_pets) && <Text style={styles.accessTagAmber}>🐕 Pets</Text>}
                         </View>
-                    ) : null}
-
+                    )}
                 </View>
 
                 <View style={styles.cardActions}>
-                    <TouchableOpacity
-                        style={styles.detailsBtn}
-                        onPress={() => navigation.navigate('JobDetails', { job })}
-                    >
+                    <TouchableOpacity style={styles.detailsBtn} onPress={() => navigation.navigate('JobDetails', { job })}>
                         <Text style={styles.detailsBtnText}>View Details</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.acceptBtnFull, { backgroundColor: accentColor }, !stripeConnected && styles.disabledBtn]}
-                        onPress={() => acceptJob(job.id, hasOvertime, job.display_amount)}
-                    >
-                        <Text style={styles.acceptBtnTextFull}>
-                            {!stripeConnected ? '🔒 Connect Stripe' : (isAdminAssigned ? 'Accept Task' : `Accept — ${job.display_amount}`)}
-                        </Text>
+                    <TouchableOpacity style={[styles.acceptBtnFull, { backgroundColor: accentColor }, !stripeConnected && styles.disabledBtn]} onPress={() => acceptJob(job.id, hasOvertime, job.display_amount)}>
+                        <Text style={styles.acceptBtnTextFull}>{!stripeConnected ? '🔒 Connect Stripe' : (isAdminAssigned ? 'Accept Task' : `Accept — ${job.display_amount}`)}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -496,66 +523,73 @@ const styles = StyleSheet.create({
     scroll: { padding: 16, paddingBottom: 40 },
 
     jobCard: {
-        backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 16,
-        borderWidth: 1, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05, shadowRadius: 10
+        backgroundColor: '#fff', borderRadius: 20, marginBottom: 16,
+        borderWidth: 1, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05, shadowRadius: 8, overflow: 'hidden'
     },
     assignedBanner: {
         backgroundColor: '#eff6ff', flexDirection: 'row', alignItems: 'center', gap: 6,
-        paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: '#dbeafe'
+        paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#dbeafe'
     },
-    assignedBannerText: { fontSize: Typography.getCustom(10), fontWeight: '700', color: '#1e40af' },
+    assignedBannerText: { fontSize: 11, fontWeight: '700', color: '#1d4ed8' },
     otHeaderBanner: {
-        fontSize: Typography.getCustom(16),
-        backgroundColor: '#15843E', flexDirection: 'row', alignItems: 'center', gap: 6,
-        paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 12
+        backgroundColor: '#0f766e', flexDirection: 'row', alignItems: 'center', gap: 6,
+        paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#0f766e'
     },
-    otHeaderBannerText: { fontSize: Typography.getCustom(14), fontWeight: '700', color: '#fff' },
+    otHeaderBannerText: { fontSize: 11, fontWeight: '700', color: '#fff' },
 
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 16, paddingBottom: 12 },
     serviceIconContainer: { flexDirection: 'row', gap: 12, flex: 1 },
-    iconCircle: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-    categoryEmoji: { fontSize: Typography.h4 },
-    serviceTextContainer: { flex: 1 },
-    serviceName: { fontSize: Typography.input, fontWeight: 'bold', color: '#000000ff' },
-    categoryName: { fontSize: Typography.caption, color: '#000000ff', marginTop: 2 },
+    
+    thumbnailContainer: { width: 56, height: 56, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#f1f5f9' },
+    thumbnailImage: { width: '100%', height: '100%' },
+    thumbnailOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.4)', paddingVertical: 2, alignItems: 'center' },
+    thumbnailOverlayText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+    
+    iconBox: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+    categoryEmoji: { fontSize: 20 },
+    
+    serviceTextContainer: { flex: 1, justifyContent: 'center' },
+    serviceName: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
+    categoryName: { fontSize: 12, color: '#64748b', marginTop: 2 },
 
-    earningsBadge: { alignItems: 'flex-end' },
-    earnLabel: { fontSize: Typography.getCustom(9), color: '#000000ff', textTransform: 'uppercase', letterSpacing: 0.5 },
-    earnValue: { fontSize: Typography.h3, fontWeight: '900', marginTop: 2 },
+    earningsBadge: { alignItems: 'flex-end', marginLeft: 12 },
+    earnLabel: { fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700' },
+    earnValue: { fontSize: 20, fontWeight: '900', color: '#0f172a', marginTop: 2 },
 
-    cardMeta: { marginBottom: 16 },
+    cardMeta: { paddingHorizontal: 16, paddingBottom: 12 },
     badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-    metaBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    metaBadgeText: { fontSize: Typography.getCustom(12), color: '#000000ff', fontWeight: '700' },
-    otBadge: { backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#ddd6fe' },
-    otBadgeText: { fontSize: Typography.getCustom(12), color: '#15843E', fontWeight: '800' },
+    metaBadgeBlue: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#eff6ff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: '#dbeafe' },
+    metaBadgeBlueText: { fontSize: 12, color: '#1d4ed8', fontWeight: '600' },
+    metaBadgePurple: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#faf5ff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: '#f3e8ff' },
+    metaBadgePurpleText: { fontSize: 12, color: '#7e22ce', fontWeight: '700' },
 
-    infoGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 10, columnGap: 16, marginBottom: 12 },
+    otPotentialBlock: { backgroundColor: '#faf5ff', borderWidth: 1, borderColor: '#f3e8ff', borderRadius: 12, padding: 12, marginBottom: 12 },
+    otAvailableTag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#fffbeb', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'flex-start', marginBottom: 6 },
+    otAvailableTagText: { fontSize: 11, fontWeight: '700', color: '#b45309' },
+    otPotentialTitle: { fontSize: 12, fontWeight: '600', color: '#334155', marginBottom: 6 },
+    otPotentialBox: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 4 },
+    otPotentialBoxText: { fontSize: 11, fontWeight: '700', color: '#334155' },
+    otNetRateText: { fontSize: 11, color: '#94a3b8' },
+
+    infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
     infoItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    infoItemText: { fontSize: Typography.getCustom(12), color: '#000000ff', fontWeight: '500' },
+    infoIcon: { fontSize: 12 },
+    infoItemText: { fontSize: 12, color: '#334155', fontWeight: '500' },
+    infoBadgeIndigo: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#eef2ff', borderWidth: 1, borderColor: '#e0e7ff', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    infoBadgeIndigoText: { fontSize: 11, color: '#4338ca', fontWeight: '600' },
+    infoBadgeBlue: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#dbeafe', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    infoBadgeBlueText: { fontSize: 11, color: '#2563eb', fontWeight: '700' },
 
-    accessRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
-    accessTag: { fontSize: Typography.getCustom(10), color: '#115e59', fontWeight: '700', backgroundColor: '#f0fdfa', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#ccfbf1' },
+    accessRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+    accessTagGreen: { fontSize: 10, color: '#15803d', fontWeight: '600', backgroundColor: '#f0fdf4', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#bbf7d0' },
+    accessTagAmber: { fontSize: 10, color: '#b45309', fontWeight: '600', backgroundColor: '#fffbeb', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#fde68a' },
 
-    commissionInfo: {
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#f1f5f9',
-        marginTop: 4
-    },
-    commissionText: {
-        fontSize: Typography.getCustom(11),
-        color: '#64748b',
-        textAlign: 'center',
-        fontWeight: '600'
-    },
-
-    cardActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
-    detailsBtn: { flex: 1, height: 48, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' },
-    detailsBtnText: { fontSize: Typography.bodySmall, fontWeight: '700', color: '#1e293b' },
-    acceptBtnFull: { flex: 1.5, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    acceptBtnTextFull: { fontSize: Typography.bodySmall, fontWeight: 'bold', color: '#fff' },
+    cardActions: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingBottom: 16, marginTop: 4 },
+    detailsBtn: { flex: 1, height: 44, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' },
+    detailsBtnText: { fontSize: 14, fontWeight: '600', color: '#334155' },
+    acceptBtnFull: { flex: 1, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    acceptBtnTextFull: { fontSize: 14, fontWeight: '700', color: '#fff' },
     disabledBtn: { backgroundColor: '#cbd5e1' },
 
     emptyContainer: { alignItems: 'center', paddingVertical: 60 },

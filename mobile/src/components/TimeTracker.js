@@ -28,7 +28,7 @@ const TimeTracker = ({
     const [workSummary, setWorkSummary] = useState('');
     const [recommendations, setRecommendations] = useState('');
     const [jobData, setJobData] = useState(null);
-    
+
     const [submittedHours, setSubmittedHours] = useState('');
     const [submittedHeadcount, setSubmittedHeadcount] = useState(1);
     const [adjustmentReason, setAdjustmentReason] = useState('');
@@ -40,11 +40,11 @@ const TimeTracker = ({
                 setJobData(res.data);
                 const status = res.data.job_timer_status || 'not_started';
                 setTimerStatus(status);
-                
+
                 if (status === 'running' || status === 'paused') {
                     const accumulatedSeconds = res.data.accumulated_seconds || 0;
                     setElapsedTime(accumulatedSeconds);
-                    
+
                     if (status === 'running') {
                         // Shift startTime backwards by the accumulated seconds so the interval calculates correctly
                         const shiftedStartTime = new Date(Date.now() - (accumulatedSeconds * 1000)).toISOString();
@@ -159,7 +159,7 @@ const TimeTracker = ({
         const originalHours = (elapsedTime / 3600).toFixed(2);
         const originalHeadcount = jobData?.worker_count || (workerCount === '5+' ? 5 : workerCount);
         const isEdited = parseFloat(submittedHours) !== parseFloat(originalHours) || parseInt(submittedHeadcount) !== parseInt(originalHeadcount);
-        
+
         if (isEdited && !adjustmentReason.trim()) {
             Alert.alert('Required', 'Reason for adjustment is required since you changed hours or headcount.');
             return;
@@ -197,7 +197,10 @@ const TimeTracker = ({
             return new Date(dt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         };
         const actMins = jobData?.actual_duration_minutes || 0;
-        const durStr = actMins >= 60 ? `${Math.floor(actMins/60)}h ${actMins%60}m` : `${actMins}m`;
+        const durStr = actMins >= 60 ? `${Math.floor(actMins / 60)}h ${actMins % 60}m` : `${actMins}m`;
+        
+        const otMins = jobData?.overtime_minutes || 0;
+        const otDurStr = otMins >= 60 ? `${Math.floor(otMins / 60)}h ${otMins % 60}m` : `${otMins}m`;
 
         return (
             <View style={styles.completedBox}>
@@ -219,6 +222,10 @@ const TimeTracker = ({
                     <View style={[styles.statRow, { borderBottomWidth: 0 }]}>
                         <Text style={styles.statLabel}>Total Time</Text>
                         <Text style={[styles.statValue, { color: '#15843E', fontWeight: '800' }]}>{durStr}</Text>
+                    </View>
+                    <View style={styles.statRow}>
+                        <Text style={styles.statLabel}>Overtime</Text>
+                        <Text style={[styles.statValue, { color: '#15843E', fontWeight: '800' }]}>{otDurStr}</Text>
                     </View>
                 </View>
             </View>
@@ -263,7 +270,7 @@ const TimeTracker = ({
                     <View style={styles.runningActions}>
                         <TouchableOpacity style={[styles.btn, styles.pauseBtn]} onPress={() => handleAction('pause')} disabled={loading}>
                             <Ionicons name="pause" size={20} color="#fff" />
-                            <Text style={styles.btnText}>Pause / End Shift</Text>
+                            <Text style={styles.btnText}>Pause</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.btn, styles.stopBtn]} onPress={() => handleAction('stop')} disabled={loading}>
                             <Ionicons name="checkmark-done" size={20} color="#fff" />
@@ -292,12 +299,12 @@ const TimeTracker = ({
                     <View style={styles.modalContent}>
                         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                             <Text style={styles.modalTitle}>Start Job</Text>
-                            
+
                             <Text style={styles.modalLabel}>How many people are on site?</Text>
                             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
                                 {[1, 2, 3, 4, '5+'].map(num => (
-                                    <TouchableOpacity 
-                                        key={num} 
+                                    <TouchableOpacity
+                                        key={num}
                                         style={[{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#e2e8f0', alignItems: 'center' }, workerCount === num && { backgroundColor: '#10b981' }]}
                                         onPress={() => setWorkerCount(num)}
                                     >
@@ -316,15 +323,15 @@ const TimeTracker = ({
                             />
 
                             <View style={styles.modalActions}>
-                                <TouchableOpacity 
-                                    style={[styles.btn, styles.cancelBtn]} 
+                                <TouchableOpacity
+                                    style={[styles.btn, styles.cancelBtn]}
                                     onPress={() => setShowStartModal(false)}
                                     disabled={loading}
                                 >
                                     <Text style={styles.cancelBtnText}>Cancel</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity 
-                                    style={[styles.btn, styles.submitBtn]} 
+                                <TouchableOpacity
+                                    style={[styles.btn, styles.submitBtn]}
                                     onPress={handleConfirmStart}
                                     disabled={loading}
                                 >
@@ -342,7 +349,7 @@ const TimeTracker = ({
                     <View style={styles.modalContent}>
                         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                             <Text style={styles.modalTitle}>Complete Job</Text>
-                            
+
                             <View style={{ backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: '#e2e8f0' }}>
                                 <Text style={[styles.modalLabel, { marginTop: 0 }]}>Hours worked</Text>
                                 <TextInput
@@ -351,7 +358,7 @@ const TimeTracker = ({
                                     value={String(submittedHours)}
                                     onChangeText={setSubmittedHours}
                                 />
-                                
+
                                 <Text style={styles.modalLabel}>People on job</Text>
                                 <TextInput
                                     style={[styles.textArea, { height: 45, paddingVertical: 10, marginBottom: 10 }]}
@@ -359,7 +366,7 @@ const TimeTracker = ({
                                     value={String(submittedHeadcount)}
                                     onChangeText={setSubmittedHeadcount}
                                 />
-                                
+
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderColor: '#e2e8f0' }}>
                                     <Text style={{ fontWeight: '600', color: '#475569' }}>Total billable:</Text>
                                     <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#10b981' }}>{((parseFloat(submittedHours) || 0) * (parseInt(submittedHeadcount) || 1)).toFixed(2)} hrs</Text>

@@ -73,7 +73,7 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, amount, hasO
                 <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-xs font-semibold text-amber-800">⚠️ Overtime Available</p>
-                  <p className="text-xs text-amber-700 mt-0.5">Overtime is dynamically tracked. You&apos;ll be paid at your overtime rate for any extra time worked.</p>
+                  <p className="text-xs text-amber-700 mt-0.5">Overtime is automatically tracked. You&apos;ll be paid at your overtime rate for any extra time worked.</p>
                 </div>
               </div>
             </div>
@@ -485,15 +485,7 @@ export default function ProviderAvailableJobs() {
                   </div>
                 )}
 
-                {hasOvertime && !job.is_admin_assigned && (
-                  <div className="bg-gradient-to-r from-green-700 to-teal-600 px-5 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-white" />
-                      <p className="text-xs font-semibold text-white">⏰ Overtime eligible — max 2 hours at ${netOT.toFixed(2)}/hr</p>
-                    </div>
-                    <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full">+OT</span>
-                  </div>
-                )}
+
 
                 <div className="flex items-start justify-between p-5 pb-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -555,9 +547,6 @@ export default function ProviderAvailableJobs() {
                     <div className="flex gap-2">
                       <span className="bg-white border border-gray-200 text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-lg">
                         1hr OT: ${(baseEarnings + netOT).toFixed(2)}
-                      </span>
-                      <span className="bg-white border border-gray-200 text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-lg">
-                        2hr OT: ${(baseEarnings + netOT * 2).toFixed(2)}
                       </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1.5">Net rate ${netOT.toFixed(2)}/hr</p>

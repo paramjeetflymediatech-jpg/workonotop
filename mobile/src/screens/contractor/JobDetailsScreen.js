@@ -172,6 +172,12 @@ const JobDetailsScreen = ({ navigation, route }) => {
         ? parseFloat(job.display_amount.replace(/[^\d.-]/g, ''))
         : (parseFloat(job.display_amount ?? job.provider_amount ?? baseEarnings));
 
+    const finalProviderAmount = parseFloat(job.final_provider_amount || 0);
+    const overtimeEarnings = parseFloat(job.overtime_earnings || 0);
+    const totalEarnings = finalProviderAmount > 0 
+        ? finalProviderAmount 
+        : (parseFloat(job.provider_amount || baseEarnings) + overtimeEarnings);
+
     let requiredSkills = [];
     try { requiredSkills = typeof job.required_skills === 'string' ? JSON.parse(job.required_skills) : (job.required_skills || []); } catch(e){}
 
@@ -279,7 +285,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
                         </View>
                         <View style={styles.headerEarnings}>
                             <Text style={styles.earningsLabelTop}>YOU EARN</Text>
-                            <Text style={styles.earningsValueTop}>${earnings.toFixed(2)}</Text>
+                            <Text style={styles.earningsValueTop}>${totalEarnings.toFixed(2)}</Text>
                         </View>
                     </View>
 
@@ -427,7 +433,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>💰 Payment Breakdown</Text>
                         <View style={styles.detailsCard}>
-                            <PriceRow label="Your Earnings" value={`$${baseEarnings.toFixed(2)}`} isTotal color={TEAL_DARK} />
+                            <PriceRow label={job.status === 'completed' ? "Final Earnings" : "Your Earnings"} value={`$${totalEarnings.toFixed(2)}`} isTotal color={TEAL_DARK} />
 
                             {hasOvertime && (
                                 <View style={styles.otBreakdown}>
@@ -437,13 +443,9 @@ const JobDetailsScreen = ({ navigation, route }) => {
                                     <View style={styles.potentialCard}>
                                         <Text style={styles.potentialTitle}>With overtime, you could earn:</Text>
                                         <View style={styles.pBoxRow}>
-                                            <View style={styles.pBox}>
+                                            <View style={[styles.pBox, { width: '100%' }]}>
                                                 <Text style={styles.pBoxLabel}>1hr OT</Text>
                                                 <Text style={styles.pBoxValue}>${(baseEarnings + netOT).toFixed(2)}</Text>
-                                            </View>
-                                            <View style={[styles.pBox, { borderLeftWidth: 1, borderLeftColor: '#ddd6fe' }]}>
-                                                <Text style={styles.pBoxLabel}>2hr OT</Text>
-                                                <Text style={styles.pBoxValue}>${(baseEarnings + netOT * 2).toFixed(2)}</Text>
                                             </View>
                                         </View>
                                         {/* <Text style={styles.pBoxFootnote}>All amounts after {commPct}% commission</Text> */}

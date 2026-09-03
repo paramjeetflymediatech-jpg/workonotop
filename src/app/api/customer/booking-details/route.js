@@ -225,7 +225,7 @@ export async function GET(request) {
       booking.photos        = customerPhotos.map(p => p.photo_url)
       booking.before_photos = beforePhotos.map(p => ({ url: p.photo_url, uploaded_at: p.uploaded_at }))
       booking.after_photos  = afterPhotos.map(p => ({ url: p.photo_url, uploaded_at: p.uploaded_at }))
-      booking.status_history = history
+      booking.status_history = history.filter((h, idx) => idx === 0 || h.status !== history[idx - 1].status)
 
       // ── Parse time slot ───────────────────────────────────────────────────
       if (booking.job_time_slot && typeof booking.job_time_slot === 'string') {

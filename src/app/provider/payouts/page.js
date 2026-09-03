@@ -266,7 +266,7 @@ export default function ProviderPayouts() {
         </div>
 
         {/* Recent Jobs */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-gray-100">
             <h2 className="font-semibold text-gray-900">Recent completed jobs</h2>
           </div>
@@ -302,10 +302,10 @@ export default function ProviderPayouts() {
               </div>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* Back to Dashboard Link */}
-        <div className="mt-6 text-center">
+        {/* <div className="mt-6 text-center">
           <Link 
             href="/provider/dashboard"
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition group"
@@ -313,7 +313,7 @@ export default function ProviderPayouts() {
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition" />
             Back to Dashboard
           </Link>
-        </div>
+        </div> */}
       </div>
 
       {/* Add animation styles */}

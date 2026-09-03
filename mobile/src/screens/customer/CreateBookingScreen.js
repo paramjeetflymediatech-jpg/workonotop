@@ -210,7 +210,8 @@ const CreateBookingScreen = ({ navigation, route }) => {
 
                 if (res.success && res.client_secret) {
                     setClientSecret(res.client_secret);
-                    const totalAuthorizedAmount = parseFloat(service.base_price || service.price || 0) + (parseFloat(service.additional_price || 0) * 2);
+                    const cleanPrice = (val) => typeof val === 'string' ? parseFloat(val.replace(/[^0-9.]/g, '')) || 0 : parseFloat(val) || 0;
+                    const totalAuthorizedAmount = cleanPrice(service.base_price || service.price || 0);
                     // Construct the URL to load the Next.js hosted payment page
                     const url = `${API_BASE_URL}/mobile-payment?clientSecret=${res.client_secret}&amount=${totalAuthorizedAmount}`;
                     setPaymentUrl(url);

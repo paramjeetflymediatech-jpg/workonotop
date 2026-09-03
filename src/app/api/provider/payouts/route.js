@@ -33,9 +33,14 @@ export async function GET(request) {
         SUM(
           CASE 
             WHEN final_provider_amount > 0 THEN final_provider_amount
-            WHEN provider_amount > 0 THEN provider_amount
-            WHEN service_price > 0 THEN service_price - (service_price * (COALESCE(commission_percent, 20) / 100))
-            ELSE 0
+            ELSE (
+              CASE 
+                WHEN provider_amount > 0 THEN provider_amount
+                WHEN service_price > 0 THEN service_price - (service_price * (COALESCE(commission_percent, 20) / 100))
+                ELSE 0
+              END
+              + COALESCE(overtime_earnings, 0)
+            )
           END
         ) as calculated_earnings
        FROM bookings 
@@ -59,9 +64,14 @@ export async function GET(request) {
       `SELECT service_name, 
         CASE 
           WHEN final_provider_amount > 0 THEN final_provider_amount
-          WHEN provider_amount > 0 THEN provider_amount
-          WHEN service_price > 0 THEN service_price - (service_price * (COALESCE(commission_percent, 20) / 100))
-          ELSE 0
+          ELSE (
+            CASE 
+              WHEN provider_amount > 0 THEN provider_amount
+              WHEN service_price > 0 THEN service_price - (service_price * (COALESCE(commission_percent, 20) / 100))
+              ELSE 0
+            END
+            + COALESCE(overtime_earnings, 0)
+          )
         END as amount,
         end_time
        FROM bookings 
@@ -73,6 +83,13 @@ export async function GET(request) {
 
     const provider = providers[0] || {}
 
+    // Fully dynamic balances
+    const totalPaid = payouts.filter(p => p.status === 'paid').reduce((sum, p) => sum + parseFloat(p.amount), 0)
+    const totalPending = payouts.filter(p => ['pending', 'processing'].includes(p.status)).reduce((sum, p) => sum + parseFloat(p.amount), 0)
+    
+    const lifetimeBalance = dynamicEarnings
+    const availableBalance = Math.max(0, lifetimeBalance - totalPaid - totalPending)
+
     return NextResponse.json({
       success: true,
       data: {
@@ -80,10 +97,10 @@ export async function GET(request) {
           stripe_onboarding: provider.stripe_onboarding_complete ? 'complete' : 'incomplete'
         },
         balances: {
-          available_balance: dynamicEarnings, // Use dynamic earnings for now
-          pending_balance: parseFloat(provider.static_pending_balance || 0),
+          available_balance: availableBalance,
+          pending_balance: totalPending,
           total_earnings: dynamicEarnings,
-          lifetime_balance: dynamicEarnings
+          lifetime_balance: lifetimeBalance
         },
         payouts: payouts.map(p => ({
           amount: parseFloat(p.amount),

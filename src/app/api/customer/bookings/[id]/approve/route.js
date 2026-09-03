@@ -166,7 +166,9 @@ export async function POST(request, { params }) {
   if (!decoded) return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
 
   const { id } = await params
-  const { action, dispute_reason } = await request.json()
+  const { action, dispute_reason, source, success_url, cancel_url } = await request.json()
+  
+  console.log(`[Approve API] received action: ${action}, source: ${source}`);
 
   if (!['approve', 'dispute'].includes(action)) {
     return NextResponse.json({ success: false, message: 'action must be approve or dispute' }, { status: 400 })
@@ -303,14 +305,14 @@ export async function POST(request, { params }) {
           }
 
           const wCount = parseInt(booking.submitted_headcount || booking.worker_count || 1)
-          const basePrice      = parseFloat(booking.service_price) * wCount
-          const overtimeRate   = parseFloat(booking.additional_price || 0) * wCount
-          // Use submitted duration if provider manually edited hours, fallback to raw tracked time
-          const actualMins     = parseInt(booking.submitted_duration_minutes || booking.actual_duration_minutes || 0)
-          const standardMins   = parseInt(booking.standard_duration_minutes || booking.duration_minutes || 60)
-          const commissionPct = parseFloat(booking.commission_percent || 0)
-
-          const finalAmount = calcFinalAmount(basePrice, standardMins, actualMins, overtimeRate)
+          const basePriceCustomer = parseFloat(booking.service_price || 0) * wCount
+          const overtimeRateCustomer = parseFloat(booking.additional_price || 0) * wCount
+          const actualMins = parseInt(booking.submitted_duration_minutes || booking.actual_duration_minutes || 0)
+          const standardMins = parseInt(booking.standard_duration_minutes || booking.duration_minutes || 60)
+          
+          const finalAmount = calcFinalAmount(basePriceCustomer, standardMins, actualMins, overtimeRateCustomer)
+          const commissionPct = parseFloat(booking.commission_percent || 20)
+          
           const providerAmount = parseFloat((finalAmount * (1 - commissionPct / 100)).toFixed(2))
           const platformAmount = parseFloat((finalAmount - providerAmount).toFixed(2))
 
@@ -338,6 +340,9 @@ export async function POST(request, { params }) {
 
             if (remainingToPay > 0) {
               const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+              const finalSuccessUrl = success_url || (source === 'mobile' ? `workontap://my-bookings/${id}?payment=success` : `${baseUrl}/my-bookings/${id}?payment=success`)
+              const finalCancelUrl = cancel_url || (source === 'mobile' ? `workontap://my-bookings/${id}` : `${baseUrl}/my-bookings/${id}`)
+              
               const session = await stripe.checkout.sessions.create({
                 payment_method_types: ['card'],
                 line_items: [{
@@ -349,8 +354,8 @@ export async function POST(request, { params }) {
                   quantity: 1,
                 }],
                 mode: 'payment',
-                success_url: `${baseUrl}/my-bookings/${id}?payment=success`,
-                cancel_url: `${baseUrl}/my-bookings/${id}`,
+                success_url: finalSuccessUrl,
+                cancel_url: finalCancelUrl,
                 metadata: { 
                   booking_id: String(id), 
                   type: 'balance_payment', 

@@ -77,8 +77,6 @@ function ConfirmModal({ isOpen, onClose, onConfirm, loading, amount, hasOvertime
           {hasOvertime && (
             <div className="text-xs text-gray-500 flex justify-center gap-3 mt-2">
               <span>1hr OT: ${(parseFloat(baseEarnings) + parseFloat(netOT)).toFixed(2)}</span>
-              <span>·</span>
-              <span>2hr OT: ${(parseFloat(baseEarnings) + parseFloat(netOT) * 2).toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -131,7 +129,7 @@ function InfoCard({ title, icon, children }) {
   )
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────────
+// ── Main ─────────────────────────────────────────────────────────────────────
 export default function ProviderJobDetail({ params }) {
   const router = useRouter()
   const { id } = React.use(params)
@@ -491,7 +489,7 @@ export default function ProviderJobDetail({ params }) {
               <span className="tracking-tight">Accept this Job — Earn ${baseEarnings.toFixed(2)}</span>
               {hasOvertime && (
                 <span className="text-[9px] md:text-xs bg-white/20 px-3 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-sm border border-white/10">
-                  Potential up to ${(baseEarnings + netOT * 2).toFixed(2)}
+                  Potential up to ${(baseEarnings + netOT).toFixed(2)}
                 </span>
               )}
             </button>

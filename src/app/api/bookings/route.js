@@ -531,14 +531,35 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
+  let connection
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ success: false, message: 'ID required' }, { status: 400 })
-    await execute('DELETE FROM bookings WHERE id = ?', [id])
-    return NextResponse.json({ success: true, message: 'Booking deleted' })
+
+    connection = await getConnection()
+    await connection.beginTransaction()
+
+    // Delete all related records to prevent orphans
+    await connection.execute('DELETE FROM chat_messages WHERE booking_id = ?', [id])
+    await connection.execute('DELETE FROM booking_photos WHERE booking_id = ?', [id])
+    await connection.execute('DELETE FROM booking_status_history WHERE booking_id = ?', [id])
+    await connection.execute('DELETE FROM booking_time_logs WHERE booking_id = ?', [id])
+    await connection.execute('DELETE FROM job_photos WHERE booking_id = ?', [id])
+    await connection.execute('DELETE FROM invoices WHERE booking_id = ?', [id])
+    await connection.execute('DELETE FROM provider_reviews WHERE booking_id = ?', [id])
+    await connection.execute('DELETE FROM provider_payouts WHERE booking_id = ?', [id]).catch(() => {}) // Catch in case table doesn't have booking_id
+
+    // Finally delete the booking
+    await connection.execute('DELETE FROM bookings WHERE id = ?', [id])
+    
+    await connection.commit()
+    return NextResponse.json({ success: true, message: 'Booking and all related data deleted successfully' })
   } catch (error) {
+    if (connection) await connection.rollback()
     console.error('Error deleting booking:', error)
     return NextResponse.json({ success: false, message: 'Failed to delete booking' }, { status: 500 })
+  } finally {
+    if (connection) connection.release()
   }
 }

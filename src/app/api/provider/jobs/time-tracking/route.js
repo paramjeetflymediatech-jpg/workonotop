@@ -74,9 +74,10 @@ export async function POST(request) {
             const wCount = parseInt(worker_count || 1, 10);
             const eHours = parseFloat(estimated_hours || 1);
             
+            const standardHours = standardDuration / 60;
             let oAmount = 0;
-            if (eHours > 1) {
-               oAmount = (eHours - 1) * oRate;
+            if (eHours > standardHours) {
+               oAmount = (eHours - standardHours) * oRate;
             }
             const tEst = (bRate + oAmount) * wCount;
             
@@ -85,12 +86,12 @@ export async function POST(request) {
 Service: ${sName}
 
 Your professional has started the job!
-- Cleaners: ${wCount}
+- Professionals: ${wCount}
 - Est. Time: ${eHours} hrs
-- Base Rate: ${bRate}
-- Extra Rate: ${oRate}/hr
+- Base Rate: $${bRate}
+- Extra Rate: $${oRate}/hr
 
-Est. Total: Est ${tEst}
+Est. Total: $${tEst}
 (Final price based on actual time)`;
             
             // Fire and forget

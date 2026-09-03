@@ -174,14 +174,14 @@ export default function CustomerBookingDetails() {
     if (!user) { router.push('/'); return }
     
     loadBooking()
-    
-    // Poll every 10 seconds to catch background updates
+    // Poll frequently (every 3s) if we are waiting for a payment webhook to process, otherwise every 10s
+    const isWaiting = searchParams.get('payment') === 'success' || searchParams.get('overtime_payment') === 'success'
     const interval = setInterval(() => {
       loadBooking(true) // true = silent load (no spinner)
-    }, 10000)
+    }, isWaiting ? 3000 : 10000)
     
     return () => clearInterval(interval)
-  }, [user, authLoading, bookingId])
+  }, [user?.id, authLoading, bookingId])
 
   const loadBooking = async (silent = false) => {
     try {
@@ -309,9 +309,28 @@ export default function CustomerBookingDetails() {
         <div className="max-w-7xl mx-auto px-4">
           
           {isPaymentProcessing && (
-            <div className="mb-6 bg-teal-50 border border-teal-200 text-teal-800 px-6 py-4 rounded-2xl flex items-center gap-3 animate-pulse">
-              <div className="w-5 h-5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-              <p className="font-medium text-sm">Payment successful! Processing your transaction... (This may take a moment)</p>
+            <div className="mb-6 bg-teal-50 border border-teal-200 text-teal-800 px-6 py-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                <p className="font-medium text-sm">Payment successful! Processing your transaction... (This may take a moment)</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button 
+                  onClick={() => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('payment');
+                    url.searchParams.delete('overtime_payment');
+                    window.history.replaceState({}, '', url);
+                    loadBooking();
+                  }} 
+                  className="px-4 py-2 bg-white border border-teal-200 text-teal-700 text-xs font-bold rounded-lg hover:bg-teal-50 transition disabled:opacity-50"
+                >
+                  Cancel & Retry
+                </button>
+                <button onClick={() => loadBooking()} disabled={loading} className="px-4 py-2 bg-teal-600 text-white text-xs font-bold rounded-lg hover:bg-teal-700 transition disabled:opacity-50">
+                  {loading ? 'Refreshing...' : 'Refresh Status'}
+                </button>
+              </div>
             </div>
           )}
 
@@ -353,7 +372,7 @@ export default function CustomerBookingDetails() {
           )}
 
           {/* Awaiting approval banner */}
-          {booking.status === 'awaiting_approval' && (
+          {booking.status === 'awaiting_approval' && !isPaymentProcessing && (
             <div className="bg-white rounded-2xl border-2 border-teal-500 shadow-lg p-6 mb-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center">

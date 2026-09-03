@@ -135,13 +135,11 @@ const MyJobsScreen = ({ navigation }) => {
             return typeof val === 'number' ? val : 0;
         };
 
-        let earnings = baseEarnings;
-        if (item.status === 'completed' && getNum(item.final_provider_amount) > 0) {
-            earnings = getNum(item.final_provider_amount);
-        } else if (getNum(item.display_amount) > 0) {
-            earnings = getNum(item.display_amount);
-        } else if (getNum(item.provider_amount) > 0) {
-            earnings = getNum(item.provider_amount);
+        let earnings = getNum(item.final_provider_amount);
+        if (item.status !== 'completed' || earnings === 0) {
+            const baseAmt = getNum(item.provider_amount) || getNum(item.display_amount) || baseEarnings || (getNum(item.service_price) * (1 - (getNum(item.commission_percent, 20) / 100)));
+            const otEarnings = getNum(item.overtime_earnings) || 0;
+            earnings = baseAmt + otEarnings;
         }
 
         return (
@@ -184,12 +182,8 @@ const MyJobsScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.cardFooter}>
-                    <View style={styles.earningsContainer}>
-                        <Text style={styles.earningsLabel}>Earning</Text>
-                        <Text style={styles.earningsValue}>${(isNaN(earnings) ? 0 : earnings).toFixed(2)}</Text>
-                    </View>
                     <TouchableOpacity
-                        style={styles.detailsBtn}
+                        style={[styles.detailsBtn, { width: '100%', justifyContent: 'center' }]}
                         onPress={() => navigation.navigate('JobDetails', { job: item })}
                     >
                         <Text style={styles.detailsBtnText}>View Details</Text>

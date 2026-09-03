@@ -4,11 +4,19 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Clock, AlertCircle } from 'lucide-react'
 import TimeTracker from './TimeTracker'
+
+const MetaBadge = ({ icon, text }) => (
+  <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50/80 border border-gray-100 px-2.5 py-1.5 rounded-lg shadow-sm">
+    <span className="opacity-80">{icon}</span> {text}
+  </span>
+)
 
 export default function ProviderJobs() {
   const router = useRouter()
   const [jobs, setJobs] = useState([])
+  const [activeTab, setActiveTab] = useState('ongoing')
   const [loading, setLoading] = useState(true)
   const [selectedJob, setSelectedJob] = useState(null)
   const [toast, setToast] = useState(null)
@@ -67,7 +75,9 @@ export default function ProviderJobs() {
       confirmed: 'bg-blue-100 text-blue-800',
       in_progress: 'bg-yellow-100 text-yellow-800',
       completed: 'bg-green-100 text-green-800',
-      pending: 'bg-gray-100 text-gray-800'
+      pending: 'bg-gray-100 text-gray-800',
+      awaiting_approval: 'bg-teal-100 text-teal-800',
+      disputed: 'bg-red-100 text-red-800'
     }
     return colors[status] || 'bg-gray-100 text-gray-800'
   }
@@ -125,154 +135,199 @@ export default function ProviderJobs() {
       <div className="max-w-4xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">My Jobs</h1>
 
-        {jobs.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center">
-            <p className="text-gray-500">No jobs assigned yet</p>
-            <Link 
-              href="/provider/available-jobs"
-              className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg text-sm"
-            >
-              Browse Available Jobs
-            </Link>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {jobs.map(job => {
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            onClick={() => setActiveTab('ongoing')}
+            className={`flex-1 py-3 text-sm font-semibold text-center border-b-2 transition-colors ${
+              activeTab === 'ongoing' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Ongoing
+          </button>
+          <button
+            onClick={() => setActiveTab('completed')}
+            className={`flex-1 py-3 text-sm font-semibold text-center border-b-2 transition-colors ${
+              activeTab === 'completed' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Completed
+          </button>
+        </div>
+
+        {(() => {
+          const filteredJobs = jobs.filter(job => 
+            activeTab === 'ongoing' 
+              ? ['confirmed', 'in_progress'].includes(job.status)
+              : ['completed', 'awaiting_approval', 'disputed'].includes(job.status)
+          );
+
+          if (filteredJobs.length === 0) {
+            return (
+              <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center">
+                <p className="text-gray-500">
+                  {activeTab === 'ongoing' ? 'No ongoing jobs right now.' : 'No completed jobs yet.'}
+                </p>
+                {activeTab === 'ongoing' && (
+                  <Link 
+                    href="/provider/available-jobs"
+                    className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg text-sm"
+                  >
+                    Browse Available Jobs
+                  </Link>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <div className="grid gap-4">
+              {filteredJobs.map(job => {
               const duration = job.duration_minutes || 60
-              const hasOvertime = parseFloat(job.additional_price || 0) > 0
-              const overtimeRate = parseFloat(job.additional_price || 0)
-              const baseAmount = parseFloat(job.provider_amount || 0)
-              const finalAmount = parseFloat(job.final_provider_amount || baseAmount)
-              
+              const commPct = parseFloat(job.commission_percent ?? 20)
+              const baseAmount = parseFloat(job.final_provider_amount) > 0
+                ? parseFloat(job.final_provider_amount)
+                : (parseFloat(job.provider_amount || 0) + parseFloat(job.overtime_earnings || 0)) || (parseFloat(job.service_price || 0) * (1 - (commPct / 100)))
+              const otRate = parseFloat(job.additional_price || 0)
+              const netOT = otRate * (1 - (commPct / 100))
+              const hasOvertime = otRate > 0
+
+              const hasParking = !!job.parking_access
+              const hasElevator = !!job.elevator_access
+              const hasPets = !!job.has_pets
+
               return (
-                <div key={job.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition">
-                  {/* Job Header */}
-                  <div className="p-4 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      {/* Photo Thumbnail */}
-                      <div className="flex-shrink-0">
+                <div key={job.id} className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all overflow-hidden ${
+                  job.status === 'in_progress' ? 'border-yellow-200 hover:border-yellow-300 ring-1 ring-yellow-100' :
+                  job.status === 'confirmed' ? 'border-blue-200 hover:border-blue-300 ring-1 ring-blue-100' :
+                  hasOvertime && job.status !== 'completed' ? 'border-purple-200 hover:border-purple-300 ring-1 ring-purple-100' :
+                  'border-gray-100 hover:border-green-200'
+                }`}>
+                  
+
+
+                  <div className="flex items-start justify-between p-5 pb-3 border-b border-gray-50">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative flex-shrink-0 group">
                         {job.photos?.length > 0 ? (
-                          <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-100 shadow-sm relative group cursor-pointer"
+                          <div className="w-14 h-14 rounded-xl overflow-hidden border border-gray-100 shadow-sm relative cursor-pointer"
                             onClick={() => window.open(job.photos[0], '_blank')}>
                             <img src={job.photos[0]} alt="Job" className="w-full h-full object-cover" />
                             {job.photos.length > 1 && (
-                              <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white text-[8px] px-1 py-0.5 rounded backdrop-blur-sm">
-                                +{job.photos.length - 1}
-                              </span>
+                              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-white text-[10px] font-bold">+{job.photos.length - 1}</span>
+                              </div>
                             )}
                           </div>
                         ) : (
-                          <div className="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center text-xl border border-gray-100">
+                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-xl ${
+                            job.status === 'completed' ? 'bg-green-50 border border-green-100 text-green-600' :
+                            hasOvertime ? 'bg-purple-50 border border-purple-100 text-purple-600' :
+                            'bg-blue-50 border border-blue-100 text-blue-600'
+                          }`}>
                             🔧
                           </div>
                         )}
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <div className="min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate">{job.service_name}</h3>
-                            <p className="text-xs text-gray-500">#{job.booking_number}</p>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(job.status)}`}>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-bold text-gray-900 text-sm truncate">{job.service_name}</h3>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${getStatusColor(job.status)}`}>
                             {job.status?.replace('_', ' ')}
                           </span>
                         </div>
+                        <p className="text-xs text-gray-400 truncate">
+                          {job.customer_first_name} {job.customer_last_name} • #{job.booking_number}
+                        </p>
                       </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-3">
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">You earn</p>
+                      <p className={`text-2xl font-extrabold leading-tight ${job.status === 'completed' ? 'text-green-600' : 'text-black'}`}>
+                        ${baseAmount.toFixed(2)}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Job Details */}
-                  <div className="p-4">
-                    {/* Duration Display */}
-                    <div className="mb-3 flex flex-wrap gap-2">
-                      <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg">
-                        <span>⏱️</span> Est: {formatDuration(duration)}
-                      </span>
-                      {job.actual_duration_minutes > 0 && (
-                        <span className="inline-flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-lg">
-                          <span>✓</span> Actual: {formatDuration(job.actual_duration_minutes)}
-                        </span>
-                      )}
-                      {job.status === 'in_progress' && (
-                        <span className="inline-flex items-center gap-1 text-xs bg-yellow-50 text-yellow-700 px-2.5 py-1 rounded-lg">
-                          <span>⏺</span> In Progress
-                        </span>
-                      )}
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs text-gray-400">Date</p>
-                        <p className="text-sm font-medium">{formatDate(job.job_date)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Customer</p>
-                        <p className="text-sm font-medium">{job.customer_first_name} {job.customer_last_name}</p>
-                      </div>
-                      {job.service_area_name && (
-                        <div className="col-span-2">
-                          <p className="text-xs text-gray-400">Service Area</p>
-                          <p className="text-sm font-medium text-indigo-700">
-                            🗺️ {job.service_area_group ? `${job.service_area_group} - ${job.service_area_name}` : job.service_area_name}
-                          </p>
+                  <div className="flex flex-wrap gap-2 px-5 pb-3">
+                    <MetaBadge icon="📅" text={formatDate(job.job_date)} />
+                    {job.job_time_slot && <MetaBadge icon="🕐" text={job.job_time_slot} />}
+                    <MetaBadge icon="📍" text={job.address_line1?.split(',')[0] || '—'} />
+                    {job.service_area_name && (
+                      <span className="inline-flex items-center gap-1 text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg">
+                        <span>🗺️</span> {job.service_area_group ? `${job.service_area_group} - ${job.service_area_name}` : job.service_area_name}
+                      </span>
+                    )}
+                    {job.photos?.length > 0 && (
+                      <span className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg font-bold cursor-pointer"
+                            onClick={() => window.open(job.photos[0], '_blank')}>
+                        <span>📷</span> {job.photos.length} Photo{job.photos.length > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+
+                  {(hasParking || hasElevator || hasPets) && (
+                    <div className="flex gap-1.5 px-5 pb-3 flex-wrap">
+                      {hasParking && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 border border-green-200 text-green-700">🅿️ Parking</span>}
+                      {hasElevator && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 border border-green-200 text-green-700">🛗 Elevator</span>}
+                      {hasPets && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-amber-50 border border-amber-200 text-amber-700">🐕 Pets</span>}
+                    </div>
+                  )}
+
+                  {job.status === 'completed' && (
+                    <div className="mx-5 mb-3 bg-green-50 border border-green-200 rounded-xl p-4">
+                      <p className="text-green-700 font-bold flex items-center gap-2 mb-2 text-sm">
+                        <span>✓</span> Job Completed
+                      </p>
+                      {job.actual_duration_minutes > 0 && (
+                        <div className="space-y-1.5 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-green-600/80">Started:</span>
+                            <span className="font-medium text-green-900">{formatDateTime(job.start_time)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-600/80">Completed:</span>
+                            <span className="font-medium text-green-900">{formatDateTime(job.end_time)}</span>
+                          </div>
+                          <div className="flex justify-between pt-2 border-t border-green-200/50 mt-1">
+                            <span className="text-green-700">Total time:</span>
+                            <span className="font-bold text-green-700">
+                              {formatDuration(job.actual_duration_minutes)}
+                            </span>
+                          </div>
+                          {job.overtime_minutes > 0 && (
+                            <div className="flex justify-between text-purple-700 mt-1">
+                              <span className="font-medium">Overtime:</span>
+                              <span className="font-bold">{formatDuration(job.overtime_minutes)}</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
+                  )}
 
-                    {/* Time Tracking Section - Removed from list view, provider must go to detail page */}
-
-                    {/* Completed Job */}
-                    {job.status === 'completed' && (
-                      <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
-                        <p className="text-green-700 font-medium flex items-center gap-2 mb-2">
-                          <span>✓</span> Job Completed
-                        </p>
-                        {job.actual_duration_minutes > 0 && (
-                          <div className="space-y-1 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Started:</span>
-                              <span className="font-medium">{formatDateTime(job.start_time)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Completed:</span>
-                              <span className="font-medium">{formatDateTime(job.end_time)}</span>
-                            </div>
-                            <div className="flex justify-between pt-2 border-t border-green-200">
-                              <span className="text-gray-600">Total time:</span>
-                              <span className="font-bold text-green-700">
-                                {formatDuration(job.actual_duration_minutes)}
-                              </span>
-                            </div>
-                            {job.overtime_minutes > 0 && (
-                              <div className="flex justify-between text-purple-600">
-                                <span>Overtime:</span>
-                                <span>{formatDuration(job.overtime_minutes)}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* View Details Link (Primary Action) */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link 
-                        href={`/provider/jobs/${job.id}`}
-                        className="w-full py-3 bg-green-50 border border-green-200 text-green-700 hover:bg-green-600 hover:text-white rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 group"
-                      >
-                        {job.status === 'in_progress' ? '▶ Continue Job' : job.status === 'confirmed' ? '▶ Start Job' : 'View Details'}
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Link>
-                    </div>
+                  <div className="p-5 pt-2 flex gap-2">
+                    <Link 
+                      href={`/provider/jobs/${job.id}`}
+                      className={`flex-1 py-3 border rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 group ${
+                        job.status === 'in_progress' ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-500 hover:text-white' :
+                        job.status === 'confirmed' ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-600 hover:text-white' :
+                        'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      {job.status === 'in_progress' ? '▶ Continue Job' : job.status === 'confirmed' ? '▶ Start Job' : 'View Details'}
+                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
                   </div>
                 </div>
               )
             })}
           </div>
-        )}
+          )
+        })()}
       </div>
     </div>
   )

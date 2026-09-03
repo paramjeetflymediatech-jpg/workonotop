@@ -458,15 +458,15 @@ export default function TimeTracker({
   return (
     <div className="space-y-3">
       {timerStatus !== 'not_started' && (
-        <div className={`rounded-2xl p-4 text-center ${isOvertime ? 'bg-purple-50 border border-purple-200' : 'bg-gray-50 border border-gray-200'}`}>
-          <div className={`text-4xl font-bold font-mono tracking-tight mb-1 ${isOvertime ? 'text-purple-700' : 'text-gray-900'}`}>
+        <div className="rounded-2xl p-4 text-center bg-gray-50 border border-gray-200">
+          <div className="text-4xl font-bold font-mono tracking-tight mb-1 text-black">
             {formatTime(elapsedTime)}
           </div>
-          <div className="flex justify-center gap-3 text-xs text-gray-500">
+          <div className="flex justify-center gap-3 text-xs text-black">
             <span>Standard: {formatDuration(standardDuration)}</span>
             {isOvertime && overtimeRate > 0 && (
-              <span className="text-purple-600 font-semibold">
-                +{formatDuration(overtimeMinutes)} overtime (+$${overtimeEarnings.toFixed(2)})
+              <span className="font-semibold text-black">
+                +{formatDuration(overtimeMinutes)} overtime (+${overtimeEarnings.toFixed(2)})
               </span>
             )}
           </div>
@@ -509,7 +509,7 @@ export default function TimeTracker({
             <button
               onClick={() => handleAction('stop')}
               disabled={loading}
-              className="flex-1 py-3 bg-gray-800 text-white rounded-xl text-sm font-bold hover:bg-gray-900 transition disabled:opacity-50"
+              className="flex-1 py-3 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition disabled:opacity-50"
             >
               ✓ Finish Job
             </button>
@@ -531,7 +531,7 @@ export default function TimeTracker({
             <button
               onClick={() => handleAction('stop')}
               disabled={loading}
-              className="flex-1 py-3 bg-gray-800 text-white rounded-xl text-sm font-bold hover:bg-gray-900 transition disabled:opacity-50"
+              className="flex-1 py-3 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition disabled:opacity-50"
             >
               ✓ Finish Job
             </button>
@@ -551,4 +551,4 @@ export default function TimeTracker({
       )}
     </div>
   )
-}
+}

@@ -289,10 +289,10 @@ async function handleAccountUpdated(account) {
 }
 
 async function handleCheckoutCompleted(session) {
-  if (session.metadata?.type === 'overtime_payment') {
+  if (session.metadata?.type === 'overtime_payment' || session.metadata?.type === 'balance_payment') {
     const bookingId = session.metadata.booking_id;
     const providerAmount = parseFloat(session.metadata.provider_amount);
-    const providerCents = parseInt(session.metadata.provider_cents);
+    const providerCents = parseInt(session.metadata.provider_cents || (providerAmount * 100));
     
     console.log(`✅ Overtime payment received for booking ${bookingId}`);
 
