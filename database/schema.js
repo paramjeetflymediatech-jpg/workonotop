@@ -39,6 +39,7 @@ const tables = [
     image_url VARCHAR(255),
     reset_token VARCHAR(255),
     reset_token_expiry DATETIME,
+    stripe_customer_id VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_role (role)
@@ -719,6 +720,8 @@ const alterations = [
   { table: 'users', column: 'image_url', sql: 'ALTER TABLE users ADD COLUMN image_url VARCHAR(255) AFTER role' },
   // Fix job_time_slot truncation
   { table: 'bookings', column: 'job_time_slot_varchar', sql: 'ALTER TABLE bookings MODIFY COLUMN job_time_slot VARCHAR(255) NOT NULL' },
+
+  { table: 'users', column: 'stripe_customer_id', sql: 'ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR(255) AFTER image_url' },
 
   // mobile_auth_users table additions/fixes
   { table: 'mobile_auth_users', column: 'user_type_enum', sql: "ALTER TABLE mobile_auth_users MODIFY COLUMN user_type ENUM('customer', 'provider', 'admin') NOT NULL", type: 'modify' },
