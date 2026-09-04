@@ -31,7 +31,7 @@ const JobReportScreen = ({ navigation, route }) => {
 
         Alert.alert(
             isOvertime ? 'Pay Overtime Balance?' : 'Approve & Pay?',
-            isOvertime ? 'This will redirect you to securely pay the remaining overtime balance.' : 'This will release the payment to the provider.',
+            isOvertime ? 'This will automatically securely deduct the remaining overtime balance from your saved card.' : 'This will release the payment to the provider.',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -41,10 +41,11 @@ const JobReportScreen = ({ navigation, route }) => {
                             const res = await api.post(`/api/customer/bookings/${bookingId}/approve`, { action: 'approve' });
 
                             if (res?.data?.checkout_url) {
+                                // Fallback if auto-charge fails
                                 Linking.openURL(res.data.checkout_url);
                                 setTimeout(() => navigation.goBack(), 1500);
                             } else {
-                                Alert.alert('Payment Released!', 'Great! The job is now completed and payment sent.', [
+                                Alert.alert('Payment Released!', res?.data?.message || 'Great! The job is now completed and payment sent.', [
                                     { text: 'OK', onPress: () => navigation.goBack() }
                                 ]);
                             }

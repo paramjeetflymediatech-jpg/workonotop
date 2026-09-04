@@ -22,7 +22,7 @@ const ContractorJobsScreen = ({ navigation }) => {
     const [stripeConnected, setStripeConnected] = useState(true);
     const [providerCity, setProviderCity] = useState('');
     const [providerAreaNames, setProviderAreaNames] = useState([]);
-    
+
     // Pagination states
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
@@ -141,10 +141,10 @@ const ContractorJobsScreen = ({ navigation }) => {
             }
             const dateArr = Array.isArray(parsed) ? parsed : [parsed];
             if (dateArr.length === 0) return '';
-            
+
             let dateStr = dateArr[0];
             let displayDate = dateStr;
-            
+
             if (typeof dateStr === 'string' && dateStr.includes('-')) {
                 const parts = dateStr.split('T')[0].split('-');
                 if (parts.length === 3) {
@@ -157,7 +157,7 @@ const ContractorJobsScreen = ({ navigation }) => {
                     }
                 }
             }
-            
+
             if (dateArr.length > 1) {
                 return `${displayDate} & ${dateArr.length - 1} more`;
             }
@@ -176,12 +176,12 @@ const ContractorJobsScreen = ({ navigation }) => {
             }
             const slotArr = Array.isArray(parsed) ? parsed : [parsed];
             if (slotArr.length === 0) return 'Flexible';
-            
+
             let displaySlot = slotArr[0];
             if (typeof displaySlot === 'string' && displaySlot.includes(': ')) {
                 displaySlot = displaySlot.split(': ').slice(1).join(': ');
             }
-            
+
             // Add AM/PM
             displaySlot = displaySlot.replace(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/g, (match, h1, m1, h2, m2) => {
                 const formatTime = (hrStr, minStr) => {
@@ -227,14 +227,14 @@ const ContractorJobsScreen = ({ navigation }) => {
     const renderJobItem = ({ item: job }) => {
         const dur = job.pricing?.duration_minutes || 60;
         const commPct = job.pricing?.commission_percent || 0;
-        const baseEarnings = parseFloat(job.final_provider_amount) > 0 ? parseFloat(job.final_provider_amount) : (parseFloat(job.provider_amount || 0) + parseFloat(job.overtime_earnings || 0)) || (parseFloat(job.service_price || 0) * (1 - (parseFloat(job.commission_percent || 20) / 100)));
+        const baseEarnings = job.pricing?.provider_base_earnings || 0;
         const otRate = job.pricing?.overtime_rate || 0;
         const netOT = job.pricing?.net_overtime_rate || (otRate * (1 - commPct / 100));
         const hasOvertime = Boolean(job.pricing?.has_overtime);
         const isAdminAssigned = Boolean(job.is_admin_assigned);
         const photosCount = Array.isArray(job.photos) ? job.photos.length : 0;
         const hasAccessInfo = Boolean(job.parking_access || job.elevator_access || job.has_pets);
-        
+
         const firstPhoto = job.photos?.[0] ? (job.photos[0].startsWith('http') ? job.photos[0] : `${API_BASE_URL}${job.photos[0]}`) : null;
 
         const cardBorderColor = isAdminAssigned ? '#bfdbfe' : (hasOvertime ? '#e9d5ff' : '#f1f5f9');
@@ -249,12 +249,12 @@ const ContractorJobsScreen = ({ navigation }) => {
                     </View>
                 )}
 
-                {hasOvertime && !isAdminAssigned && (
+                {/* {hasOvertime && !isAdminAssigned && (
                     <View style={styles.otHeaderBanner}>
                         <Ionicons name="alert-circle" size={14} color="#fff" />
                         <Text style={styles.otHeaderBannerText}>⏰ Overtime eligible — max 2 hours at ${netOT.toFixed(2)}/hr</Text>
                     </View>
-                )}
+                )} */}
 
                 <View style={styles.cardHeader}>
                     <View style={styles.serviceIconContainer}>
@@ -354,8 +354,8 @@ const ContractorJobsScreen = ({ navigation }) => {
                     <TouchableOpacity style={styles.detailsBtn} onPress={() => navigation.navigate('JobDetails', { job })}>
                         <Text style={styles.detailsBtnText}>View Details</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.acceptBtnFull, { backgroundColor: accentColor }, !stripeConnected && styles.disabledBtn]} onPress={() => acceptJob(job.id, hasOvertime, job.display_amount)}>
-                        <Text style={styles.acceptBtnTextFull}>{!stripeConnected ? '🔒 Connect Stripe' : (isAdminAssigned ? 'Accept Task' : `Accept — ${job.display_amount}`)}</Text>
+                    <TouchableOpacity style={[styles.acceptBtnFull, { backgroundColor: accentColor }, !stripeConnected && styles.disabledBtn]} onPress={() => acceptJob(job.id, hasOvertime, `$${baseEarnings.toFixed(2)}`)}>
+                        <Text style={styles.acceptBtnTextFull}>{!stripeConnected ? '🔒 Connect Stripe' : (isAdminAssigned ? 'Accept Task' : `Accept — $${baseEarnings.toFixed(2)}`)}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -540,15 +540,15 @@ const styles = StyleSheet.create({
 
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 16, paddingBottom: 12 },
     serviceIconContainer: { flexDirection: 'row', gap: 12, flex: 1 },
-    
+
     thumbnailContainer: { width: 56, height: 56, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#f1f5f9' },
     thumbnailImage: { width: '100%', height: '100%' },
     thumbnailOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.4)', paddingVertical: 2, alignItems: 'center' },
     thumbnailOverlayText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
-    
+
     iconBox: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
     categoryEmoji: { fontSize: 20 },
-    
+
     serviceTextContainer: { flex: 1, justifyContent: 'center' },
     serviceName: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
     categoryName: { fontSize: 12, color: '#64748b', marginTop: 2 },

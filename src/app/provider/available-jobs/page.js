@@ -578,12 +578,12 @@ export default function ProviderAvailableJobs() {
                   </div>
                 )}
 
-                <div className="px-5 pb-3">
+                {/* <div className="px-5 pb-3">
                   <p className="text-xs text-gray-400">
-                    {/* Base ${job.pricing?.base_price?.toFixed(2)} · {commPct}% commission · */}
+                    Base ${job.pricing?.base_price?.toFixed(2)} · {commPct}% commission ·
                     You get ${baseEarnings.toFixed(2)}
                   </p>
-                </div>
+                </div> */}
 
                 <div className="p-5 pt-0 flex gap-2">
                   <Link href={`/provider/available-jobs/${job.id}`}
@@ -633,7 +633,7 @@ export default function ProviderAvailableJobs() {
                         : `Accept — $${baseEarnings.toFixed(2)}`}
                     </span>
 
-                    {stripeConnected && hasOvertime && !job.is_admin_assigned && (
+                    {/* {stripeConnected && hasOvertime && !job.is_admin_assigned && (
                       <span
                         className="text-[10px] sm:text-xs 
       bg-white/20 px-1.5 sm:px-2 py-0.5 
@@ -641,7 +641,7 @@ export default function ProviderAvailableJobs() {
                       >
                         unlimited
                       </span>
-                    )}
+                    )} */}
                   </button>
                 </div>
               </div>

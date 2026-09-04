@@ -339,42 +339,71 @@ export async function POST(request, { params }) {
             const remainingToPay = parseFloat((finalAmount - originalBasePrice).toFixed(2))
 
             if (remainingToPay > 0) {
-              const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-              const finalSuccessUrl = success_url || (source === 'mobile' ? `workontap://my-bookings/${id}?payment=success` : `${baseUrl}/my-bookings/${id}?payment=success`)
-              const finalCancelUrl = cancel_url || (source === 'mobile' ? `workontap://my-bookings/${id}` : `${baseUrl}/my-bookings/${id}`)
-              
-              const session = await stripe.checkout.sessions.create({
-                payment_method_types: ['card'],
-                line_items: [{
-                  price_data: {
-                    currency: process.env.STRIPE_CURRENCY || 'cad',
-                    product_data: { name: `Remaining balance for Booking #${booking.booking_number}` },
-                    unit_amount: Math.round(remainingToPay * 100),
-                  },
-                  quantity: 1,
-                }],
-                mode: 'payment',
-                success_url: finalSuccessUrl,
-                cancel_url: finalCancelUrl,
-                metadata: { 
-                  booking_id: String(id), 
-                  type: 'balance_payment', 
-                  provider_amount: providerAmount.toString(),
-                  provider_cents: Math.round(providerAmount * 100).toString(),
-                  original_charge: latestCharge 
+              try {
+                // Fetch the original intent to get the customer and payment method
+                if (!pi.customer || !pi.payment_method) {
+                  throw new Error('Original payment method not found for off-session charge');
                 }
-              })
 
-              await connection.execute(
-                `UPDATE bookings SET status = 'awaiting_approval', updated_at = NOW() WHERE id = ?`,
-                [id]
-              )
-              await connection.execute(
-                `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'awaiting_approval', ?)`,
-                [id, `⏳ Captured base price. Waiting for remaining balance payment of $${remainingToPay.toFixed(2)}`]
-              )
-              await connection.query('COMMIT')
-              return NextResponse.json({ success: true, checkout_url: session.url })
+                const offSessionIntent = await stripe.paymentIntents.create({
+                  amount: Math.round(remainingToPay * 100),
+                  currency: process.env.STRIPE_CURRENCY || 'cad',
+                  customer: pi.customer,
+                  payment_method: pi.payment_method,
+                  off_session: true,
+                  confirm: true,
+                  description: `Overtime payment for Booking #${booking.booking_number}`,
+                  metadata: {
+                    booking_id: String(id),
+                    type: 'balance_payment',
+                    provider_amount: providerAmount.toString(),
+                  }
+                });
+
+                console.log(`✅ Successfully auto-charged remaining $${remainingToPay} for overtime`);
+                // Off-session charge succeeded, we can proceed to complete the booking immediately below.
+              } catch (offSessionErr) {
+                console.error('Off-session charge failed:', offSessionErr.message);
+                
+                // Fallback: If off-session charge fails (e.g., insufficient funds), create a Checkout session
+                const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+                const finalSuccessUrl = success_url || (source === 'mobile' ? `workontap://my-bookings/${id}?payment=success` : `${baseUrl}/my-bookings/${id}?payment=success`)
+                const finalCancelUrl = cancel_url || (source === 'mobile' ? `workontap://my-bookings/${id}` : `${baseUrl}/my-bookings/${id}`)
+                
+                const session = await stripe.checkout.sessions.create({
+                  payment_method_types: ['card'],
+                  customer: pi.customer, // Pre-fill the customer details
+                  line_items: [{
+                    price_data: {
+                      currency: process.env.STRIPE_CURRENCY || 'cad',
+                      product_data: { name: `Remaining balance for Booking #${booking.booking_number}` },
+                      unit_amount: Math.round(remainingToPay * 100),
+                    },
+                    quantity: 1,
+                  }],
+                  mode: 'payment',
+                  success_url: finalSuccessUrl,
+                  cancel_url: finalCancelUrl,
+                  metadata: { 
+                    booking_id: String(id), 
+                    type: 'balance_payment', 
+                    provider_amount: providerAmount.toString(),
+                    provider_cents: Math.round(providerAmount * 100).toString(),
+                    original_charge: latestCharge 
+                  }
+                })
+
+                await connection.execute(
+                  `UPDATE bookings SET status = 'awaiting_approval', updated_at = NOW() WHERE id = ?`,
+                  [id]
+                )
+                await connection.execute(
+                  `INSERT INTO booking_status_history (booking_id, status, notes) VALUES (?, 'awaiting_approval', ?)`,
+                  [id, `⏳ Captured base price. Waiting for remaining balance payment of $${remainingToPay.toFixed(2)} (Auto-charge failed)`]
+                )
+                await connection.query('COMMIT')
+                return NextResponse.json({ success: true, checkout_url: session.url, message: 'Auto-payment failed. Please pay manually.' })
+              }
             }
           } catch (stripeErr) {
             if (stripeErr.message?.includes('already been captured')) {
@@ -413,14 +442,16 @@ export async function POST(request, { params }) {
           // ── Transfer to provider ─────────────────────────────────────────
           let transferId = null
           const hasStripe = booking.stripe_account_id && booking.stripe_onboarding_complete === 1
+          const providerCents = Math.round(providerAmount * 100)
 
-          if (hasStripe && providerCents > 0 && latestCharge) {
+          if (hasStripe && providerCents > 0) {
             try {
+              // Note: For split payments over multiple charges, we can skip source_transaction 
+              // or handle it differently. But for now, we just transfer the amount.
               const transfer = await stripe.transfers.create({
                 amount: providerCents,
                 currency: process.env.STRIPE_CURRENCY || 'cad',
                 destination: booking.stripe_account_id,
-                source_transaction: latestCharge,
                 metadata: {
                   booking_id: String(id),
                   booking_number: booking.booking_number,

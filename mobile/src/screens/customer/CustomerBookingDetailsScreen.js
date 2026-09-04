@@ -186,7 +186,7 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
 
         Alert.alert(
             isOvertime ? 'Pay Overtime Balance?' : 'Approve & Complete?',
-            isOvertime ? 'This will redirect you to securely pay the remaining overtime balance.' : 'This will finalize the job and release payment to the professional.',
+            isOvertime ? 'This will automatically securely deduct the remaining overtime balance from your saved card.' : 'This will finalize the job and release payment to the professional.',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -201,15 +201,14 @@ const CustomerBookingDetailsScreen = ({ route, navigation }) => {
                             }, user?.token);
 
                             if (res?.checkout_url) {
+                                // Fallback if auto-charge fails
                                 Linking.openURL(res.checkout_url);
-                                // Wait 2s before refreshing to give user time to switch apps
                                 await new Promise(r => setTimeout(r, 2000));
                                 await fetchDetails();
                             } else {
-                                // Wait 1s for DB to update status to 'completed' before allowing review
                                 await new Promise(r => setTimeout(r, 1000));
                                 await fetchDetails();
-                                Alert.alert('Success!', 'The job is now completed successfully.', [
+                                Alert.alert('Success!', res?.message || 'The job is now completed successfully.', [
                                     { text: 'Rate Service', onPress: () => setRatingVisible(true) },
                                     { text: 'Skip', style: 'cancel' }
                                 ]);
