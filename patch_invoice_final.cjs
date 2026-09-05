@@ -1,0 +1,279 @@
+const fs = require('fs');
+
+const filePath = 'src/app/api/admin/invoices/[id]/preview/route.js';
+let code = fs.readFileSync(filePath, 'utf8');
+
+// Replace everything after const customerFullName = ...
+const regex = /const customerFullName = (.*?)\n\n[\s\S]*/;
+
+const newCode = `const customerFullName = \`\${booking.customer_first_name || ''} \${booking.customer_last_name || ''}\`.trim() || 'Customer'
+
+    const workerCount = parseInt(booking.worker_count || 1);
+    const baseSubtotal = Number(invoice.base_amount) * workerCount;
+    const overtimeRateTotal = Number(invoice.overtime_rate) * workerCount;
+    const overtimeSubtotal = Number(invoice.overtime_amount || 0) * workerCount;
+    const hasOvertime = invoice.overtime_minutes > 0;
+    
+    // Fallback status logic
+    const displayStatus = invoice.status ? invoice.status.toUpperCase() : 'PAID';
+
+    const html = \`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice \${invoice.invoice_number}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f3f4f6;
+      margin: 0;
+      padding: 40px 20px;
+      color: #1e293b;
+    }
+    .invoice-container {
+      max-width: 750px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+    .header {
+      padding: 40px 40px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .header-left img {
+      height: 45px;
+      max-width: 200px;
+      object-fit: contain;
+    }
+    .header-right {
+      text-align: right;
+    }
+    .header-right h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .header-right p {
+      margin: 0;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 30px 40px;
+      gap: 40px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .details-col h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin: 0 0 12px 0;
+      font-weight: 600;
+    }
+    .details-col p {
+      margin: 0 0 4px 0;
+      font-size: 14px;
+      color: #475569;
+    }
+    .details-col .strong-name {
+      font-weight: 600;
+      color: #0f172a;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+    
+    .payment-summary {
+      padding: 40px;
+    }
+    .summary-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0f172a;
+      margin: 0 0 20px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #dcfce7;
+      color: #166534;
+      letter-spacing: 0.05em;
+    }
+    .status-badge.draft { background: #f1f5f9; color: #475569; }
+    .status-badge.pending { background: #fef9c3; color: #854d0e; }
+    .status-badge.overdue { background: #fee2e2; color: #991b1b; }
+
+    .line-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 20px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .line-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+    }
+    .line-desc {
+      font-size: 13px;
+      color: #64748b;
+      margin: 0;
+    }
+    .line-amount {
+      font-size: 16px;
+      font-weight: 500;
+      color: #0f172a;
+    }
+    .final-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 0 10px 0;
+    }
+    .final-row .title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+    }
+    .final-row .desc {
+      font-size: 13px;
+      color: #10b981;
+      font-weight: 500;
+      margin: 0;
+    }
+    .final-row .desc.unpaid {
+      color: #64748b;
+    }
+    .final-amount {
+      font-size: 32px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+    .footer {
+      background: #f8fafc;
+      padding: 30px 40px;
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-container">
+    <div class="header">
+      <div class="header-left">
+        <img src="https://workontap.com/logo.png" alt="WorkOnTap">
+      </div>
+      <div class="header-right">
+        <h1>Invoice</h1>
+        <p>#\${invoice.invoice_number}</p>
+        <p>Date: \${new Date(invoice.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+      </div>
+    </div>
+
+    <div class="details-grid">
+      <div class="details-col">
+        <h3>Billed To</h3>
+        <p class="strong-name">\${customerFullName}</p>
+        <p>\${booking.customer_phone || ''}</p>
+        <p>\${booking.address_line1 || ''}</p>
+        <p>\${booking.city || ''}</p>
+      </div>
+      <div class="details-col" style="text-align: right;">
+        <h3>Service Provider</h3>
+        <p class="strong-name">\${booking.provider_name || 'WorkOnTap Pro'}</p>
+        <p>\${booking.provider_phone || ''}</p>
+        <p>\${booking.provider_email || ''}</p>
+      </div>
+    </div>
+
+    <div class="payment-summary">
+      <div class="summary-title">
+        Payment Summary
+        <span class="status-badge \${(invoice.status || '').toLowerCase()}">\${displayStatus}</span>
+      </div>
+
+      <div class="line-item">
+        <div>
+          <p class="line-title">Base Service (x\${workerCount} worker\${workerCount > 1 ? 's' : ''})</p>
+          <p class="line-desc">Fixed rate for first \${invoice.service_duration} minutes</p>
+        </div>
+        <div class="line-amount">
+          \$\${baseSubtotal.toFixed(2)}
+        </div>
+      </div>
+
+      \${hasOvertime ? \`
+      <div class="line-item">
+        <div>
+          <p class="line-title">Actual Overtime (x\${workerCount} worker\${workerCount > 1 ? 's' : ''})</p>
+          <p class="line-desc">\${invoice.overtime_minutes} mins extra at \$\${overtimeRateTotal.toFixed(2)}/hr</p>
+        </div>
+        <div class="line-amount" style="color: #0f766e;">
+          +\$\${overtimeSubtotal.toFixed(2)}
+        </div>
+      </div>
+      \` : ''}
+
+      <div class="final-row">
+        <div>
+          <p class="title">Final Amount</p>
+          <p class="desc \${displayStatus === 'PAID' ? '' : 'unpaid'}">\${displayStatus === 'PAID' ? 'Paid in full' : 'Total due'}</p>
+        </div>
+        <div class="final-amount">
+          \$\${Number(invoice.total_amount).toFixed(2)}
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Thank you for choosing WorkOnTap! <br>
+      <span style="opacity: 0.8;">support@workontap.com • 1-800-WORKONTAP</span>
+    </div>
+  </div>
+</body>
+</html>
+\`
+
+    return new NextResponse(html, {
+      headers: { 
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache'
+      },
+    })
+
+  } catch (error) {
+    console.error('Error:', error)
+    return new NextResponse(\`<html><body><h1>Error</h1><p>\${error.message}</p></body></html>\`, {
+      headers: { 'Content-Type': 'text/html' },
+      status: 500
+    })
+  }
+}
+`;
+
+code = code.replace(regex, newCode);
+
+fs.writeFileSync(filePath, code);
+console.log('PATCHED INVOICE PREVIEW UI');

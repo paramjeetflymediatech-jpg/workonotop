@@ -428,6 +428,8 @@ export async function POST(request, { params }) {
              SET status = 'completed',
                  payment_status = 'paid',
                  final_provider_amount = ?,
+                 actual_duration_minutes = COALESCE(submitted_duration_minutes, actual_duration_minutes),
+                 worker_count = COALESCE(submitted_headcount, worker_count),
                  updated_at = NOW()
              WHERE id = ?`,
             [providerAmount, id]

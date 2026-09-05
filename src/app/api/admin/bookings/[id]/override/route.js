@@ -14,7 +14,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
-    const booking_id = params.id
+    const { id: booking_id } = await params
     const { worker_count, actual_duration_minutes, reason } = await request.json()
 
     if (!reason || reason.trim() === '') {
