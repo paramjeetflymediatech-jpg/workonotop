@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { NextResponse } from 'next/server'
 import { withConnection, execute, getConnection } from '@/lib/db'
 import { notifyUser } from '@/lib/push'
+import { sendEmail } from '@/lib/email'
 import { getClusterFromCity } from '@/lib/location'
 import { logActivity } from '@/lib/logger'
 
@@ -267,7 +268,7 @@ export async function POST(request) {
           }
 
           const providers = await execute(
-            `SELECT id, phone, service_areas, skills FROM service_providers WHERE status = 'active'`
+            `SELECT id, phone, email, service_areas, skills FROM service_providers WHERE status = 'active'`
           );
           
           // Match providers

@@ -43,6 +43,11 @@ const CustomerDashboard = ({ navigation }) => {
     const [categories, setCategories] = useState([]);
     const [bookings, setBookings] = useState([]);
     const [featuredServices, setFeaturedServices] = useState([]);
+    const [ratingVisible, setRatingVisible] = useState(false);
+    const [ratingBooking, setRatingBooking] = useState(null);
+    const [ratingValue, setRatingValue] = useState(5);
+    const [ratingComment, setRatingComment] = useState('');
+    const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
     const fetchCustomerData = useCallback(async () => {
         try {
@@ -63,6 +68,23 @@ const CustomerDashboard = ({ navigation }) => {
             setCategories(categoriesRes.data || []);
             setBookings(bookingsRes.data || []);
             setFeaturedServices(featuredRes.data || []);
+
+            const bookingsData = bookingsRes.data || [];
+            if (user?.id) {
+                const unratedBooking = bookingsData.find(b => b.can_review);
+                if (unratedBooking) {
+                    const promptKey = `@rating_prompt_${unratedBooking.id}`;
+                    const countStr = await AsyncStorage.getItem(promptKey);
+                    const count = countStr ? parseInt(countStr) : 0;
+                    if (count < 2) {
+                        setRatingBooking(unratedBooking);
+                        setRatingValue(5);
+                        setRatingComment('');
+                        setRatingVisible(true);
+                        await AsyncStorage.setItem(promptKey, (count + 1).toString());
+                    }
+                }
+            }
         } catch (error) {
             console.error('Error fetching customer data:', error);
         } finally {
@@ -81,6 +103,78 @@ const CustomerDashboard = ({ navigation }) => {
         fetchCustomerData();
     };
 
+
+    
+    const submitRating = async () => {
+        if (!ratingBooking) return;
+        setIsSubmittingRating(true);
+        try {
+            await api.post('/api/customer/reviews', {
+                booking_id: ratingBooking.id,
+                provider_id: ratingBooking.provider_id,
+                customer_id: user.id,
+                rating: ratingValue,
+                review: ratingComment,
+                is_anonymous: false
+            });
+            Alert.alert('Success', 'Thank you for your review!');
+            setRatingVisible(false);
+            fetchCustomerData();
+        } catch (error) {
+            Alert.alert('Error', error.response?.data?.message || 'Failed to submit review');
+        } finally {
+            setIsSubmittingRating(false);
+        }
+    };
+
+    const renderRatingModal = () => (
+        <Modal
+            visible={ratingVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setRatingVisible(false)}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                    <TouchableOpacity style={styles.modalCloseIcon} onPress={() => setRatingVisible(false)}>
+                        <Ionicons name="close" size={24} color="#64748b" />
+                    </TouchableOpacity>
+                    <Text style={styles.modalTitle}>Rate Your Service</Text>
+                    <Text style={styles.modalSub}>How was the service for {ratingBooking?.service_name}?</Text>
+                    
+                    <View style={styles.starsContainer}>
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <TouchableOpacity key={i} onPress={() => setRatingValue(i)}>
+                                <Ionicons name={i <= ratingValue ? "star" : "star-outline"} size={40} color="#f59e0b" style={{ marginHorizontal: 5 }} />
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <TextInput
+                        style={styles.reviewInput}
+                        placeholder="Leave a comment (optional)..."
+                        placeholderTextColor="#94a3b8"
+                        multiline
+                        numberOfLines={4}
+                        value={ratingComment}
+                        onChangeText={setRatingComment}
+                    />
+
+                    <TouchableOpacity 
+                        style={[styles.submitReviewBtn, isSubmittingRating && { opacity: 0.7 }]}
+                        onPress={submitRating}
+                        disabled={isSubmittingRating}
+                    >
+                        {isSubmittingRating ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.submitReviewTxt}>Submit Review</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    );
 
     if (loading && !refreshing) {
         return (
@@ -320,6 +414,8 @@ const CustomerDashboard = ({ navigation }) => {
                         )}
                     </View>
                 )}
+
+                {renderRatingModal()}
 
                 {/* Bottom padding for tab bar visibility */}
                 <View style={{ height: verticalScale(100) + insets.bottom }} />

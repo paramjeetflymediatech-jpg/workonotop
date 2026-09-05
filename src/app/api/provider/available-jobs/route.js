@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { execute, query, getConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
 import { notifyUser } from '@/lib/push'
+import { sendEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic';
 

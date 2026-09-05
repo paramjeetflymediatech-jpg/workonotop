@@ -26,7 +26,9 @@ export async function GET(request) {
         c.name as category_name,
         c.slug as category_slug,
         sp.name as provider_name,
-        sp.rating as provider_rating
+        sp.rating as provider_rating,
+        (SELECT COUNT(*) FROM provider_reviews pr WHERE pr.booking_id = b.id) as has_review,
+        (SELECT i.status FROM invoices i WHERE i.booking_id = b.id LIMIT 1) as invoice_status
       FROM bookings b
       LEFT JOIN services s ON b.service_id = s.id
       LEFT JOIN service_categories c ON s.category_id = c.id
@@ -80,6 +82,8 @@ export async function GET(request) {
         overtime_minutes: booking.overtime_minutes || 0,
         overtime_rate: additionalPrice
       }
+
+      booking.can_review = (booking.status === 'completed' && booking.invoice_status === 'paid' && booking.has_review === 0);
     }
 
     return NextResponse.json({ success: true, data: bookings })

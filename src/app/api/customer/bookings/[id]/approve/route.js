@@ -4,7 +4,9 @@ import Stripe from 'stripe'
 import { withConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
 import { sendEmail } from '@/lib/email'
+import { notifyUser } from '@/lib/push'
 import { logActivity } from '@/lib/logger'
+import { sendSMS } from '@/lib/sms'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', { apiVersion: '2026-05-27.dahlia' })
 
@@ -187,10 +189,12 @@ export async function POST(request, { params }) {
             sp.name            AS provider_name,
             sp.email           AS provider_email,
             sp.stripe_onboarding_complete,
+            u.phone AS customer_phone,
             COALESCE(s.duration_minutes, b.standard_duration_minutes, 60) AS standard_mins
           FROM bookings b
           LEFT JOIN service_providers sp ON b.provider_id = sp.id
           LEFT JOIN services          s  ON b.service_id  = s.id
+          LEFT JOIN users             u  ON b.user_id     = u.id
           WHERE b.id = ? AND b.user_id = ?
         `, [id, decoded.id])
 
@@ -402,6 +406,7 @@ export async function POST(request, { params }) {
                   [id, `⏳ Captured base price. Waiting for remaining balance payment of $${remainingToPay.toFixed(2)} (Auto-charge failed)`]
                 )
                 await connection.query('COMMIT')
+                if (booking.customer_phone) { sendSMS(booking.customer_phone, 'Payment failed. Please update your payment method to complete the transaction.').catch(console.error); }
                 return NextResponse.json({ success: true, checkout_url: session.url, message: 'Auto-payment failed. Please pay manually.' })
               }
             }

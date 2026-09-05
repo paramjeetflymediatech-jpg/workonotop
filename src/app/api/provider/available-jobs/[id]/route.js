@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
+import { notifyUser } from '@/lib/push'
+import { sendEmail } from '@/lib/email'
 import { logActivity } from '@/lib/logger'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
@@ -163,6 +165,7 @@ export async function POST(request, { params }) {
 
       await connection.query('COMMIT')
 
+      
       // Log Activity
       logActivity({
         actor_id: decoded.providerId,
@@ -173,6 +176,32 @@ export async function POST(request, { params }) {
         entity_id: id,
         details: { service_name: job.service_name }
       })
+
+      // ---- NOTIFICATIONS ----
+      try {
+        const titleClient = 'Pro Accepted Your Job!';
+        const bodyClient = `${decoded.name || 'A professional'} has accepted your ${job.service_name} job.`;
+        
+        if (job.user_id) {
+          await notifyUser(job.user_id, 'customer', titleClient, bodyClient, { booking_id: id }).catch(console.error);
+        }
+        if (job.customer_email) {
+          await sendEmail({ to: job.customer_email, subject: titleClient, text: bodyClient }).catch(console.error);
+        }
+
+        const titlePro = 'Job Accepted';
+        const bodyPro = `You have successfully accepted the ${job.service_name} job.`;
+        await notifyUser(decoded.providerId, 'provider', titlePro, bodyPro, { booking_id: id }).catch(console.error);
+        
+        // Let's get pro email to send it there too
+        const [proData] = await connection.execute('SELECT email FROM service_providers WHERE id = ?', [decoded.providerId]);
+        if (proData && proData[0] && proData[0].email) {
+          await sendEmail({ to: proData[0].email, subject: titlePro, text: bodyPro }).catch(console.error);
+        }
+      } catch (notifErr) {
+        console.error('Failed to send accept job notifications:', notifErr);
+      }
+      // -----------------------
 
       const otRate = parseFloat(job.overtime_rate || 0)
       const netOT = otRate * (1 - commPct / 100)

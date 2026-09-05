@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { execute, getConnection } from '@/lib/db'
 import { verifyToken } from '@/lib/jwt'
 import { sendEmail } from '@/lib/email'
+import { notifyUser } from '@/lib/push'
 import { logActivity } from '@/lib/logger'
 import { sendSMS } from '@/lib/sms'
 
@@ -478,6 +479,10 @@ Est. Total: $${tEst}
             }).catch(emailErr => {
               console.error('Email background send failed:', emailErr)
             })
+
+            if (booking.customer_phone) {
+              sendSMS(booking.customer_phone, 'Your invoice is ready. Please approve and pay.').catch(console.error);
+            }
           } catch (err) {
             console.error('Failed to prepare job completion email:', err)
           }
