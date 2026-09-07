@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS service_categories (
     name VARCHAR(100) NOT NULL,
     slug VARCHAR(100) NOT NULL UNIQUE,
     icon VARCHAR(255),
+    image_url VARCHAR(255),
     description TEXT,
     is_active TINYINT(1) DEFAULT 1,
     display_order INT DEFAULT 0,
@@ -62,6 +63,10 @@ CREATE TABLE IF NOT EXISTS services (
     is_trending TINYINT(1) DEFAULT 0,
     is_popular TINYINT(1) DEFAULT 0,
     is_active TINYINT(1) DEFAULT 1,
+    skills JSON,
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    keywords TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE CASCADE,
@@ -395,6 +400,73 @@ CREATE TABLE IF NOT EXISTS mobile_auth_users (
     -- One record per user/provider per device
     UNIQUE KEY uq_user_device (user_id, device_id),
     UNIQUE KEY uq_provider_device (provider_id, device_id)
+);
+
+-- -----------------------------------------------------
+-- Table: seo_settings
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS seo_settings (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    page_name VARCHAR(100) NOT NULL UNIQUE,
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    keywords TEXT,
+    canonical_url VARCHAR(255),
+    robots VARCHAR(100) DEFAULT 'index, follow',
+    og_title VARCHAR(255),
+    og_description TEXT,
+    og_image VARCHAR(255),
+    header_scripts TEXT,
+    footer_scripts TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- -----------------------------------------------------
+-- Table: service_locations
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS service_locations (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    service_id INT NOT NULL,
+    location_name VARCHAR(200) NOT NULL,
+    location_slug VARCHAR(200) NOT NULL,
+    slug VARCHAR(255),
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    keywords TEXT,
+    canonical_url VARCHAR(255),
+    og_title VARCHAR(255),
+    og_description TEXT,
+    og_image VARCHAR(255),
+    custom_heading VARCHAR(255),
+    custom_intro TEXT,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_service_id (service_id),
+    INDEX idx_location_slug (location_slug)
+);
+
+-- -----------------------------------------------------
+-- Table: blogs
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS blogs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    content TEXT,
+    short_content TEXT,
+    author VARCHAR(100),
+    image_url VARCHAR(255),
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    keywords TEXT,
+    canonical_url VARCHAR(255),
+    og_title VARCHAR(255),
+    og_description TEXT,
+    is_published TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- -----------------------------------------------------
