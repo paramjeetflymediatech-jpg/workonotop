@@ -151,23 +151,27 @@ export default function ServicesPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      console.log('Fetching services...');
       const servicesRes = await fetch('/api/services', { cache: 'no-store' });
-      console.log('Services status:', servicesRes.status);
-
-      console.log('Fetching categories...');
       const categoriesRes = await fetch('/api/categories', { cache: 'no-store' });
-      console.log('Categories status:', categoriesRes.status);
 
-      const servicesData = await servicesRes.json();
-      const categoriesData = await categoriesRes.json();
-
-      if (servicesData.success) {
-        setServices(servicesData.data || []);
+      if (servicesRes.ok) {
+        const sText = await servicesRes.text();
+        if (sText) {
+          const servicesData = JSON.parse(sText);
+          if (servicesData.success) {
+            setServices(servicesData.data || []);
+          }
+        }
       }
 
-      if (categoriesData.success) {
-        setCategories(categoriesData.data || []);
+      if (categoriesRes.ok) {
+        const cText = await categoriesRes.text();
+        if (cText) {
+          const categoriesData = JSON.parse(cText);
+          if (categoriesData.success) {
+            setCategories(categoriesData.data || []);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading data in fetchData:', error);

@@ -14,7 +14,10 @@ export default function DynamicSeoManager() {
     const updateSeo = async () => {
       try {
         const res = await fetch(`/api/seo?path=${encodeURIComponent(pathname)}`)
-        const json = await res.json()
+        if (!res.ok) return
+        const text = await res.text()
+        if (!text) return
+        const json = JSON.parse(text)
 
         if (!isMounted) return
 

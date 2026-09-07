@@ -15,12 +15,15 @@ export default function Footer() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        console.log('Footer: Fetching services...');
         const res = await fetch('/api/services');
-        console.log('Footer: Services status:', res.status);
-        const data = await res.json();
-        if (data.success) {
-          setServices(data.data?.slice(0, 6) || []);
+        if (res.ok) {
+          const text = await res.text();
+          if (text) {
+            const data = JSON.parse(text);
+            if (data.success) {
+              setServices(data.data?.slice(0, 6) || []);
+            }
+          }
         }
       } catch (error) {
         console.error('Footer: Error fetching services:', error);

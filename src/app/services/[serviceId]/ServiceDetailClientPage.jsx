@@ -9,21 +9,21 @@ import Footer from '@/components/Footer';
 import Icon from '@/components/Icon';
 import { toast } from 'react-hot-toast';
 
-export default function ServiceDetailClientPage({ serviceId }) {
+export default function ServiceDetailClientPage({ serviceId, initialService = null, initialRelatedServices = [] }) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState('');
-  const [service, setService] = useState(null);
-  const [relatedServices, setRelatedServices] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [service, setService] = useState(initialService);
+  const [relatedServices, setRelatedServices] = useState(initialRelatedServices);
+  const [loading, setLoading] = useState(!initialService);
   const [addressError, setAddressError] = useState('');
 
   useEffect(() => {
-    if (serviceId) {
+    if (!initialService && serviceId) {
       fetchServiceData();
     }
 
-    const savedAddress = sessionStorage.getItem('userAddress');
+    const savedAddress = typeof window !== 'undefined' ? sessionStorage.getItem('userAddress') : null;
     if (savedAddress && savedAddress !== 'Please enter your service location') {
       setSelectedAddress(savedAddress);
     }
@@ -39,25 +39,33 @@ export default function ServiceDetailClientPage({ serviceId }) {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [serviceId]);
+  }, [serviceId, initialService]);
 
   const fetchServiceData = async () => {
-    setLoading(true);
+    if (!service) setLoading(true);
     try {
-      const serviceRes = await fetch(`/api/services?slug=${serviceId}`);
-      const serviceData = await serviceRes.json();
+      const serviceRes = await fetch(`/api/services?slug=${encodeURIComponent(serviceId)}`);
+      if (!serviceRes.ok) return;
+      const text = await serviceRes.text();
+      if (!text) return;
+      const serviceData = JSON.parse(text);
 
       if (serviceData.success && serviceData.data) {
         setService(serviceData.data);
 
         if (serviceData.data.category_id) {
           const relatedRes = await fetch(`/api/services?category_id=${serviceData.data.category_id}`);
-          const relatedData = await relatedRes.json();
-          if (relatedData.success) {
-            const filtered = relatedData.data
-              .filter(s => s.id !== serviceData.data.id)
-              .slice(0, 4);
-            setRelatedServices(filtered);
+          if (relatedRes.ok) {
+            const relText = await relatedRes.text();
+            if (relText) {
+              const relatedData = JSON.parse(relText);
+              if (relatedData.success && Array.isArray(relatedData.data)) {
+                const filtered = relatedData.data
+                  .filter(s => s.id !== serviceData.data.id)
+                  .slice(0, 4);
+                setRelatedServices(filtered);
+              }
+            }
           }
         }
       } else {

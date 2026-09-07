@@ -88,7 +88,7 @@ export default async function RootLayout({ children }) {
         
         <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
 
-        <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly`} strategy="beforeInteractive" />
+        <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly&loading=async`} strategy="beforeInteractive" />
       </body>
     </html>
   );

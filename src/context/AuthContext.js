@@ -190,9 +190,17 @@ export function AuthProvider({ children }) {
     try {
       // Try unified auth endpoint first (handles all types)
       const unifiedRes = await fetch('/api/auth/me');
-      const unifiedData = await unifiedRes.json();
+      let unifiedData = null;
+      if (unifiedRes.ok) {
+        const text = await unifiedRes.text();
+        if (text) {
+          try {
+            unifiedData = JSON.parse(text);
+          } catch (e) {}
+        }
+      }
       
-      if (unifiedData.success) {
+      if (unifiedData && unifiedData.success && unifiedData.user) {
         const userData = unifiedData.user;
         setUser(userData);
         
@@ -207,9 +215,17 @@ export function AuthProvider({ children }) {
       } else {
         // If unified auth fails, check provider specific endpoint as fallback
         const providerRes = await fetch('/api/provider/me');
-        const providerData = await providerRes.json();
+        let providerData = null;
+        if (providerRes.ok) {
+          const pText = await providerRes.text();
+          if (pText) {
+            try {
+              providerData = JSON.parse(pText);
+            } catch (e) {}
+          }
+        }
         
-        if (providerData.success) {
+        if (providerData && providerData.success && providerData.provider) {
           setUser(providerData.provider);
           setUserType('provider');
         } else {
@@ -218,7 +234,6 @@ export function AuthProvider({ children }) {
         }
       }
     } catch (error) {
-      console.error('Auth check error:', error);
       setUser(null);
       setUserType(null);
     } finally {
