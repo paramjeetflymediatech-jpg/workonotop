@@ -6,7 +6,7 @@ export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://workontap.com';
 
   const openApiSpec = {
-    openapi: '3.0.3',
+    openapi: '3.1.0',
     info: {
       title: 'WorkOnTap SEO & Catalog AI Gateway',
       description: 'API for ChatGPT and AI Agents to read, audit, generate, and update SEO metadata and service listings on WorkOnTap.',
@@ -60,15 +60,11 @@ export async function GET() {
           ],
           responses: {
             '200': {
-              description: 'Successful response',
+              description: 'Successful response returning SEO metadata',
               content: {
                 'application/json': {
                   schema: {
-                    type: 'object',
-                    properties: {
-                      success: { type: 'boolean' },
-                      data: { type: 'array', items: { type: 'object' } },
-                    },
+                    $ref: '#/components/schemas/SeoListResponse',
                   },
                 },
               },
@@ -84,47 +80,7 @@ export async function GET() {
             content: {
               'application/json': {
                 schema: {
-                  type: 'object',
-                  required: ['page_name'],
-                  properties: {
-                    page_name: {
-                      type: 'string',
-                      description: 'The page route, e.g. /services/general-home-repairs, /services/plumbing-vancouver, or home',
-                    },
-                    meta_title: {
-                      type: 'string',
-                      description: 'Optimal 50-60 char meta title for Google Search ranking.',
-                    },
-                    meta_description: {
-                      type: 'string',
-                      description: 'Optimal 145-160 char meta description with high-converting CTA.',
-                    },
-                    keywords: {
-                      type: 'string',
-                      description: 'Comma-separated target keywords (e.g. "home repairs vancouver, drywall patching, handyman bc").',
-                    },
-                    canonical_url: {
-                      type: 'string',
-                      description: 'Full canonical URL (e.g. https://workontap.com/services/general-home-repairs).',
-                    },
-                    robots: {
-                      type: 'string',
-                      default: 'index, follow',
-                      description: 'Crawler directives (e.g. "index, follow" or "noindex, nofollow").',
-                    },
-                    og_title: {
-                      type: 'string',
-                      description: 'OpenGraph title for social media sharing.',
-                    },
-                    og_description: {
-                      type: 'string',
-                      description: 'OpenGraph description for social sharing.',
-                    },
-                    og_image: {
-                      type: 'string',
-                      description: 'Featured OpenGraph image URL.',
-                    },
-                  },
+                  $ref: '#/components/schemas/SeoUpdateRequest',
                 },
               },
             },
@@ -132,6 +88,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'SEO successfully updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/StandardSuccessResponse',
+                  },
+                },
+              },
             },
           },
         },
@@ -140,6 +103,7 @@ export async function GET() {
         get: {
           operationId: 'getServices',
           summary: 'List services or get full details for a service',
+          description: 'Fetch all services, filter by category or slug, or list available service categories.',
           parameters: [
             {
               name: 'slug',
@@ -160,11 +124,19 @@ export async function GET() {
               in: 'query',
               required: false,
               schema: { type: 'string' },
+              description: 'Search filter for services',
             },
           ],
           responses: {
             '200': {
-              description: 'Services data',
+              description: 'Services data response',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ServiceListResponse',
+                  },
+                },
+              },
             },
           },
         },
@@ -177,21 +149,7 @@ export async function GET() {
             content: {
               'application/json': {
                 schema: {
-                  type: 'object',
-                  required: ['name'],
-                  properties: {
-                    name: { type: 'string', description: 'Service title' },
-                    slug: { type: 'string', description: 'URL slug (kebab-case)' },
-                    category_id: { type: 'integer', description: 'Category ID' },
-                    short_description: { type: 'string', description: 'Brief 1-2 sentence overview' },
-                    description: { type: 'string', description: 'Full formatted HTML description with <h3>, <p>, <ul>, <li>' },
-                    use_cases: { type: 'string', description: 'Comma-separated common use cases' },
-                    base_price: { type: 'string', description: 'Base price in CAD (e.g. 89.99)' },
-                    additional_price: { type: 'string', description: 'Additional hourly/unit rate' },
-                    duration_minutes: { type: 'integer', description: 'Estimated job duration in minutes' },
-                    skills: { type: 'array', items: { type: 'string' } },
-                    is_active: { type: 'integer', default: 1 },
-                  },
+                  $ref: '#/components/schemas/ServiceCreateUpdateRequest',
                 },
               },
             },
@@ -199,12 +157,161 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Service created or updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/StandardSuccessResponse',
+                  },
+                },
+              },
             },
           },
         },
       },
     },
     components: {
+      schemas: {
+        SeoItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            page_name: { type: 'string' },
+            meta_title: { type: ['string', 'null'] },
+            meta_description: { type: ['string', 'null'] },
+            keywords: { type: ['string', 'null'] },
+            canonical_url: { type: ['string', 'null'] },
+            robots: { type: ['string', 'null'] },
+            og_title: { type: ['string', 'null'] },
+            og_description: { type: ['string', 'null'] },
+            og_image: { type: ['string', 'null'] },
+            updated_at: { type: ['string', 'null'] },
+          },
+        },
+        SeoListResponse: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            count: { type: 'integer' },
+            data: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/SeoItem',
+              },
+            },
+          },
+        },
+        SeoUpdateRequest: {
+          type: 'object',
+          required: ['page_name'],
+          properties: {
+            page_name: {
+              type: 'string',
+              description: 'The page route, e.g. /services/general-home-repairs, /services/plumbing-vancouver, or home',
+            },
+            meta_title: {
+              type: 'string',
+              description: 'Optimal 50-60 char meta title for Google Search ranking.',
+            },
+            meta_description: {
+              type: 'string',
+              description: 'Optimal 145-160 char meta description with high-converting CTA.',
+            },
+            keywords: {
+              type: 'string',
+              description: 'Comma-separated target keywords (e.g. "home repairs vancouver, drywall patching, handyman bc").',
+            },
+            canonical_url: {
+              type: 'string',
+              description: 'Full canonical URL (e.g. https://workontap.com/services/general-home-repairs).',
+            },
+            robots: {
+              type: 'string',
+              default: 'index, follow',
+              description: 'Crawler directives (e.g. "index, follow" or "noindex, nofollow").',
+            },
+            og_title: {
+              type: 'string',
+              description: 'OpenGraph title for social media sharing.',
+            },
+            og_description: {
+              type: 'string',
+              description: 'OpenGraph description for social sharing.',
+            },
+            og_image: {
+              type: 'string',
+              description: 'Featured OpenGraph image URL.',
+            },
+          },
+        },
+        ServiceItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            slug: { type: 'string' },
+            category_id: { type: 'integer' },
+            category_name: { type: ['string', 'null'] },
+            short_description: { type: ['string', 'null'] },
+            description: { type: ['string', 'null'] },
+            use_cases: { type: ['string', 'null'] },
+            base_price: { type: ['string', 'number', 'null'] },
+            additional_price: { type: ['string', 'number', 'null'] },
+            duration_minutes: { type: ['integer', 'null'] },
+            skills: {
+              type: 'array',
+              items: { type: 'string' },
+            },
+            is_active: { type: 'integer' },
+            meta_title: { type: ['string', 'null'] },
+            meta_description: { type: ['string', 'null'] },
+            keywords: { type: ['string', 'null'] },
+          },
+        },
+        ServiceListResponse: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/ServiceItem',
+              },
+            },
+          },
+        },
+        ServiceCreateUpdateRequest: {
+          type: 'object',
+          required: ['name'],
+          properties: {
+            name: { type: 'string', description: 'Service title' },
+            slug: { type: 'string', description: 'URL slug (kebab-case)' },
+            category_id: { type: 'integer', description: 'Category ID' },
+            short_description: { type: 'string', description: 'Brief 1-2 sentence overview' },
+            description: { type: 'string', description: 'Full formatted HTML description with <h3>, <p>, <ul>, <li>' },
+            use_cases: { type: 'string', description: 'Comma-separated common use cases' },
+            base_price: { type: 'string', description: 'Base price in CAD (e.g. 89.99)' },
+            additional_price: { type: 'string', description: 'Additional hourly/unit rate' },
+            duration_minutes: { type: 'integer', description: 'Estimated job duration in minutes' },
+            skills: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Array of required skill names',
+            },
+            meta_title: { type: 'string', description: 'Meta title for this service page' },
+            meta_description: { type: 'string', description: 'Meta description for this service page' },
+            keywords: { type: 'string', description: 'Target keywords for this service' },
+            is_active: { type: 'integer', default: 1 },
+          },
+        },
+        StandardSuccessResponse: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+            data: { type: 'object' },
+          },
+        },
+      },
       securitySchemes: {
         BearerAuth: {
           type: 'http',
@@ -224,3 +331,4 @@ export async function GET() {
     },
   });
 }
+
