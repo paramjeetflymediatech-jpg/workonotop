@@ -55,15 +55,20 @@ export const useNotifications = (navigation, userRole) => {
 
         return () => {
             isStopped = true;
-            const cleanup = async () => {
-                if (notificationListener.current) {
+            try {
+                if (notificationListener.current && typeof notificationListener.current.remove === 'function') {
                     notificationListener.current.remove();
                 }
-                if (responseListener.current) {
+            } catch (e) {
+                console.warn('[Push] Error removing notificationListener:', e);
+            }
+            try {
+                if (responseListener.current && typeof responseListener.current.remove === 'function') {
                     responseListener.current.remove();
                 }
-            };
-            cleanup();
+            } catch (e) {
+                console.warn('[Push] Error removing responseListener:', e);
+            }
         };
     }, [navigation, userRole]);
 };
