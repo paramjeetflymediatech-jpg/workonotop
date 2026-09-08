@@ -58,16 +58,16 @@ export async function getSeoForPage(pageName) {
 export async function upsertSeoSetting(data) {
   const {
     page_name,
-    meta_title = '',
-    meta_description = '',
-    keywords = '',
-    canonical_url = '',
-    robots = 'index, follow',
-    og_title = '',
-    og_description = '',
-    og_image = '',
-    header_scripts = '',
-    footer_scripts = '',
+    meta_title,
+    meta_description,
+    keywords,
+    canonical_url,
+    robots,
+    og_title,
+    og_description,
+    og_image,
+    header_scripts,
+    footer_scripts,
   } = data;
 
   if (!page_name || typeof page_name !== 'string') {
