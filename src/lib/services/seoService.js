@@ -101,6 +101,31 @@ export async function upsertSeoSetting(data) {
       ]
     );
 
+    // Sync to service_locations table if this page route matches a service location
+    if (cleanPageName.startsWith('/services/')) {
+      const seg = cleanPageName.replace('/services/', '').replace(/^\//, '');
+      try {
+        const directLocs = await db.query(
+          `SELECT id FROM service_locations WHERE (slug = ? OR slug = ? OR slug = ?) LIMIT 1`,
+          [seg, seg.replace(/-in-/, '-'), seg.replace(/-/, '-in-')]
+        );
+        if (directLocs && directLocs.length > 0) {
+          const locId = directLocs[0].id;
+          let updateLocSql = 'UPDATE service_locations SET meta_title = COALESCE(?, meta_title), meta_description = COALESCE(?, meta_description), keywords = COALESCE(?, keywords)';
+          const locParams = [meta_title || null, meta_description || null, keywords || null];
+          if (data.description !== undefined) {
+            updateLocSql += ', description = ?';
+            locParams.push(data.description);
+          }
+          updateLocSql += ', updated_at = NOW() WHERE id = ?';
+          locParams.push(locId);
+          await db.query(updateLocSql, locParams);
+        }
+      } catch (e) {
+        console.error('Error syncing SEO to service_locations:', e);
+      }
+    }
+
     return { id: existing.id, action: 'updated', page_name: cleanPageName };
   } else {
     const result = await db.query(
@@ -121,6 +146,31 @@ export async function upsertSeoSetting(data) {
         footer_scripts || '',
       ]
     );
+
+    // Sync to service_locations table if this page route matches a service location
+    if (cleanPageName.startsWith('/services/')) {
+      const seg = cleanPageName.replace('/services/', '').replace(/^\//, '');
+      try {
+        const directLocs = await db.query(
+          `SELECT id FROM service_locations WHERE (slug = ? OR slug = ? OR slug = ?) LIMIT 1`,
+          [seg, seg.replace(/-in-/, '-'), seg.replace(/-/, '-in-')]
+        );
+        if (directLocs && directLocs.length > 0) {
+          const locId = directLocs[0].id;
+          let updateLocSql = 'UPDATE service_locations SET meta_title = COALESCE(?, meta_title), meta_description = COALESCE(?, meta_description), keywords = COALESCE(?, keywords)';
+          const locParams = [meta_title || null, meta_description || null, keywords || null];
+          if (data.description !== undefined) {
+            updateLocSql += ', description = ?';
+            locParams.push(data.description);
+          }
+          updateLocSql += ', updated_at = NOW() WHERE id = ?';
+          locParams.push(locId);
+          await db.query(updateLocSql, locParams);
+        }
+      } catch (e) {
+        console.error('Error syncing SEO to service_locations:', e);
+      }
+    }
 
     return { id: result.insertId, action: 'created', page_name: cleanPageName };
   }

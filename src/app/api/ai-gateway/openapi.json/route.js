@@ -168,6 +168,95 @@ export async function GET() {
           },
         },
       },
+      '/api/ai-gateway/v1/service-locations': {
+        get: {
+          operationId: 'getServiceLocations',
+          summary: 'List service locations or get specific service location by slug/id',
+          description: 'Fetch location-specific service pages (e.g. furniture-assembly-burnaby, plumbing-surrey) to inspect unique location descriptions, custom headings, and SEO.',
+          parameters: [
+            {
+              name: 'slug',
+              in: 'query',
+              required: false,
+              schema: { type: 'string' },
+              description: 'Service location slug (e.g. furniture-assembly-burnaby or furniture-assembly-in-burnaby)',
+            },
+            {
+              name: 'service_slug',
+              in: 'query',
+              required: false,
+              schema: { type: 'string' },
+              description: 'Filter by service slug (e.g. furniture-assembly, plumbing)',
+            },
+            {
+              name: 'location_slug',
+              in: 'query',
+              required: false,
+              schema: { type: 'string' },
+              description: 'Filter by city/location slug (e.g. burnaby, surrey, richmond)',
+            },
+            {
+              name: 'only_missing',
+              in: 'query',
+              required: false,
+              schema: { type: 'boolean' },
+              description: 'Set to true to find service location pages missing unique descriptions or SEO',
+            },
+            {
+              name: 'search',
+              in: 'query',
+              required: false,
+              schema: { type: 'string' },
+              description: 'Search filter for location name or service title',
+            },
+            {
+              name: 'limit',
+              in: 'query',
+              required: false,
+              schema: { type: 'integer', default: 50 },
+            },
+          ],
+          responses: {
+            '200': {
+              description: 'Service locations data response',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ServiceLocationListResponse',
+                  },
+                },
+              },
+            },
+          },
+        },
+        post: {
+          operationId: 'createOrUpdateServiceLocation',
+          summary: 'Create or update unique content and SEO for a service location page',
+          description: 'Saves unique location description (HTML supported), custom H1 heading, custom intro paragraph, and SEO metadata for a location page (e.g. /services/furniture-assembly-in-burnaby).',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ServiceLocationCreateUpdateRequest',
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'Service location successfully created or updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/StandardSuccessResponse',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     components: {
       schemas: {
@@ -206,7 +295,11 @@ export async function GET() {
           properties: {
             page_name: {
               type: 'string',
-              description: 'The page route, e.g. /services/general-home-repairs, /services/plumbing-vancouver, or home',
+              description: 'The page route, e.g. /services/general-home-repairs, /services/furniture-assembly-in-burnaby, or home',
+            },
+            description: {
+              type: 'string',
+              description: 'Optional rich HTML content / description to save for the page/location.',
             },
             meta_title: {
               type: 'string',
@@ -218,11 +311,11 @@ export async function GET() {
             },
             keywords: {
               type: 'string',
-              description: 'Comma-separated target keywords (e.g. "home repairs vancouver, drywall patching, handyman bc").',
+              description: 'Comma-separated target keywords (e.g. "furniture assembly burnaby, handyman bc").',
             },
             canonical_url: {
               type: 'string',
-              description: 'Full canonical URL (e.g. https://workontap.com/services/general-home-repairs).',
+              description: 'Full canonical URL (e.g. https://workontap.com/services/furniture-assembly-in-burnaby).',
             },
             robots: {
               type: 'string',
@@ -300,6 +393,58 @@ export async function GET() {
             meta_title: { type: 'string', description: 'Meta title for this service page' },
             meta_description: { type: 'string', description: 'Meta description for this service page' },
             keywords: { type: 'string', description: 'Target keywords for this service' },
+            is_active: { type: 'integer', default: 1 },
+          },
+        },
+        ServiceLocationItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            service_id: { type: 'integer' },
+            service_name: { type: 'string' },
+            service_slug: { type: 'string' },
+            location_name: { type: 'string' },
+            location_slug: { type: 'string' },
+            slug: { type: 'string' },
+            description: { type: ['string', 'null'], description: 'Unique location-specific HTML description' },
+            custom_heading: { type: ['string', 'null'] },
+            custom_intro: { type: ['string', 'null'] },
+            meta_title: { type: ['string', 'null'] },
+            meta_description: { type: ['string', 'null'] },
+            keywords: { type: ['string', 'null'] },
+            canonical_url: { type: ['string', 'null'] },
+            is_active: { type: 'integer' },
+            updated_at: { type: ['string', 'null'] },
+          },
+        },
+        ServiceLocationListResponse: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            total: { type: 'integer' },
+            count: { type: 'integer' },
+            data: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/ServiceLocationItem',
+              },
+            },
+          },
+        },
+        ServiceLocationCreateUpdateRequest: {
+          type: 'object',
+          properties: {
+            slug: { type: 'string', description: 'Service location slug (e.g. furniture-assembly-burnaby or furniture-assembly-in-burnaby)' },
+            service_slug: { type: 'string', description: 'Base service slug (e.g. furniture-assembly)' },
+            location_slug: { type: 'string', description: 'City/location slug (e.g. burnaby, surrey)' },
+            location_name: { type: 'string', description: 'City/location name (e.g. Burnaby, Surrey)' },
+            description: { type: 'string', description: 'Unique location-specific formatted HTML description with <h2>, <h3>, <p>, <ul>, <li>' },
+            custom_heading: { type: 'string', description: 'Custom H1 heading (e.g. #1 Rated Furniture Assembly Pros in Burnaby, BC)' },
+            custom_intro: { type: 'string', description: 'Custom intro paragraph for this location' },
+            meta_title: { type: 'string', description: 'SEO Meta Title' },
+            meta_description: { type: 'string', description: 'SEO Meta Description' },
+            keywords: { type: 'string', description: 'SEO Keywords' },
+            canonical_url: { type: 'string', description: 'Canonical URL' },
             is_active: { type: 'integer', default: 1 },
           },
         },
