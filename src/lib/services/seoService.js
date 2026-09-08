@@ -106,20 +106,30 @@ export async function upsertSeoSetting(data) {
       const seg = cleanPageName.replace('/services/', '').replace(/^\//, '');
       try {
         const directLocs = await db.query(
-          `SELECT id FROM service_locations WHERE (slug = ? OR slug = ? OR slug = ?) LIMIT 1`,
+          `SELECT * FROM service_locations WHERE (slug = ? OR slug = ? OR slug = ?) LIMIT 1`,
           [seg, seg.replace(/-in-/, '-'), seg.replace(/-/, '-in-')]
         );
         if (directLocs && directLocs.length > 0) {
-          const locId = directLocs[0].id;
-          let updateLocSql = 'UPDATE service_locations SET meta_title = COALESCE(?, meta_title), meta_description = COALESCE(?, meta_description), keywords = COALESCE(?, keywords)';
-          const locParams = [meta_title || null, meta_description || null, keywords || null];
-          if (data.description !== undefined) {
-            updateLocSql += ', description = ?';
-            locParams.push(data.description);
+          const loc = directLocs[0];
+          const updateFields = [];
+          const params = [];
+
+          if (data.description !== undefined) { updateFields.push('description = ?'); params.push(data.description); }
+          if (data.custom_heading !== undefined) { updateFields.push('custom_heading = ?'); params.push(data.custom_heading); }
+          if (data.custom_intro !== undefined) { updateFields.push('custom_intro = ?'); params.push(data.custom_intro); }
+          if (meta_title !== undefined) { updateFields.push('meta_title = ?'); params.push(meta_title); }
+          if (meta_description !== undefined) { updateFields.push('meta_description = ?'); params.push(meta_description); }
+          if (keywords !== undefined) { updateFields.push('keywords = ?'); params.push(keywords); }
+          if (canonical_url !== undefined) { updateFields.push('canonical_url = ?'); params.push(canonical_url); }
+          if (og_title !== undefined) { updateFields.push('og_title = ?'); params.push(og_title); }
+          if (og_description !== undefined) { updateFields.push('og_description = ?'); params.push(og_description); }
+          if (og_image !== undefined) { updateFields.push('og_image = ?'); params.push(og_image); }
+
+          if (updateFields.length > 0) {
+            updateFields.push('updated_at = NOW()');
+            params.push(loc.id);
+            await db.query(`UPDATE service_locations SET ${updateFields.join(', ')} WHERE id = ?`, params);
           }
-          updateLocSql += ', updated_at = NOW() WHERE id = ?';
-          locParams.push(locId);
-          await db.query(updateLocSql, locParams);
         }
       } catch (e) {
         console.error('Error syncing SEO to service_locations:', e);
@@ -152,20 +162,30 @@ export async function upsertSeoSetting(data) {
       const seg = cleanPageName.replace('/services/', '').replace(/^\//, '');
       try {
         const directLocs = await db.query(
-          `SELECT id FROM service_locations WHERE (slug = ? OR slug = ? OR slug = ?) LIMIT 1`,
+          `SELECT * FROM service_locations WHERE (slug = ? OR slug = ? OR slug = ?) LIMIT 1`,
           [seg, seg.replace(/-in-/, '-'), seg.replace(/-/, '-in-')]
         );
         if (directLocs && directLocs.length > 0) {
-          const locId = directLocs[0].id;
-          let updateLocSql = 'UPDATE service_locations SET meta_title = COALESCE(?, meta_title), meta_description = COALESCE(?, meta_description), keywords = COALESCE(?, keywords)';
-          const locParams = [meta_title || null, meta_description || null, keywords || null];
-          if (data.description !== undefined) {
-            updateLocSql += ', description = ?';
-            locParams.push(data.description);
+          const loc = directLocs[0];
+          const updateFields = [];
+          const params = [];
+
+          if (data.description !== undefined) { updateFields.push('description = ?'); params.push(data.description); }
+          if (data.custom_heading !== undefined) { updateFields.push('custom_heading = ?'); params.push(data.custom_heading); }
+          if (data.custom_intro !== undefined) { updateFields.push('custom_intro = ?'); params.push(data.custom_intro); }
+          if (meta_title !== undefined) { updateFields.push('meta_title = ?'); params.push(meta_title); }
+          if (meta_description !== undefined) { updateFields.push('meta_description = ?'); params.push(meta_description); }
+          if (keywords !== undefined) { updateFields.push('keywords = ?'); params.push(keywords); }
+          if (canonical_url !== undefined) { updateFields.push('canonical_url = ?'); params.push(canonical_url); }
+          if (og_title !== undefined) { updateFields.push('og_title = ?'); params.push(og_title); }
+          if (og_description !== undefined) { updateFields.push('og_description = ?'); params.push(og_description); }
+          if (og_image !== undefined) { updateFields.push('og_image = ?'); params.push(og_image); }
+
+          if (updateFields.length > 0) {
+            updateFields.push('updated_at = NOW()');
+            params.push(loc.id);
+            await db.query(`UPDATE service_locations SET ${updateFields.join(', ')} WHERE id = ?`, params);
           }
-          updateLocSql += ', updated_at = NOW() WHERE id = ?';
-          locParams.push(locId);
-          await db.query(updateLocSql, locParams);
         }
       } catch (e) {
         console.error('Error syncing SEO to service_locations:', e);

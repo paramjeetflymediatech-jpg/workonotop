@@ -70,6 +70,14 @@ export async function POST(request) {
 }
 
 /**
+ * PATCH /api/ai-gateway/v1/seo
+ * Partially update SEO metadata for a page route.
+ */
+export async function PATCH(request) {
+  return POST(request);
+}
+
+/**
  * DELETE /api/ai-gateway/v1/seo
  * Delete SEO metadata for a page.
  */

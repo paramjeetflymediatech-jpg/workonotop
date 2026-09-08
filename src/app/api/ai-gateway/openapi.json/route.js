@@ -74,7 +74,34 @@ export async function GET() {
         post: {
           operationId: 'updateSeoSetting',
           summary: 'Create or update SEO metadata for a page',
-          description: 'Saves optimized meta title, meta description, keywords, canonical URLs, robots directives, and OpenGraph tags to the WorkOnTap database.',
+          description: 'Saves optimized meta title, meta description, keywords, canonical URLs, robots directives, OpenGraph tags, and location content to the WorkOnTap database.',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/SeoUpdateRequest',
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'SEO successfully updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/StandardSuccessResponse',
+                  },
+                },
+              },
+            },
+          },
+        },
+        patch: {
+          operationId: 'patchSeoSetting',
+          summary: 'Partially update SEO metadata or location content for a page',
+          description: 'Safe partial update (PATCH): only updates fields passed in the request body, preserving existing fields.',
           requestBody: {
             required: true,
             content: {
@@ -110,7 +137,7 @@ export async function GET() {
               in: 'query',
               required: false,
               schema: { type: 'string' },
-              description: 'Service slug (e.g. general-home-repairs)',
+              description: 'Service slug (e.g. general-home-repairs, furniture-assembly-in-burnaby)',
             },
             {
               name: 'categories',
@@ -142,8 +169,8 @@ export async function GET() {
         },
         post: {
           operationId: 'createOrUpdateService',
-          summary: 'Create or update a service listing',
-          description: 'Saves full service catalog listings with rich HTML description, use cases, pricing, and duration.',
+          summary: 'Create or update a service or location listing',
+          description: 'Saves service catalog listings or localized landing pages with rich HTML description, use cases, pricing, custom headings, and SEO.',
           requestBody: {
             required: true,
             content: {
@@ -157,6 +184,33 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Service created or updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/StandardSuccessResponse',
+                  },
+                },
+              },
+            },
+          },
+        },
+        patch: {
+          operationId: 'patchService',
+          summary: 'Partially update a service or localized landing page (safe PATCH)',
+          description: 'Safe partial update (PATCH): only modifies specified fields (e.g. description, custom_heading, meta tags) while preserving all other fields.',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ServiceCreateUpdateRequest',
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'Service successfully patched',
               content: {
                 'application/json': {
                   schema: {
@@ -256,6 +310,33 @@ export async function GET() {
             },
           },
         },
+        patch: {
+          operationId: 'patchServiceLocation',
+          summary: 'Partially update unique content and SEO for a service location page (safe PATCH)',
+          description: 'Safe partial update (PATCH): updates only provided fields for the location page, preserving all other existing fields.',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ServiceLocationCreateUpdateRequest',
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'Service location successfully patched',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/StandardSuccessResponse',
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
     components: {
@@ -301,6 +382,18 @@ export async function GET() {
               type: 'string',
               description: 'Optional rich HTML content / description to save for the page/location.',
             },
+            custom_heading: {
+              type: 'string',
+              description: 'Custom H1 heading for the page (e.g. #1 Rated Furniture Assembly in Burnaby, BC).',
+            },
+            custom_intro: {
+              type: 'string',
+              description: 'Custom introductory paragraph for the page/location.',
+            },
+            location_name: {
+              type: 'string',
+              description: 'Location or City name (e.g. Burnaby, Surrey).',
+            },
             meta_title: {
               type: 'string',
               description: 'Optimal 50-60 char meta title for Google Search ranking.',
@@ -333,6 +426,14 @@ export async function GET() {
             og_image: {
               type: 'string',
               description: 'Featured OpenGraph image URL.',
+            },
+            header_scripts: {
+              type: 'string',
+              description: 'Custom header scripts e.g. Google Analytics, Tag Manager, or schema markup.',
+            },
+            footer_scripts: {
+              type: 'string',
+              description: 'Custom footer scripts e.g. tracking scripts.',
             },
           },
         },
@@ -381,6 +482,9 @@ export async function GET() {
             category_id: { type: 'integer', description: 'Category ID' },
             short_description: { type: 'string', description: 'Brief 1-2 sentence overview' },
             description: { type: 'string', description: 'Full formatted HTML description with <h3>, <p>, <ul>, <li>' },
+            custom_heading: { type: 'string', description: 'Custom H1 heading for localized service page' },
+            custom_intro: { type: 'string', description: 'Custom intro paragraph for localized service page' },
+            location_name: { type: 'string', description: 'Location/City name if updating localized page' },
             use_cases: { type: 'string', description: 'Comma-separated common use cases' },
             base_price: { type: 'string', description: 'Base price in CAD (e.g. 89.99)' },
             additional_price: { type: 'string', description: 'Additional hourly/unit rate' },
@@ -393,6 +497,10 @@ export async function GET() {
             meta_title: { type: 'string', description: 'Meta title for this service page' },
             meta_description: { type: 'string', description: 'Meta description for this service page' },
             keywords: { type: 'string', description: 'Target keywords for this service' },
+            canonical_url: { type: 'string', description: 'Canonical URL' },
+            og_title: { type: 'string', description: 'OpenGraph title' },
+            og_description: { type: 'string', description: 'OpenGraph description' },
+            og_image: { type: 'string', description: 'OpenGraph image URL' },
             is_active: { type: 'integer', default: 1 },
           },
         },
@@ -413,6 +521,9 @@ export async function GET() {
             meta_description: { type: ['string', 'null'] },
             keywords: { type: ['string', 'null'] },
             canonical_url: { type: ['string', 'null'] },
+            og_title: { type: ['string', 'null'] },
+            og_description: { type: ['string', 'null'] },
+            og_image: { type: ['string', 'null'] },
             is_active: { type: 'integer' },
             updated_at: { type: ['string', 'null'] },
           },
@@ -445,6 +556,9 @@ export async function GET() {
             meta_description: { type: 'string', description: 'SEO Meta Description' },
             keywords: { type: 'string', description: 'SEO Keywords' },
             canonical_url: { type: 'string', description: 'Canonical URL' },
+            og_title: { type: 'string', description: 'OpenGraph title for social media previews' },
+            og_description: { type: 'string', description: 'OpenGraph description for social sharing' },
+            og_image: { type: 'string', description: 'OpenGraph image URL' },
             is_active: { type: 'integer', default: 1 },
           },
         },

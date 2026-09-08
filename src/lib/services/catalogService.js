@@ -128,6 +128,12 @@ export async function createOrUpdateService(data) {
     meta_title,
     meta_description,
     keywords,
+    custom_heading,
+    custom_intro,
+    canonical_url,
+    og_title,
+    og_description,
+    og_image,
   } = data;
 
   if (!name && !id && !slug) {
@@ -153,15 +159,21 @@ export async function createOrUpdateService(data) {
   // If this matches a service location record (or existing is a service location)
   if (existing?.is_service_location) {
     const finalDesc = description !== undefined ? description : existing.description;
+    const finalCustomHeading = custom_heading !== undefined ? custom_heading : existing.custom_heading;
+    const finalCustomIntro = custom_intro !== undefined ? custom_intro : existing.custom_intro;
     const finalMetaTitle = meta_title !== undefined ? meta_title : existing.meta_title;
     const finalMetaDesc = meta_description !== undefined ? meta_description : existing.meta_description;
     const finalKeywords = keywords !== undefined ? keywords : existing.keywords;
+    const finalCanonicalUrl = canonical_url !== undefined ? canonical_url : existing.canonical_url;
+    const finalOgTitle = og_title !== undefined ? og_title : existing.og_title;
+    const finalOgDesc = og_description !== undefined ? og_description : existing.og_description;
+    const finalOgImage = og_image !== undefined ? og_image : existing.og_image;
 
     await db.query(
       `UPDATE service_locations 
-       SET description = ?, meta_title = ?, meta_description = ?, keywords = ?, updated_at = NOW()
+       SET description = ?, custom_heading = ?, custom_intro = ?, meta_title = ?, meta_description = ?, keywords = ?, canonical_url = ?, og_title = ?, og_description = ?, og_image = ?, updated_at = NOW()
        WHERE id = ?`,
-      [finalDesc, finalMetaTitle, finalMetaDesc, finalKeywords, existing.id]
+      [finalDesc, finalCustomHeading, finalCustomIntro, finalMetaTitle, finalMetaDesc, finalKeywords, finalCanonicalUrl, finalOgTitle, finalOgDesc, finalOgImage, existing.id]
     );
 
     return {

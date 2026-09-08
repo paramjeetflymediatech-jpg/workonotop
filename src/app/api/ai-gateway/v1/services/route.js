@@ -50,7 +50,7 @@ export async function GET(request) {
 
 /**
  * POST /api/ai-gateway/v1/services
- * Create or Update a Service Listing.
+ * Create or Update a Service or Location Listing.
  */
 export async function POST(request) {
   const auth = verifyAiGatewayAuth(request);
@@ -58,8 +58,8 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    if (!body.name) {
-      return NextResponse.json({ success: false, message: 'Missing required field: name' }, { status: 400 });
+    if (!body.name && !body.slug && !body.id) {
+      return NextResponse.json({ success: false, message: 'Missing required field: name, slug, or id' }, { status: 400 });
     }
 
     const result = await createOrUpdateService(body);
@@ -74,4 +74,12 @@ export async function POST(request) {
     console.error('Error in POST /api/ai-gateway/v1/services:', error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
+}
+
+/**
+ * PATCH /api/ai-gateway/v1/services
+ * Partially update a service or location listing.
+ */
+export async function PATCH(request) {
+  return POST(request);
 }

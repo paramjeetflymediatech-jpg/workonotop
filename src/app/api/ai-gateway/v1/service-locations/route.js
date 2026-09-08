@@ -93,6 +93,14 @@ export async function POST(request) {
 }
 
 /**
+ * PATCH /api/ai-gateway/v1/service-locations
+ * Partially update a Service Location record.
+ */
+export async function PATCH(request) {
+  return POST(request);
+}
+
+/**
  * DELETE /api/ai-gateway/v1/service-locations
  * Delete a Service Location record.
  */
