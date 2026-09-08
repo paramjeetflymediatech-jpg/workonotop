@@ -121,12 +121,16 @@ export async function getSeoForPath(rawPathname) {
     globalSeo?.meta_title || 
     'WorkOnTap - Home Maintenance Services'
 
+  const rawLocDesc = serviceLocationSeo?.description || null
+  const cleanLocDesc = rawLocDesc ? rawLocDesc.replace(/<[^>]*>?/gm, '').slice(0, 160) + '...' : null
+
   const rawServiceDesc = serviceSeo?.short_description || serviceSeo?.description || null
   const cleanServiceDesc = rawServiceDesc ? rawServiceDesc.replace(/<[^>]*>?/gm, '').slice(0, 160) + '...' : null
 
   const description = 
     pageSeo?.meta_description ||
     serviceLocationSeo?.meta_description ||
+    cleanLocDesc ||
     blogSeo?.meta_description || 
     blogSeo?.short_content || 
     cleanServiceDesc ||

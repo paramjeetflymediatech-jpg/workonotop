@@ -24,7 +24,8 @@ export async function GET(request) {
         COALESCE(sl.keywords, seo.keywords) as seo_keywords,
         COALESCE(sl.canonical_url, seo.canonical_url) as seo_canonical_url,
         sl.custom_heading,
-        sl.custom_intro
+        sl.custom_intro,
+        sl.description as location_description
     ` : `
         seo.meta_title as seo_meta_title,
         seo.meta_description as seo_meta_description,

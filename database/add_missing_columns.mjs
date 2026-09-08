@@ -80,6 +80,7 @@ async function run() {
     await addColumnIfNotExists(conn, 'service_locations', 'og_title', 'VARCHAR(255) NULL');
     await addColumnIfNotExists(conn, 'service_locations', 'og_description', 'TEXT NULL');
     await addColumnIfNotExists(conn, 'service_locations', 'og_image', 'VARCHAR(255) NULL');
+    await addColumnIfNotExists(conn, 'service_locations', 'description', 'LONGTEXT NULL');
 
     // 4. Table: blogs
     await addColumnIfNotExists(conn, 'blogs', 'short_content', 'TEXT NULL AFTER `content`');

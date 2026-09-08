@@ -59,6 +59,11 @@ async function runMigration() {
       column: 'og_image',
       sql: 'ALTER TABLE service_locations ADD COLUMN og_image VARCHAR(255) NULL AFTER og_description',
     },
+    {
+      table: 'service_locations',
+      column: 'description',
+      sql: 'ALTER TABLE service_locations ADD COLUMN description LONGTEXT NULL AFTER custom_intro',
+    },
 
     // 4. seo_settings table
     {

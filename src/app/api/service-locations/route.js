@@ -81,6 +81,7 @@ export async function POST(request) {
       canonical_url,
       custom_heading,
       custom_intro,
+      description,
       is_active
     } = await request.json();
 
@@ -102,8 +103,8 @@ export async function POST(request) {
 
     const result = await execute(
       `INSERT INTO service_locations 
-        (service_id, location_name, location_slug, slug, meta_title, meta_description, keywords, canonical_url, custom_heading, custom_intro, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (service_id, location_name, location_slug, slug, meta_title, meta_description, keywords, canonical_url, custom_heading, custom_intro, description, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
         meta_title = VALUES(meta_title),
         meta_description = VALUES(meta_description),
@@ -111,6 +112,7 @@ export async function POST(request) {
         canonical_url = VALUES(canonical_url),
         custom_heading = VALUES(custom_heading),
         custom_intro = VALUES(custom_intro),
+        description = VALUES(description),
         is_active = VALUES(is_active)`,
       [
         service_id,
@@ -123,6 +125,7 @@ export async function POST(request) {
         canonical_url || null,
         custom_heading || null,
         custom_intro || null,
+        description !== undefined ? description : null,
         is_active !== undefined ? (is_active ? 1 : 0) : 1
       ]
     );

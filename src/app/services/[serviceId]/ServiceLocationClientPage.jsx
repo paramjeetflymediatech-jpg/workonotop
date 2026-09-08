@@ -58,9 +58,11 @@ export default function ServiceLocationClientPage({
     ? service.short_description.replace(new RegExp(service?.name, 'gi'), `${service?.name} in ${locationName}`)
     : '';
 
-  const dynamicDescription = service?.description
-    ? service.description.replace(new RegExp(service?.name, 'gi'), `${service?.name} in ${locationName}`)
-    : '';
+  const dynamicDescription = (serviceLocation?.description && serviceLocation.description.trim() !== '')
+    ? serviceLocation.description
+    : (service?.description
+      ? service.description.replace(new RegExp(service?.name, 'gi'), `${service?.name} in ${locationName}`)
+      : '');
 
   if (!service) {
     return (

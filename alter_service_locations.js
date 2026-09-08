@@ -152,6 +152,7 @@ async function runAlterAndSeed() {
           canonical_url VARCHAR(255),
           custom_heading VARCHAR(255),
           custom_intro TEXT,
+          description LONGTEXT,
           is_active TINYINT(1) DEFAULT 1,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -161,6 +162,15 @@ async function runAlterAndSeed() {
     `;
     await connection.query(createServiceLocationsSQL);
     console.log('✅ Created table service_locations (if not exists)');
+
+    try {
+      await connection.query('ALTER TABLE service_locations ADD COLUMN description LONGTEXT AFTER custom_intro');
+      console.log('✅ Migrated: Added description column to service_locations');
+    } catch (e) {
+      if (e.code !== 'ER_DUP_FIELDNAME') {
+        // Ignore duplicate field name error
+      }
+    }
 
     // 6. Query active services
     let [services] = await connection.query('SELECT id, name, slug, description FROM services WHERE is_active = 1');

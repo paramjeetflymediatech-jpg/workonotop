@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useAdminTheme } from '../layout';
 import { toast } from 'react-hot-toast';
+
+const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { ssr: false });
 
 export default function AdminServiceLocationsPage() {
   const router = useRouter();
@@ -35,6 +38,7 @@ export default function AdminServiceLocationsPage() {
     canonical_url: '',
     custom_heading: '',
     custom_intro: '',
+    description: '',
     is_active: 1
   });
 
@@ -79,6 +83,7 @@ export default function AdminServiceLocationsPage() {
       canonical_url: '',
       custom_heading: '',
       custom_intro: '',
+      description: '',
       is_active: 1
     });
     setIsModalOpen(true);
@@ -96,6 +101,7 @@ export default function AdminServiceLocationsPage() {
       canonical_url: item.canonical_url || '',
       custom_heading: item.custom_heading || '',
       custom_intro: item.custom_intro || '',
+      description: item.description || '',
       is_active: item.is_active ? 1 : 0
     });
     setIsModalOpen(true);
@@ -413,6 +419,37 @@ export default function AdminServiceLocationsPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, custom_intro: e.target.value }))}
                   className={`w-full px-3 py-2 rounded-xl text-sm border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`}
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1">Unique Location Description (Rich Text / HTML)</label>
+                <div className={`mt-1 ${isDarkMode ? 'dark-mode-ckeditor' : ''}`}>
+                  <RichTextEditor
+                    value={formData.description || ''}
+                    onChange={(data) => setFormData(prev => ({ ...prev, description: data }))}
+                    placeholder="Write unique detailed description specifically for this service location..."
+                  />
+                </div>
+                <p className={`text-xs mt-1.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Overrides the generic service description on this location page for unique, location-specific content.
+                </p>
+                {isDarkMode && (
+                  <style jsx global>{`
+                    .dark-mode-ckeditor .ck-editor__main .ck-content,
+                    .dark-mode-ckeditor .ck-toolbar {
+                      background-color: #1e293b !important;
+                      color: #e2e8f0 !important;
+                      border-color: #334155 !important;
+                    }
+                    .dark-mode-ckeditor .ck-button {
+                      color: #cbd5e1 !important;
+                    }
+                    .dark-mode-ckeditor .ck-button:hover,
+                    .dark-mode-ckeditor .ck-button.ck-on {
+                      background-color: #334155 !important;
+                    }
+                  `}</style>
+                )}
               </div>
 
               <div className="flex items-center gap-2 pt-2">

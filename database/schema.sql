@@ -440,6 +440,7 @@ CREATE TABLE IF NOT EXISTS service_locations (
     og_image VARCHAR(255),
     custom_heading VARCHAR(255),
     custom_intro TEXT,
+    description LONGTEXT,
     is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
