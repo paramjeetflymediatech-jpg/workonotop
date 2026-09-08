@@ -130,11 +130,11 @@ export default function ServiceLocationClientPage({
             {/* Title & Short Description */}
             <div className="mb-8 mt-6">
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
-                {service.name} in {locationName}
+                {serviceLocation?.custom_heading || headingText}
               </h1>
-              {dynamicShortDescription && (
+              {(serviceLocation?.custom_intro || introText || dynamicShortDescription) && (
                 <p className="text-lg md:text-xl text-gray-700 leading-relaxed font-medium">
-                  {dynamicShortDescription}
+                  {serviceLocation?.custom_intro || introText || dynamicShortDescription}
                 </p>
               )}
             </div>

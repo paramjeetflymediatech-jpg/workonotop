@@ -109,23 +109,50 @@ export async function getServiceLocationDetails(identifier) {
     : [str, str.replace(/-in-/, '-'), str.replace(/-/, '-in-')];
 
   const rows = await db.query(sql, params);
-  return rows[0] || null;
+  if (rows && rows.length > 0) {
+    return rows[0];
+  }
+
+  if (!isId) {
+    // Fallback prefix matching by service slug + location
+    const allServices = await db.query('SELECT id, slug, name FROM services WHERE is_active = 1 ORDER BY LENGTH(slug) DESC');
+    for (const s of (allServices || [])) {
+      if (str.startsWith(s.slug + '-')) {
+        let rawLoc = str.substring(s.slug.length + 1);
+        let locSlug = rawLoc.startsWith('in-') ? rawLoc.substring(3) : rawLoc;
+        const locRows = await db.query(
+          `SELECT sl.*, s.name as service_name, s.slug as service_slug, s.base_price, s.description as service_description
+           FROM service_locations sl
+           JOIN services s ON sl.service_id = s.id
+           WHERE sl.service_id = ? AND (sl.location_slug = ? OR sl.location_slug = ? OR LOWER(sl.location_name) = ? OR LOWER(sl.location_name) = ? OR sl.slug = ?)
+           LIMIT 1`,
+          [s.id, locSlug, `in-${locSlug}`, locSlug.replace(/-/g, ' '), `in ${locSlug.replace(/-/g, ' ')}`, str]
+        );
+        if (locRows && locRows.length > 0) {
+          return locRows[0];
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 /**
  * Create or Update Service Location
  */
 export async function upsertServiceLocation(data) {
+  const inputSlug = data.slug || data.page_slug;
+  const inputDescription = data.description !== undefined ? data.description : (data.body_html !== undefined ? data.body_html : (data.body !== undefined ? data.body : data.content));
+  const inputCustomHeading = data.custom_heading !== undefined ? data.custom_heading : data.h1;
+  const inputCustomIntro = data.custom_intro !== undefined ? data.custom_intro : (data.short_description !== undefined ? data.short_description : data.intro);
+
   const {
     id,
     service_id,
     service_slug,
     location_name,
     location_slug,
-    slug,
-    description,
-    custom_heading,
-    custom_intro,
     meta_title,
     meta_description,
     keywords,
@@ -135,6 +162,11 @@ export async function upsertServiceLocation(data) {
     og_image,
     is_active,
   } = data;
+
+  const slug = inputSlug;
+  const description = inputDescription;
+  const custom_heading = inputCustomHeading;
+  const custom_intro = inputCustomIntro;
 
   // Resolve service_id if only service_slug is provided
   let resolvedServiceId = service_id;
