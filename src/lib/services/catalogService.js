@@ -61,7 +61,39 @@ export async function getServiceDetails(slugOrId) {
   `;
 
   const rows = await db.query(sql, [isId ? Number(slugOrId) : String(slugOrId).trim()]);
-  if (!rows || rows.length === 0) return null;
+  if (!rows || rows.length === 0) {
+    if (!isId) {
+      const cleanSlug = String(slugOrId).trim();
+      const locRows = await db.query(
+        `SELECT sl.*, s.name as service_name, s.slug as base_service_slug, s.base_price, s.image_url
+         FROM service_locations sl
+         JOIN services s ON sl.service_id = s.id
+         WHERE (sl.slug = ? OR sl.slug = ? OR sl.slug = ?) LIMIT 1`,
+        [cleanSlug, cleanSlug.replace(/-in-/, '-'), cleanSlug.replace(/-/, '-in-')]
+      );
+      if (locRows && locRows.length > 0) {
+        const loc = locRows[0];
+        return {
+          id: loc.id,
+          name: `${loc.service_name} in ${loc.location_name}`,
+          slug: loc.slug,
+          location_name: loc.location_name,
+          location_slug: loc.location_slug,
+          description: loc.description,
+          custom_heading: loc.custom_heading,
+          custom_intro: loc.custom_intro,
+          meta_title: loc.meta_title,
+          meta_description: loc.meta_description,
+          keywords: loc.keywords,
+          canonical_url: loc.canonical_url,
+          is_active: loc.is_active,
+          base_price: loc.base_price,
+          is_service_location: true,
+        };
+      }
+    }
+    return null;
+  }
 
   const service = rows[0];
   try {
@@ -116,6 +148,29 @@ export async function createOrUpdateService(data) {
     existing = await getServiceDetails(id);
   } else if (cleanSlug) {
     existing = await getServiceDetails(cleanSlug);
+  }
+
+  // If this matches a service location record (or existing is a service location)
+  if (existing?.is_service_location) {
+    const finalDesc = description !== undefined ? description : existing.description;
+    const finalMetaTitle = meta_title !== undefined ? meta_title : existing.meta_title;
+    const finalMetaDesc = meta_description !== undefined ? meta_description : existing.meta_description;
+    const finalKeywords = keywords !== undefined ? keywords : existing.keywords;
+
+    await db.query(
+      `UPDATE service_locations 
+       SET description = ?, meta_title = ?, meta_description = ?, keywords = ?, updated_at = NOW()
+       WHERE id = ?`,
+      [finalDesc, finalMetaTitle, finalMetaDesc, finalKeywords, existing.id]
+    );
+
+    return {
+      id: existing.id,
+      action: 'updated',
+      slug: existing.slug,
+      name: existing.name,
+      is_service_location: true,
+    };
   }
 
   if (existing) {
