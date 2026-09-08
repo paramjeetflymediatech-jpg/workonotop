@@ -68,34 +68,48 @@ export async function getSeoForPath(rawPathname) {
     const slug = serviceLocParts[1]
     
     try {
-      // First get all services to do prefix matching
-      const allServices = await db.query(`SELECT id, slug, name FROM services WHERE is_active = 1 ORDER BY LENGTH(slug) DESC`);
-      
-      let matchedService = null;
-      let locationSlug = '';
-      
-      for (const s of allServices) {
-        if (slug.startsWith(s.slug + '-')) {
-          matchedService = s;
-          locationSlug = slug.substring(s.slug.length + 1);
-          break;
-        }
-      }
+      // First try direct lookup by service_locations slug
+      const directLocs = await db.query(
+        `SELECT sl.*, s.name as service_name
+         FROM service_locations sl
+         JOIN services s ON sl.service_id = s.id
+         WHERE (sl.slug = ? OR sl.slug = ? OR sl.slug = ?) AND sl.is_active = 1 LIMIT 1`,
+        [slug, slug.replace(/-in-/, '-'), slug.replace(/-/, '-in-')]
+      );
 
-      if (matchedService && locationSlug) {
-        const rows = await db.query(
-          `SELECT sl.*, s.name as service_name
-           FROM service_locations sl
-           JOIN services s ON sl.service_id = s.id
-           WHERE s.id = ? AND (sl.location_slug = ? OR LOWER(sl.location_name) = ?) AND sl.is_active = 1 LIMIT 1`,
-          [matchedService.id, locationSlug, locationSlug.replace(/-/g, ' ')]
-        )
-        if (rows && rows.length > 0) {
-          serviceLocationSeo = rows[0]
+      if (directLocs && directLocs.length > 0) {
+        serviceLocationSeo = directLocs[0];
+      } else {
+        // First get all services to do prefix matching
+        const allServices = await db.query(`SELECT id, slug, name FROM services WHERE is_active = 1 ORDER BY LENGTH(slug) DESC`);
+        
+        let matchedService = null;
+        let locationSlug = '';
+        
+        for (const s of allServices) {
+          if (slug.startsWith(s.slug + '-')) {
+            matchedService = s;
+            let rawLoc = slug.substring(s.slug.length + 1);
+            locationSlug = rawLoc.startsWith('in-') ? rawLoc.substring(3) : rawLoc;
+            break;
+          }
+        }
+
+        if (matchedService && locationSlug) {
+          const rows = await db.query(
+            `SELECT sl.*, s.name as service_name
+             FROM service_locations sl
+             JOIN services s ON sl.service_id = s.id
+             WHERE s.id = ? AND (sl.location_slug = ? OR sl.location_slug = ? OR LOWER(sl.location_name) = ? OR LOWER(sl.location_name) = ? OR sl.slug = ?) AND sl.is_active = 1 LIMIT 1`,
+            [matchedService.id, locationSlug, `in-${locationSlug}`, locationSlug.replace(/-/g, ' '), `in ${locationSlug.replace(/-/g, ' ')}`, slug]
+          );
+          if (rows && rows.length > 0) {
+            serviceLocationSeo = rows[0];
+          }
         }
       }
     } catch (e) {
-      console.error('Error fetching service location SEO:', e)
+      console.error('Error fetching service location SEO:', e);
     }
   }
 

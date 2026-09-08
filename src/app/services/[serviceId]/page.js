@@ -85,32 +85,74 @@ export default async function ServiceDynamicPage({ params }) {
     );
   }
 
-  // 2. Check if it's a service-location slug combination (e.g. wifi-setup-richmond)
-  const allServices = await db.query(
-    `SELECT id, name, slug FROM services WHERE is_active = 1 ORDER BY LENGTH(slug) DESC`
-  );
-
+  // 2. Check if it's a service-location slug combination (e.g. furniture-assembly-burnaby or furniture-assembly-in-burnaby)
   let matchedService = null;
   let locationSlug = '';
+  let serviceLocation = null;
 
-  for (const s of allServices) {
-    if (slug.startsWith(s.slug + '-')) {
-      matchedService = s;
-      locationSlug = slug.substring(s.slug.length + 1);
-      break;
+  // First try direct match in service_locations by slug
+  const directLocs = await db.query(
+    `SELECT sl.*, s.slug as service_slug
+     FROM service_locations sl
+     JOIN services s ON sl.service_id = s.id
+     WHERE (sl.slug = ? OR sl.slug = ? OR sl.slug = ?) AND sl.is_active = 1 LIMIT 1`,
+    [slug, slug.replace(/-in-/, '-'), slug.replace(/-/, '-in-')]
+  );
+
+  if (directLocs && directLocs.length > 0) {
+    serviceLocation = directLocs[0];
+    locationSlug = serviceLocation.location_slug;
+    const fullServices = await db.query(
+      `SELECT s.*, sc.name as category_name, sc.icon as category_icon, sc.image_url as category_image_url
+       FROM services s
+       LEFT JOIN service_categories sc ON s.category_id = sc.id
+       WHERE s.id = ? AND s.is_active = 1 LIMIT 1`,
+      [serviceLocation.service_id]
+    );
+    if (fullServices && fullServices.length > 0) {
+      matchedService = fullServices[0];
+    }
+  }
+
+  // If not matched directly, try matching service prefix (e.g. furniture-assembly-in-burnaby)
+  if (!matchedService) {
+    const allServices = await db.query(
+      `SELECT id, name, slug FROM services WHERE is_active = 1 ORDER BY LENGTH(slug) DESC`
+    );
+
+    for (const s of allServices) {
+      if (slug.startsWith(s.slug + '-')) {
+        matchedService = s;
+        let rawLoc = slug.substring(s.slug.length + 1);
+        locationSlug = rawLoc.startsWith('in-') ? rawLoc.substring(3) : rawLoc;
+        break;
+      }
+    }
+
+    if (matchedService && locationSlug) {
+      const locRows = await db.query(
+        `SELECT * FROM service_locations 
+         WHERE service_id = ? AND (location_slug = ? OR location_slug = ? OR LOWER(location_name) = ? OR LOWER(location_name) = ? OR slug = ?) AND is_active = 1 LIMIT 1`,
+        [matchedService.id, locationSlug, `in-${locationSlug}`, locationSlug.replace(/-/g, ' '), `in ${locationSlug.replace(/-/g, ' ')}`, slug]
+      );
+
+      serviceLocation = (locRows && locRows.length > 0) ? locRows[0] : null;
+
+      // Re-fetch full service data since we only queried id, name, slug above
+      const fullServices = await db.query(
+        `SELECT s.*, sc.name as category_name, sc.icon as category_icon, sc.image_url as category_image_url
+         FROM services s
+         LEFT JOIN service_categories sc ON s.category_id = sc.id
+         WHERE s.id = ? AND s.is_active = 1 LIMIT 1`,
+        [matchedService.id]
+      );
+      if (fullServices && fullServices.length > 0) {
+        matchedService = fullServices[0];
+      }
     }
   }
 
   if (matchedService && locationSlug) {
-    // Try to get custom location data if it exists
-    const locRows = await db.query(
-      `SELECT * FROM service_locations 
-       WHERE service_id = ? AND (location_slug = ? OR LOWER(location_name) = ?) AND is_active = 1 LIMIT 1`,
-      [matchedService.id, locationSlug, locationSlug.replace(/-/g, ' ')]
-    );
-
-    const serviceLocation = (locRows && locRows.length > 0) ? locRows[0] : null;
-
     const locList = await db.query(
       `SELECT DISTINCT location_name, location_slug FROM service_locations WHERE is_active = 1 ORDER BY location_name ASC LIMIT 20`
     );
@@ -120,22 +162,11 @@ export default async function ServiceDynamicPage({ params }) {
       .map(w => w.charAt(0).toUpperCase() + w.slice(1))
       .join(' ');
 
-    // Re-fetch full service data since we only queried id, name, slug above
-    const fullServices = await db.query(
-      `SELECT s.*, sc.name as category_name, sc.icon as category_icon, sc.image_url as category_image_url
-       FROM services s
-       LEFT JOIN service_categories sc ON s.category_id = sc.id
-       WHERE s.id = ? AND s.is_active = 1 LIMIT 1`,
-      [matchedService.id]
-    );
-
-    const fullMatchedService = fullServices && fullServices.length > 0 ? fullServices[0] : matchedService;
-
     return (
       <ServiceLocationClientPage
-        service={fullMatchedService}
+        service={matchedService}
         serviceLocation={serviceLocation}
-        serviceId={fullMatchedService.slug}
+        serviceId={matchedService.slug}
         locationSlug={locationSlug}
         locationName={locationName}
         allLocations={locList || []}
