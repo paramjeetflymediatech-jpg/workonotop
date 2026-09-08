@@ -240,6 +240,33 @@ export async function PUT(request) {
       )
     }
 
+    const existingRows = await query('SELECT * FROM services WHERE id = ?', [id])
+    const existing = existingRows && existingRows.length > 0 ? existingRows[0] : null
+
+    const finalCategoryId = category_id !== undefined ? category_id : existing?.category_id
+    const finalName = name !== undefined ? name : existing?.name
+    const finalSlug = slug !== undefined ? slug : existing?.slug
+    const finalDescription = description !== undefined ? description : (existing?.description || '')
+    const finalShortDescription = short_description !== undefined ? short_description : (existing?.short_description || '')
+    const finalBasePrice = base_price !== undefined ? base_price : (existing?.base_price || '0.00')
+    const finalAdditionalPrice = additional_price !== undefined ? additional_price : (existing?.additional_price || '0.00')
+    const finalDurationMinutes = duration_minutes !== undefined ? duration_minutes : (existing?.duration_minutes || 60)
+    const finalImageUrl = image_url !== undefined ? image_url : existing?.image_url
+    const finalUseCases = use_cases !== undefined ? use_cases : (existing?.use_cases || '')
+    const finalIsHomepage = is_homepage !== undefined ? (is_homepage ? 1 : 0) : (existing ? existing.is_homepage : 0)
+    const finalIsTrending = is_trending !== undefined ? (is_trending ? 1 : 0) : (existing ? existing.is_trending : 0)
+    const finalIsPopular = is_popular !== undefined ? (is_popular ? 1 : 0) : (existing ? existing.is_popular : 0)
+    const finalIsActive = is_active !== undefined ? (is_active ? 1 : 0) : (existing ? existing.is_active : 1)
+
+    let finalSkills
+    if (skills !== undefined) {
+      finalSkills = JSON.stringify(Array.isArray(skills) ? skills : [])
+    } else if (existing?.skills) {
+      finalSkills = typeof existing.skills === 'string' ? existing.skills : JSON.stringify(existing.skills)
+    } else {
+      finalSkills = JSON.stringify([])
+    }
+
     await execute(
       `UPDATE services 
        SET category_id = ?, name = ?, slug = ?, description = ?, short_description = ?, 
@@ -247,21 +274,21 @@ export async function PUT(request) {
            use_cases = ?, is_homepage = ?, is_trending = ?, is_popular = ?, is_active = ?, skills = ?
        WHERE id = ?`,
       [
-        category_id,
-        name,
-        slug,
-        description,
-        short_description,
-        base_price,
-        additional_price,
-        duration_minutes,
-        image_url,
-        use_cases,
-        is_homepage ? 1 : 0,
-        is_trending ? 1 : 0,
-        is_popular ? 1 : 0,
-        is_active ? 1 : 0,
-        JSON.stringify(Array.isArray(skills) ? skills : []),
+        finalCategoryId,
+        finalName,
+        finalSlug,
+        finalDescription,
+        finalShortDescription,
+        finalBasePrice,
+        finalAdditionalPrice,
+        finalDurationMinutes,
+        finalImageUrl,
+        finalUseCases,
+        finalIsHomepage,
+        finalIsTrending,
+        finalIsPopular,
+        finalIsActive,
+        finalSkills,
         id
       ]
     )

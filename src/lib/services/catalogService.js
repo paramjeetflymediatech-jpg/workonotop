@@ -81,28 +81,28 @@ export async function createOrUpdateService(data) {
     category_id,
     name,
     slug,
-    description = '',
-    short_description = '',
-    base_price = '0.00',
-    additional_price = '0.00',
-    duration_minutes = 60,
-    image_url = '',
-    use_cases = '',
-    is_homepage = 0,
-    is_trending = 0,
-    is_popular = 0,
-    is_active = 1,
-    skills = [],
-    meta_title = '',
-    meta_description = '',
-    keywords = '',
+    description,
+    short_description,
+    base_price,
+    additional_price,
+    duration_minutes,
+    image_url,
+    use_cases,
+    is_homepage,
+    is_trending,
+    is_popular,
+    is_active,
+    skills,
+    meta_title,
+    meta_description,
+    keywords,
   } = data;
 
-  if (!name) {
-    throw new Error('Service name is required');
+  if (!name && !id && !slug) {
+    throw new Error('Service name, slug, or ID is required');
   }
 
-  const cleanSlug = (slug || name)
+  const cleanSlug = (slug || name || '')
     .toLowerCase()
     .trim()
     .replace(/[\/]/g, '')
@@ -118,12 +118,37 @@ export async function createOrUpdateService(data) {
     existing = await getServiceDetails(cleanSlug);
   }
 
-  const skillsJson = JSON.stringify(Array.isArray(skills) ? skills : []);
-
   if (existing) {
+    // Preserve existing values if not specified (undefined) in the incoming payload
+    const finalName = name !== undefined ? name : existing.name;
+    const finalSlug = slug !== undefined ? cleanSlug : existing.slug;
+    const finalCategoryId = category_id !== undefined ? (category_id ? Number(category_id) : null) : existing.category_id;
+    const finalDescription = description !== undefined ? description : (existing.description || '');
+    const finalShortDescription = short_description !== undefined ? short_description : (existing.short_description || '');
+    const finalBasePrice = base_price !== undefined ? base_price : (existing.base_price || '0.00');
+    const finalAdditionalPrice = additional_price !== undefined ? additional_price : (existing.additional_price || '0.00');
+    const finalDurationMinutes = duration_minutes !== undefined ? (Number(duration_minutes) || 60) : (existing.duration_minutes || 60);
+    const finalImageUrl = image_url !== undefined ? (image_url || null) : existing.image_url;
+    const finalUseCases = use_cases !== undefined ? use_cases : (existing.use_cases || '');
+    const finalIsHomepage = is_homepage !== undefined ? (is_homepage ? 1 : 0) : (existing.is_homepage ? 1 : 0);
+    const finalIsTrending = is_trending !== undefined ? (is_trending ? 1 : 0) : (existing.is_trending ? 1 : 0);
+    const finalIsPopular = is_popular !== undefined ? (is_popular ? 1 : 0) : (existing.is_popular ? 1 : 0);
+    const finalIsActive = is_active !== undefined ? (is_active ? 1 : 0) : (existing.is_active ? 1 : 0);
+
+    let skillsJson;
+    if (skills !== undefined) {
+      skillsJson = JSON.stringify(Array.isArray(skills) ? skills : []);
+    } else {
+      skillsJson = JSON.stringify(Array.isArray(existing.skills) ? existing.skills : []);
+    }
+
+    const finalMetaTitle = meta_title !== undefined ? meta_title : (existing.meta_title || '');
+    const finalMetaDescription = meta_description !== undefined ? meta_description : (existing.meta_description || '');
+    const finalKeywords = keywords !== undefined ? keywords : (existing.keywords || '');
+
     await db.query(
       `UPDATE services 
-       SET category_id = COALESCE(?, category_id),
+       SET category_id = ?,
            name = ?,
            slug = ?,
            description = ?,
@@ -144,30 +169,31 @@ export async function createOrUpdateService(data) {
            updated_at = NOW()
        WHERE id = ?`,
       [
-        category_id ? Number(category_id) : null,
-        name,
-        cleanSlug,
-        description,
-        short_description,
-        base_price,
-        additional_price || '0.00',
-        Number(duration_minutes) || 60,
-        image_url || null,
-        use_cases || '',
-        is_homepage ? 1 : 0,
-        is_trending ? 1 : 0,
-        is_popular ? 1 : 0,
-        is_active ? 1 : 0,
+        finalCategoryId,
+        finalName,
+        finalSlug,
+        finalDescription,
+        finalShortDescription,
+        finalBasePrice,
+        finalAdditionalPrice,
+        finalDurationMinutes,
+        finalImageUrl,
+        finalUseCases,
+        finalIsHomepage,
+        finalIsTrending,
+        finalIsPopular,
+        finalIsActive,
         skillsJson,
-        meta_title || '',
-        meta_description || '',
-        keywords || '',
+        finalMetaTitle,
+        finalMetaDescription,
+        finalKeywords,
         existing.id,
       ]
     );
 
-    return { id: existing.id, action: 'updated', slug: cleanSlug, name };
+    return { id: existing.id, action: 'updated', slug: finalSlug, name: finalName };
   } else {
+    const skillsJson = JSON.stringify(Array.isArray(skills) ? skills : []);
     const result = await db.query(
       `INSERT INTO services 
        (category_id, name, slug, description, short_description, base_price, additional_price, duration_minutes, image_url, use_cases, is_homepage, is_trending, is_popular, is_active, skills, meta_title, meta_description, keywords)
