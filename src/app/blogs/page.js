@@ -3,10 +3,35 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import BookingFormSidebar from '@/components/BookingFormSidebar'
 import db from '@/lib/db'
+import { getSeoForPath } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Blog | Your Company Name',
-  description: 'Read the latest news and articles from our team.',
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  const seo = await getSeoForPath('/blogs');
+
+  return {
+    title: seo.title || 'WorkOnTap Blog | Home Maintenance & Trades Insights',
+    description: seo.description || 'Discover the latest home service tips, industry trends, and insights from our expert team.',
+    keywords: seo.keywords || 'blogs, home services blog, maintenance tips, vancouver trades',
+    alternates: {
+      canonical: seo.canonical || 'https://workontap.com/blogs',
+    },
+    openGraph: {
+      title: seo.ogTitle || seo.title || 'WorkOnTap Blog',
+      description: seo.ogDescription || seo.description,
+      url: seo.canonical || 'https://workontap.com/blogs',
+      siteName: 'WorkOnTap',
+      type: 'website',
+      images: seo.ogImage ? [{ url: seo.ogImage }] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: seo.ogTitle || seo.title || 'WorkOnTap Blog',
+      description: seo.ogDescription || seo.description,
+      images: seo.ogImage ? [seo.ogImage] : [],
+    },
+  };
 }
 
 async function getBlogs() {

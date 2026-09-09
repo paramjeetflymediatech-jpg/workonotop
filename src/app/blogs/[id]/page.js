@@ -4,10 +4,14 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import BookingFormSidebar from '@/components/BookingFormSidebar'
 import db from '@/lib/db'
+import { getSeoForPath } from '@/lib/seo'
+
+export const dynamic = 'force-dynamic';
 
 // Dynamically generate SEO metadata for the blog post
 export async function generateMetadata({ params }) {
   const { id } = await params
+  const seo = await getSeoForPath(`/blogs/${id}`)
   
   try {
     const rows = await db.query(
@@ -17,31 +21,46 @@ export async function generateMetadata({ params }) {
     
     if (!rows || rows.length === 0) {
       return {
-        title: 'Blog Not Found',
+        title: seo.title || 'Blog Not Found | WorkOnTap',
+        description: seo.description || 'The requested article could not be found.',
       }
     }
 
     const blog = rows[0]
+    const title = blog.meta_title || seo.title || `${blog.title} | WorkOnTap Blog`
+    const description = blog.meta_description || seo.description || blog.short_content || blog.title
+    const keywords = blog.keywords || seo.keywords || ''
+    const ogImage = blog.og_image || blog.image_url || seo.ogImage
+    const canonical = blog.canonical_url || seo.canonical || `https://workontap.com/blogs/${blog.slug || blog.id}`
     
     return {
-      title: blog.meta_title || `${blog.title} | Blog`,
-      description: blog.meta_description || blog.title,
-      keywords: blog.keywords || '',
+      title,
+      description,
+      keywords,
+      alternates: {
+        canonical,
+      },
       openGraph: {
-        title: blog.og_title || blog.title,
-        description: blog.og_description || blog.meta_description || blog.title,
-        images: blog.og_image || blog.image_url ? [blog.og_image || blog.image_url] : [],
+        title: blog.og_title || seo.ogTitle || title,
+        description: blog.og_description || seo.ogDescription || description,
+        images: ogImage ? [{ url: ogImage }] : [],
         type: 'article',
         publishedTime: blog.created_at,
-        authors: [blog.author || 'Admin'],
+        authors: [blog.author || 'WorkOnTap Team'],
+        url: canonical,
+        siteName: 'WorkOnTap',
       },
-      alternates: {
-        canonical: blog.canonical_url || `/blogs/${blog.slug || blog.id}`,
-      }
+      twitter: {
+        card: 'summary_large_image',
+        title: blog.og_title || seo.ogTitle || title,
+        description: blog.og_description || seo.ogDescription || description,
+        images: ogImage ? [ogImage] : [],
+      },
     }
   } catch (error) {
     return {
-      title: 'Blog Article',
+      title: seo.title || 'Blog Article | WorkOnTap',
+      description: seo.description,
     }
   }
 }
