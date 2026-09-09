@@ -4,6 +4,7 @@
     "slug": "workontap",
     "scheme": "workontap",
     "version": "1.9",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nhaman.workontap",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"

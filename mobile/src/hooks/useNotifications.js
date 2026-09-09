@@ -29,17 +29,18 @@ export const useNotifications = (navigation, userRole) => {
 
                 // 2. Listen for user interaction (CLICKING) with a notification
                 responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-                    const data = response.notification.request.content.data;
+                    const data = response?.notification?.request?.content?.data;
                     console.log('🎯 Notification Tapped:', data);
 
-                    if (data?.bookingId && navigation) {
+                    const nav = navigation?.navigate ? navigation : navigation?.current;
+                    if (data?.bookingId && nav) {
                         try {
                             if (userRole === 'admin') {
-                                navigation.navigate('AdminJobDetails', { booking: { id: data.bookingId } });
+                                nav.navigate('AdminJobDetails', { booking: { id: data.bookingId } });
                             } else if (userRole === 'provider') {
-                                navigation.navigate('JobDetails', { booking: { id: data.bookingId } });
+                                nav.navigate('JobDetails', { booking: { id: data.bookingId } });
                             } else {
-                                navigation.navigate('CustomerBookingDetails', { bookingId: data.bookingId });
+                                nav.navigate('CustomerBookingDetails', { bookingId: data.bookingId });
                             }
                         } catch (err) {
                             console.warn('[Push] Navigation failed:', err.message);
@@ -49,6 +50,7 @@ export const useNotifications = (navigation, userRole) => {
             } catch (err) {
                 console.log('[Push] Notification listeners skipped (likely running in Expo Go or simulator):', err.message);
             }
+
         };
 
         setupListeners();
