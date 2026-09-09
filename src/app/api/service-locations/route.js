@@ -10,6 +10,7 @@ export async function GET(request) {
     const serviceSlug = searchParams.get('serviceSlug') || searchParams.get('service');
     const locationSlug = searchParams.get('locationSlug') || searchParams.get('location');
     const limit = searchParams.get('limit');
+    const includeInactive = searchParams.get('includeInactive') === 'true' || searchParams.get('admin') === 'true';
 
     let sql = `
       SELECT 
@@ -22,9 +23,13 @@ export async function GET(request) {
         s.image_url as service_image
       FROM service_locations sl
       JOIN services s ON sl.service_id = s.id
-      WHERE sl.is_active = 1 AND s.is_active = 1
+      WHERE 1=1
     `;
     const params = [];
+
+    if (!includeInactive) {
+      sql += ' AND sl.is_active = 1 AND s.is_active = 1';
+    }
 
     if (serviceSlug) {
       sql += ' AND s.slug = ?';
@@ -68,13 +73,15 @@ export async function GET(request) {
   }
 }
 
-// POST create new service location
+// POST create or upsert service location
 export async function POST(request) {
   try {
     const {
+      id,
       service_id,
       location_name,
       location_slug,
+      slug,
       meta_title,
       meta_description,
       keywords,
@@ -93,19 +100,60 @@ export async function POST(request) {
     }
 
     // Fetch service slug to build clean composite slug
-    const services = await query('SELECT slug FROM services WHERE id = ?', [service_id]);
+    const services = await query('SELECT slug, name FROM services WHERE id = ?', [service_id]);
     if (!services || services.length === 0) {
       return NextResponse.json({ success: false, message: 'Invalid service_id' }, { status: 400 });
     }
 
     const cleanLocSlug = location_slug.toLowerCase().trim().replace(/\s+/g, '-');
-    const comboSlug = `${services[0].slug}-${cleanLocSlug}`;
+    const comboSlug = slug || `${services[0].slug}-${cleanLocSlug}`;
+
+    if (id) {
+      await execute(
+        `UPDATE service_locations SET
+          service_id = ?,
+          location_name = ?,
+          location_slug = ?,
+          slug = ?,
+          meta_title = ?,
+          meta_description = ?,
+          keywords = ?,
+          canonical_url = ?,
+          custom_heading = ?,
+          custom_intro = ?,
+          description = ?,
+          is_active = ?,
+          updated_at = NOW()
+        WHERE id = ?`,
+        [
+          service_id,
+          location_name,
+          cleanLocSlug,
+          comboSlug,
+          meta_title || null,
+          meta_description || null,
+          keywords || null,
+          canonical_url || null,
+          custom_heading || null,
+          custom_intro || null,
+          description !== undefined ? description : null,
+          is_active !== undefined ? (is_active ? 1 : 0) : 1,
+          id
+        ]
+      );
+      return NextResponse.json({
+        success: true,
+        message: 'Service location updated successfully',
+        id
+      });
+    }
 
     const result = await execute(
       `INSERT INTO service_locations 
         (service_id, location_name, location_slug, slug, meta_title, meta_description, keywords, canonical_url, custom_heading, custom_intro, description, is_active)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
+        location_name = VALUES(location_name),
         meta_title = VALUES(meta_title),
         meta_description = VALUES(meta_description),
         keywords = VALUES(keywords),
@@ -139,6 +187,25 @@ export async function POST(request) {
     console.error('Error in POST /api/service-locations:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to create service location', error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE service location
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'ID is required' }, { status: 400 });
+    }
+    await execute('DELETE FROM service_locations WHERE id = ?', [id]);
+    return NextResponse.json({ success: true, message: 'Service location deleted successfully' });
+  } catch (error) {
+    console.error('Error in DELETE /api/service-locations:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to delete service location', error: error.message },
       { status: 500 }
     );
   }
