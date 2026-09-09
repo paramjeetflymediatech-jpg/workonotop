@@ -8,12 +8,12 @@ import Image from 'next/image';
 import { APP_LINKS, SOCIAL_LINKS } from '@/lib/constants';
 
 const DEFAULT_FOOTER_SERVICES = [
-  { id: 1, name: 'Plumbing Services', slug: 'plumbing' },
-  { id: 2, name: 'Airbnb Cleaning', slug: 'airbnb-cleaning' },
-  { id: 3, name: 'Carpet Cleaning', slug: 'carpet-cleaning' },
-  { id: 4, name: 'Commercial Cleaning', slug: 'commercial-cleaning' },
-  { id: 5, name: 'Deep Move In/Move Out Cleaning', slug: 'deep-move-inmove-out-cleaning' },
-  { id: 8, name: 'Pressure Cleaning', slug: 'pressure-cleaning' },
+  // { id: 1, name: 'Plumbing Services', slug: 'plumbing' },
+  // { id: 2, name: 'Airbnb Cleaning', slug: 'airbnb-cleaning' },
+  // { id: 3, name: 'Carpet Cleaning', slug: 'carpet-cleaning' },
+  // { id: 4, name: 'Commercial Cleaning', slug: 'commercial-cleaning' },
+  // { id: 5, name: 'Deep Move In/Move Out Cleaning', slug: 'deep-move-inmove-out-cleaning' },
+  // { id: 8, name: 'Pressure Cleaning', slug: 'pressure-cleaning' },
 ];
 
 export default function Footer({ initialServices = null }) {
