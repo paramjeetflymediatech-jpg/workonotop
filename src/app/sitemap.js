@@ -31,39 +31,6 @@ export default async function sitemap() {
     })
   }
 
-  // 2. Fetch all SEO Settings for dynamic pages
-  try {
-    const seoSettings = await db.query('SELECT * FROM seo_settings')
-    const pages = seoSettings || []
-    
-    for (const page of pages) {
-      if (!page.page_name || page.page_name.toLowerCase() === 'global') continue
-      
-      let cleanPath = page.page_name.trim()
-      
-      // Format the path correctly (map 'home' to root if needed)
-      if (cleanPath.toLowerCase() === 'home') cleanPath = '/'
-      else if (!cleanPath.startsWith('/')) cleanPath = '/' + cleanPath
-
-      const fullUrl = `${baseUrl}${cleanPath}`
-
-      // Check if entry already exists (ignoring trailing slash differences)
-      const exists = sitemapEntries.some(
-        (entry) => entry.url.replace(/\/$/, '') === fullUrl.replace(/\/$/, '')
-      )
-
-      if (!exists) {
-        sitemapEntries.push({
-          url: fullUrl,
-          lastModified: page.updated_at ? new Date(page.updated_at) : new Date(),
-          changeFrequency: 'monthly',
-          priority: 0.7,
-        })
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching SEO settings for sitemap:', error)
-  }
 
   // 3. Fetch all Services (Only Active)
   try {
