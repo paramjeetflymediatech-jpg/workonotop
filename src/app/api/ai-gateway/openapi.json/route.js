@@ -6,10 +6,10 @@ export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://workontap.com';
 
   const openApiSpec = {
-    openapi: '3.1.0',
+    openapi: '3.0.0',
     info: {
       title: 'WorkOnTap SEO & Catalog AI Gateway',
-      description: 'API for ChatGPT and AI Agents to read, audit, generate, and update SEO metadata and service listings on WorkOnTap.',
+      description: 'API for ChatGPT and AI Agents to read, audit, generate, and update SEO metadata, canonical URLs, and service listings on WorkOnTap.',
       version: '1.0.0',
     },
     servers: [
@@ -286,7 +286,7 @@ export async function GET() {
         post: {
           operationId: 'createOrUpdateServiceLocation',
           summary: 'Create or update unique content and SEO for a service location page',
-          description: 'Saves unique location description (HTML supported), custom H1 heading, custom intro paragraph, and SEO metadata for a location page (e.g. /services/furniture-assembly-in-burnaby).',
+          description: 'Saves unique location description (HTML supported), custom H1 heading, custom intro paragraph, and SEO metadata / canonical URL for a location page (e.g. /services/furniture-assembly-in-burnaby). Does NOT touch base services table.',
           requestBody: {
             required: true,
             content: {
@@ -312,8 +312,8 @@ export async function GET() {
         },
         patch: {
           operationId: 'patchServiceLocation',
-          summary: 'Partially update unique content and SEO for a service location page (safe PATCH)',
-          description: 'Safe partial update (PATCH): updates only provided fields for the location page, preserving all other existing fields.',
+          summary: 'Partially update unique content, canonical URL, and SEO for a service location page (safe PATCH)',
+          description: 'Safe partial update (PATCH): updates only provided fields (e.g. canonical_url, meta_title) for the location page, preserving all other existing fields. Leaves base services table untouched.',
           requestBody: {
             required: true,
             content: {
@@ -338,6 +338,25 @@ export async function GET() {
           },
         },
       },
+      '/api/ai-gateway/v1/service-locations/sync-canonicals': {
+        post: {
+          operationId: 'syncServiceLocationCanonicals',
+          summary: 'Batch sync all service-location canonical URLs to standard pattern',
+          description: 'Automatically formats and syncs all service_locations canonical_url records to https://workontap.com/services/{service_slug}-in-{location_slug}. Safely leaves base services table untouched.',
+          responses: {
+            '200': {
+              description: 'Batch canonical sync completed successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/StandardSuccessResponse',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     components: {
       schemas: {
@@ -346,15 +365,15 @@ export async function GET() {
           properties: {
             id: { type: 'integer' },
             page_name: { type: 'string' },
-            meta_title: { type: ['string', 'null'] },
-            meta_description: { type: ['string', 'null'] },
-            keywords: { type: ['string', 'null'] },
-            canonical_url: { type: ['string', 'null'] },
-            robots: { type: ['string', 'null'] },
-            og_title: { type: ['string', 'null'] },
-            og_description: { type: ['string', 'null'] },
-            og_image: { type: ['string', 'null'] },
-            updated_at: { type: ['string', 'null'] },
+            meta_title: { type: 'string', nullable: true },
+            meta_description: { type: 'string', nullable: true },
+            keywords: { type: 'string', nullable: true },
+            canonical_url: { type: 'string', nullable: true },
+            robots: { type: 'string', nullable: true },
+            og_title: { type: 'string', nullable: true },
+            og_description: { type: 'string', nullable: true },
+            og_image: { type: 'string', nullable: true },
+            updated_at: { type: 'string', nullable: true },
           },
         },
         SeoListResponse: {
@@ -444,21 +463,21 @@ export async function GET() {
             name: { type: 'string' },
             slug: { type: 'string' },
             category_id: { type: 'integer' },
-            category_name: { type: ['string', 'null'] },
-            short_description: { type: ['string', 'null'] },
-            description: { type: ['string', 'null'] },
-            use_cases: { type: ['string', 'null'] },
-            base_price: { type: ['string', 'number', 'null'] },
-            additional_price: { type: ['string', 'number', 'null'] },
-            duration_minutes: { type: ['integer', 'null'] },
+            category_name: { type: 'string', nullable: true },
+            short_description: { type: 'string', nullable: true },
+            description: { type: 'string', nullable: true },
+            use_cases: { type: 'string', nullable: true },
+            base_price: { type: 'string', nullable: true },
+            additional_price: { type: 'string', nullable: true },
+            duration_minutes: { type: 'integer', nullable: true },
             skills: {
               type: 'array',
               items: { type: 'string' },
             },
             is_active: { type: 'integer' },
-            meta_title: { type: ['string', 'null'] },
-            meta_description: { type: ['string', 'null'] },
-            keywords: { type: ['string', 'null'] },
+            meta_title: { type: 'string', nullable: true },
+            meta_description: { type: 'string', nullable: true },
+            keywords: { type: 'string', nullable: true },
           },
         },
         ServiceListResponse: {
@@ -514,18 +533,18 @@ export async function GET() {
             location_name: { type: 'string' },
             location_slug: { type: 'string' },
             slug: { type: 'string' },
-            description: { type: ['string', 'null'], description: 'Unique location-specific HTML description' },
-            custom_heading: { type: ['string', 'null'] },
-            custom_intro: { type: ['string', 'null'] },
-            meta_title: { type: ['string', 'null'] },
-            meta_description: { type: ['string', 'null'] },
-            keywords: { type: ['string', 'null'] },
-            canonical_url: { type: ['string', 'null'] },
-            og_title: { type: ['string', 'null'] },
-            og_description: { type: ['string', 'null'] },
-            og_image: { type: ['string', 'null'] },
+            description: { type: 'string', nullable: true, description: 'Unique location-specific HTML description' },
+            custom_heading: { type: 'string', nullable: true },
+            custom_intro: { type: 'string', nullable: true },
+            meta_title: { type: 'string', nullable: true },
+            meta_description: { type: 'string', nullable: true },
+            keywords: { type: 'string', nullable: true },
+            canonical_url: { type: 'string', nullable: true },
+            og_title: { type: 'string', nullable: true },
+            og_description: { type: 'string', nullable: true },
+            og_image: { type: 'string', nullable: true },
             is_active: { type: 'integer' },
-            updated_at: { type: ['string', 'null'] },
+            updated_at: { type: 'string', nullable: true },
           },
         },
         ServiceLocationListResponse: {
@@ -590,4 +609,3 @@ export async function GET() {
     },
   });
 }
-
