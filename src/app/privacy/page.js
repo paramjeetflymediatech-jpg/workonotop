@@ -1,8 +1,26 @@
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import { getSeoForPath } from '@/lib/seo'
 
-export default function PrivacyPage() {
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  const seo = await getSeoForPath('/privacy');
+  return {
+    title: seo.title || 'Privacy Policy | WorkOnTap',
+    description: seo.description || 'Learn how WorkOnTap collects, uses, and protects your personal information.',
+    alternates: { canonical: seo.canonical || 'https://workontap.com/privacy' },
+    openGraph: {
+      title: seo.ogTitle || seo.title || 'Privacy Policy | WorkOnTap',
+      description: seo.ogDescription || seo.description,
+      url: seo.canonical || 'https://workontap.com/privacy',
+      siteName: 'WorkOnTap',
+    },
+  };
+}
+
+export default async function PrivacyPage() {
   return (
     <div className="min-h-screen bg-white">
       <Header />

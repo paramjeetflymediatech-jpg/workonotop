@@ -4,7 +4,6 @@ import { headers } from "next/headers";
 import Script from "next/script";
 import { getSeoForPath } from "@/lib/seo";
 import { AuthProvider } from "@/context/AuthContext";
-import DynamicSeoManager from "@/components/DynamicSeoManager";
 import parse from 'html-react-parser';
 
 const geistSans = Geist({
@@ -22,7 +21,44 @@ const outfit = Outfit({
   subsets: ["latin"],
 });
 
-export const dynamic = "force-dynamic";
+export const metadata = {
+  metadataBase: new URL('https://workontap.com'),
+  title: {
+    default: 'WorkOnTap - Home Maintenance & Trade Services',
+    template: '%s | WorkOnTap'
+  },
+  description: 'WorkOnTap connects you with skilled and trusted local tradespeople for every job, big or small.',
+  keywords: ['home maintenance', 'plumbers', 'electricians', 'hvac', 'cleaners', 'vancouver'],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    }
+  },
+  verification: {
+    google: 'A6y8CvpEQ9Tkn0I6JPDykgUl9e2vRCmBYZiHON-QEcw',
+  },
+  icons: {
+    icon: '/favicon.png',
+  },
+  openGraph: {
+    title: 'WorkOnTap - Home Maintenance & Trade Services',
+    description: 'WorkOnTap connects you with skilled and trusted local tradespeople.',
+    url: 'https://workontap.com',
+    siteName: 'WorkOnTap',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'WorkOnTap - Home Maintenance & Trade Services',
+    description: 'WorkOnTap connects you with skilled and trusted local tradespeople.',
+  }
+};
 
 const parserOptions = {
   replace: (node) => {
@@ -40,55 +76,6 @@ const parserOptions = {
   }
 };
 
-export async function generateMetadata() {
-  const headersList = await headers();
-  const rawPathname = headersList.get("x-pathname") || "/";
-  const seo = await getSeoForPath(rawPathname);
-
-  const isNoIndex = seo.robots?.toLowerCase().includes('noindex');
-  const isNoFollow = seo.robots?.toLowerCase().includes('nofollow');
-
-  return {
-    title: seo.title || 'WorkOnTap',
-    description: seo.description || 'WorkOnTap connects you with skilled and trusted local tradespeople.',
-    keywords: seo.keywords || undefined,
-    robots: {
-      index: !isNoIndex,
-      follow: !isNoFollow,
-      googleBot: {
-        index: !isNoIndex,
-        follow: !isNoFollow,
-        'max-video-preview': -1,
-        'max-image-preview': 'large',
-        'max-snippet': -1,
-      },
-    },
-    alternates: {
-      canonical: seo.canonical || undefined,
-    },
-    verification: {
-      google: 'A6y8CvpEQ9Tkn0I6JPDykgUl9e2vRCmBYZiHON-QEcw',
-    },
-    openGraph: {
-      title: seo.ogTitle || seo.title || 'WorkOnTap',
-      description: seo.ogDescription || seo.description || 'WorkOnTap connects you with skilled and trusted local tradespeople.',
-      url: seo.canonical || undefined,
-      siteName: 'WorkOnTap',
-      type: rawPathname.includes('/blogs/') ? 'article' : 'website',
-      images: seo.ogImage ? [{ url: seo.ogImage }] : [],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: seo.ogTitle || seo.title || 'WorkOnTap',
-      description: seo.ogDescription || seo.description,
-      images: seo.ogImage ? [seo.ogImage] : [],
-    },
-    icons: {
-      icon: '/favicon.png',
-    },
-  };
-}
-
 export default async function RootLayout({ children }) {
   const headersList = await headers();
   const rawPathname = headersList.get("x-pathname") || "/";
@@ -102,7 +89,6 @@ export default async function RootLayout({ children }) {
 
       <body className="flex-grow flex flex-col min-h-screen" suppressHydrationWarning>
         <AuthProvider>
-          <DynamicSeoManager />
           {children}
         </AuthProvider>
 

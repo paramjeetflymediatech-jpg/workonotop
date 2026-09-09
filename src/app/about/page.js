@@ -1,8 +1,28 @@
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import { getSeoForPath } from '@/lib/seo'
 
-export default function AboutPage() {
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  const seo = await getSeoForPath('/about');
+  return {
+    title: seo.title || 'About Us | WorkOnTap',
+    description: seo.description || 'Learn about WorkOnTap - connecting trusted local tradespeople with homeowners since 2022.',
+    keywords: seo.keywords || 'about workontap, trades vancouver, home services',
+    alternates: { canonical: seo.canonical || 'https://workontap.com/about' },
+    openGraph: {
+      title: seo.ogTitle || seo.title || 'About Us | WorkOnTap',
+      description: seo.ogDescription || seo.description,
+      url: seo.canonical || 'https://workontap.com/about',
+      siteName: 'WorkOnTap',
+      images: seo.ogImage ? [{ url: seo.ogImage }] : [],
+    },
+  };
+}
+
+export default async function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
       <Header />

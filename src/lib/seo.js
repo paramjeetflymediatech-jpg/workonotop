@@ -1,6 +1,7 @@
+import { cache } from 'react'
 import db from '@/lib/db'
 
-export async function getSeoForPath(rawPathname) {
+export const getSeoForPath = cache(async function getSeoForPath(rawPathname) {
   let pathname = (rawPathname || '/').trim()
   if (pathname.length > 1 && pathname.endsWith('/')) {
     pathname = pathname.slice(0, -1)
@@ -206,4 +207,5 @@ export async function getSeoForPath(rawPathname) {
     headerScripts: pageSeo?.header_scripts || globalSeo?.header_scripts || '',
     footerScripts: pageSeo?.footer_scripts || globalSeo?.footer_scripts || ''
   }
-}
+})
+

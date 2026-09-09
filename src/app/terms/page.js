@@ -1,6 +1,24 @@
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import { getSeoForPath } from '@/lib/seo'
+
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  const seo = await getSeoForPath('/terms');
+  return {
+    title: seo.title || 'Terms of Service | WorkOnTap',
+    description: seo.description || 'Read the Terms of Service for WorkOnTap - reliable home maintenance and trade services platform.',
+    alternates: { canonical: seo.canonical || 'https://workontap.com/terms' },
+    openGraph: {
+      title: seo.ogTitle || seo.title || 'Terms of Service | WorkOnTap',
+      description: seo.ogDescription || seo.description,
+      url: seo.canonical || 'https://workontap.com/terms',
+      siteName: 'WorkOnTap',
+    },
+  };
+}
 
 export default function TermsPage() {
   return (
