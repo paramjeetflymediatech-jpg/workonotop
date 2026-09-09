@@ -1,12 +1,47 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import DirectoryListing from '@/components/DirectoryListing';
+import db from '@/lib/db';
+import { getSeoForPath } from '@/lib/seo';
 
-export default function DirectoryPage() {
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  const seo = await getSeoForPath('/local-trades-and-services');
+
+  return {
+    title: seo.title || 'Local Trades & Services Directory | WorkOnTap',
+    description: seo.description || 'Browse our complete directory of verified local trade professionals and home services across Canada.',
+    alternates: {
+      canonical: seo.canonical || 'https://workontap.com/local-trades-and-services',
+    },
+  };
+}
+
+export default async function DirectoryPage() {
+  let directoryItems = [];
+  try {
+    const data = await db.query(
+      `SELECT 
+        s.name as service_name, 
+        s.slug as service_slug,
+        s.description,
+        s.short_description,
+        sl.location_name,
+        sl.location_slug,
+        sl.slug as full_slug
+       FROM service_locations sl
+       JOIN services s ON sl.service_id = s.id
+       WHERE sl.is_active = 1 AND s.is_active = 1
+       ORDER BY sl.location_name ASC, s.name ASC`
+    );
+    directoryItems = data || [];
+  } catch (e) {
+    console.error('Error loading directory in SSR /local-trades-and-services:', e);
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Header />
@@ -29,7 +64,7 @@ export default function DirectoryPage() {
             </Link>
           </div>
 
-          <DirectoryListing />
+          <DirectoryListing initialItems={directoryItems} />
         </div>
       </main>
 

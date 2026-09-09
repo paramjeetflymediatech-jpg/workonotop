@@ -244,7 +244,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="bg-white rounded-3xl p-10 border border-slate-100 shadow-md">
               <h3 className="text-2xl font-bold text-indigo-900 mb-2">Move-Out Repair Package</h3>
-              <p className="text-indigo-600 font-medium mb-6">Get Your Deposit Back.</p>
+              <p className="text-indigo-600 font-medium mb-6">Prepare Your Home for Handover.</p>
               <p className="text-slate-600 mb-6">
                 Moving out can leave behind small repairs that need attention before an inspection or handover. It is designed for tenants moving out and property managers preparing rental units.
               </p>

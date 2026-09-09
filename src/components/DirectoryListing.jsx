@@ -5,12 +5,18 @@ import Link from 'next/link';
 
 const PAGE_SIZE = 48;
 
-export default function DirectoryListing() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function DirectoryListing({ initialItems = null }) {
+  const [items, setItems] = useState(Array.isArray(initialItems) ? initialItems : []);
+  const [loading, setLoading] = useState(!Array.isArray(initialItems) || initialItems.length === 0);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    if (Array.isArray(initialItems) && initialItems.length > 0) {
+      setItems(initialItems);
+      setLoading(false);
+      return;
+    }
+
     async function fetchData() {
       try {
         const res = await fetch('/api/directory');
@@ -25,7 +31,7 @@ export default function DirectoryListing() {
       }
     }
     fetchData();
-  }, []);
+  }, [initialItems]);
 
   const totalItems = items.length;
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);

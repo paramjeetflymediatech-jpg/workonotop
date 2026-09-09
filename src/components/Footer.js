@@ -7,21 +7,34 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { APP_LINKS, SOCIAL_LINKS } from '@/lib/constants';
 
-export default function Footer() {
+const DEFAULT_FOOTER_SERVICES = [
+  { id: 1, name: 'Plumbing Services', slug: 'plumbing' },
+  { id: 2, name: 'Airbnb Cleaning', slug: 'airbnb-cleaning' },
+  { id: 3, name: 'Carpet Cleaning', slug: 'carpet-cleaning' },
+  { id: 4, name: 'Commercial Cleaning', slug: 'commercial-cleaning' },
+  { id: 5, name: 'Deep Move In/Move Out Cleaning', slug: 'deep-move-inmove-out-cleaning' },
+  { id: 8, name: 'Pressure Cleaning', slug: 'pressure-cleaning' },
+];
+
+export default function Footer({ initialServices = null }) {
   const currentYear = new Date().getFullYear();
   const pathname = usePathname();
-  const [services, setServices] = useState([]);
+  const [services, setServices] = useState(
+    Array.isArray(initialServices) && initialServices.length > 0
+      ? initialServices.slice(0, 6)
+      : DEFAULT_FOOTER_SERVICES
+  );
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await fetch('/api/services');
+        const res = await fetch('/api/services?limit=6');
         if (res.ok) {
           const text = await res.text();
           if (text) {
             const data = JSON.parse(text);
-            if (data.success) {
-              setServices(data.data?.slice(0, 6) || []);
+            if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+              setServices(data.data.slice(0, 6));
             }
           }
         }
@@ -117,16 +130,14 @@ export default function Footer() {
               <span className="absolute left-0 bottom-[-8px] w-12 h-[3px] bg-green-600 rounded-full"></span>
             </h4>
             <ul className="space-y-3">
-              {services.length > 0 ? services.map((service) => (
-                <li key={service.id} className="flex items-center gap-2 text-sm text-gray-500 hover:text-green-700 transition-all duration-300 hover:translate-x-1">
+              {(services.length > 0 ? services : DEFAULT_FOOTER_SERVICES).map((service) => (
+                <li key={service.id || service.slug} className="flex items-center gap-2 text-sm text-gray-500 hover:text-green-700 transition-all duration-300 hover:translate-x-1">
                   <svg className="w-3 h-3 text-green-600 flex-shrink-0 opacity-70" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M9 18l6-6-6-6" />
                   </svg>
                   <Link href={`/services/${service.slug}`} className="font-medium">{service.name}</Link>
                 </li>
-              )) : (
-                <li className="text-sm text-gray-400">Loading services...</li>
-              )}
+              ))}
             </ul>
           </div>
 

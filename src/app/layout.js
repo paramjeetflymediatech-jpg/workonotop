@@ -5,9 +5,7 @@ import Script from "next/script";
 import { getSeoForPath } from "@/lib/seo";
 import { AuthProvider } from "@/context/AuthContext";
 import DynamicSeoManager from "@/components/DynamicSeoManager";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { Toaster } from "react-hot-toast";
+import parse from 'html-react-parser';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,8 +21,6 @@ const outfit = Outfit({
   variable: "--font-outfit",
   subsets: ["latin"],
 });
-
-import parse from 'html-react-parser';
 
 export const dynamic = "force-dynamic";
 
@@ -44,36 +40,63 @@ const parserOptions = {
   }
 };
 
+export async function generateMetadata() {
+  const headersList = await headers();
+  const rawPathname = headersList.get("x-pathname") || "/";
+  const seo = await getSeoForPath(rawPathname);
+
+  const isNoIndex = seo.robots?.toLowerCase().includes('noindex');
+  const isNoFollow = seo.robots?.toLowerCase().includes('nofollow');
+
+  return {
+    title: seo.title || 'WorkOnTap',
+    description: seo.description || 'WorkOnTap connects you with skilled and trusted local tradespeople.',
+    keywords: seo.keywords || undefined,
+    robots: {
+      index: !isNoIndex,
+      follow: !isNoFollow,
+      googleBot: {
+        index: !isNoIndex,
+        follow: !isNoFollow,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+    alternates: {
+      canonical: seo.canonical || undefined,
+    },
+    verification: {
+      google: 'A6y8CvpEQ9Tkn0I6JPDykgUl9e2vRCmBYZiHON-QEcw',
+    },
+    openGraph: {
+      title: seo.ogTitle || seo.title || 'WorkOnTap',
+      description: seo.ogDescription || seo.description || 'WorkOnTap connects you with skilled and trusted local tradespeople.',
+      url: seo.canonical || undefined,
+      siteName: 'WorkOnTap',
+      type: rawPathname.includes('/blogs/') ? 'article' : 'website',
+      images: seo.ogImage ? [{ url: seo.ogImage }] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: seo.ogTitle || seo.title || 'WorkOnTap',
+      description: seo.ogDescription || seo.description,
+      images: seo.ogImage ? [seo.ogImage] : [],
+    },
+    icons: {
+      icon: '/favicon.png',
+    },
+  };
+}
+
 export default async function RootLayout({ children }) {
   const headersList = await headers();
   const rawPathname = headersList.get("x-pathname") || "/";
-
   const seo = await getSeoForPath(rawPathname);
 
   return (
     <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans flex flex-col min-h-screen`}>
       <head>
-        <title>{seo.title}</title>
-        <meta name="description" content={seo.description} />
-        {seo.keywords && <meta name="keywords" content={seo.keywords} />}
-        <meta name="robots" content={seo.robots} />
-        <meta name="googlebot" content={`${seo.robots}, max-video-preview:-1, max-image-preview:large, max-snippet:-1`} />
-        {seo.canonical && <link rel="canonical" href={seo.canonical} />}
-        <meta name="google-site-verification" content="A6y8CvpEQ9Tkn0I6JPDykgUl9e2vRCmBYZiHON-QEcw" />
-
-        {seo.ogTitle && <meta property="og:title" content={seo.ogTitle} />}
-        {seo.ogDescription && <meta property="og:description" content={seo.ogDescription} />}
-        {seo.canonical && <meta property="og:url" content={seo.canonical} />}
-        <meta property="og:site_name" content="WorkOnTap" />
-        <meta property="og:type" content={rawPathname.includes("/blogs/") ? "article" : "website"} />
-        {seo.ogImage && <meta property="og:image" content={seo.ogImage} />}
-
-        <meta name="twitter:card" content="summary_large_image" />
-        {seo.ogTitle && <meta name="twitter:title" content={seo.ogTitle} />}
-        {seo.ogDescription && <meta name="twitter:description" content={seo.ogDescription} />}
-        {seo.ogImage && <meta name="twitter:image" content={seo.ogImage} />}
-
-        <link rel="icon" href="/favicon.png" />
         {seo.headerScripts && typeof seo.headerScripts === 'string' ? parse(seo.headerScripts, parserOptions) : null}
       </head>
 
