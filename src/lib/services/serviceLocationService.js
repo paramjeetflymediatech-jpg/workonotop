@@ -268,7 +268,7 @@ export async function upsertServiceLocation(data) {
       .replace(/[^\\w\\s-]/g, '')
       .replace(/\\s+/g, '-');
     const finalLocSlug = rawLocSlug.startsWith('in-') ? rawLocSlug.substring(3) : rawLocSlug;
-    const finalComboSlug = slug || `${resolvedServiceSlug}-${finalLocSlug}`;
+    const finalComboSlug = slug || `${resolvedServiceSlug}-in-${finalLocSlug}`;
 
     const result = await db.query(
       `INSERT INTO service_locations

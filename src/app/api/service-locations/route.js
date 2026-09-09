@@ -105,8 +105,8 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'Invalid service_id' }, { status: 400 });
     }
 
-    const cleanLocSlug = location_slug.toLowerCase().trim().replace(/\s+/g, '-');
-    const comboSlug = slug || `${services[0].slug}-${cleanLocSlug}`;
+    const cleanLocSlug = location_slug.toLowerCase().trim().replace(/^in-/, '').replace(/\s+/g, '-');
+    const comboSlug = slug || `${services[0].slug}-in-${cleanLocSlug}`;
 
     if (id) {
       await execute(
