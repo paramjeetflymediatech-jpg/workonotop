@@ -314,3 +314,27 @@ export async function deleteServiceLocation(idOrSlug) {
   }
   return { success: true };
 }
+
+/**
+ * Sync canonical URLs for all service_locations to match the standard format:
+ * https://workontap.com/services/{service_slug}-in-{clean_location_slug}
+ * (Does NOT touch the base services table)
+ */
+export async function syncServiceLocationCanonicals() {
+  const rows = await db.query(`
+    SELECT sl.id, sl.service_id, s.slug as service_slug, sl.location_slug
+    FROM service_locations sl
+    JOIN services s ON sl.service_id = s.id
+  `);
+
+  let updatedCount = 0;
+  for (const row of rows) {
+    const cleanLoc = (row.location_slug || '').startsWith('in-') ? row.location_slug.substring(3) : (row.location_slug || '');
+    const canonical = `https://workontap.com/services/${row.service_slug}-in-${cleanLoc}`;
+    await db.query('UPDATE service_locations SET canonical_url = ?, updated_at = NOW() WHERE id = ?', [canonical, row.id]);
+    updatedCount++;
+  }
+
+  return { total: rows.length, updated: updatedCount };
+}
+
