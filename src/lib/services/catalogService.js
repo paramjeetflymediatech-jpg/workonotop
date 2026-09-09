@@ -158,6 +158,7 @@ export async function createOrUpdateService(data) {
 
   // If this matches a service location record (or existing is a service location)
   if (existing?.is_service_location) {
+    const finalSlug = (cleanSlug && cleanSlug !== existing.slug) ? cleanSlug : existing.slug;
     const finalDesc = description !== undefined ? description : existing.description;
     const finalCustomHeading = custom_heading !== undefined ? custom_heading : existing.custom_heading;
     const finalCustomIntro = custom_intro !== undefined ? custom_intro : existing.custom_intro;
@@ -171,15 +172,15 @@ export async function createOrUpdateService(data) {
 
     await db.query(
       `UPDATE service_locations 
-       SET description = ?, custom_heading = ?, custom_intro = ?, meta_title = ?, meta_description = ?, keywords = ?, canonical_url = ?, og_title = ?, og_description = ?, og_image = ?, updated_at = NOW()
+       SET slug = ?, description = ?, custom_heading = ?, custom_intro = ?, meta_title = ?, meta_description = ?, keywords = ?, canonical_url = ?, og_title = ?, og_description = ?, og_image = ?, updated_at = NOW()
        WHERE id = ?`,
-      [finalDesc, finalCustomHeading, finalCustomIntro, finalMetaTitle, finalMetaDesc, finalKeywords, finalCanonicalUrl, finalOgTitle, finalOgDesc, finalOgImage, existing.id]
+      [finalSlug, finalDesc, finalCustomHeading, finalCustomIntro, finalMetaTitle, finalMetaDesc, finalKeywords, finalCanonicalUrl, finalOgTitle, finalOgDesc, finalOgImage, existing.id]
     );
 
     return {
       id: existing.id,
       action: 'updated',
-      slug: existing.slug,
+      slug: finalSlug,
       name: existing.name,
       is_service_location: true,
     };

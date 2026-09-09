@@ -203,6 +203,9 @@ export async function upsertServiceLocation(data) {
   }
 
   if (existing) {
+    const finalSlug = (slug && slug !== existing.slug) ? slug : existing.slug;
+    const finalLocationName = location_name !== undefined ? location_name : existing.location_name;
+    const finalLocationSlug = location_slug !== undefined ? (location_slug.startsWith('in-') ? location_slug.substring(3) : location_slug) : existing.location_slug;
     const finalDescription = description !== undefined ? description : existing.description;
     const finalCustomHeading = custom_heading !== undefined ? custom_heading : existing.custom_heading;
     const finalCustomIntro = custom_intro !== undefined ? custom_intro : existing.custom_intro;
@@ -217,7 +220,10 @@ export async function upsertServiceLocation(data) {
 
     await db.query(
       `UPDATE service_locations
-       SET description = ?,
+       SET slug = ?,
+           location_name = ?,
+           location_slug = ?,
+           description = ?,
            custom_heading = ?,
            custom_intro = ?,
            meta_title = ?,
@@ -231,6 +237,9 @@ export async function upsertServiceLocation(data) {
            updated_at = NOW()
        WHERE id = ?`,
       [
+        finalSlug,
+        finalLocationName,
+        finalLocationSlug,
         finalDescription,
         finalCustomHeading,
         finalCustomIntro,
@@ -249,9 +258,9 @@ export async function upsertServiceLocation(data) {
     return {
       id: existing.id,
       action: 'updated',
-      slug: existing.slug,
+      slug: finalSlug,
       service_id: existing.service_id,
-      location_name: existing.location_name,
+      location_name: finalLocationName,
     };
   } else {
     if (!resolvedServiceId) {
