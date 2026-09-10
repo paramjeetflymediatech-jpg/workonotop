@@ -3,7 +3,7 @@
     "name": "WorkOnTap",
     "slug": "workontap",
     "scheme": "workontap",
-    "version": "1.9",
+    "version": "2.0",
     "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nhaman.workontap",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
@@ -26,7 +26,7 @@
       }
     },
     "android": {
-      "versionCode": 26,
+      "versionCode": 27,
       "adaptiveIcon": {
         "backgroundColor": "#115E59",
         "foregroundImage": "./assets/adaptive-icon.png"

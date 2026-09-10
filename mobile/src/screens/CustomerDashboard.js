@@ -9,6 +9,8 @@ import {
     ActivityIndicator,
     RefreshControl,
     Image,
+    Modal,
+    TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
