@@ -4,8 +4,8 @@ export const APP_LINKS = {
 };
 
 export const SOCIAL_LINKS = {
-  FACEBOOK: 'https://facebook.com/workontap',
+  FACEBOOK: 'https://www.facebook.com/profile.php?id=61593040625022',
   TWITTER: 'https://twitter.com/workontap',
-  INSTAGRAM: 'https://instagram.com/workontap',
-  YOUTUBE: 'https://youtube.com/@workontap',
+  INSTAGRAM: 'https://www.instagram.com/workon_tap',
+  YOUTUBE: 'https://www.youtube.com/@WorkOnTap',
 };
