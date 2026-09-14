@@ -29,9 +29,8 @@ export async function PUT(request, { params }) {
       const [[booking]] = await connection.execute(
         `SELECT b.worker_count, b.actual_duration_minutes, b.submitted_duration_minutes,
                 b.submitted_headcount, b.commission_percent,
-                s.duration_minutes as service_duration,
-                s.price as service_price,
-                s.additional_price
+                b.service_price, b.additional_price,
+                s.duration_minutes as service_duration
          FROM bookings b
          LEFT JOIN services s ON b.service_id = s.id
          WHERE b.id = ?`,
