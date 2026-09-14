@@ -44,8 +44,13 @@ export async function PUT(request, { params }) {
 
       // Update the booking
       await connection.execute(
-        `UPDATE bookings SET worker_count = ?, actual_duration_minutes = ? WHERE id = ?`,
-        [worker_count, actual_duration_minutes, booking_id]
+        `UPDATE bookings SET 
+          worker_count = ?, 
+          actual_duration_minutes = ?,
+          submitted_headcount = ?,
+          submitted_duration_minutes = ?
+         WHERE id = ?`,
+        [worker_count, actual_duration_minutes, worker_count, actual_duration_minutes, booking_id]
       )
 
       // Insert audit log
