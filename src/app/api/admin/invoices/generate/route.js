@@ -58,15 +58,12 @@ export async function POST(request) {
     const totalAmount = (baseAmount + overtimeAmount) * wCount
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(booking_id).padStart(5, '0')}`
 
-    // Check if already exists
-    const existing = await execute('SELECT id FROM invoices WHERE booking_id = ?', [booking_id])
-
-    if (existing.length > 0) {
-      return NextResponse.json({
-        success: false,
-        message: 'Invoice already exists for this booking'
-      }, { status: 400 })
-    }
+    // Check if invoice already exists (upsert: update instead of blocking)
+    const existing = await execute(
+      'SELECT id, invoice_number FROM invoices WHERE booking_id = ? AND invoice_type = "customer" LIMIT 1',
+      [booking_id]
+    )
+    const invoiceAlreadyExists = existing.length > 0
 
     // Calculate commission and provider earnings
     const commissionPercent = parseFloat(booking.commission_percent || 0)
@@ -83,88 +80,105 @@ export async function POST(request) {
     const startTime = booking.start_time ? new Date(booking.start_time) : null
     const endTime = booking.end_time ? new Date(booking.end_time) : new Date()
 
-    // Generate Customer Invoice
-    const customerInvoiceNumber = `INV-${new Date().getFullYear()}-${String(booking_id).padStart(5, '0')}-C`
-    const resultCustomer = await execute(
-      `INSERT INTO invoices (
-        invoice_number, booking_id, user_id, provider_id, invoice_type,
-        base_amount, overtime_minutes, overtime_rate, overtime_amount,
-        total_amount, commission_percent, commission_amount, provider_earnings,
-        final_provider_amount, overtime_earnings, job_timer_status, start_time, end_time,
-        service_name, service_duration, actual_duration,
-        job_date, completion_date, status
-      ) VALUES (?, ?, ?, ?, 'customer', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
-      [
-        customerInvoiceNumber,
-        booking.id,
-        booking.user_id,
-        booking.provider_id,
-        baseAmount,
-        overtimeMinutes,
-        overtimeRatePerHour,
-        overtimeAmount,
-        totalAmount,
-        commissionPercent,
-        commissionAmount,
-        providerEarnings,
-        finalProviderAmount,
-        overtimeEarnings,
-        jobTimerStatus,
-        startTime,
-        endTime,
-        booking.service_name,
-        standardDuration,
-        actualDuration,
-        booking.job_date,
-        booking.end_time || new Date()
-      ]
-    )
+    const customerInvoiceNumber = invoiceAlreadyExists
+      ? existing[0].invoice_number
+      : `INV-${new Date().getFullYear()}-${String(booking_id).padStart(5, '0')}-C`
 
-    // Generate Provider Invoice
-    const providerInvoiceNumber = `INV-${new Date().getFullYear()}-${String(booking_id).padStart(5, '0')}-P`
-    const resultProvider = await execute(
-      `INSERT INTO invoices (
-        invoice_number, booking_id, user_id, provider_id, invoice_type,
-        base_amount, overtime_minutes, overtime_rate, overtime_amount,
-        total_amount, commission_percent, commission_amount, provider_earnings,
-        final_provider_amount, overtime_earnings, job_timer_status, start_time, end_time,
-        service_name, service_duration, actual_duration,
-        job_date, completion_date, status
-      ) VALUES (?, ?, ?, ?, 'provider', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
-      [
-        providerInvoiceNumber,
-        booking.id,
-        booking.user_id,
-        booking.provider_id,
-        baseAmount,
-        overtimeMinutes,
-        overtimeRatePerHour,
-        overtimeAmount,
-        totalAmount,
-        commissionPercent,
-        commissionAmount,
-        providerEarnings,
-        finalProviderAmount,
-        overtimeEarnings,
-        jobTimerStatus,
-        startTime,
-        endTime,
-        booking.service_name,
-        standardDuration,
-        actualDuration,
-        booking.job_date,
-        booking.end_time || new Date()
-      ]
-    )
+    let resultCustomer, resultProvider
+
+    if (invoiceAlreadyExists) {
+      // ── UPDATE existing invoices (both customer & provider) ───────────────
+      await execute(
+        `UPDATE invoices SET
+          base_amount           = ?,
+          overtime_minutes      = ?,
+          overtime_rate         = ?,
+          overtime_amount       = ?,
+          total_amount          = ?,
+          commission_percent    = ?,
+          commission_amount     = ?,
+          provider_earnings     = ?,
+          final_provider_amount = ?,
+          overtime_earnings     = ?,
+          job_timer_status      = ?,
+          start_time            = ?,
+          end_time              = ?,
+          service_name          = ?,
+          service_duration      = ?,
+          actual_duration       = ?,
+          job_date              = ?,
+          completion_date       = ?
+         WHERE booking_id = ?`,
+        [
+          baseAmount, overtimeMinutes, overtimeRatePerHour, overtimeAmount,
+          totalAmount, commissionPercent, commissionAmount, providerEarnings,
+          finalProviderAmount, overtimeEarnings, jobTimerStatus,
+          startTime, endTime, booking.service_name, standardDuration, actualDuration,
+          booking.job_date, booking.end_time || new Date(),
+          booking_id
+        ]
+      )
+      // Fetch updated ids for response
+      const updated = await execute(
+        'SELECT id, invoice_number, invoice_type FROM invoices WHERE booking_id = ?',
+        [booking_id]
+      )
+      const cInv = updated.find(i => i.invoice_type === 'customer') || {}
+      const pInv = updated.find(i => i.invoice_type === 'provider') || {}
+      resultCustomer = { insertId: cInv.id }
+      resultProvider = { insertId: pInv.id }
+    } else {
+      // ── INSERT fresh customer invoice ─────────────────────────────────────
+      resultCustomer = await execute(
+        `INSERT INTO invoices (
+          invoice_number, booking_id, user_id, provider_id, invoice_type,
+          base_amount, overtime_minutes, overtime_rate, overtime_amount,
+          total_amount, commission_percent, commission_amount, provider_earnings,
+          final_provider_amount, overtime_earnings, job_timer_status, start_time, end_time,
+          service_name, service_duration, actual_duration,
+          job_date, completion_date, status
+        ) VALUES (?, ?, ?, ?, 'customer', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
+        [
+          customerInvoiceNumber,
+          booking.id, booking.user_id, booking.provider_id,
+          baseAmount, overtimeMinutes, overtimeRatePerHour, overtimeAmount,
+          totalAmount, commissionPercent, commissionAmount, providerEarnings,
+          finalProviderAmount, overtimeEarnings, jobTimerStatus,
+          startTime, endTime, booking.service_name, standardDuration, actualDuration,
+          booking.job_date, booking.end_time || new Date()
+        ]
+      )
+
+      // ── INSERT fresh provider invoice ─────────────────────────────────────
+      const providerInvoiceNumber = `INV-${new Date().getFullYear()}-${String(booking_id).padStart(5, '0')}-P`
+      resultProvider = await execute(
+        `INSERT INTO invoices (
+          invoice_number, booking_id, user_id, provider_id, invoice_type,
+          base_amount, overtime_minutes, overtime_rate, overtime_amount,
+          total_amount, commission_percent, commission_amount, provider_earnings,
+          final_provider_amount, overtime_earnings, job_timer_status, start_time, end_time,
+          service_name, service_duration, actual_duration,
+          job_date, completion_date, status
+        ) VALUES (?, ?, ?, ?, 'provider', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
+        [
+          providerInvoiceNumber,
+          booking.id, booking.user_id, booking.provider_id,
+          baseAmount, overtimeMinutes, overtimeRatePerHour, overtimeAmount,
+          totalAmount, commissionPercent, commissionAmount, providerEarnings,
+          finalProviderAmount, overtimeEarnings, jobTimerStatus,
+          startTime, endTime, booking.service_name, standardDuration, actualDuration,
+          booking.job_date, booking.end_time || new Date()
+        ]
+      )
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Invoices generated successfully',
+      message: invoiceAlreadyExists ? 'Invoices updated successfully' : 'Invoices generated successfully',
       invoice: {
         customer_invoice_id: resultCustomer.insertId,
         provider_invoice_id: resultProvider.insertId,
         customer_invoice_number: customerInvoiceNumber,
-        provider_invoice_number: providerInvoiceNumber,
         breakdown: {
           service_name: booking.service_name,
           standard_duration: standardDuration,

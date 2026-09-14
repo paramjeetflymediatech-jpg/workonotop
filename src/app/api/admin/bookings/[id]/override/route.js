@@ -25,9 +25,16 @@ export async function PUT(request, { params }) {
     await connection.query('START TRANSACTION')
 
     try {
-      // Get current booking details
+      // Get current booking details + service pricing for invoice recalculation
       const [[booking]] = await connection.execute(
-        `SELECT worker_count, actual_duration_minutes FROM bookings WHERE id = ?`,
+        `SELECT b.worker_count, b.actual_duration_minutes, b.submitted_duration_minutes,
+                b.submitted_headcount, b.commission_percent,
+                s.duration_minutes as service_duration,
+                s.price as service_price,
+                s.additional_price
+         FROM bookings b
+         LEFT JOIN services s ON b.service_id = s.id
+         WHERE b.id = ?`,
         [booking_id]
       )
 
@@ -48,15 +55,69 @@ export async function PUT(request, { params }) {
         (booking_id, admin_id, old_worker_count, new_worker_count, old_actual_duration, new_actual_duration, reason) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          booking_id, 
-          decoded.adminId || decoded.id || 1, // Fallback if admin ID isn't in token
-          booking.worker_count || 1, 
-          worker_count, 
-          booking.actual_duration_minutes || 0, 
-          actual_duration_minutes, 
+          booking_id,
+          decoded.adminId || decoded.id || 1,
+          booking.worker_count || 1,
+          worker_count,
+          booking.actual_duration_minutes || 0,
+          actual_duration_minutes,
           reason
         ]
       )
+
+      // ── Recalculate invoice amounts based on new values ──────────────────
+      const standardDuration  = parseInt(booking.service_duration || 60)
+      const baseRate          = parseFloat(booking.service_price || 0)
+      const overtimeRatePerHour = parseFloat(booking.additional_price || 0)
+      const newActualDuration = parseInt(actual_duration_minutes || 0)
+      const newWorkerCount    = parseInt(worker_count || 1)
+
+      let overtimeMinutes = 0
+      let overtimeAmount  = 0
+      if (newActualDuration > standardDuration) {
+        overtimeMinutes = newActualDuration - standardDuration
+        overtimeAmount  = Math.round((overtimeRatePerHour / 60) * overtimeMinutes * 100) / 100
+      }
+
+      const totalAmount       = Math.round((baseRate + overtimeAmount) * newWorkerCount * 100) / 100
+      const commissionPercent = parseFloat(booking.commission_percent || 0)
+      const commissionAmount  = Math.round(totalAmount * commissionPercent / 100 * 100) / 100
+      const providerEarnings  = Math.round((totalAmount - commissionAmount) * 100) / 100
+      const totalOvertimeCharged = overtimeAmount * newWorkerCount
+      const overtimeEarnings  = Math.round((totalOvertimeCharged - (totalOvertimeCharged * commissionPercent / 100)) * 100) / 100
+
+      // Update invoices if they already exist for this booking
+      const [existingInvoices] = await connection.execute(
+        `SELECT id FROM invoices WHERE booking_id = ?`,
+        [booking_id]
+      )
+
+      if (existingInvoices.length > 0) {
+        await connection.execute(
+          `UPDATE invoices SET
+            actual_duration   = ?,
+            overtime_minutes  = ?,
+            overtime_amount   = ?,
+            total_amount      = ?,
+            commission_amount = ?,
+            provider_earnings = ?,
+            final_provider_amount = ?,
+            overtime_earnings = ?
+           WHERE booking_id = ?`,
+          [
+            newActualDuration,
+            overtimeMinutes,
+            overtimeAmount,
+            totalAmount,
+            commissionAmount,
+            providerEarnings,
+            providerEarnings,
+            overtimeEarnings,
+            booking_id
+          ]
+        )
+      }
+      // ─────────────────────────────────────────────────────────────────────
 
       await connection.query('COMMIT')
       
